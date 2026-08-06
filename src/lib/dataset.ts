@@ -37,8 +37,11 @@ export interface Meta {
   uzbReportingYears: number[];
   partners: PartnerMeta[];
   chapters: { chapter: string; label: string; category: string }[];
+  hs4labels: Record<string, string>;
   hs6labels: Record<string, string>;
   categories: { key: string; label: string }[];
+  orphans: { importValue: number; importCells: number };
+  datasetRows: number;
 }
 export interface MonthlyPoint { period: string; ptnExp: number; uzbImp: number; provisional: boolean }
 export interface ProductPartner { iso3: string; name: string; tier: Tier; transit: boolean; ptnExp: number; uzbImp: number; gap: number }
@@ -64,6 +67,10 @@ export const partnerName = (iso: string) => pMeta.get(iso)?.name ?? iso;
 export const partnerMetaOf = (iso: string) => pMeta.get(iso);
 export const categoryLabel = (key: string) => catLabel.get(key) ?? key;
 export const hs6Label = (cmd: string) => meta.hs6labels[cmd] ?? `HS ${cmd}`;
+/** HS4 is derived from HS6; labels borrow the largest child's description. */
+export const hs4Label = (cmd: string) => meta.hs4labels[cmd] ?? `HS ${cmd}`;
+export const hsLabel = (cmd: string) =>
+  cmd.length === 2 ? (chapLabel.get(cmd) ?? `HS ${cmd}`) : cmd.length === 4 ? hs4Label(cmd) : hs6Label(cmd);
 export const productByCmd = (cmd: string) => products.find((p) => p.cmd === cmd);
 export const isResidualChapter = (c: string) => c === "98" || c === "99";
 
@@ -248,6 +255,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
     const stage: Stage =
       !pm.transit && !isResidualChapter(r0.c) && nHist >= 2 && !flipsAcrossFreight ? "residual" : "comparable";
 
+    // (label resolution handles HS2 / derived HS4 / HS6 uniformly)
     // direction metric
     const primary =
       f.direction === "positive" ? posT
@@ -292,7 +300,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
 
     out.push({
       partner: pm.name, partnerIso: pm.iso3, region: pm.region, transit: pm.transit, tier: pm.tier,
-      chapter: r0.c, cmd: r0.k, cmdLabel: level === 6 ? hs6Label(r0.k) : chapLabel.get(r0.c) ?? `HS ${r0.c}`,
+      chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
       level, category: r0.cat,
       years, peT, uiT, expectedT, signedT, posT, revT, absT,
       boundedAsymmetry, positiveShare,
@@ -341,8 +349,10 @@ export interface Aggregate {
   filter: Filter;
   years: number[];
   channels: Channel[]; // HS2 after all filters
+  channels4: Channel[]; // derived HS4 after all filters
   channels6: Channel[]; // HS6 after all filters
   baseChannels: Channel[]; // HS2 before stage/signal/materiality (for funnel & KPIs)
+  baseChannels4: Channel[];
   baseChannels6: Channel[];
   partners: PartnerAgg[];
   chapters: ChapterAgg[];
@@ -386,8 +396,10 @@ export function aggregate(f: Filter): Aggregate {
   );
 
   const baseChannels = buildChannels(fc, 2, f, yearsInRange);
+  const baseChannels4 = buildChannels(fc, 4, f, yearsInRange);
   const baseChannels6 = buildChannels(fc, 6, f, yearsInRange);
   const channels = applyChannelFilters(baseChannels, f);
+  const channels4 = applyChannelFilters(baseChannels4, f);
   const channels6 = applyChannelFilters(baseChannels6, f);
 
   const dirVal = (c: Channel) =>
@@ -537,7 +549,7 @@ export function aggregate(f: Filter): Aggregate {
   };
 
   return {
-    filter: f, years, channels, channels6, baseChannels, baseChannels6,
+    filter: f, years, channels, channels4, channels6, baseChannels, baseChannels4, baseChannels6,
     partners, chapters, categories, annual, concentration,
     movers: { goods, countries },
     heatmap: { import: heatImport, partners: partners.map((p) => ({ iso3: p.iso3, name: p.name, tier: p.tier })) },

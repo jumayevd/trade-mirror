@@ -169,6 +169,43 @@ async function main() {
     }
   }
 
+  // ---- derived HS4 layer (per reference methodology: HS4 is explicitly derived
+  // from HS6 by truncation; HS2 and HS6 stay isolated) ----
+  const hs4Agg = new Map<string, Map<number, { pe: number; ui: number; uw: number; pw: number }>>();
+  const hs4TopChild = new Map<string, { cmd: string; pe: number }>();
+  for (const r of recs) {
+    if (r.l !== 6) continue;
+    const h4 = r.k.slice(0, 4);
+    const key = `${r.p}|${h4}`;
+    let byY = hs4Agg.get(key);
+    if (!byY) { byY = new Map(); hs4Agg.set(key, byY); }
+    const e = byY.get(r.y) ?? { pe: 0, ui: 0, uw: 0, pw: 0 };
+    e.pe += r.pe; e.ui += r.ui; e.uw += r.uw ?? 0; e.pw += r.pw ?? 0;
+    byY.set(r.y, e);
+    const top = hs4TopChild.get(h4);
+    if (!top || r.pe > top.pe) hs4TopChild.set(h4, { cmd: r.k, pe: r.pe });
+  }
+  const hs4Codes = new Set<string>();
+  for (const [key, byY] of hs4Agg) {
+    const [iso, h4] = key.split("|");
+    hs4Codes.add(h4);
+    const chapter = h4.slice(0, 2);
+    const cat = categoryFor(chapter).key;
+    for (const [yr, e] of byY) {
+      const rec: Rec = { p: iso, k: h4, c: chapter, cat, l: 4, y: yr, pe: e.pe, ui: e.ui };
+      if (e.uw > 0 && e.pw > 0) { rec.uw = e.uw; rec.pw = e.pw; }
+      recs.push(rec);
+    }
+  }
+  // HS4 labels: borrow the largest child's description (disclosed as derived)
+  const hs4labels = Object.fromEntries(
+    [...hs4Codes].sort().map((h4) => {
+      const top = hs4TopChild.get(h4);
+      const childDesc = top ? cleanDesc(hs6Desc.get(top.cmd) ?? "") : "";
+      return [h4, childDesc || `HS ${h4}`];
+    }),
+  );
+
   // ---- HS6 product profiles (across partners) ----
   interface ProductPartner { iso3: string; name: string; tier: Tier; ptnExp: number; uzbImp: number; gap: number; transit: boolean }
   interface Product {
@@ -252,6 +289,19 @@ async function main() {
   // ---- labels for kept HS6 codes ----
   const hs6labels = Object.fromEntries([...keptHs6].sort().map((cmd) => [cmd, cleanDesc(hs6Desc.get(cmd) ?? `HS ${cmd}`)]));
 
+  // ---- orphan flows (dataset overview): one-sided observations that can never
+  // enter the mirror comparison. Never treated as zero gaps — reported separately.
+  let orphanImportValue = 0; // UZB-recorded imports with no partner reference that year
+  let orphanImportCells = 0;
+  for (const cell of cells.values()) {
+    if (cell.cmd.length !== 2) continue;
+    for (const yr of ANALYSIS_YEARS) {
+      const y = cell.byYear.get(yr);
+      if (!y || y.uzbImp <= NOISE) continue;
+      if (y.ptnExp <= NOISE) { orphanImportValue += y.uzbImp; orphanImportCells++; }
+    }
+  }
+
   const chapters = [...new Set(recs.filter((r) => r.l === 2).map((r) => r.c))]
     .sort()
     .map((c) => ({ chapter: c, label: CHAPTER_LABELS[c] ?? `HS ${c}`, category: categoryFor(c).key }));
@@ -266,8 +316,11 @@ async function main() {
     uzbReportingYears: [...uzbReportingYears].sort(),
     partners: partnerMeta.filter((p) => recs.some((r) => r.p === p.iso3)),
     chapters,
+    hs4labels,
     hs6labels,
     categories: HS_SECTIONS.map((s) => ({ key: s.key, label: s.label })),
+    orphans: { importValue: Math.round(orphanImportValue), importCells: orphanImportCells },
+    datasetRows: rows.length,
   };
 
   await write("meta.json", meta);
@@ -276,7 +329,9 @@ async function main() {
   await write("products.json", topProducts);
 
   const hs2n = recs.filter((r) => r.l === 2).length;
+  const hs4n = recs.filter((r) => r.l === 4).length;
   const hs6n = recs.filter((r) => r.l === 6).length;
+  console.log(`  HS4 derived: ${hs4n.toLocaleString()} records · ${Object.keys(hs4labels).length} codes · orphan imports ${(orphanImportValue / 1e9).toFixed(1)}B`);
   console.log(`\nOutputs -> src/data/  (window ${ANALYSIS_START_YEAR}–${ANALYSIS_END_YEAR})`);
   console.log(`  meta.json      ${meta.partners.length} partners · ${chapters.length} chapters · ${Object.keys(hs6labels).length} HS6 products labelled`);
   console.log(`  cells.json     ${recs.length.toLocaleString()} records (HS2 ${hs2n.toLocaleString()} · HS6 ${hs6n.toLocaleString()})`);

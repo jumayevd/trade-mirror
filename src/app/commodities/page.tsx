@@ -1,7 +1,2 @@
-import CommoditiesView from "@/components/views/CommoditiesView";
-
-export const metadata = { title: "HS2 Sectors — Trade Mirror" };
-
-export default function CommoditiesPage() {
-  return <CommoditiesView />;
-}
+﻿import { redirect } from "next/navigation";
+export default function CommoditiesPage() { redirect("/products?level=2"); }

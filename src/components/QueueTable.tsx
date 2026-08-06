@@ -3,12 +3,32 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AnomalyBadge, ClassBadge, EmptyState, EvidenceBadge, MissingValue, RobustnessBadge } from "@/components/ui";
-import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import type { Channel, Filter } from "@/lib/dataset";
+import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
 
-type SortKey = "class" | "gap" | "anomaly" | "evidence" | "persistence";
+/**
+ * Ranked analytical components (Discrepancy & Risk page) — every partner × code
+ * combination at the active HS level under the current filters, with the raw
+ * components of the composite ranking laid out column by column. Each row is a
+ * statistical screening signal, never a finding of wrongdoing.
+ */
+
+export type HsLevel = 2 | 4 | 6;
+
+export const LEVEL_LABELS: Record<HsLevel, string> = {
+  2: "HS2",
+  4: "HS4 · derived",
+  6: "HS6",
+};
+
+const LEVEL_TIPS: Record<HsLevel, string> = {
+  2: "HS2 chapter combinations — coarsest, most stable rollups.",
+  4: "HS4 combinations, derived from HS6 by truncating codes to 4 digits — not independently reported, hence “derived”.",
+  6: "HS6 product combinations — the finest screening granularity in the dataset.",
+};
+
+type SortKey = "class" | "gap" | "anomaly" | "evidence" | "persistence" | "value";
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "class", label: "Class + anomaly (default)" },
@@ -16,6 +36,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "anomaly", label: "Anomaly strength" },
   { key: "evidence", label: "Evidence quality" },
   { key: "persistence", label: "Persistence" },
+  { key: "value", label: "Trade value (partner FOB)" },
 ];
 
 const PAGE_SIZES = [25, 50, 100];
@@ -57,6 +78,7 @@ function sortChannels(rows: Channel[], sort: SortKey): Channel[] {
     evidence: (a, b) => b.evidence - a.evidence || b.anomaly - a.anomaly || abs(b) - abs(a),
     persistence: (a, b) =>
       b.posYears - a.posYears || b.longestPosStreak - a.longestPosStreak || abs(b) - abs(a),
+    value: (a, b) => b.peT - a.peT || abs(b) - abs(a),
   };
   return [...rows].sort(by[sort]);
 }
@@ -71,24 +93,26 @@ function interpretation(c: Channel, f: Filter): string {
   return (
     `For ${c.partner} × HS ${c.cmd}, ${dominant}, leaving a signed discrepancy of ` +
     `${fmtUSD(c.signedT, { sign: true })} at the ${Math.round(f.cif * 100)}% freight assumption ` +
-    `(bounded asymmetry ${fmtPct(c.boundedAsymmetry, 0)}); this pattern is a statistical screening ` +
-    `signal and is not proof of intentional misreporting.`
+    `(bounded asymmetry ${fmtPct(c.boundedAsymmetry, 0)}); this residual unexplained discrepancy ` +
+    `is a statistical screening signal and is not proof of intentional misreporting.`
   );
 }
 
 export default function QueueTable({
-  channels2,
-  channels6,
+  channels,
+  level,
+  onLevelChange,
   filter,
   years,
 }: {
-  channels2: Channel[];
-  channels6: Channel[];
+  /** Combinations at the ACTIVE HS level, already filtered by the engine. */
+  channels: Channel[];
+  level: HsLevel;
+  onLevelChange: (l: HsLevel) => void;
   filter: Filter;
   years: number[];
 }) {
   const { t } = useI18n();
-  const [level, setLevel] = useState<2 | 6>(6);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("class");
   const [pageSize, setPageSize] = useState(25);
@@ -96,19 +120,18 @@ export default function QueueTable({
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const rows = useMemo(() => {
-    const base = level === 6 ? channels6 : channels2;
     const q = query.trim().toLowerCase();
     const searched = q
-      ? base.filter(
+      ? channels.filter(
           (c) =>
             c.partner.toLowerCase().includes(q) ||
             c.partnerIso.toLowerCase().includes(q) ||
             c.cmd.includes(q) ||
             c.cmdLabel.toLowerCase().includes(q),
         )
-      : base;
+      : channels;
     return sortChannels(searched, sort);
-  }, [channels2, channels6, level, query, sort]);
+  }, [channels, query, sort]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -129,18 +152,19 @@ export default function QueueTable({
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
 
   return (
-    <section className="space-y-3">
+    <div className="space-y-3">
       {/* controls */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label="HS level">
-          {([6, 2] as const).map((l) => (
+          {([2, 4, 6] as const).map((l) => (
             <button
               key={l}
-              onClick={() => controls(() => setLevel(l))}
-              className={`px-2.5 py-1.5 text-[12px] font-medium ${level === l ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel)] text-muted hover:text-foreground"}`}
-              title={l === 6 ? "HS6 product channels — the primary screening granularity" : "HS2 chapter channels — coarser, more stable rollups"}
+              onClick={() => controls(() => onLevelChange(l))}
+              aria-pressed={level === l}
+              className={`px-2.5 py-1.5 text-[12px] font-medium whitespace-nowrap ${level === l ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel)] text-muted hover:text-foreground"}`}
+              title={LEVEL_TIPS[l]}
             >
-              HS{l}
+              {LEVEL_LABELS[l]}
             </button>
           ))}
         </div>
@@ -150,7 +174,7 @@ export default function QueueTable({
           value={query}
           onChange={(e) => controls(() => setQuery(e.target.value))}
           placeholder="Search partner, HS code or label…"
-          aria-label="Search the queue"
+          aria-label="Search the ranked components"
           className="w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
@@ -169,18 +193,9 @@ export default function QueueTable({
 
         <span className="tabular text-[12px] text-faint">
           {rows.length === 0
-            ? "0 channels"
-            : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} of ${rows.length.toLocaleString()} channels`}
+            ? "0 combinations"
+            : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} of ${rows.length.toLocaleString()} combinations`}
         </span>
-
-        <button
-          onClick={() => downloadCsv("queue.csv", channelsToCsv(rows, filter))}
-          disabled={rows.length === 0}
-          className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          title="Download every row under the current filters and search (all pages) with the calculation context in the header."
-        >
-          {t("common.exportCsv")} ↓
-        </button>
       </div>
 
       {/* table */}
@@ -188,19 +203,21 @@ export default function QueueTable({
         <EmptyState />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse">
+          <table className="w-full min-w-[1320px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
+                <th className={th} aria-label="Expand" />
                 <th className={th}>Class</th>
                 <th className={th} title="Anomaly strength 0–100 — how unusual the discrepancy is. Independent of data quality.">A</th>
                 <th className={th} title="Evidence quality 0–100 — how reliable and comparable the underlying data is.">E</th>
                 <th className={th}>{t("common.partner")}</th>
-                <th className={th}>HS{level} · {level === 6 ? t("common.product") : t("common.sector")}</th>
+                <th className={th} title={LEVEL_TIPS[level]}>{LEVEL_LABELS[level]} code</th>
                 <th className={thNum} title="Partner-reported exports, FOB.">Partner FOB</th>
                 <th className={thNum} title={`Partner exports × (1 + ${Math.round(filter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
                 <th className={thNum} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
                 <th className={thNum} title="Expected CIF − UZB imports, summed over comparable years. Amber = positive (partner > UZB); blue = reverse (UZB > partner).">Signed</th>
-                <th className={thNum} title="Positive and reverse discrepancies, accumulated separately — never netted away.">Pos / Rev</th>
+                <th className={thNum} title="Positive discrepancy — years where expected CIF exceeded UZB records, accumulated separately, never netted away.">Positive</th>
+                <th className={thNum} title="Reverse discrepancy — years where UZB records exceeded expected CIF, accumulated separately, never netted away.">Reverse</th>
                 <th className={thNum} title="Bounded asymmetry: absolute discrepancy over max(expected CIF, UZB imports), 0–100%.">Asym</th>
                 <th className={th} title="Years with a positive discrepancy out of comparable years, and the longest consecutive streak.">{t("common.persistence")}</th>
                 <th className={th}>{t("filter.robustness")}</th>
@@ -211,6 +228,7 @@ export default function QueueTable({
               {pageRows.map((c) => {
                 const key = keyOf(c);
                 const open = expanded === key;
+                const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
                 return [
                   <tr
                     key={key}
@@ -218,6 +236,7 @@ export default function QueueTable({
                     className="cursor-pointer border-b border-[var(--color-border-soft)] hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]"
                     title="Click to expand per-year detail"
                   >
+                    <td className={`${td} w-6 text-faint`} aria-hidden>{open ? "▾" : "▸"}</td>
                     <td className={td}><ClassBadge cls={c.cls} /></td>
                     <td className={td}><AnomalyBadge score={c.anomaly} /></td>
                     <td className={td}><EvidenceBadge score={c.evidence} /></td>
@@ -230,11 +249,11 @@ export default function QueueTable({
                         {c.partner}
                       </Link>
                     </td>
-                    <td className={`${td} max-w-[260px]`}>
-                      <span className="tabular mr-1.5 text-xs text-faint">{c.cmd}</span>
-                      {c.level === 6 ? (
+                    <td className={`${td} max-w-[280px]`}>
+                      <span className="tabular mr-1.5 font-mono text-xs text-faint">{c.cmd}</span>
+                      {product ? (
                         <Link
-                          href={`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`}
+                          href={`/products/${c.cmd}`}
                           onClick={(e) => e.stopPropagation()}
                           className="hover:underline"
                           title={c.cmdLabel}
@@ -257,10 +276,11 @@ export default function QueueTable({
                     >
                       {fmtUSD(c.signedT, { sign: true })}
                     </td>
-                    <td className={tdNum}>
-                      <span style={{ color: COLORS.positive }} title={`Positive: ${fmtUSDFull(c.posT)}`}>{fmtUSD(c.posT)}</span>
-                      <span className="text-faint"> / </span>
-                      <span style={{ color: COLORS.reverse }} title={`Reverse: ${fmtUSDFull(c.revT)}`}>{fmtUSD(c.revT)}</span>
+                    <td className={tdNum} style={{ color: COLORS.positive }} title={`Positive: ${fmtUSDFull(c.posT)}`}>
+                      {fmtUSD(c.posT)}
+                    </td>
+                    <td className={tdNum} style={{ color: COLORS.reverse }} title={`Reverse: ${fmtUSDFull(c.revT)}`}>
+                      {fmtUSD(c.revT)}
                     </td>
                     <td className={tdNum}>{fmtPct(c.boundedAsymmetry, 0)}</td>
                     <td className={`${td} tabular whitespace-nowrap`} title={`${c.posYears} of ${c.comparableYears} comparable years show a positive discrepancy; longest consecutive streak ${c.longestPosStreak}.`}>
@@ -283,7 +303,7 @@ export default function QueueTable({
                   </tr>,
                   open ? (
                     <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">
-                      <td colSpan={14} className="px-4 py-3">
+                      <td colSpan={16} className="px-4 py-3">
                         <YearDetail c={c} filter={filter} years={years} />
                       </td>
                     </tr>
@@ -334,10 +354,11 @@ export default function QueueTable({
 
       <p className="max-w-3xl text-xs text-faint">
         Values in nominal USD. FOB = partner-reported exports; CIF = Uzbekistan-recorded
-        imports; expected CIF applies the active freight scenario. Missing partner-years are
+        imports; expected CIF applies the active freight scenario. HS4 rows are derived
+        from HS6 by code truncation, not independently reported. Missing partner-years are
         shown as “{t("common.notReported")}”, never as zero. Source: UN Comtrade.
       </p>
-    </section>
+    </div>
   );
 }
 
@@ -355,7 +376,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
       <div>
         <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">
-          Per-year detail · {c.partner} × HS {c.cmd}
+          Per-year detail · {c.partner} × HS <span className="font-mono">{c.cmd}</span>
         </h4>
         <table className="w-full border-collapse">
           <thead>
@@ -421,8 +442,8 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
             </ul>
           ) : (
             <p className="text-muted">
-              No standard alternative-explanation flags apply to this channel; valuation, timing
-              and classification differences can still account for part of the discrepancy.
+              No standard alternative-explanation flags apply to this combination; valuation,
+              timing and classification differences can still account for part of the discrepancy.
             </p>
           )}
         </div>
