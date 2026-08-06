@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
+import Sparkline from "@/components/charts/Sparkline";
 import {
   Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, EmptyState, MissingValue, Pill,
 } from "@/components/ui";
@@ -73,11 +74,10 @@ function aggregateByCode(chs: Channel[], prefix: string): CodeAgg[] {
 function ResidualFlag() {
   return (
     <span
-      className="ml-2 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-medium"
-      style={{ color: COLORS.transit, background: "color-mix(in srgb, var(--color-transit) 10%, transparent)" }}
+      className="ml-2 inline-flex whitespace-nowrap"
       title="Residual HS category (chapters 98–99): special-transaction and confidential codes are not comparable at product level. Shown for transparency only — excluded from residual-stage rankings."
     >
-      residual · transparency only
+      <Pill>residual · transparency only</Pill>
     </span>
   );
 }
@@ -95,7 +95,7 @@ function SortableTh({
 }) {
   const active = sort.key === k;
   return (
-    <th className={`px-3 py-2 font-medium ${align === "right" ? "text-right" : "text-left"}`} style={color ? { color } : undefined}>
+    <th className={`px-3 py-1.5 font-medium ${align === "right" ? "text-right" : "text-left"}`} style={color ? { color } : undefined}>
       <button
         onClick={() => onSort(k)}
         className={`inline-flex items-center gap-1 ${active ? "" : "hover:text-foreground"}`}
@@ -150,12 +150,62 @@ function Pager({
   );
 }
 
+interface Mover {
+  key: string;
+  label: string;
+  total: number;
+  trend: number;
+  series: { y: number; v: number }[];
+}
+
+function MoverList({
+  title, rows, color, onDrill,
+}: {
+  title: string;
+  rows: Mover[];
+  color: string;
+  onDrill: (chapter: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[10.5px] font-medium uppercase tracking-wider text-faint">{title}</p>
+      {rows.length === 0 ? (
+        <p className="text-[12px] text-faint">No chapters in this group under the active filters.</p>
+      ) : (
+        <div className="space-y-1">
+          {rows.map((g) => (
+            <div key={g.key} className="flex items-center gap-3 text-[13px]">
+              <span className="tabular w-6 shrink-0 text-[11px] text-faint">{g.key}</span>
+              <button
+                onClick={() => onDrill(g.key)}
+                className="min-w-0 flex-1 truncate text-left hover:underline"
+                title={`${g.key} · ${g.label} — drill into the chapter's derived HS4 groups`}
+              >
+                {g.label}
+              </button>
+              <span className="tabular w-16 shrink-0 text-right text-muted" title={`Full-window total: ${fmtUSDFull(g.total)}`}>
+                {fmtUSD(g.total)}
+              </span>
+              <span className="shrink-0">
+                <Sparkline data={g.series.map((x) => Math.round(x.v))} color={color} type="line" width={88} height={24} />
+              </span>
+              <span className="tabular w-16 shrink-0 text-right font-medium text-muted" title={`Trend: ${fmtUSDFull(g.trend)} — average of the latest reported years minus the earliest (see footnote)`}>
+                {fmtUSD(g.trend, { sign: true })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* View                                                                */
 /* ------------------------------------------------------------------ */
 
 export default function ProductsView() {
-  const { filter, patch, data } = useFilter();
+  const { filter, patch, data, series } = useFilter();
   const { t } = useI18n();
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
@@ -274,18 +324,32 @@ export default function ProductsView() {
   }, [level, chapterRows, childRows]);
   const compMax = composition[0]?.posT ?? 1;
 
+  // ---- sector dynamics (HS2 only; movers over the full window) ----
+  const dirIsReverse = filter.direction === "reverse";
+  const movers = useMemo(() => {
+    const eligible = series.movers.goods.filter(
+      (g) => !isResidualChapter(g.key) && g.series.length >= 2 && g.total > 0,
+    );
+    return {
+      rising: eligible.filter((g) => g.trend > 0).sort((a, b) => b.trend - a.trend).slice(0, 6),
+      easing: eligible.filter((g) => g.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 6),
+    };
+  }, [series]);
+
   // ---- export: the active-level channel set (partner × code, raw + derived fields) ----
   const activeChannels = level === 2 ? data.channels : level === 4 ? data.channels4 : data.channels6;
   const exportCsv = () =>
     downloadCsv(`products_hs${level}_${filter.from}-${filter.to}.csv`, channelsToCsv(activeChannels, filter));
 
-  // ---- level toggle ----
+  // ---- level toggle (quiet segmented) ----
   const levelBtn = (lv: HsLevel, label: string, tip: string) => (
     <button
       key={lv}
       onClick={() => setToggle(lv)}
-      className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[12px] font-medium ${
-        level === lv ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel-2)] text-muted hover:text-foreground"
+      className={`whitespace-nowrap rounded-md border px-2 py-1 text-[12px] font-medium ${
+        level === lv
+          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+          : "border-[var(--color-border)] text-muted hover:text-foreground"
       }`}
       title={tip}
     >
@@ -296,16 +360,16 @@ export default function ProductsView() {
   const isEmpty = totalRows === 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 1. header + export */}
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wider text-faint">
+        <p className="text-[11px] uppercase tracking-wider text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · HS2 → HS4 (derived) → HS6 hierarchy
         </p>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">{t("nav.products")}</h1>
-            <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
+          <div className="space-y-1.5">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>
+            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
               Where the residual unexplained discrepancy sits in the commodity classification — drill
               from HS2 chapters through derived HS4 groups to HS6 products. Every figure is a
               statistical screening signal, never proof of misreporting.
@@ -314,7 +378,7 @@ export default function ProductsView() {
           <button
             onClick={exportCsv}
             disabled={activeChannels.length === 0}
-            className="rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={`Download all partner × HS${level} channels under the active filters (raw + derived fields, with the calculation context in the header).`}
           >
             {t("common.exportCsv")}
@@ -328,10 +392,10 @@ export default function ProductsView() {
 
       {/* 3. HS level toggle + 4. breadcrumb */}
       <section className="flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex flex-wrap items-center gap-1.5 text-sm" aria-label="HS hierarchy breadcrumb">
+        <nav className="flex flex-wrap items-center gap-1.5 text-[13px]" aria-label="HS hierarchy breadcrumb">
           <button
             onClick={goRoot}
-            className={level === 2 ? "font-semibold" : "text-muted hover:text-foreground hover:underline"}
+            className={level === 2 ? "font-medium" : "text-muted hover:underline"}
             title={filter.hs2 !== "all" ? "Back to all chapters (also clears the HS2 filter)" : "Back to all chapters"}
           >
             HS2 · all chapters
@@ -341,7 +405,7 @@ export default function ProductsView() {
               <span className="text-faint">›</span>
               <button
                 onClick={() => drillChapter(effChapter)}
-                className={level === 4 && !hs4 ? "font-semibold" : "text-muted hover:text-foreground hover:underline"}
+                className={level === 4 && !hs4 ? "font-medium" : "text-muted hover:underline"}
                 title={`Chapter ${effChapter} — show its derived HS4 groups`}
               >
                 <span className="tabular">{effChapter}</span> {hsLabel(effChapter)}
@@ -351,14 +415,14 @@ export default function ProductsView() {
           {hs4 && level === 6 && (
             <>
               <span className="text-faint">›</span>
-              <span className="font-semibold" title="HS4 · derived — labels borrow the largest child product's description">
+              <span className="font-medium" title="HS4 · derived — labels borrow the largest child product's description">
                 <span className="tabular">{hs4}</span> {hsLabel(hs4)}
               </span>
             </>
           )}
           {level !== 2 && !effChapter && !hs4 && <Pill>flat view — all HS{level} codes in scope</Pill>}
         </nav>
-        <div className="flex items-center gap-1 rounded-md bg-[var(--color-panel-2)] p-0.5" role="group" aria-label="HS level">
+        <div className="flex items-center gap-1" role="group" aria-label="HS level">
           {levelBtn(2, "HS2", "2-digit chapters — the coarsest, most comparable level")}
           {levelBtn(4, "HS4 · derived", "4-digit groups derived from HS6 by truncation — not reported directly; labels borrow the largest child product's description")}
           {levelBtn(6, "HS6", "6-digit products — finest detail; subject to the HS6 materiality floor")}
@@ -414,22 +478,22 @@ export default function ProductsView() {
           />
           <div className="card space-y-1.5 p-4">
             {composition.map((r) => (
-              <div key={r.cmd} className="flex items-center gap-3 text-sm">
-                <span className="tabular w-14 shrink-0 text-xs text-faint">{r.cmd}</span>
-                <span className="w-48 shrink-0 truncate text-[13px]" title={r.label}>
+              <div key={r.cmd} className="flex items-center gap-3 text-[13px]">
+                <span className="tabular w-14 shrink-0 text-[11px] text-faint">{r.cmd}</span>
+                <span className="w-48 shrink-0 truncate" title={r.label}>
                   {r.label}
                 </span>
-                <span className="relative h-4 min-w-0 flex-1 overflow-hidden rounded-sm bg-[var(--color-panel-2)]">
+                <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-sm bg-[var(--color-panel-2)]">
                   <span
                     className="absolute inset-y-0 left-0 rounded-sm"
-                    style={{ width: `${Math.max(1.5, (r.posT / compMax) * 100)}%`, background: COLORS.positive, opacity: 0.8 }}
+                    style={{ width: `${Math.max(1.5, (r.posT / compMax) * 100)}%`, background: COLORS.positive, opacity: 0.55 }}
                     title={fmtUSDFull(r.posT)}
                   />
                 </span>
-                <span className="tabular w-20 shrink-0 text-right text-[13px] font-medium" style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>
+                <span className="tabular w-20 shrink-0 text-right font-medium" title={fmtUSDFull(r.posT)}>
                   {fmtUSD(r.posT)}
                 </span>
-                <span className="tabular w-12 shrink-0 text-right text-xs text-faint" title="Share of the node's positive discrepancy">
+                <span className="tabular w-12 shrink-0 text-right text-[11px] text-faint" title="Share of the node's positive discrepancy">
                   {node.posT > 0 ? fmtPct(r.posT / node.posT, 0) : "—"}
                 </span>
               </div>
@@ -455,24 +519,24 @@ export default function ProductsView() {
         ) : level === 2 ? (
           <>
             <div className="card overflow-x-auto">
-              <table className="w-full min-w-[960px] text-sm">
+              <table className="w-full min-w-[960px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
-                    <th className="px-3 py-2 font-medium">Code</th>
-                    <th className="px-3 py-2 font-medium">Chapter</th>
+                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] uppercase tracking-wider text-faint">
+                    <th className="px-3 py-1.5 font-medium">Code</th>
+                    <th className="px-3 py-1.5 font-medium">Chapter</th>
                     <SortableTh label="Comparable trade" k="peT" sort={sort} onSort={onSort} title="Partner-reported exports (FOB) in the chapter — the comparison base" />
                     <SortableTh label="Positive" k="posT" sort={sort} onSort={onSort} color={COLORS.positive} title="Positive discrepancy: partner > UZB after freight adjustment" />
                     <SortableTh label="Reverse" k="revT" sort={sort} onSort={onSort} color={COLORS.reverse} title="Reverse discrepancy: UZB records more than the partner reported" />
                     <SortableTh label="Gap rate" k="gapRate" sort={sort} onSort={onSort} title="Positive discrepancy as a share of expected CIF value" />
                     <SortableTh label="Channels" k="channels" sort={sort} onSort={onSort} title="Partner × chapter observation channels under the active filters" />
-                    <th className="px-3 py-2 font-medium">Top partner</th>
+                    <th className="px-3 py-1.5 font-medium">Top partner</th>
                   </tr>
                 </thead>
                 <tbody className="zebra">
                   {pageChapters.map((c) => (
                     <tr key={c.chapter} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                      <td className="tabular px-3 py-2 text-xs text-faint">{c.chapter}</td>
-                      <td className="max-w-[300px] px-3 py-2">
+                      <td className="tabular px-3 py-1.5 text-[11px] text-faint">{c.chapter}</td>
+                      <td className="max-w-[300px] px-3 py-1.5">
                         <button
                           onClick={() => drillChapter(c.chapter)}
                           className="text-left font-medium hover:underline"
@@ -482,20 +546,20 @@ export default function ProductsView() {
                         </button>
                         {c.residual && <ResidualFlag />}
                       </td>
-                      <td className="tabular px-3 py-2 text-right text-muted" title={fmtUSDFull(c.peT)}>
+                      <td className="tabular px-3 py-1.5 text-right text-muted" title={fmtUSDFull(c.peT)}>
                         {c.peT > 0 ? fmtUSD(c.peT) : <MissingValue />}
                       </td>
-                      <td className="tabular px-3 py-2 text-right font-semibold" style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>
+                      <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>
                         {fmtUSD(c.posT)}
                       </td>
-                      <td className="tabular px-3 py-2 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(c.revT)}>
+                      <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(c.revT)}>
                         {fmtUSD(c.revT)}
                       </td>
-                      <td className="tabular px-3 py-2 text-right text-muted" title="Positive discrepancy ÷ expected CIF value of the chapter">
+                      <td className="tabular px-3 py-1.5 text-right text-muted" title="Positive discrepancy ÷ expected CIF value of the chapter">
                         {fmtPct(c.gapRate, 1)}
                       </td>
-                      <td className="tabular px-3 py-2 text-right text-muted">{fmtNum(c.channels)}</td>
-                      <td className="px-3 py-2">
+                      <td className="tabular px-3 py-1.5 text-right text-muted">{fmtNum(c.channels)}</td>
+                      <td className="px-3 py-1.5">
                         {c.topPartner ? (
                           <Link href={`/partners/${c.topPartner.iso3.toLowerCase()}`} className="hover:underline" title={`Largest channel in this chapter: ${fmtUSDFull(c.topPartner.value)}`}>
                             {c.topPartner.name}
@@ -514,11 +578,11 @@ export default function ProductsView() {
         ) : (
           <>
             <div className="card overflow-x-auto">
-              <table className="w-full min-w-[960px] text-sm">
+              <table className="w-full min-w-[960px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
-                    <th className="px-3 py-2 font-medium">Code</th>
-                    <th className="px-3 py-2 font-medium">{t("common.product")}</th>
+                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] uppercase tracking-wider text-faint">
+                    <th className="px-3 py-1.5 font-medium">Code</th>
+                    <th className="px-3 py-1.5 font-medium">{t("common.product")}</th>
                     <SortableTh label="Reported exports" k="peT" sort={sort} onSort={onSort} title="Partner-reported exports (FOB), summed across partners" />
                     <SortableTh label="UZB imports" k="uiT" sort={sort} onSort={onSort} title="Uzbekistan-recorded imports (CIF), summed across partners" />
                     <SortableTh label="Positive" k="posT" sort={sort} onSort={onSort} color={COLORS.positive} title="Positive discrepancy: partner > UZB after freight adjustment" />
@@ -532,8 +596,8 @@ export default function ProductsView() {
                     const profiled = r.cmd.length === 6 ? productByCmd(r.cmd) : undefined;
                     return (
                       <tr key={r.cmd} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                        <td className="tabular px-3 py-2 text-xs text-faint">{r.cmd}</td>
-                        <td className="max-w-[300px] px-3 py-2">
+                        <td className="tabular px-3 py-1.5 text-[11px] text-faint">{r.cmd}</td>
+                        <td className="max-w-[300px] px-3 py-1.5">
                           {level === 4 ? (
                             <button
                               onClick={() => drillHs4(r.cmd)}
@@ -553,20 +617,20 @@ export default function ProductsView() {
                           )}
                           {r.residual && <ResidualFlag />}
                         </td>
-                        <td className="tabular px-3 py-2 text-right text-muted" title={fmtUSDFull(r.peT)}>
+                        <td className="tabular px-3 py-1.5 text-right text-muted" title={fmtUSDFull(r.peT)}>
                           {r.peT > 0 ? fmtUSD(r.peT) : <MissingValue />}
                         </td>
-                        <td className="tabular px-3 py-2 text-right text-muted" title={fmtUSDFull(r.uiT)}>
+                        <td className="tabular px-3 py-1.5 text-right text-muted" title={fmtUSDFull(r.uiT)}>
                           {r.uiT > 0 ? fmtUSD(r.uiT) : <MissingValue />}
                         </td>
-                        <td className="tabular px-3 py-2 text-right font-semibold" style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>
+                        <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>
                           {fmtUSD(r.posT)}
                         </td>
-                        <td className="tabular px-3 py-2 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(r.revT)}>
+                        <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(r.revT)}>
                           {fmtUSD(r.revT)}
                         </td>
-                        <td className="tabular px-3 py-2 text-right text-muted">{fmtNum(r.partners)}</td>
-                        <td className="px-3 py-2">
+                        <td className="tabular px-3 py-1.5 text-right text-muted">{fmtNum(r.partners)}</td>
+                        <td className="px-3 py-1.5">
                           <span className="flex items-center gap-1.5">
                             <AnomalyBadge score={r.anomaly} />
                             <EvidenceBadge score={r.evidence} />
@@ -582,6 +646,36 @@ export default function ProductsView() {
           </>
         )}
       </section>
+
+      {/* 5d. sector dynamics (HS2 level only) */}
+      {level === 2 && !isEmpty && (movers.rising.length > 0 || movers.easing.length > 0) && (
+        <section>
+          <SectionTitle
+            title="Sector dynamics"
+            desc={`Chapters where the ${dirIsReverse ? "reverse" : "positive"} discrepancy is growing or receding over the full ${meta.window.start}–${meta.window.end} window (period filter ignored; other filters apply). Top 6 each way.`}
+          />
+          <div className="card grid gap-x-8 gap-y-4 p-4 lg:grid-cols-2">
+            <MoverList
+              title="Rising"
+              rows={movers.rising}
+              color={dirIsReverse ? COLORS.reverse : COLORS.positive}
+              onDrill={drillChapter}
+            />
+            <MoverList
+              title="Easing"
+              rows={movers.easing}
+              color={COLORS.axis}
+              onDrill={drillChapter}
+            />
+          </div>
+          <p className="mt-2 max-w-3xl text-[11px] text-faint">
+            Trend = average of the last (up to three) reported years minus the average of the first (up to
+            three), on the annual {dirIsReverse ? "reverse" : "positive"} discrepancy. Residual chapters
+            (98–99) and chapters with fewer than two reported years are excluded. A rising residual
+            discrepancy is a screening signal, not evidence of misreporting.
+          </p>
+        </section>
+      )}
 
       {/* 6. footnote */}
       <p className="max-w-3xl text-xs text-faint">

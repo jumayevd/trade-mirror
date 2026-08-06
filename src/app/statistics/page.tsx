@@ -1,7 +1,2 @@
-import StatisticsView from "@/components/views/StatisticsView";
-
-export const metadata = { title: "Statistics & Thresholds — Trade Mirror" };
-
-export default function StatisticsPage() {
-  return <StatisticsView />;
-}
+﻿import { redirect } from "next/navigation";
+export default function StatisticsPage() { redirect("/risk"); }

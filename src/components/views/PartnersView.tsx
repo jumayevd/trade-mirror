@@ -57,28 +57,78 @@ function Pager({
   );
 }
 
-/** Segmented toggle in the house style (same look as the year quick-range buttons). */
+/** Quiet segmented toggle — bordered buttons, active = primary fill. */
 function Segmented<T extends string>({
   value, options, onChange, ariaLabel,
 }: {
   value: T; options: { key: T; label: string; tip?: string }[]; onChange: (v: T) => void; ariaLabel: string;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-panel-2)] p-1" role="group" aria-label={ariaLabel}>
+    <div className="inline-flex items-center gap-1" role="group" aria-label={ariaLabel}>
       {options.map((o) => (
         <button
           key={o.key}
           onClick={() => onChange(o.key)}
           title={o.tip}
-          className={`rounded-md px-2.5 py-1 text-[12px] font-medium ${
+          className={`rounded-md border px-2 py-1 text-[12px] font-medium ${
             value === o.key
-              ? "bg-[var(--color-primary)] text-white"
-              : "text-muted hover:text-foreground"
+              ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+              : "border-[var(--color-border)] text-muted hover:text-foreground"
           }`}
         >
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dynamics (re-homed from the deleted Trends page)                        */
+/* ---------------------------------------------------------------------- */
+
+interface CountryMover {
+  key: string; label: string; iso3: string; total: number; trend: number;
+  series: { y: number; v: number }[];
+}
+
+/** One quiet column of movers — Rising or Easing. */
+function MoverColumn({
+  title, rows, color, dirLabel,
+}: {
+  title: string; rows: CountryMover[]; color: string; dirLabel: string;
+}) {
+  return (
+    <div className="card p-3.5">
+      <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-faint">{title}</div>
+      {rows.length === 0 ? (
+        <p className="py-4 text-center text-[12px] text-faint">No partners with this trend under the active filters.</p>
+      ) : (
+        <ul className="divide-y divide-[var(--color-border-soft)]">
+          {rows.map((m) => (
+            <li key={m.key} className="flex items-center gap-3 py-1.5">
+              <Link href={`/partners/${m.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-[13px] font-medium hover:underline">
+                {m.label}
+              </Link>
+              <span className="tabular w-16 shrink-0 text-right text-[12px] text-muted"
+                title={`Cumulative ${dirLabel} discrepancy over the full window: ${fmtUSDFull(m.total)}`}>
+                {fmtUSD(m.total)}
+              </span>
+              <span className="shrink-0">
+                {m.series.length >= 2 ? (
+                  <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={88} height={26} />
+                ) : (
+                  <span className="inline-block w-[88px] text-center text-[10.5px] text-faint" title="Fewer than two reported years — no trend can be drawn.">—</span>
+                )}
+              </span>
+              <span className="tabular w-16 shrink-0 text-right text-[12px] font-medium" style={{ color }}
+                title={`Trend: mean of the most recent reported years minus mean of the earliest reported years (${dirLabel} direction, full window): ${fmtUSDFull(m.trend)}`}>
+                {fmtUSD(m.trend, { sign: true })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -147,14 +197,28 @@ export default function PartnersView() {
       s.includes(iso) ? s.filter((x) => x !== iso) : s.length >= MAX_COMPARE ? s : [...s, iso],
     );
 
+  /* ------------------------------------------------------------------ */
+  /* Dynamics — full-window country movers (engine already excludes      */
+  /* lapsed reporters, whose apparent declines are reporting artifacts)  */
+  /* ------------------------------------------------------------------ */
+  const risers = useMemo(
+    () => series.movers.countries.filter((m) => m.trend > 0).sort((a, b) => b.trend - a.trend).slice(0, 6),
+    [series.movers.countries],
+  );
+  const easers = useMemo(
+    () => series.movers.countries.filter((m) => m.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 6),
+    [series.movers.countries],
+  );
+  const dirLabel = filter.direction === "reverse" ? "reverse" : "positive";
+
   const exportCsv = () =>
     downloadCsv("country_analysis_hs2_channels.csv", channelsToCsv(data.channels, filter));
 
   const K = 1 + filter.cif;
 
-  const th = "px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wider text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
-  const td = "px-2 py-2 align-middle text-[13px]";
+  const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
 
   const sortBtn = (k: SortKey, label: string) => (
@@ -231,7 +295,7 @@ export default function PartnersView() {
                   <td className={tdNum} title="Positive discrepancy / partner-reported exports.">{fmtPct(gapRate(p), 0)}</td>
                   <td className={tdNum} title={p.lapse ? `Reported ${p.reportedYears.length} year(s); stopped after ${p.lastReportedYear}. Missing years are not zero gaps.` : `Reported in ${p.reportedYears.length} of ${meta.years.length} window years.`}>
                     {fmtPct(p.coverage, 0)}
-                    {p.lapse && <span className="ml-1 text-[10px]" style={{ color: "#b45309" }}>⏹ {p.lastReportedYear}</span>}
+                    {p.lapse && <span className="ml-1 text-[10px]" style={{ color: COLORS.warn }}>⏹ {p.lastReportedYear}</span>}
                   </td>
                   <td className={`${td} max-w-[220px]`}>
                     {topCh ? (
@@ -256,16 +320,16 @@ export default function PartnersView() {
     );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 1. header */}
-      <section className="space-y-2">
+      <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-faint">
+          <div className="space-y-1.5">
+            <p className="text-[10.5px] uppercase tracking-wider text-faint">
               Explore · country screening · UN Comtrade · {meta.window.start}–{meta.window.end}
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight">{t("nav.partners")}</h1>
-            <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
+            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
               Where the residual unexplained discrepancies sit geographically, and how each partner
               country ranks under the active filters. Positive (amber) means the partner reported more
               exports than Uzbekistan recorded as imports; reverse (blue) means Uzbekistan recorded
@@ -276,7 +340,7 @@ export default function PartnersView() {
           <button
             onClick={exportCsv}
             disabled={data.channels.length === 0}
-            className="rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title="Download the underlying country × HS2 channels for the active filters, with the calculation context in the header."
           >
             {t("common.exportCsv")} ↓
@@ -342,7 +406,7 @@ export default function PartnersView() {
             label="High-tier reporters"
             value={String(highTier)}
             sub={`of ${data.partners.length} partners in view`}
-            accent="#15803d"
+            accent={COLORS.ok}
             info="Partners in view whose Comtrade reporting is complete and consistent (tier High) — mirror gaps with them are least likely to be reporting artifacts."
           />
           <Stat
@@ -361,7 +425,7 @@ export default function PartnersView() {
         </div>
       </section>
 
-      {/* 7. compare panel (rendered as soon as anything is selected) */}
+      {/* 4. compare panel (rendered as soon as anything is selected) */}
       {compare.length > 0 && (
         <section className="card p-4">
           <SectionTitle
@@ -370,7 +434,7 @@ export default function PartnersView() {
             right={
               <button
                 onClick={() => setSel([])}
-                className="rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground"
+                className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground"
               >
                 Clear ✕
               </button>
@@ -431,7 +495,7 @@ export default function PartnersView() {
         </section>
       )}
 
-      {/* 4. country ranking (below the map; in Table mode it already IS the hero) */}
+      {/* 5. country ranking (below the map; in Table mode it already IS the hero) */}
       {heroMode === "map" && (
         <section className="space-y-3">
           <SectionTitle
@@ -448,7 +512,29 @@ export default function PartnersView() {
         </section>
       )}
 
-      {/* 5. summary statistics by year */}
+      {/* 6. dynamics (re-homed from the former Trends page) */}
+      <section className="space-y-3">
+        <SectionTitle
+          title="Dynamics"
+          desc={`Partners where the ${dirLabel} discrepancy is building up or easing off — top 6 each way by trend over the full ${meta.window.start}–${meta.window.end} window.`}
+        />
+        {risers.length === 0 && easers.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            <MoverColumn title="Rising" rows={risers} color={COLORS.positive} dirLabel={dirLabel} />
+            <MoverColumn title="Easing" rows={easers} color={COLORS.ok} dirLabel={dirLabel} />
+          </div>
+        )}
+        <p className="max-w-3xl text-xs text-faint">
+          Trend compares the mean of the most recent reported years with the earliest reported years
+          over the full {meta.window.start}–{meta.window.end} window (independent of the selected
+          period); partners that stopped reporting to Comtrade are excluded, since their apparent
+          declines would be reporting artifacts, not real easing. Source: UN Comtrade.
+        </p>
+      </section>
+
+      {/* 7. summary statistics by year */}
       <section className="space-y-3">
         <SectionTitle
           title="Summary statistics by year"
@@ -508,7 +594,7 @@ export default function PartnersView() {
         </p>
       </section>
 
-      {/* 6. summary by country */}
+      {/* 8. summary by country */}
       <section className="space-y-3">
         <SectionTitle
           title="Summary by country"

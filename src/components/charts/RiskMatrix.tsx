@@ -35,15 +35,15 @@ function quadrantAreas() {
       xAxis: x0,
       yAxis: y0,
       itemStyle: { color: faint(color, alpha) },
-      label: { show: true, position: pos, color: faint(color, 0.75), fontSize: 11, fontWeight: 600 as const },
+      label: { show: true, position: pos, color: "#8a948e", fontSize: 10, fontWeight: 500 as const },
     },
     { xAxis: x1, yAxis: y1 },
   ];
   return [
-    area("Investigate", E_THRESHOLD, A_THRESHOLD, 100, 100, CLASS_COLORS.investigate, 0.045, "insideTopRight"),
-    area("Verify data first", 0, A_THRESHOLD, E_THRESHOLD, 100, CLASS_COLORS.verify, 0.05, "insideTopLeft"),
+    area("Investigate", E_THRESHOLD, A_THRESHOLD, 100, 100, CLASS_COLORS.investigate, 0.04, "insideTopRight"),
+    area("Verify data first", 0, A_THRESHOLD, E_THRESHOLD, 100, CLASS_COLORS.verify, 0.04, "insideTopLeft"),
     area("Monitor", E_THRESHOLD, 0, 100, A_THRESHOLD, CLASS_COLORS.monitor, 0.04, "insideBottomRight"),
-    area("Low priority", 0, 0, E_THRESHOLD, A_THRESHOLD, CLASS_COLORS.low, 0.05, "insideBottomLeft"),
+    area("Low priority", 0, 0, E_THRESHOLD, A_THRESHOLD, CLASS_COLORS.low, 0.04, "insideBottomLeft"),
   ];
 }
 
@@ -76,7 +76,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
       markLine: {
         silent: true,
         symbol: "none",
-        lineStyle: { type: "dashed" as const, color: "#c4ccc6", width: 1 },
+        lineStyle: { type: "dashed" as const, color: COLORS.axis, width: 1 },
         label: { color: COLORS.axis, fontSize: 10 },
         data: [
           { xAxis: E_THRESHOLD, label: { formatter: `E ${E_THRESHOLD}` } },
@@ -90,22 +90,22 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
       z: 2,
       data: byClass.get(cls) as never,
       itemStyle: {
-        color: `${CLASS_COLORS[cls]}59`, // ~35% alpha fill
+        color: `${CLASS_COLORS[cls]}8c`, // ~55% alpha fill
         borderColor: CLASS_COLORS[cls],
         borderWidth: 1,
       },
-      emphasis: { itemStyle: { color: `${CLASS_COLORS[cls]}8c`, borderWidth: 1.5 } },
+      emphasis: { itemStyle: { color: `${CLASS_COLORS[cls]}b3`, borderWidth: 1 } },
     }));
 
     return {
       backgroundColor: "transparent",
       legend: {
-        top: 4,
+        top: 0,
         left: "center",
         icon: "circle",
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: { color: COLORS.text, fontSize: 12 },
+        textStyle: { color: COLORS.text, fontSize: 11 },
         data: presentClasses.map((cls) => CLASS_LABELS[cls].label),
       },
       grid: { left: 52, right: 28, top: 44, bottom: 48, containLabel: true },
@@ -117,7 +117,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
         nameLocation: "middle",
         nameGap: 28,
         nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-        axisLabel: { color: COLORS.axis },
+        axisLabel: { color: COLORS.axis, fontSize: 10 },
         splitLine: { lineStyle: { color: COLORS.grid } },
         axisLine: { lineStyle: { color: COLORS.grid } },
       },
@@ -129,7 +129,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
         nameLocation: "middle",
         nameGap: 38,
         nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-        axisLabel: { color: COLORS.axis },
+        axisLabel: { color: COLORS.axis, fontSize: 10 },
         splitLine: { lineStyle: { color: COLORS.grid } },
         axisLine: { show: false },
       },

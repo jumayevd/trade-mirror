@@ -2,10 +2,11 @@
 
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
+import { COLORS } from "@/lib/format";
 
 export default function Sparkline({
   data,
-  color = "#f5b13d",
+  color = COLORS.positive,
   height = 34,
   width = 120,
   type = "line",
@@ -23,7 +24,7 @@ export default function Sparkline({
           data,
           showSymbol: false,
           smooth: true,
-          lineStyle: { color, width: 1.6 },
+          lineStyle: { color, width: 1.5 },
           areaStyle: { color, opacity: 0.12 },
         }
       : {

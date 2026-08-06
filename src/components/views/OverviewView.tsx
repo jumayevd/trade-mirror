@@ -48,39 +48,31 @@ export default function OverviewView() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* 1. hero: eyebrow · H1 · subtitle · export · disclaimer · ladder */}
-      <section className="space-y-3">
+      <section className="space-y-2.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-faint">
+          <div className="space-y-1.5">
+            <p className="text-[11px] uppercase tracking-wider text-faint">
               UN Comtrade · {meta.window.start}–{meta.window.end} · statistical reconciliation &amp; risk screening
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-[32px] sm:leading-tight">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
               {t("nav.overview")}
             </h1>
-            <p className="max-w-3xl text-[15px] leading-relaxed text-muted">{t("ov.question")}</p>
+            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">{t("ov.question")}</p>
           </div>
           <button
             onClick={exportCsv}
-            className="no-print shrink-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-1.5 text-[13px] font-medium text-foreground hover:border-[var(--color-primary)]"
+            className="no-print shrink-0 rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground"
             title="All country × HS6 channels under the active filters, with raw and derived fields, data version and filter context."
           >
             {t("common.exportCsv")} ↓
           </button>
         </div>
-        <p className="max-w-3xl text-sm leading-relaxed text-muted">
-          Every trade flow is recorded at least twice — as a partner&apos;s export and as Uzbekistan&apos;s
-          import. This platform systematically detects where the two diverge, tests how robust and
-          well-evidenced each divergence is, and prioritises channels for further review.
+        <p className="max-w-3xl border-l-2 border-l-[var(--color-border)] pl-3 text-[13px] leading-relaxed text-muted">
+          {t("ov.disclaimer")}
         </p>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-muted">
-          <strong className="text-foreground">{t("ov.disclaimer")}</strong>
-        </p>
-        <div className="card p-4">
-          <h2 className="mb-2 text-sm font-semibold">{t("ov.ladder")}</h2>
-          <EvidenceLadder compact />
-        </div>
+        <EvidenceLadder compact />
       </section>
 
       {/* 2. filters + calculation context */}
@@ -131,12 +123,12 @@ export default function OverviewView() {
             info="HS6 codes retained after the materiality floors documented on the Data Quality page." />
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <div className="card p-4">
+          <div className="card p-3.5">
             <div className="mb-1.5 flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">Source &amp; versioning</h3>
               <InfoTip text="Every figure on the site is computed from this single snapshot; the identifiers appear in the context line and in every CSV export." />
             </div>
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="text-[13px] leading-relaxed text-muted">
               UN Comtrade annual trade data (HS2 + HS6), data version{" "}
               <span className="tabular font-medium text-foreground">{DATA_VERSION}</span>, methodology{" "}
               <span className="tabular font-medium text-foreground">v{METHODOLOGY_VERSION}</span>. The
@@ -147,12 +139,12 @@ export default function OverviewView() {
               to UN Comtrade, so no mirror comparison is possible for it.
             </p>
           </div>
-          <div className="card p-4">
+          <div className="card p-3.5">
             <div className="mb-1.5 flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold">Orphan flows — excluded, never zero</h3>
               <InfoTip text="An orphan flow is an Uzbekistan-recorded import with no partner-reported mirror. Without a second record there is nothing to reconcile, so it is excluded rather than compared against a fabricated zero." />
             </div>
-            <p className="text-sm leading-relaxed text-muted">
+            <p className="text-[13px] leading-relaxed text-muted">
               <span className="tabular font-medium text-foreground">{fmtUSD(meta.orphans.importValue)}</span>{" "}
               of Uzbekistan-recorded imports (
               <span className="tabular">{fmtNum(meta.orphans.importCells)}</span> country-chapter-year
@@ -229,17 +221,17 @@ export default function OverviewView() {
       </section>
 
       {/* 9. what can / cannot be concluded */}
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="card p-4">
-          <h3 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-quality)" }}>{t("ov.can")}</h3>
-          <ul className="space-y-2 text-sm text-muted">
-            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span style={{ color: "var(--color-quality)" }}>✓</span><span>{x}</span></li>)}
+      <section className="grid gap-3 md:grid-cols-2">
+        <div className="card border-l-2 border-l-[var(--color-quality)] p-4">
+          <h3 className="mb-2 text-sm font-semibold">{t("ov.can")}</h3>
+          <ul className="space-y-2 text-[13px] text-muted">
+            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px]" style={{ color: "var(--color-quality)" }}>✓</span><span>{x}</span></li>)}
           </ul>
         </div>
-        <div className="card p-4">
-          <h3 className="mb-2 text-sm font-semibold text-[var(--color-investigate)]">{t("ov.cannot")}</h3>
-          <ul className="space-y-2 text-sm text-muted">
-            {CANNOT.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[var(--color-investigate)]">✕</span><span>{x}</span></li>)}
+        <div className="card border-l-2 border-l-[var(--color-investigate)] p-4">
+          <h3 className="mb-2 text-sm font-semibold">{t("ov.cannot")}</h3>
+          <ul className="space-y-2 text-[13px] text-muted">
+            {CANNOT.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px] text-[var(--color-investigate)]">✕</span><span>{x}</span></li>)}
           </ul>
         </div>
       </section>
@@ -274,7 +266,7 @@ function TopCounterparts() {
   }, [data, mode, filter.direction]);
 
   const barColor = (v: number) =>
-    mode === "trade" ? "#75847b"
+    mode === "trade" ? COLORS.axis
       : filter.direction === "reverse" ? COLORS.reverse
         : filter.direction === "net" ? (v >= 0 ? COLORS.positive : COLORS.reverse)
           : COLORS.positive;
@@ -295,21 +287,21 @@ function TopCounterparts() {
       },
       xAxis: {
         type: "value",
-        axisLabel: { color: COLORS.axis, formatter: (v: number) => fmtUSD(v) },
+        axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
         splitLine: { lineStyle: { color: COLORS.grid } },
         axisLine: { show: false },
       },
       yAxis: {
         type: "category",
         data: ordered.map((r) => (r.transit ? `${r.name} ⇄` : r.name)),
-        axisLabel: { color: COLORS.text, fontSize: 12 },
+        axisLabel: { color: COLORS.text, fontSize: 10 },
         axisLine: { lineStyle: { color: COLORS.grid } },
         axisTick: { show: false },
       },
       series: [
         {
           type: "bar",
-          data: ordered.map((r) => ({ value: Math.round(r.value), itemStyle: { color: barColor(r.value), borderRadius: [0, 3, 3, 0] } })),
+          data: ordered.map((r) => ({ value: Math.round(r.value), itemStyle: { color: barColor(r.value), borderRadius: [0, 2, 2, 0] } })),
           barMaxWidth: 18,
           cursor: "pointer",
         },
@@ -329,7 +321,7 @@ function TopCounterparts() {
 
   const modeBtn = (m: RankMode, label: string, tip: string) => (
     <button key={m} onClick={() => setMode(m)} title={tip}
-      className={`rounded-md px-2.5 py-1 text-[12px] font-medium ${mode === m ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel-2)] text-muted hover:text-foreground"}`}>
+      className={`rounded-md border px-2 py-1 text-[12px] font-medium ${mode === m ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[var(--color-border)] text-muted hover:text-foreground"}`}>
       {label}
     </button>
   );
@@ -392,8 +384,8 @@ function UncBar({ low, central, high }: { low: number; central: number; high: nu
   return (
     <div className="min-w-[260px] flex-1">
       <div className="relative h-8 overflow-hidden rounded-md bg-[var(--color-panel-2)]">
-        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(high), background: "color-mix(in srgb, var(--color-positive) 18%, transparent)" }} />
-        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(low), background: "color-mix(in srgb, var(--color-positive) 38%, transparent)" }} />
+        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(high), background: "color-mix(in srgb, var(--color-positive) 20%, transparent)" }} />
+        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(low), background: "color-mix(in srgb, var(--color-positive) 40%, transparent)" }} />
         <div className="absolute inset-y-0 w-[3px] bg-[var(--color-positive)]" style={{ left: pct(central) }} title={`Central (10%): ${fmtUSD(central)}`} />
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-faint">
@@ -411,7 +403,7 @@ function Funnel({ steps }: { steps: { label: string; count: number; value: numbe
         <div key={s.label} className="flex items-center gap-3">
           <span className="w-52 shrink-0 truncate text-sm text-muted" title={s.note}>{s.label}</span>
           <div className="h-6 flex-1 overflow-hidden rounded bg-[var(--color-panel-2)]">
-            <div className="flex h-full items-center rounded bg-[color-mix(in_srgb,var(--color-primary)_22%,transparent)] px-2 text-[11px] font-medium text-[var(--color-primary)]"
+            <div className="flex h-full items-center rounded bg-[color-mix(in_srgb,var(--color-primary)_15%,transparent)] px-2 text-[11px] font-medium text-[var(--color-primary)]"
               style={{ width: `${Math.max(4, (s.count / max) * 100)}%` }}>
               {s.count.toLocaleString()}
             </div>

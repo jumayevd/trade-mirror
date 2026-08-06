@@ -10,24 +10,24 @@ export function Stat({
   label: string; value: string; sub?: string; accent?: string; info?: string; onClick?: () => void;
 }) {
   return (
-    <div className={`card p-4 ${onClick ? "card-hover cursor-pointer" : ""}`} onClick={onClick}
+    <div className={`card p-3.5 ${onClick ? "card-hover cursor-pointer" : ""}`} onClick={onClick}
       role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-faint">{label}</div>
+        <div className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-faint">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      <div className="tabular mt-1.5 text-[26px] font-semibold leading-tight" style={accent ? { color: accent } : undefined}>
+      <div className="tabular mt-1 text-[21px] font-semibold leading-tight" style={accent ? { color: accent } : undefined}>
         {value}
       </div>
-      {sub && <div className="mt-1 text-[13px] text-muted">{sub}</div>}
+      {sub && <div className="mt-0.5 text-xs leading-snug text-muted">{sub}</div>}
     </div>
   );
 }
 
 export function InfoTip({ text }: { text: string }) {
   return (
-    <span className="inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--color-border)] text-[10px] text-faint" title={text}>
+    <span className="inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--color-border)] text-[9px] leading-none text-faint" title={text}>
       i
     </span>
   );
@@ -35,45 +35,54 @@ export function InfoTip({ text }: { text: string }) {
 
 export function SectionTitle({ title, desc, right }: { title: string; desc?: string; right?: React.ReactNode }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
+    <div className="mb-3 flex items-end justify-between gap-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-        {desc && <p className="mt-1 max-w-2xl text-sm text-muted">{desc}</p>}
+        <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
+        {desc && <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-muted">{desc}</p>}
       </div>
       {right}
     </div>
   );
 }
 
-/** Context line (spec §5.3) — above every analytical block. */
+/** Context line (spec §5.3) — quiet, single line, above analytical blocks. */
 export function ContextLine({ filter }: { filter: Filter }) {
   return (
-    <p className="mb-3 rounded-md bg-[var(--color-panel-2)] px-3 py-1.5 font-mono text-[11px] text-muted" title="Active calculation context — every number below uses exactly these parameters.">
+    <p className="mb-3 truncate font-mono text-[10.5px] text-faint" title="Active calculation context — every number below uses exactly these parameters.">
       {contextLine(filter)}
     </p>
   );
 }
 
-/** Anomaly strength 0–100. Amber at most — never red on its own. */
+/* ---------- quiet chip primitives ---------- */
+
+function chip(color?: string) {
+  return {
+    className: "inline-flex items-center gap-1 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4",
+    style: {
+      color: color ?? "var(--color-muted)",
+      borderColor: "var(--color-border)",
+      background: "var(--color-panel)",
+    } as React.CSSProperties,
+  };
+}
+
+/** Anomaly strength 0–100 — number-first, subtle color. */
 export function AnomalyBadge({ score }: { score: number }) {
-  const c = anomalyColor(score);
+  const p = chip(anomalyColor(score));
   return (
-    <span className="tabular inline-flex min-w-[2.6rem] items-center justify-center rounded-md px-1.5 py-0.5 text-xs font-semibold"
-      style={{ color: c, background: `color-mix(in srgb, ${c} 14%, transparent)` }}
-      title={`Anomaly strength ${score.toFixed(0)}/100 — how unusual the discrepancy is (magnitude, relative size, persistence, dynamics, unit-value). Says nothing about data quality.`}>
-      A {score.toFixed(0)}
+    <span {...p} title={`Anomaly strength ${score.toFixed(0)}/100 — how unusual the discrepancy is (magnitude, relative size, persistence, dynamics, unit values). Says nothing about data quality.`}>
+      A·{score.toFixed(0)}
     </span>
   );
 }
 
-/** Evidence quality 0–100 — green/grey scale, never an accusation. */
+/** Evidence quality 0–100. */
 export function EvidenceBadge({ score }: { score: number }) {
-  const c = evidenceColor(score);
+  const p = chip(evidenceColor(score));
   return (
-    <span className="tabular inline-flex min-w-[2.6rem] items-center justify-center rounded-md px-1.5 py-0.5 text-xs font-semibold"
-      style={{ color: c, background: `color-mix(in srgb, ${c} 14%, transparent)` }}
-      title={`Evidence quality ${score.toFixed(0)}/100 — how reliable and comparable the underlying data is (coverage, reporter reliability, HS comparability, weight availability, freight robustness, transit exposure).`}>
-      E {score.toFixed(0)}
+    <span {...p} title={`Evidence quality ${score.toFixed(0)}/100 — how reliable and comparable the underlying data is (coverage, reporter reliability, HS comparability, weight availability, freight robustness, transit exposure).`}>
+      E·{score.toFixed(0)}
     </span>
   );
 }
@@ -82,9 +91,10 @@ export function ClassBadge({ cls }: { cls: SignalClass }) {
   const { t } = useI18n();
   const c = CLASS_COLORS[cls];
   return (
-    <span className="cursor-help rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
-      style={{ color: c, borderColor: `color-mix(in srgb, ${c} 40%, transparent)`, background: `color-mix(in srgb, ${c} 7%, transparent)` }}
+    <span className="inline-flex items-center gap-1.5 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4"
+      style={{ color: cls === "low" ? "var(--color-muted)" : c, borderColor: "var(--color-border)", background: "var(--color-panel)" }}
       title={CLASS_LABELS[cls].desc}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
       {t(`cls.${cls}` as never)}
     </span>
   );
@@ -92,11 +102,9 @@ export function ClassBadge({ cls }: { cls: SignalClass }) {
 
 export function RobustnessBadge({ r }: { r: Robustness }) {
   const { t } = useI18n();
-  const c = r === "robust" ? "#15803d" : r === "insufficient" ? "#75847b" : "#b45309";
+  const p = chip(r === "robust" ? "#2f7d4f" : "var(--color-muted)");
   return (
-    <span className="rounded-md px-1.5 py-0.5 text-[11px] font-medium"
-      style={{ color: c, background: `color-mix(in srgb, ${c} 10%, transparent)` }}
-      title={`Robustness: ${ROBUSTNESS_LABELS[r]}. Robust = the sign holds at 6%, 10% and 15% freight, with enough comparable years and no major quality flags.`}>
+    <span {...p} title={`Robustness: ${ROBUSTNESS_LABELS[r]}. Robust = the sign holds at 6%, 10% and 15% freight, with enough comparable years and no major quality flags.`}>
       {t(`rob.${r}` as never)}
     </span>
   );
@@ -108,27 +116,27 @@ const TIER_TIP: Record<Tier, string> = {
   Low: "Weak mirror: sparse or lapsed reporting — the discrepancy may be a data artifact.",
 };
 export function QualityTag({ tier, tip }: { tier: Tier; tip?: string }) {
-  const c = tier === "High" ? "#15803d" : tier === "Medium" ? "#b45309" : "#75847b";
+  const c = tier === "High" ? "#2f7d4f" : tier === "Medium" ? "#a16207" : "#8a948e";
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[11px] font-medium"
-      style={{ color: c, borderColor: `color-mix(in srgb, ${c} 35%, transparent)` }} title={tip ?? TIER_TIP[tier]}>
-      <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />
-      Data: {tier.toLowerCase()}
+    <span className="inline-flex items-center gap-1.5 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4"
+      style={{ color: "var(--color-muted)", borderColor: "var(--color-border)" }} title={tip ?? TIER_TIP[tier]}>
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
+      data {tier.toLowerCase()}
     </span>
   );
 }
 
 export function TransitTag() {
+  const p = chip("var(--color-transit)");
   return (
-    <span className="cursor-help rounded-md px-1.5 py-0.5 text-[11px] font-medium"
-      style={{ color: "var(--color-transit)", background: "color-mix(in srgb, var(--color-transit) 10%, transparent)" }}
+    <span {...p} className={`${p.className} cursor-help`}
       title="Transit / re-export hub. Uzbekistan records imports by country of ORIGIN while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies. Assessed separately from core channels.">
-      transit ⓘ
+      transit
     </span>
   );
 }
 
-/** Evidence ladder (spec §2.4) — highlight = the highest level open data supports. */
+/** Evidence ladder (spec §2.4) — one quiet row. */
 export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
   const { t } = useI18n();
   const steps = [
@@ -140,24 +148,24 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
   ] as const;
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1">
         {steps.map((s, i) => (
-          <div key={s.key} className="flex items-center gap-1.5">
-            <span className={`rounded-md border px-2 py-1 text-xs font-medium ${"current" in s && s.current ? "border-[var(--color-primary)] bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)] text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
+          <div key={s.key} className="flex items-center gap-1">
+            <span className={`rounded border px-1.5 py-0.5 text-[11px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
               title={s.active ? "Supported by open trade data" : s.n === 4 ? "Requires tariff/behavioural evidence — planned phase 2" : "Requires declarations, audit or administrative decision — never claimed on this site"}>
-              {s.n}. {t(s.key as never)}
+              {s.n} · {t(s.key as never)}
             </span>
-            {i < steps.length - 1 && <span className="text-faint">›</span>}
+            {i < steps.length - 1 && <span className="text-[10px] text-faint">›</span>}
           </div>
         ))}
       </div>
-      {!compact && <p className="mt-2 max-w-3xl text-xs text-faint">{t("ov.ladder.note")}</p>}
+      {!compact && <p className="mt-1.5 max-w-3xl text-[11px] text-faint">{t("ov.ladder.note")}</p>}
     </div>
   );
 }
 
 export function Pill({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-md bg-[var(--color-panel-2)] px-2 py-0.5 text-xs font-medium text-muted">{children}</span>;
+  return <span className="rounded border border-[var(--color-border)] px-1.5 py-px text-[10.5px] font-medium text-muted">{children}</span>;
 }
 
 export function EmptyState({ text }: { text?: string }) {

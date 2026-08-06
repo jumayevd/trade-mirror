@@ -1,7 +1,2 @@
-import TrendsView from "@/components/views/TrendsView";
-
-export const metadata = { title: "Trends — Trade Mirror" };
-
-export default function TrendsPage() {
-  return <TrendsView />;
-}
+﻿import { redirect } from "next/navigation";
+export default function TrendsPage() { redirect("/partners"); }

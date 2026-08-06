@@ -12,12 +12,12 @@ const PARTNERS_SERIES = "Comparable partners";
 /**
  * Structural breaks (spec §6.10): marked so that real trade shocks are not read
  * as screening signals and data-coverage artifacts are not read as real shocks.
- * Grey = external shock; purple-grey = reporting/coverage artifact.
+ * All markers are quiet grey dashed lines with tiny labels.
  */
-const STRUCTURAL_BREAKS: { year: number; label: string; color: string }[] = [
-  { year: 2020, label: "COVID-19", color: "#75847b" },
-  { year: 2022, label: "Partner reporting stop", color: "#8b80ad" },
-  { year: 2023, label: "HS granularity expansion", color: "#75847b" },
+const STRUCTURAL_BREAKS: { year: number; label: string }[] = [
+  { year: 2020, label: "COVID-19" },
+  { year: 2022, label: "Partner reporting stop" },
+  { year: 2023, label: "HS granularity expansion" },
 ];
 
 export default function TrendChart({
@@ -38,7 +38,7 @@ export default function TrendChart({
       top: 0,
       itemWidth: 12,
       itemHeight: 8,
-      textStyle: { color: COLORS.text, fontSize: 12 },
+      textStyle: { color: COLORS.text, fontSize: 11 },
       data: [POSITIVE_SERIES, REVERSE_SERIES, PARTNERS_SERIES],
     },
     tooltip: {
@@ -72,10 +72,10 @@ export default function TrendChart({
       {
         type: "value",
         name: "comparable partners",
-        nameTextStyle: { color: COLORS.axis },
+        nameTextStyle: { color: COLORS.axis, fontSize: 10 },
         position: "right",
         minInterval: 1,
-        axisLabel: { color: COLORS.axis },
+        axisLabel: { color: COLORS.axis, fontSize: 10 },
         splitLine: { show: false },
         axisLine: { show: false },
       },
@@ -85,8 +85,8 @@ export default function TrendChart({
         name: POSITIVE_SERIES,
         type: "bar",
         data: annual.map((a) => Math.round(a.positive)),
-        itemStyle: { color: COLORS.positive, borderRadius: [3, 3, 0, 0] },
-        barMaxWidth: 28,
+        itemStyle: { color: COLORS.positive, borderRadius: [2, 2, 0, 0] },
+        barMaxWidth: 32,
         markLine:
           breaks.length > 0
             ? {
@@ -98,10 +98,10 @@ export default function TrendChart({
                   label: {
                     formatter: b.label,
                     position: "insideEndTop",
-                    color: b.color,
-                    fontSize: 10,
+                    color: COLORS.axis,
+                    fontSize: 9,
                   },
-                  lineStyle: { color: b.color, type: "dashed", width: 1 },
+                  lineStyle: { color: COLORS.axis, type: "dashed", width: 1 },
                 })),
               }
             : undefined,
@@ -110,8 +110,8 @@ export default function TrendChart({
         name: REVERSE_SERIES,
         type: "bar",
         data: annual.map((a) => Math.round(a.reverse)),
-        itemStyle: { color: COLORS.reverse, borderRadius: [3, 3, 0, 0] },
-        barMaxWidth: 28,
+        itemStyle: { color: COLORS.reverse, borderRadius: [2, 2, 0, 0] },
+        barMaxWidth: 32,
       },
       {
         name: PARTNERS_SERIES,
@@ -119,8 +119,8 @@ export default function TrendChart({
         yAxisIndex: 1,
         data: annual.map((a) => a.comparablePartners),
         symbol: "circle",
-        symbolSize: 6,
-        lineStyle: { color: COLORS.ok, width: 1.8 },
+        symbolSize: 4,
+        lineStyle: { color: COLORS.ok, width: 2 },
         itemStyle: { color: COLORS.ok },
       },
     ],

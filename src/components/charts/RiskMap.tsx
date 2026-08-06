@@ -36,9 +36,9 @@ const GEO_NAME: Record<string, string> = {
 };
 const ISO_BY_GEO: Record<string, string> = Object.fromEntries(Object.entries(GEO_NAME).map(([iso, n]) => [n, iso]));
 
-/** Sequential ramps: amber for positive/absolute/net, blue for reverse (spec §10.1). */
-const RAMP_AMBER = ["#fde68a", "#fcd34d", "#f59e0b", "#d97706", "#92400e"];
-const RAMP_BLUE = ["#bfdbfe", "#93c5fd", "#60a5fa", "#2563eb", "#1e40af"];
+/** Sequential ramps derived from the two data colors: amber for positive/absolute/net, blue for reverse (spec §10.1). */
+const RAMP_AMBER = ["#f3e3cf", "#e8c79e", "#d9a15e", "#c2701e", "#8f5010"];
+const RAMP_BLUE = ["#dee7f7", "#b9cdf0", "#7fa1dd", "#3565c0", "#274b8f"];
 
 function dirValue(p: PartnerAgg, f: Filter): number {
   switch (f.direction) {

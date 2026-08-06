@@ -20,39 +20,37 @@ export function fmtNum(v: number): string {
   return new Intl.NumberFormat("en-US").format(Math.round(v));
 }
 
-/**
- * Score colors. Anomaly strength alone is NEVER red — red is reserved for the
- * Investigate class (high anomaly + high evidence), per spec §10.1.
- */
+/** Anomaly strength: neutral greys warming to amber — never red on its own. */
 export function anomalyColor(score: number): string {
-  if (score >= 55) return "#d97706"; // amber — strong anomaly
-  if (score >= 35) return "#eab308"; // yellow
-  return "#75847b"; // grey
+  if (score >= 55) return "#c2701e";
+  if (score >= 35) return "#8a7a4d";
+  return "#8a948e";
 }
+/** Evidence quality: grey to green. */
 export function evidenceColor(score: number): string {
-  if (score >= 60) return "#15803d"; // green — good data
-  if (score >= 40) return "#65a30d";
-  return "#75847b"; // grey
+  if (score >= 60) return "#2f7d4f";
+  if (score >= 40) return "#6d8a5c";
+  return "#8a948e";
 }
 
 export const CLASS_COLORS: Record<string, string> = {
-  investigate: "#dc2626", // red — only here
-  verify: "#d97706",
-  monitor: "#15803d",
-  low: "#75847b",
-  transit: "#7c3aed",
+  investigate: "#b91c1c", // the only red in the system
+  verify: "#a16207",
+  monitor: "#2f7d4f",
+  low: "#8a948e",
+  transit: "#6b6480",
 };
 
 export const COLORS = {
-  uzb: "#2563eb", // blue — UZB-reported / reverse
-  partner: "#d97706", // amber — partner-reported / positive
-  positive: "#d97706",
-  reverse: "#2563eb",
-  transit: "#7c3aed",
-  investigate: "#dc2626",
-  ok: "#15803d",
-  warn: "#b45309",
-  grid: "#e5e9e5",
-  axis: "#75847b",
-  text: "#45544b",
+  uzb: "#3565c0",
+  partner: "#c2701e",
+  positive: "#c2701e",
+  reverse: "#3565c0",
+  transit: "#6b6480",
+  investigate: "#b91c1c",
+  ok: "#2f7d4f",
+  warn: "#a16207",
+  grid: "#eef0ee",
+  axis: "#8a948e",
+  text: "#55605a",
 };

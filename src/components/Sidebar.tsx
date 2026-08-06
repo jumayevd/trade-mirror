@@ -15,11 +15,9 @@ const ANALYSIS: { href: string; label: LocaleKey }[] = [
 const REFERENCE: { href: string; label: LocaleKey }[] = [
   { href: "/methodology", label: "nav.methodology" },
 ];
-const MORE: { href: string; label: LocaleKey }[] = [
-  { href: "/trends", label: "nav.trends" },
-  { href: "/reverse", label: "nav.reverse" },
-  { href: "/statistics", label: "nav.statistics" },
-];
+// Trends / Statistics / Reverse content lives inside the analysis pages;
+// their old routes redirect there.
+const MORE: { href: string; label: LocaleKey }[] = [];
 
 function Section({ title, links, path }: { title: string; links: { href: string; label: LocaleKey }[]; path: string }) {
   const { t } = useI18n();
@@ -76,7 +74,6 @@ export default function Sidebar() {
         </Link>
         <Section title={t("nav.analysisGroup")} links={ANALYSIS} path={path} />
         <Section title={t("nav.reference")} links={REFERENCE} path={path} />
-        <Section title={t("nav.more")} links={MORE} path={path} />
         <div className="mt-auto space-y-1 px-3 pt-6 text-[10px] leading-relaxed text-white/45">
           <div className="font-semibold text-white/70">M − X · {t("nav.signConvention")}</div>
           <div>{t("nav.attribution")}</div>

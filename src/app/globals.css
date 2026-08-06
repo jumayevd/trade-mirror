@@ -1,48 +1,49 @@
 @import "tailwindcss";
 
 /*
- * Visual system per spec §10.1:
- *  - dark green      -> primary / navigation / methodology elements
- *  - amber/orange    -> positive discrepancy (NOT red by default)
- *  - blue            -> reverse discrepancy
- *  - red             -> reserved for high anomaly + high evidence (Investigate)
- *  - purple          -> transit-sensitive
- *  - green/grey      -> data quality (never wrongdoing)
- *  - white cards, thin borders, light background
+ * Minimal professional system:
+ *  - one ink color (deep pine green) for brand, nav, links, emphasis
+ *  - exactly two data colors: amber = positive, blue = reverse
+ *  - red appears ONLY on the Investigate class; everything else is neutral
+ *  - badges are quiet outline chips; color never shouts
  */
 :root {
-  --background: #f7f8f7;
-  --foreground: #16241b;
+  --background: #fafaf9;
+  --foreground: #1c2420;
 }
 
 @theme inline {
   /* surfaces */
-  --color-bg: #f7f8f7;
+  --color-bg: #fafaf9;
   --color-panel: #ffffff;
-  --color-panel-2: #eef1ee;
-  --color-border: #d8ded9;
-  --color-border-soft: #e5e9e5;
+  --color-panel-2: #f4f5f4;
+  --color-border: #e4e7e4;
+  --color-border-soft: #eef0ee;
 
   /* text */
-  --color-foreground: #16241b;
-  --color-muted: #45544b;
-  --color-faint: #75847b;
+  --color-foreground: #1c2420;
+  --color-muted: #55605a;
+  --color-faint: #8a948e;
 
-  /* semantics (spec §10.1) */
-  --color-primary: #14532d;       /* dark green — nav / methodology */
-  --color-primary-soft: #1c7a43;
-  --color-positive: #d97706;      /* amber — positive discrepancy */
-  --color-reverse: #2563eb;       /* blue — reverse discrepancy */
-  --color-investigate: #dc2626;   /* red — reserved: high anomaly + high evidence */
-  --color-transit: #7c3aed;       /* purple — transit-sensitive */
-  --color-quality: #15803d;       /* green — good data quality */
-  --color-warn: #b45309;
-  --color-ok: #15803d;
+  /* ink / brand */
+  --color-primary: #173a26;        /* deep pine — sidebar, links, active states */
+  --color-primary-soft: #1d6b40;
+
+  /* data semantics — the only two chart colors */
+  --color-positive: #c2701e;       /* calm amber — positive discrepancy */
+  --color-reverse: #3565c0;        /* calm blue — reverse discrepancy */
+
+  /* status (used sparingly) */
+  --color-investigate: #b91c1c;    /* red — Investigate class only */
+  --color-transit: #6b6480;        /* muted slate-violet — transit chip text */
+  --color-quality: #2f7d4f;        /* green — good data quality */
+  --color-warn: #a16207;
+  --color-ok: #2f7d4f;
 
   /* chart mirrors */
-  --color-uzb: #2563eb;           /* Uzbekistan-reported (blue family) */
-  --color-partner: #d97706;       /* partner-reported (amber family) */
-  --color-accent: #14532d;
+  --color-uzb: #3565c0;
+  --color-partner: #c2701e;
+  --color-accent: #173a26;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -61,6 +62,7 @@ body {
 body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-size: 14px;
 }
 
 .tabular {
@@ -71,41 +73,40 @@ body {
 .card {
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 8px;
 }
 
 .card-hover {
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.12s ease;
 }
 .card-hover:hover {
-  border-color: var(--color-faint);
-  box-shadow: 0 1px 6px rgba(22, 36, 27, 0.08);
+  border-color: #c6cec9;
 }
 
-/* thin scrollbars */
+/* quiet zebra */
+.zebra > *:nth-child(even) {
+  background: #fafbfa;
+}
+
+/* links inside prose */
+a {
+  color: inherit;
+}
+
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c4ccc6;
-  border-radius: 9px;
+  background: #d3d9d5;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-a {
-  color: inherit;
-}
-
-/* zebra tables (spec §10.1) */
-.zebra > *:nth-child(even) {
-  background: #fafbfa;
-}
-
 @media print {
-  header, .no-print { display: none !important; }
+  header, aside, .no-print { display: none !important; }
   .card { border-color: #bbb; break-inside: avoid; }
   body { background: #fff; }
 }

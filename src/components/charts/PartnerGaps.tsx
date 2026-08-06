@@ -35,7 +35,7 @@ export default function PartnerGaps({
       backgroundColor: "transparent",
       grid: { ...baseGrid, top: 56 },
       legend: {
-        top: 4,
+        top: 0,
         textStyle: { color: COLORS.text, fontSize: 11 },
         itemWidth: 14,
         data: [ptnLabel, uzbLabel, posLabel, revLabel],
@@ -52,14 +52,16 @@ export default function PartnerGaps({
           name: ptnLabel,
           type: "bar",
           data: reported.map((y) => Math.round(y.pe)),
-          itemStyle: { color: COLORS.partner, borderRadius: [3, 3, 0, 0] },
+          itemStyle: { color: COLORS.partner, borderRadius: [2, 2, 0, 0] },
+          barMaxWidth: 32,
           barGap: "10%",
         },
         {
           name: uzbLabel,
           type: "bar",
           data: reported.map((y) => Math.round(y.ui)),
-          itemStyle: { color: COLORS.uzb, borderRadius: [3, 3, 0, 0] },
+          itemStyle: { color: COLORS.uzb, borderRadius: [2, 2, 0, 0] },
+          barMaxWidth: 32,
         },
         {
           name: posLabel,
@@ -68,7 +70,7 @@ export default function PartnerGaps({
           itemStyle: { color: COLORS.positive },
           lineStyle: { width: 2, type: "dashed", color: COLORS.positive },
           symbol: "circle",
-          symbolSize: 5,
+          symbolSize: 4,
         },
         {
           name: revLabel,
@@ -77,7 +79,7 @@ export default function PartnerGaps({
           itemStyle: { color: COLORS.reverse },
           lineStyle: { width: 2, type: "dashed", color: COLORS.reverse },
           symbol: "circle",
-          symbolSize: 5,
+          symbolSize: 4,
         },
       ],
     };
@@ -95,7 +97,7 @@ export default function PartnerGaps({
 
   return (
     <div>
-      <div className="card p-3" style={{ height: 360 }}>
+      <div className="card p-3" style={{ height: 340 }}>
         <EChart option={option} />
       </div>
       {missing.length > 0 && (

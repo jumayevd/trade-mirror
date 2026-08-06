@@ -34,7 +34,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
     return {
       backgroundColor: "transparent",
       grid: baseGrid,
-      legend: { top: 4, textStyle: { color: COLORS.text }, data: [peName, uiName, sgName] },
+      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: 11 }, data: [peName, uiName, sgName] },
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
@@ -58,7 +58,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           name: peName,
           type: "bar",
           data: pe,
-          itemStyle: { color: COLORS.partner, borderRadius: [3, 3, 0, 0] },
+          itemStyle: { color: COLORS.partner, borderRadius: [2, 2, 0, 0] },
+          barMaxWidth: 32,
           barGap: "-8%",
           emphasis: { focus: "series" },
         },
@@ -66,7 +67,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           name: uiName,
           type: "bar",
           data: ui,
-          itemStyle: { color: COLORS.uzb, borderRadius: [3, 3, 0, 0] },
+          itemStyle: { color: COLORS.uzb, borderRadius: [2, 2, 0, 0] },
+          barMaxWidth: 32,
           emphasis: { focus: "series" },
         },
         {
@@ -77,7 +79,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           itemStyle: { color: COLORS.text },
           lineStyle: { width: 2, type: "dashed", color: COLORS.text },
           symbol: "circle",
-          symbolSize: 5,
+          symbolSize: 4,
           markLine: {
             silent: true,
             symbol: "none",
