@@ -1,0 +1,5 @@
+# Don't ship secrets or the raw data cache — the site uses the baked src/data/*.json
+.env
+.env.*
+data/raw
+.claude
