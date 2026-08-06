@@ -5,9 +5,9 @@ import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
 import RiskMap, { MAP_METRIC_LABELS, type MapMetric } from "@/components/charts/RiskMap";
-import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue } from "@/components/ui";
+import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, partnerName, type PartnerAgg } from "@/lib/dataset";
+import { meta, type PartnerAgg } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -148,7 +148,6 @@ export default function PartnersView() {
   const [heroMode, setHeroMode] = useState<HeroMode>("map");
   const [mapMetric, setMapMetric] = useState<MapMetric>("total");
   const [rankPage, setRankPage] = useState(0);
-  const [sumPage, setSumPage] = useState(0);
 
   /* ------------------------------------------------------------------ */
   /* Ranking rows (filtered partner rollups)                             */
@@ -168,29 +167,9 @@ export default function PartnersView() {
   const pagedRows = rows.slice(rankPage * PAGE_SIZE, (rankPage + 1) * PAGE_SIZE);
 
   /* ------------------------------------------------------------------ */
-  /* Summary by country — from base (pre-stage/signal) channels so the   */
-  /* totals row reproduces data.kpis exactly (cross-page consistency)    */
-  /* ------------------------------------------------------------------ */
-  interface CountryTotals { iso3: string; peT: number; uiT: number; posT: number; revT: number }
-  const countryTotals = useMemo<CountryTotals[]>(() => {
-    const m = new Map<string, CountryTotals>();
-    for (const c of data.baseChannels) {
-      const e = m.get(c.partnerIso) ?? { iso3: c.partnerIso, peT: 0, uiT: 0, posT: 0, revT: 0 };
-      e.peT += c.peT; e.uiT += c.uiT; e.posT += c.posT; e.revT += c.revT;
-      m.set(c.partnerIso, e);
-    }
-    return [...m.values()].sort((a, b) => b.peT - a.peT);
-  }, [data.baseChannels]);
-  useEffect(() => { setSumPage(0); }, [countryTotals.length]);
-  const pagedTotals = countryTotals.slice(sumPage * PAGE_SIZE, (sumPage + 1) * PAGE_SIZE);
-  const uiBase = useMemo(() => data.baseChannels.reduce((s, c) => s + c.uiT, 0), [data.baseChannels]);
-
-  /* ------------------------------------------------------------------ */
-  /* KPI strip                                                           */
+  /* Headline counts (one quiet sentence above the map)                  */
   /* ------------------------------------------------------------------ */
   const highTier = data.partners.filter((p) => p.tier === "High").length;
-  const lapsed = meta.partners.filter((p) => p.lapse).length;
-  const sparse = meta.partners.filter((p) => !p.lapse && p.coverage < 0.5).length;
   const transitCount = data.partners.filter((p) => p.transit).length;
 
   /* ------------------------------------------------------------------ */
@@ -321,6 +300,20 @@ export default function PartnersView() {
               );
             })}
           </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold">
+              <td className={td} />
+              <td className={`${td} whitespace-nowrap`} colSpan={2} title="Headline KPI figures on the comparable-stage basis (before stage/signal/materiality filters) — identical to the Executive Overview under the same period, direction and freight settings.">
+                All partners — headline totals
+              </td>
+              <td className={tdNum} title={fmtUSDFull(data.kpis.comparableTrade)}>{fmtUSD(data.kpis.comparableTrade)}</td>
+              <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (central freight scenario; range ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} across the 6–15% freight band)`}>
+                {fmtUSD(data.kpis.positive.central)}
+              </td>
+              <td className={tdNum} title={fmtUSDFull(data.kpis.reverse)}>{fmtUSD(data.kpis.reverse)}</td>
+              <td className={tdNum} colSpan={4} />
+            </tr>
+          </tfoot>
         </table>
         <Pager page={rankPage} total={rows.length} onPage={setRankPage} />
       </div>
@@ -391,6 +384,13 @@ export default function PartnersView() {
             </div>
           }
         />
+        <p className="max-w-3xl text-[12px] text-muted">
+          <span className="tabular font-medium text-foreground">{data.partners.length}</span> partners in
+          view under the active filters · <span className="tabular font-medium text-foreground">{highTier}</span> with
+          High-tier reporting quality (gaps least likely to be reporting artifacts)
+          · <span className="tabular font-medium text-foreground">{transitCount}</span> transit/re-export
+          hubs, assessed in a separate track.
+        </p>
         {heroMode === "map" ? (
           data.partners.length === 0 ? (
             <EmptyState />
@@ -400,36 +400,6 @@ export default function PartnersView() {
         ) : (
           rankingTable
         )}
-
-        {/* KPI strip */}
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <Stat
-            label="Partners in view"
-            value={String(data.partners.length)}
-            sub="with comparable channels under the filters"
-            info="Partner countries with at least one country × HS2 channel passing the active filters."
-          />
-          <Stat
-            label="High-tier reporters"
-            value={String(highTier)}
-            sub={`of ${data.partners.length} partners in view`}
-            accent={COLORS.ok}
-            info="Partners in view whose Comtrade reporting is complete and consistent (tier High) — mirror gaps with them are least likely to be reporting artifacts."
-          />
-          <Stat
-            label="Lapsed / sparse reporters"
-            value={`${lapsed} · ${sparse}`}
-            sub="stopped reporting · sparse (<50% of years)"
-            info={`Across all ${meta.partners.length} tracked partners (unfiltered): ${lapsed} stopped reporting to Comtrade within the ${meta.window.start}–${meta.window.end} window and ${sparse} more reported in fewer than half of the years. Their missing years have no mirror reference and are never treated as zero gaps.`}
-          />
-          <Stat
-            label="Transit-sensitive"
-            value={String(transitCount)}
-            sub="re-export hubs in view"
-            accent={COLORS.transit}
-            info="Partners flagged as transit/re-export hubs. Origin-vs-consignment recording can create legitimate discrepancies there, so they are assessed in a separate track."
-          />
-        </div>
       </section>
 
       {/* 4. compare panel (rendered as soon as anything is selected) */}
@@ -514,7 +484,9 @@ export default function PartnersView() {
             Values in nominal USD, accumulated over the selected period. Positive = partner reported
             more than Uzbekistan recorded; reverse = Uzbekistan recorded more — the two are shown
             separately and never netted into a single headline. Missing partner-years are excluded
-            from the comparison, never treated as zero. Source: UN Comtrade.
+            from the comparison, never treated as zero. The totals row shows the headline KPI figures
+            on the comparable-stage basis, so it reconciles exactly with the Executive Overview.
+            Source: UN Comtrade.
           </p>
         </section>
       )}
@@ -601,70 +573,6 @@ export default function PartnersView() {
         </p>
       </section>
 
-      {/* 8. summary by country */}
-      <section className="space-y-3">
-        <SectionTitle
-          title="Summary by country"
-          desc="Per-partner totals over the selected years, on the comparable-stage basis. The totals row reproduces the headline KPI figures, so this table reconciles exactly with the Executive Overview."
-        />
-        {countryTotals.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full min-w-[820px] border-collapse">
-              <thead className="border-b border-[var(--color-border)]">
-                <tr>
-                  <th className={th}>{t("common.partner")}</th>
-                  <th className={thNum} title="Partner-reported exports to Uzbekistan (FOB), comparable channels only.">Partner exports (FOB)</th>
-                  <th className={thNum} title="Uzbekistan-recorded imports (CIF), comparable channels only.">UZB imports (CIF)</th>
-                  <th className={thNum} title="Cumulative positive discrepancy (partner > UZB records) after the freight adjustment."><HeadDot color={COLORS.positive} />Positive</th>
-                  <th className={thNum} title="Cumulative reverse discrepancy (UZB records > partner) after the freight adjustment."><HeadDot color={COLORS.reverse} />Reverse</th>
-                  <th className={thNum} title="This partner's share of total comparable (partner-reported) trade in view.">Share of trade</th>
-                </tr>
-              </thead>
-              <tbody className="zebra">
-                {pagedTotals.map((r) => (
-                  <tr key={r.iso3} className="border-b border-[var(--color-border-soft)]">
-                    <td className={`${td} whitespace-nowrap`}>
-                      <Link href={`/partners/${r.iso3.toLowerCase()}`} className="font-medium hover:underline">
-                        {partnerName(r.iso3)}
-                      </Link>
-                    </td>
-                    <td className={tdNum} title={fmtUSDFull(r.peT)}>{fmtUSD(r.peT)}</td>
-                    <td className={tdNum} title={fmtUSDFull(r.uiT)}>{fmtUSD(r.uiT)}</td>
-                    <td className={tdNum} title={fmtUSDFull(r.posT)}>{fmtUSD(r.posT)}</td>
-                    <td className={tdNum} title={fmtUSDFull(r.revT)}>{fmtUSD(r.revT)}</td>
-                    <td className={tdNum}>
-                      {data.kpis.comparableTrade > 0 ? fmtPct(r.peT / data.kpis.comparableTrade, 1) : <MissingValue kind="notComparable" />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold">
-                  <td className={`${td} whitespace-nowrap`} title="Headline KPI figures — identical to the Executive Overview under the same filters.">
-                    All partners ({fmtNum(countryTotals.length)})
-                  </td>
-                  <td className={tdNum} title={fmtUSDFull(data.kpis.comparableTrade)}>{fmtUSD(data.kpis.comparableTrade)}</td>
-                  <td className={tdNum} title={fmtUSDFull(uiBase)}>{fmtUSD(uiBase)}</td>
-                  <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (central freight scenario; range ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} across 6–15%)`}>
-                    {fmtUSD(data.kpis.positive.central)}
-                  </td>
-                  <td className={tdNum} title={fmtUSDFull(data.kpis.reverse)}>{fmtUSD(data.kpis.reverse)}</td>
-                  <td className={tdNum}>{fmtPct(1, 0)}</td>
-                </tr>
-              </tfoot>
-            </table>
-            <Pager page={sumPage} total={countryTotals.length} onPage={setSumPage} />
-          </div>
-        )}
-        <p className="max-w-3xl text-xs text-faint">
-          Comparable-stage basis (before stage/signal/materiality filters), so the totals row equals
-          the headline KPIs shown across the site under the same period, direction and freight
-          settings. Ranked by partner-reported exports. Missing partner-years are excluded, never
-          counted as zero. Source: UN Comtrade.
-        </p>
-      </section>
     </div>
   );
 }

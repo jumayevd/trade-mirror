@@ -10,6 +10,7 @@ import RiskMatrix from "@/components/charts/RiskMatrix";
 import { ContextLine, EmptyState, EvidenceBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { useI18n } from "@/lib/i18n";
+import { Cite } from "@/lib/references";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import {
@@ -196,15 +197,13 @@ function RankedTab({
   channels: Channel[]; level: HsLevel; onLevelChange: (l: HsLevel) => void;
   filter: Filter; years: number[];
 }) {
-  const { t } = useI18n();
   const stats = useMemo(() => {
     const investigate = channels.filter((c) => c.cls === "investigate").length;
-    const partners = new Set(channels.map((c) => c.partnerIso)).size;
     const sorted = [...channels].sort((a, b) => Math.abs(b.primary) - Math.abs(a.primary));
     const total = sorted.reduce((s, c) => s + Math.abs(c.primary), 0);
     const top5 = sorted.slice(0, 5).reduce((s, c) => s + Math.abs(c.primary), 0);
     const dirTotal = sorted.reduce((s, c) => s + c.primary, 0);
-    return { investigate, partners, top5Share: total > 0 ? top5 / total : 0, dirTotal };
+    return { investigate, top5Share: total > 0 ? top5 / total : 0, dirTotal };
   }, [channels]);
 
   return (
@@ -223,33 +222,14 @@ function RankedTab({
           desc="All partner × code combinations at the selected HS level, ranked by signal class, anomaly strength and evidence quality. HS4 is derived from HS6 by code truncation. Click a row to expand per-year detail."
         />
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat
-            label="Combinations"
-            value={fmtNum(channels.length)}
-            sub={`${LEVEL_LABELS[level]} partner × code combinations under current filters`}
-            info="Count of partner × code combinations at the selected HS level that pass the active period, stage, view, signal-class, robustness and materiality filters."
-          />
-          <Stat
-            label="Investigate class"
-            value={fmtNum(stats.investigate)}
-            sub={`of ${fmtNum(channels.length)} combinations`}
-            accent={stats.investigate > 0 ? COLORS.investigate : undefined}
-            info="Combinations with anomaly strength ≥ 55 AND evidence quality ≥ 60 — the strongest open-data signals. A priority for further review, not a finding of wrongdoing."
-          />
-          <Stat
-            label={t("common.partner") + "s"}
-            value={fmtNum(stats.partners)}
-            sub="distinct partners represented"
-            info="Number of distinct partner countries appearing in the combinations below."
-          />
-          <Stat
-            label="Top-5 share"
-            value={fmtPct(stats.top5Share, 0)}
-            sub={`of ${fmtUSD(Math.abs(stats.dirTotal))} in the active direction`}
-            info="Σ |discrepancy| of the 5 largest combinations ÷ Σ |discrepancy| of all combinations at this level (active direction). High concentration means a handful of combinations drive the aggregate — verify those first."
-          />
-        </div>
+        <p className="max-w-3xl text-[12px] text-muted">
+          <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
+          {LEVEL_LABELS[level]} combinations under the current filters
+          · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span> Investigate-class
+          (anomaly ≥ 55 and evidence ≥ 60 — a review priority, not a finding of wrongdoing)
+          · top 5 = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> of
+          the {fmtUSD(Math.abs(stats.dirTotal))} active-direction total.
+        </p>
 
         <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={filter} years={years} />
       </section>
@@ -261,6 +241,10 @@ function RankedTab({
           of likelihood or wrongdoing. Score definitions, weights and thresholds are documented in the{" "}
           <Link href="/methodology" className="hover:underline">Methodology</Link>.
         </span>
+      </p>
+      <p className="max-w-3xl text-xs text-faint">
+        Screening ranks blend anomaly and evidence components <Cite ids={["imf2023", "kellenberg2019"]} /> —
+        see <Link href="/methodology" className="hover:underline">Methodology</Link>.
       </p>
     </div>
   );
@@ -315,7 +299,6 @@ function ReverseTab({
 }) {
   const { t } = useI18n();
   const robustCount = useMemo(() => ranked.filter((c) => c.robustness === "robust").length, [ranked]);
-  const gappyPartners = useMemo(() => meta.partners.filter((p) => p.lapse || p.coverage < 0.5), []);
   const topPartner = rev.partners[0] ?? null;
   const top15 = ranked.slice(0, 15);
 
@@ -359,7 +342,7 @@ function ReverseTab({
 
       <ContextLine filter={revFilter} />
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat
           label={t("kpi.reverse")}
           value={fmtUSD(rev.kpis.reverse)}
@@ -372,12 +355,6 @@ function ReverseTab({
           value={fmtNum(robustCount)}
           sub={`${LEVEL_LABELS[level]} · sign holds at 6–15% freight`}
           info={`Count of ${LEVEL_LABELS[level]} combinations with a reverse discrepancy whose sign holds across the whole 6% / 10% / 15% freight band, with ≥2 comparable years and no major coverage flags.`}
-        />
-        <Stat
-          label="Lapsed / sparse reporters"
-          value={fmtNum(gappyPartners.length)}
-          sub="lapsed or <50% coverage in window"
-          info="Partners that stopped reporting mid-window or reported fewer than half of the window years. Their missing years are excluded from comparison — never treated as zero exports — but surviving years can still show artificial reverse discrepancies."
         />
         <Stat
           label="Top partner by reverse"
@@ -516,7 +493,7 @@ function ProfileTab({
     return {
       mean, sd,
       median: quantile(vals, 0.5),
-      p90: quantile(vals, 0.9), p95: quantile(vals, 0.95), p99: quantile(vals, 0.99),
+      p95: quantile(vals, 0.95), p99: quantile(vals, 0.99),
     };
   }, [base, n]);
 
@@ -718,18 +695,12 @@ function ProfileTab({
           desc={`Signed discrepancy per channel = expected CIF (partner exports × 1 + ${Math.round(filter.cif * 100)}% freight) − UZB-recorded imports, summed over the selected period. Heavy-tailed: read the mean together with the median.`}
         />
         {dist && (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Stat
               label="Mean (signed)"
               value={fmtUSD(dist.mean)}
               sub={`median ${fmtUSD(dist.median)}`}
-              info={`Arithmetic mean: Σ signedT / N over all N = ${fmtNum(n)} base channels. Heavily influenced by the tails — compare with the median.`}
-            />
-            <Stat
-              label="Median (signed)"
-              value={fmtUSD(dist.median)}
-              sub="50th percentile"
-              info={`50th percentile of the signed channel discrepancy (linear interpolation, N = ${fmtNum(n)}).`}
+              info={`Arithmetic mean: Σ signedT / N over all N = ${fmtNum(n)} base channels. Heavily influenced by the tails — read it together with the median (50th percentile) shown beneath.`}
             />
             <Stat
               label="Std. deviation"
@@ -738,10 +709,10 @@ function ProfileTab({
               info={`Sample standard deviation: √( Σ(x − mean)² / (N − 1) ) over N = ${fmtNum(n)} channels.`}
             />
             <Stat
-              label="P90 / P95"
-              value={`${fmtUSD(dist.p90)} / ${fmtUSD(dist.p95)}`}
+              label="P95"
+              value={fmtUSD(dist.p95)}
               sub="upper tail"
-              info={`90th and 95th percentiles of the signed channel discrepancy (linear interpolation, N = ${fmtNum(n)}). The upper tail carries most of the positive total.`}
+              info={`95th percentile of the signed channel discrepancy (linear interpolation, N = ${fmtNum(n)}). The upper tail carries most of the positive total.`}
             />
             <Stat
               label="P99"
