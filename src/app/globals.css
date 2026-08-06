@@ -1,60 +1,59 @@
 @import "tailwindcss";
 
 /*
- * Design system: validated dataviz reference palette.
- *  - chrome is neutral warm-grey ink; the only brand color is a deep green used
- *    for links, active states and primary buttons
- *  - data colors: orange #eb6834 = positive discrepancy, blue #2a78d6 = reverse
- *    (categorical slots 2 and 1; the pair passes CVD + normal-vision gates)
- *  - status set (fixed): critical #d03b3b = Investigate only; serious #ec835a;
- *    good #0ca30c; everything else neutral
- *  - hairline borders, solid hairline gridlines, whitespace does the separating
+ * Modernist design system (Claude Design handoff, design_handoff_dashboard_redesign):
+ *  - ground #f3f2f2, secondary panels #eae9e9, ink #201e1d
+ *  - ONE accent #ec3013 (positive bars, active nav, primary button, emphasis);
+ *    #ae1800 at text size (Investigate, links, shares); reverse = ink at 22%
+ *  - radius 0 everywhere; no shadows; 2px section rules, 1px column/row rules
+ *  - Archivo 400/600/800; every number in monospace tabular figures
  */
 :root {
-  --background: #f9f9f7;
-  --foreground: #0b0b0b;
+  --background: #f3f2f2;
+  --foreground: #201e1d;
 }
 
 @theme inline {
-  /* surfaces */
-  --color-bg: #f9f9f7;          /* page plane */
-  --color-panel: #fcfcfb;       /* card / chart surface */
-  --color-panel-2: #f0efec;     /* recessed wells, neutral midpoint */
-  --color-border: rgba(11, 11, 11, 0.1);
-  --color-border-soft: rgba(11, 11, 11, 0.06);
+  /* ground & panels */
+  --color-bg: #f3f2f2;
+  --color-panel: #f3f2f2;
+  --color-panel-2: #eae9e9;
+  --color-border: rgba(32, 30, 29, 0.2);
+  --color-border-soft: rgba(32, 30, 29, 0.14);
 
   /* ink */
-  --color-foreground: #0b0b0b;
-  --color-muted: #52514e;
-  --color-faint: #898781;
+  --color-foreground: #201e1d;
+  --color-muted: rgba(32, 30, 29, 0.72);
+  --color-faint: rgba(32, 30, 29, 0.55);
 
-  /* brand ink — used sparingly */
-  --color-primary: #17603a;
-  --color-primary-soft: #1d6b40;
+  /* the single accent */
+  --color-primary: #ae1800;      /* accent at text size: links, Investigate, shares */
+  --color-primary-soft: #ec3013;
+  --color-accent: #ec3013;
 
-  /* data semantics (the only two series colors) */
-  --color-positive: #eb6834;
-  --color-reverse: #2a78d6;
+  /* data semantics */
+  --color-positive: #ec3013;     /* accent bars */
+  --color-reverse: rgba(32, 30, 29, 0.22); /* grey — deliberately not a second hue */
 
-  /* status (fixed, never themed) */
-  --color-investigate: #d03b3b;
-  --color-serious: #ec835a;
-  --color-transit: #52514e;
-  --color-quality: #0ca30c;
-  --color-warn: #a16207;
-  --color-ok: #006300;
+  /* status */
+  --color-investigate: #ae1800;
+  --color-serious: #ae1800;
+  --color-transit: #605d5d;
+  --color-quality: #201e1d;
+  --color-warn: #605d5d;
+  --color-ok: #201e1d;
 
   /* chart mirrors */
-  --color-uzb: #2a78d6;
-  --color-partner: #eb6834;
-  --color-accent: #17603a;
+  --color-uzb: #201e1d;
+  --color-partner: #ec3013;
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo);
+  --font-mono: ui-monospace, Menlo, monospace;
 }
 
 * {
   border-color: var(--color-border);
+  border-radius: 0 !important;
 }
 
 html,
@@ -64,36 +63,59 @@ body {
 }
 
 body {
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-archivo), "Archivo", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
 }
 
+/* every figure, code and formula */
 .tabular {
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: ui-monospace, Menlo, monospace;
   font-variant-numeric: tabular-nums;
 }
 
+/* panels are separated by rules, not floating cards */
 .card {
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
 }
 
 .card-hover {
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: background 0.1s ease;
 }
 .card-hover:hover {
-  border-color: rgba(11, 11, 11, 0.2);
+  background: rgba(32, 30, 29, 0.045);
 }
 
-/* quiet zebra */
+/* section rules */
+.rule-2 { border-top: 2px solid rgba(32, 30, 29, 0.4); }
+.rule-1 { border-top: 1px solid rgba(32, 30, 29, 0.2); }
+
+/* section label */
+.lbl {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(32, 30, 29, 0.55);
+}
+
 .zebra > *:nth-child(even) {
-  background: #f7f7f5;
+  background: transparent;
 }
 
 a {
   color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+tr:hover td {
+  background: rgba(32, 30, 29, 0.045);
 }
 
 ::-webkit-scrollbar {
@@ -101,8 +123,7 @@ a {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d6d5cf;
-  border-radius: 8px;
+  background: rgba(32, 30, 29, 0.25);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -110,6 +131,5 @@ a {
 
 @media print {
   header, aside, .no-print { display: none !important; }
-  .card { border-color: #bbb; break-inside: avoid; }
   body { background: #fff; }
 }

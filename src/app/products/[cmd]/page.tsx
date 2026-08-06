@@ -114,7 +114,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
     `together — and the pattern is not proof of intentional misreporting, under-declaration or smuggling by any party.`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 px-7 py-6">
       {/* 1. header */}
       <div>
         <Link href="/products" className="text-sm text-muted hover:text-foreground">← All HS6 products</Link>

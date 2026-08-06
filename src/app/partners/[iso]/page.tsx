@@ -141,7 +141,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${csv}`)}`;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 px-7 py-6">
       {/* header */}
       <div>
         <Link href="/partners" className="text-sm text-muted hover:text-foreground">← All partners</Link>
