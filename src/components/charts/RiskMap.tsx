@@ -126,7 +126,7 @@ export default function RiskMap({ partners, filter, metric }: { partners: Partne
           return [
             `<b>${pr.name}</b> · <span style="${small}">data quality: ${pr.tier}</span>`,
             metricLine,
-            `<span style="color:${COLORS.positive}">Positive</span>: ${fmtUSD(pr.posT)} · <span style="color:${COLORS.reverse}">Reverse</span>: ${fmtUSD(pr.revT)}`,
+            `Positive: <b style="color:${COLORS.positive}">${fmtUSD(pr.posT)}</b> · Reverse: <b style="color:${COLORS.reverse}">${fmtUSD(pr.revT)}</b>`,
             `<span style="${small}">Partner exports (FOB) ${fmtUSD(pr.peT)} · UZB imports (CIF) ${fmtUSD(pr.uiT)} · ${fmtNum(pr.channels)} channels</span>`,
           ].join("<br/>") + grey + transit +
             `<br/><span style="${small}">Click to open the partner profile. Screening signal, not evidence of wrongdoing.</span>`;

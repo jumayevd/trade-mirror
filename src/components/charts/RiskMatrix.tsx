@@ -35,7 +35,7 @@ function quadrantAreas() {
       xAxis: x0,
       yAxis: y0,
       itemStyle: { color: faint(color, alpha) },
-      label: { show: true, position: pos, color: "#8a948e", fontSize: 10, fontWeight: 500 as const },
+      label: { show: true, position: pos, color: COLORS.axis, fontSize: 10, fontWeight: 500 as const },
     },
     { xAxis: x1, yAxis: y1 },
   ];
@@ -55,7 +55,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
     const sqrtMax = Math.sqrt(Math.max(maxAbs, 1));
     const groups = new Map<SignalClass, MatrixPoint[]>();
     for (const c of channels) {
-      const size = 6 + 30 * (Math.sqrt(Math.abs(c.primary)) / sqrtMax);
+      const size = 8 + 30 * (Math.sqrt(Math.abs(c.primary)) / sqrtMax);
       const pt: MatrixPoint = { value: [c.evidence, c.anomaly], symbolSize: Math.round(size * 10) / 10, ch: c };
       (groups.get(c.cls) ?? groups.set(c.cls, []).get(c.cls)!).push(pt);
     }
@@ -76,7 +76,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
       markLine: {
         silent: true,
         symbol: "none",
-        lineStyle: { type: "dashed" as const, color: COLORS.axis, width: 1 },
+        lineStyle: { type: "solid" as const, color: COLORS.baseline, width: 1 },
         label: { color: COLORS.axis, fontSize: 10 },
         data: [
           { xAxis: E_THRESHOLD, label: { formatter: `E ${E_THRESHOLD}` } },
@@ -148,7 +148,7 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
           return [
             `<b>${c.partner}</b> · ${c.cmdLabel}`,
             `<span style="${mono};font-size:11px;color:${COLORS.text}">HS ${c.cmd}</span> · <span style="font-size:11px;color:${COLORS.text}">${period}</span>`,
-            `<span style="color:${COLORS.positive}">Positive</span>: ${fmtUSDFull(c.posT)} · <span style="color:${COLORS.reverse}">Reverse</span>: ${fmtUSDFull(c.revT)}`,
+            `Positive: <b style="color:${COLORS.positive}">${fmtUSDFull(c.posT)}</b> · Reverse: <b style="color:${COLORS.reverse}">${fmtUSDFull(c.revT)}</b>`,
             `Anomaly <b>${c.anomaly.toFixed(0)}</b> · Evidence <b>${c.evidence.toFixed(0)}</b> · ${CLASS_LABELS[c.cls].label}`,
             `<span style="font-size:11px;color:${COLORS.text}">Persistence: ${dirYears}/${c.comparableYears} comparable years ${dirWord}; longest streak ${c.longestPosStreak}</span>`,
             `<span style="font-size:11px;color:${COLORS.text}">Flags: ${flags}</span>`,

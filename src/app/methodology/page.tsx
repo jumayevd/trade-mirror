@@ -10,7 +10,12 @@ function Formula({ children }: { children: React.ReactNode }) {
   return <div className="card my-3 px-4 py-3 font-mono text-[13px] text-foreground/90">{children}</div>;
 }
 function H({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-base font-semibold text-[var(--color-primary)]">{children}</h3>;
+  // Headings stay in ink; the brand color appears only as a quiet 3px left bar.
+  return (
+    <h3 className="border-l-[3px] border-l-[var(--color-primary)] pl-2.5 text-base font-semibold text-foreground">
+      {children}
+    </h3>
+  );
 }
 
 const DEFINITIONS: [string, string][] = [
@@ -137,10 +142,10 @@ export default function MethodologyPage() {
       </section>
 
       <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>4. Anomaly Strength (0–100)</H>
+        <H>4. Anomaly strength (0–100)</H>
         <p>Ranks how unusual a discrepancy is. It deliberately contains <em>no</em> data-quality information.</p>
         <ScoreTable rows={SCORE_A} />
-        <H>5. Evidence Quality (0–100)</H>
+        <H>5. Evidence quality (0–100)</H>
         <p>Ranks how reliable and comparable the underlying data is — displayed next to every anomaly, never hidden.</p>
         <ScoreTable rows={SCORE_E} />
         <p className="text-sm text-faint">
@@ -154,8 +159,8 @@ export default function MethodologyPage() {
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wider text-faint">
-                <th className="px-4 py-2">Anomaly</th><th className="px-4 py-2">Evidence</th><th className="px-4 py-2">Class</th><th className="px-4 py-2">Meaning</th>
+              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+                <th className="px-4 py-2 font-medium">Anomaly</th><th className="px-4 py-2 font-medium">Evidence</th><th className="px-4 py-2 font-medium">Class</th><th className="px-4 py-2 font-medium">Meaning</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -193,8 +198,8 @@ export default function MethodologyPage() {
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wider text-faint">
-                <th className="px-4 py-2">Not allowed</th><th className="px-4 py-2">Allowed</th>
+              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+                <th className="px-4 py-2 font-medium">Not allowed</th><th className="px-4 py-2 font-medium">Allowed</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -241,8 +246,8 @@ function ScoreTable({ rows }: { rows: string[][] }) {
     <div className="card overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wider text-faint">
-            <th className="px-4 py-2">Component</th><th className="px-4 py-2">Weight</th><th className="px-4 py-2">Computation</th>
+          <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+            <th className="px-4 py-2 font-medium">Component</th><th className="px-4 py-2 font-medium">Weight</th><th className="px-4 py-2 font-medium">Computation</th>
           </tr>
         </thead>
         <tbody className="zebra">

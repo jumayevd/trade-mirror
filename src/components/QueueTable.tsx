@@ -16,6 +16,13 @@ import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
 
 export type HsLevel = 2 | 4 | 6;
 
+/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
+
 export const LEVEL_LABELS: Record<HsLevel, string> = {
   2: "HS2",
   4: "HS4 · derived",
@@ -146,7 +153,7 @@ export default function QueueTable({
     setExpanded(null);
   };
 
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium uppercase tracking-wider text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
   const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
@@ -161,7 +168,7 @@ export default function QueueTable({
               key={l}
               onClick={() => controls(() => onLevelChange(l))}
               aria-pressed={level === l}
-              className={`px-2 py-1 text-[12px] font-medium whitespace-nowrap ${level === l ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel)] text-muted hover:text-foreground"}`}
+              className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               title={LEVEL_TIPS[l]}
             >
               {LEVEL_LABELS[l]}
@@ -215,9 +222,9 @@ export default function QueueTable({
                 <th className={thNum} title="Partner-reported exports, FOB.">Partner FOB</th>
                 <th className={thNum} title={`Partner exports × (1 + ${Math.round(filter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
                 <th className={thNum} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
-                <th className={thNum} title="Expected CIF − UZB imports, summed over comparable years. Amber = positive (partner > UZB); blue = reverse (UZB > partner).">Signed</th>
-                <th className={thNum} title="Positive discrepancy — years where expected CIF exceeded UZB records, accumulated separately, never netted away.">Positive</th>
-                <th className={thNum} title="Reverse discrepancy — years where UZB records exceeded expected CIF, accumulated separately, never netted away.">Reverse</th>
+                <th className={thNum} title="Expected CIF − UZB imports, summed over comparable years. + = positive (partner > UZB, orange dot); − = reverse (UZB > partner, blue dot)."><HeadDot color={COLORS.positive} /><HeadDot color={COLORS.reverse} />Signed</th>
+                <th className={thNum} title="Positive discrepancy — years where expected CIF exceeded UZB records, accumulated separately, never netted away."><HeadDot color={COLORS.positive} />Positive</th>
+                <th className={thNum} title="Reverse discrepancy — years where UZB records exceeded expected CIF, accumulated separately, never netted away."><HeadDot color={COLORS.reverse} />Reverse</th>
                 <th className={thNum} title="Bounded asymmetry: absolute discrepancy over max(expected CIF, UZB imports), 0–100%.">Asym</th>
                 <th className={th} title="Years with a positive discrepancy out of comparable years, and the longest consecutive streak.">{t("common.persistence")}</th>
                 <th className={th}>{t("filter.robustness")}</th>
@@ -271,15 +278,14 @@ export default function QueueTable({
                     <td className={tdNum} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
                     <td
                       className={`${tdNum} font-semibold`}
-                      style={{ color: c.signedT >= 0 ? COLORS.positive : COLORS.reverse }}
                       title={`${fmtUSDFull(c.signedT)} — ${c.signedT >= 0 ? "positive: partner > UZB records" : "reverse: UZB records > partner"}`}
                     >
                       {fmtUSD(c.signedT, { sign: true })}
                     </td>
-                    <td className={tdNum} style={{ color: COLORS.positive }} title={`Positive: ${fmtUSDFull(c.posT)}`}>
+                    <td className={tdNum} title={`Positive: ${fmtUSDFull(c.posT)}`}>
                       {fmtUSD(c.posT)}
                     </td>
-                    <td className={tdNum} style={{ color: COLORS.reverse }} title={`Reverse: ${fmtUSDFull(c.revT)}`}>
+                    <td className={tdNum} title={`Reverse: ${fmtUSDFull(c.revT)}`}>
                       {fmtUSD(c.revT)}
                     </td>
                     <td className={tdNum}>{fmtPct(c.boundedAsymmetry, 0)}</td>
@@ -366,7 +372,7 @@ export default function QueueTable({
 function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: number[] }) {
   const { t } = useI18n();
   const byYear = new Map(c.years.map((yr) => [yr.y, yr]));
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium uppercase tracking-wider text-faint";
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint";
   const thNum = `${th} text-right`;
   const td = "px-3 py-1.5 text-[12px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
@@ -375,7 +381,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
       <div>
-        <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">
+        <h4 className="mb-1 text-[10.5px] font-medium text-faint">
           Per-year detail · {c.partner} × HS <span className="font-mono">{c.cmd}</span>
         </h4>
         <table className="w-full border-collapse">
@@ -384,7 +390,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
               <th className={th}>{t("common.year")}</th>
               <th className={thNum}>Partner FOB</th>
               <th className={thNum}>UZB imports</th>
-              <th className={thNum}>Signed</th>
+              <th className={thNum}><HeadDot color={COLORS.positive} /><HeadDot color={COLORS.reverse} />Signed</th>
             </tr>
           </thead>
           <tbody>
@@ -397,11 +403,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
                     <>
                       <td className={tdNum} title={fmtUSDFull(yr.pe)}>{fmtUSD(yr.pe)}</td>
                       <td className={tdNum} title={fmtUSDFull(yr.ui)}>{fmtUSD(yr.ui)}</td>
-                      <td
-                        className={tdNum}
-                        style={{ color: yr.signed >= 0 ? COLORS.positive : COLORS.reverse }}
-                        title={fmtUSDFull(yr.signed)}
-                      >
+                      <td className={tdNum} title={fmtUSDFull(yr.signed)}>
                         {fmtUSD(yr.signed, { sign: true })}
                       </td>
                     </>
@@ -424,18 +426,18 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
 
       <div className="space-y-3 text-[13px] leading-relaxed">
         <div>
-          <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">Reading</h4>
+          <h4 className="mb-1 text-[10.5px] font-medium text-faint">Reading</h4>
           <p className="text-muted">{interpretation(c, filter)}</p>
         </div>
         <div>
-          <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">
+          <h4 className="mb-1 text-[10.5px] font-medium text-faint">
             Alternative explanations to weigh
           </h4>
           {hints.length > 0 ? (
             <ul className="space-y-1">
               {hints.map((h, i) => (
                 <li key={i} className="flex gap-2 text-muted">
-                  <span className="text-[var(--color-warn,#b45309)]">!</span>
+                  <span className="text-[var(--color-warn,#a16207)]">!</span>
                   <span>{h}</span>
                 </li>
               ))}

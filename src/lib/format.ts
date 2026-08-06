@@ -20,37 +20,45 @@ export function fmtNum(v: number): string {
   return new Intl.NumberFormat("en-US").format(Math.round(v));
 }
 
-/** Anomaly strength: neutral greys warming to amber — never red on its own. */
+/** Anomaly strength dot color — neutral, warming with the score. Never red. */
 export function anomalyColor(score: number): string {
-  if (score >= 55) return "#c2701e";
-  if (score >= 35) return "#8a7a4d";
-  return "#8a948e";
+  if (score >= 55) return "#eb6834";
+  if (score >= 35) return "#a16207";
+  return "#898781";
 }
-/** Evidence quality: grey to green. */
+/** Evidence quality dot color — grey to green. */
 export function evidenceColor(score: number): string {
-  if (score >= 60) return "#2f7d4f";
+  if (score >= 60) return "#0ca30c";
   if (score >= 40) return "#6d8a5c";
-  return "#8a948e";
+  return "#898781";
 }
 
+/** Status palette (fixed, dataviz reference): never reused as series colors. */
 export const CLASS_COLORS: Record<string, string> = {
-  investigate: "#b91c1c", // the only red in the system
-  verify: "#a16207",
-  monitor: "#2f7d4f",
-  low: "#8a948e",
-  transit: "#6b6480",
+  investigate: "#d03b3b", // critical — the only red in the system
+  verify: "#ec835a", // serious
+  monitor: "#0ca30c", // good
+  low: "#898781",
+  transit: "#52514e",
 };
 
 export const COLORS = {
-  uzb: "#3565c0",
-  partner: "#c2701e",
-  positive: "#c2701e",
-  reverse: "#3565c0",
-  transit: "#6b6480",
-  investigate: "#b91c1c",
-  ok: "#2f7d4f",
+  // series (validated categorical slots 1 & 2)
+  uzb: "#2a78d6",
+  partner: "#eb6834",
+  positive: "#eb6834",
+  reverse: "#2a78d6",
+  // status / accents
+  transit: "#52514e",
+  investigate: "#d03b3b",
+  ok: "#006300", // success text
+  good: "#0ca30c",
   warn: "#a16207",
-  grid: "#eef0ee",
-  axis: "#8a948e",
-  text: "#55605a",
+  // chrome & ink
+  grid: "#e1e0d9",
+  baseline: "#c3c2b7",
+  axis: "#898781",
+  text: "#52514e",
+  surface: "#fcfcfb",
+  neutralMid: "#f0efec",
 };

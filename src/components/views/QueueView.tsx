@@ -16,7 +16,7 @@ import {
   aggregate, meta, ROBUSTNESS_LABELS,
   type Aggregate, type Channel, type Filter, type Robustness,
 } from "@/lib/dataset";
-import { baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
+import { BAR_SPEC, LINE_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /**
  * Discrepancy & Risk — the analytical hub. Three quiet tabs share one HS-level state:
@@ -43,24 +43,24 @@ const moneyAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
   nameTextStyle: { color: COLORS.axis, fontSize: 10 },
   axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
-  splitLine: { lineStyle: { color: COLORS.grid } },
+  splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
 const countAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
   nameTextStyle: { color: COLORS.axis, fontSize: 10 },
   axisLabel: { color: COLORS.axis, fontSize: 10 },
-  splitLine: { lineStyle: { color: COLORS.grid } },
-  axisLine: { show: false },
-});
-const pctAxis = (name?: string): YAXisComponentOption => ({
-  type: "value", name, min: 0, max: 1,
-  nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-  axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtPct(v, 0) },
-  splitLine: { show: false },
+  splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
 const quietLegend = { top: 0, textStyle: { color: COLORS.text, fontSize: 11 }, itemWidth: 12, itemHeight: 8 };
+
+/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
@@ -78,7 +78,7 @@ function quantile(sortedAsc: number[], q: number): number {
 }
 
 /* shared table cell classes (design rules) */
-const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium uppercase tracking-wider text-faint whitespace-nowrap";
+const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
 const TH_NUM = `${TH} text-right`;
 const TD = "px-3 py-1.5 align-middle text-[13px]";
 const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
@@ -91,7 +91,7 @@ function LevelToggle({ level, onChange }: { level: HsLevel; onChange: (l: HsLeve
           key={l}
           onClick={() => onChange(l)}
           aria-pressed={level === l}
-          className={`px-2 py-1 text-[12px] font-medium whitespace-nowrap ${level === l ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel)] text-muted hover:text-foreground"}`}
+          className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
         >
           {LEVEL_LABELS[l]}
         </button>
@@ -135,7 +135,7 @@ export default function QueueView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-faint">
+            <p className="text-[10.5px] font-medium text-faint">
               UN Comtrade · {meta.window.start}–{meta.window.end} · mirror-statistics screening
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
@@ -168,7 +168,7 @@ export default function QueueView() {
             aria-selected={tab === tb.key}
             onClick={() => setTab(tb.key)}
             title={tb.tip}
-            className={`px-2.5 py-1 text-[12px] font-medium whitespace-nowrap ${tab === tb.key ? "bg-[var(--color-primary)] text-white" : "bg-[var(--color-panel)] text-muted hover:text-foreground"}`}
+            className={`px-2.5 py-1 text-[12px] whitespace-nowrap ${tab === tb.key ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
           >
             {tb.label}
           </button>
@@ -331,17 +331,17 @@ function ReverseTab({
         name: "Reverse (UZB > partner)",
         type: "bar",
         data: revFull.annual.map((a) => Math.round(a.reverse)),
-        itemStyle: { color: COLORS.reverse, borderRadius: [2, 2, 0, 0] },
-        barMaxWidth: 32,
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.reverse },
       },
       {
         name: "Positive, for contrast",
         type: "line",
         data: revFull.annual.map((a) => Math.round(a.positive)),
         showSymbol: true,
-        symbolSize: 4,
-        lineStyle: { color: COLORS.positive, width: 2 },
-        itemStyle: { color: COLORS.positive },
+        ...LINE_SPEC,
+        lineStyle: { ...LINE_SPEC.lineStyle, color: COLORS.positive },
+        itemStyle: { ...LINE_SPEC.itemStyle, color: COLORS.positive },
       },
     ],
   }), [revFull.annual]);
@@ -383,7 +383,6 @@ function ReverseTab({
           label="Top partner by reverse"
           value={topPartner ? topPartner.name : "None"}
           sub={topPartner ? `${fmtUSD(topPartner.revT)} in period` : "no comparable observations"}
-          accent={topPartner ? COLORS.reverse : undefined}
           info="Partner with the largest total reverse discrepancy (Σ max(UZB imports − expected CIF, 0)) under the current filters."
         />
       </section>
@@ -391,7 +390,7 @@ function ReverseTab({
       <section>
         <SectionTitle
           title="Reverse discrepancy over time"
-          desc={`Full ${meta.window.start}–${meta.window.end} window under the current filters. Blue bars: reverse discrepancy (UZB records > partner). Amber line: positive discrepancy, for scale contrast only — the two are never netted. Source: UN Comtrade.`}
+          desc={`Full ${meta.window.start}–${meta.window.end} window under the current filters. Blue bars: reverse discrepancy (UZB records > partner). Orange line: positive discrepancy, for scale contrast only — the two are never netted. Source: UN Comtrade.`}
         />
         {revFull.annual.length === 0 ? (
           <EmptyState />
@@ -419,7 +418,7 @@ function ReverseTab({
                   <th className={TH}>{LEVEL_LABELS[level]} code</th>
                   <th className={TH_NUM} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
                   <th className={TH_NUM} title={`Partner exports × (1 + ${Math.round(revFilter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
-                  <th className={TH_NUM} title="Σ max(UZB imports − expected CIF, 0) over comparable years.">Reverse value</th>
+                  <th className={TH_NUM} title="Σ max(UZB imports − expected CIF, 0) over comparable years."><HeadDot color={COLORS.reverse} />Reverse value</th>
                   <th className={TH}>{t("common.evidence")}</th>
                   <th className={TH_NUM} title="Years with a reverse discrepancy above the ±$100K noise floor, out of comparable years in the selected period.">Rev / comp. yrs</th>
                   <th className={TH}>{t("common.flags")}</th>
@@ -437,7 +436,7 @@ function ReverseTab({
                     </td>
                     <td className={TD_NUM} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
                     <td className={TD_NUM} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
-                    <td className={`${TD_NUM} font-semibold`} style={{ color: COLORS.reverse }} title={fmtUSDFull(c.revT)}>{fmtUSD(c.revT)}</td>
+                    <td className={`${TD_NUM} font-semibold`} title={fmtUSDFull(c.revT)}>{fmtUSD(c.revT)}</td>
                     <td className={TD}><EvidenceBadge score={c.evidence} /></td>
                     <td className={TD_NUM}>{c.revYears}/{c.comparableYears} yr</td>
                     <td className={TD}><FlagChips c={c} /></td>
@@ -493,7 +492,7 @@ const HIST_POS_LABELS = ["$100K–1M", "$1M–10M", "$10M–100M", "$100M–1B",
 const HIST_LABELS = [...HIST_POS_LABELS.map((l) => `− ${l}`).reverse(), "± < $100K", ...HIST_POS_LABELS];
 
 const ROB_ORDER: { key: Robustness; color: string }[] = [
-  { key: "robust", color: COLORS.ok },
+  { key: "robust", color: COLORS.good },
   { key: "freight-sensitive", color: COLORS.warn },
   { key: "coverage-sensitive", color: COLORS.axis },
   { key: "insufficient", color: COLORS.grid },
@@ -554,11 +553,14 @@ function ProfileTab({
         data: counts.map((v, i) => ({
           value: v,
           itemStyle: {
-            color: i < center ? COLORS.reverse : i === center ? COLORS.axis : COLORS.positive,
-            borderRadius: [2, 2, 0, 0] as [number, number, number, number],
+            // one axis, diverging: orange positive / blue reverse / neutral noise band
+            color: i < center ? COLORS.reverse : i === center ? COLORS.neutralMid : COLORS.positive,
+            borderRadius: [4, 4, 0, 0] as [number, number, number, number],
+            borderColor: COLORS.surface,
+            borderWidth: 1,
           },
         })),
-        barMaxWidth: 32,
+        barMaxWidth: 24,
       }],
     };
   }, [base]);
@@ -574,6 +576,8 @@ function ProfileTab({
     return { rows, posTotal };
   }, [base]);
 
+  // single value axis — the cumulative share lives in the tooltip and in the
+  // "Share of positive total" column of the table above (no dual-axis charts)
   const thresOption = useMemo<EChartsOption>(() => ({
     backgroundColor: "transparent",
     grid: baseGrid,
@@ -587,25 +591,15 @@ function ProfileTab({
         return `${r.label}<br/>${fmtNum(r.count)} channels · ${fmtUSDFull(r.value)}<br/>${fmtPct(r.share)} of the positive total`;
       },
     },
-    legend: quietLegend,
     xAxis: cat(thres.rows.map((r) => r.label)),
-    yAxis: [countAxis("channels"), pctAxis("share")],
+    yAxis: countAxis("channels"),
     series: [
       {
         name: "Channels above threshold",
         type: "bar",
         data: thres.rows.map((r) => r.count),
-        itemStyle: { color: COLORS.positive, borderRadius: [2, 2, 0, 0] },
-        barMaxWidth: 32,
-      },
-      {
-        name: "Cumulative share of positive total",
-        type: "line",
-        yAxisIndex: 1,
-        data: thres.rows.map((r) => Math.round(r.share * 1000) / 1000),
-        lineStyle: { color: COLORS.text, width: 2 },
-        itemStyle: { color: COLORS.text },
-        symbolSize: 4,
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
       },
     ],
   }), [thres]);
@@ -654,28 +648,19 @@ function ProfileTab({
         return `${c.partner} · ${c.cmdLabel}<br/>HS ${c.cmd}<br/>Positive discrepancy: ${fmtUSDFull(c.posT)}<br/>Cumulative share: ${fmtPct(conc.cumShares[i])}`;
       },
     },
-    legend: quietLegend,
     xAxis: {
       ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
       axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 10, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
     },
-    yAxis: [moneyAxis(), pctAxis("cumulative")],
+    // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
+    yAxis: moneyAxis(),
     series: [
       {
         name: "Positive discrepancy",
         type: "bar",
         data: conc.pareto.map((c) => Math.round(c.posT)),
-        itemStyle: { color: COLORS.positive, borderRadius: [2, 2, 0, 0] },
-        barMaxWidth: 32,
-      },
-      {
-        name: "Cumulative share",
-        type: "line",
-        yAxisIndex: 1,
-        data: conc.cumShares.map((s) => Math.round(s * 1000) / 1000),
-        lineStyle: { color: COLORS.text, width: 2 },
-        itemStyle: { color: COLORS.text },
-        symbolSize: 4,
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
       },
     ],
   }), [conc]);
@@ -770,8 +755,8 @@ function ProfileTab({
           <EChart option={histOption} />
         </div>
         <p className="max-w-3xl text-xs text-faint">
-          Channels binned on a symmetric log10 scale. Blue (left) = reverse (UZB &gt; partner); amber
-          (right) = positive (partner &gt; UZB); grey centre = within the ±$100K noise band. {t("common.source")}.
+          Channels binned on a symmetric log10 scale. Blue (left) = reverse (UZB &gt; partner); orange
+          (right) = positive (partner &gt; UZB); neutral centre = within the ±$100K noise band. {t("common.source")}.
         </p>
       </section>
 
@@ -789,7 +774,7 @@ function ProfileTab({
                   Threshold <InfoTip text="Materiality floor applied to the channel's total positive discrepancy, Σ max(signed, 0) over the selected period." />
                 </th>
                 <th className={TH_NUM}>Channels</th>
-                <th className={TH_NUM}>Σ positive</th>
+                <th className={TH_NUM}><HeadDot color={COLORS.positive} />Σ positive</th>
                 <th className={TH_NUM}>
                   Share of positive total <InfoTip text={`Σ positive discrepancy of channels at or above the threshold ÷ ${fmtUSD(thres.posTotal)} (the positive total over all ${fmtNum(n)} base channels).`} />
                 </th>
@@ -800,7 +785,7 @@ function ProfileTab({
                 <tr key={r.label} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} tabular font-medium`}>{r.label}</td>
                   <td className={TD_NUM}>{fmtNum(r.count)}</td>
-                  <td className={TD_NUM} style={{ color: COLORS.positive }}>{fmtUSD(r.value)}</td>
+                  <td className={TD_NUM}>{fmtUSD(r.value)}</td>
                   <td className={TD_NUM}>{fmtPct(r.share)}</td>
                 </tr>
               ))}
@@ -849,8 +834,8 @@ function ProfileTab({
         </div>
         <p className="max-w-3xl text-xs text-faint">
           Pareto: top {conc.pareto.length} of {fmtNum(conc.n)} positive channels (partner ISO3 + code on the
-          axis; hover for full names). Amber bars: channel positive discrepancy (left axis). Line: cumulative
-          share of the positive total (right axis). {t("common.source")}.
+          axis; hover for full names). Orange bars: channel positive discrepancy; the cumulative share of the
+          positive total is shown in the tooltip. {t("common.source")}.
         </p>
       </section>
 
@@ -861,7 +846,7 @@ function ProfileTab({
           desc="All base channels by scenario robustness. Sensitive channels are not discarded — they are screened at the comparable stage with lower evidence scores."
         />
         <div className="card p-4">
-          <div className="flex h-4 w-full overflow-hidden rounded border border-[var(--color-border)]">
+          <div className="flex h-4 w-full gap-[2px] overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-panel)]">
             {ROB_ORDER.map(({ key, color }) =>
               rob.by[key] > 0 ? (
                 <div
@@ -872,10 +857,10 @@ function ProfileTab({
               ) : null,
             )}
           </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted">
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12px] text-muted">
             {ROB_ORDER.map(({ key, color }) => (
-              <span key={key} className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-sm border border-[var(--color-border)]" style={{ background: color }} />
+              <span key={key} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
                 {ROBUSTNESS_LABELS[key]} <span className="tabular text-faint">{fmtNum(rob.by[key])} · {fmtPct(n > 0 ? rob.by[key] / n : 0, 0)}</span>
               </span>
             ))}
@@ -907,7 +892,7 @@ function ProfileTab({
                   <th className={TH}>{LEVEL_LABELS[level]} code</th>
                   <th className={TH_NUM} title="Longest consecutive run of years with a positive discrepancy (partner > UZB records) in the full window.">Streak</th>
                   <th className={TH_NUM} title="Years with a positive discrepancy out of comparable years in the full window.">Pos / comp. yrs</th>
-                  <th className={TH_NUM} title="Positive discrepancy accumulated over the full window — never netted against reverse years.">Positive total</th>
+                  <th className={TH_NUM} title="Positive discrepancy accumulated over the full window — never netted against reverse years."><HeadDot color={COLORS.positive} />Positive total</th>
                 </tr>
               </thead>
               <tbody className="zebra">
@@ -925,7 +910,7 @@ function ProfileTab({
                       {c.longestPosStreak} yr
                     </td>
                     <td className={TD_NUM}>{c.posYears}/{c.comparableYears}</td>
-                    <td className={TD_NUM} style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
+                    <td className={TD_NUM} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                   </tr>
                 ))}
               </tbody>

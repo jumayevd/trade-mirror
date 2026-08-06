@@ -2,17 +2,16 @@
 
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
-import { baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 import { COLORS, fmtNum, fmtUSDFull } from "@/lib/format";
 
 const POSITIVE_SERIES = "Positive discrepancy (partner > UZB)";
 const REVERSE_SERIES = "Reverse discrepancy (UZB > partner)";
-const PARTNERS_SERIES = "Comparable partners";
 
 /**
  * Structural breaks (spec §6.10): marked so that real trade shocks are not read
  * as screening signals and data-coverage artifacts are not read as real shocks.
- * All markers are quiet grey dashed lines with tiny labels.
+ * All markers are quiet grey solid lines with tiny labels.
  */
 const STRUCTURAL_BREAKS: { year: number; label: string }[] = [
   { year: 2020, label: "COVID-19" },
@@ -29,17 +28,18 @@ export default function TrendChart({
 }) {
   const years = annual.map((a) => String(a.year));
   const breaks = STRUCTURAL_BREAKS.filter((b) => annual.some((a) => a.year === b.year));
+  const partnersByYear = new Map(annual.map((a) => [String(a.year), a.comparablePartners]));
 
   const option: EChartsOption = {
     backgroundColor: "transparent",
     textStyle: baseTextStyle,
-    grid: { ...baseGrid, right: 64 },
+    grid: baseGrid,
     legend: {
       top: 0,
       itemWidth: 12,
       itemHeight: 8,
       textStyle: { color: COLORS.text, fontSize: 11 },
-      data: [POSITIVE_SERIES, REVERSE_SERIES, PARTNERS_SERIES],
+      data: [POSITIVE_SERIES, REVERSE_SERIES],
     },
     tooltip: {
       ...baseTooltip(),
@@ -53,40 +53,34 @@ export default function TrendChart({
           value?: number;
         }[];
         if (items.length === 0) return "";
-        const head = `<div style="font-weight:600;margin-bottom:4px">${items[0]?.axisValue ?? ""}</div>`;
+        const year = String(items[0]?.axisValue ?? "");
+        const head = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
         const lines = items.map((it) => {
-          const v =
-            typeof it.value === "number"
-              ? it.seriesName === PARTNERS_SERIES
-                ? fmtNum(it.value)
-                : fmtUSDFull(it.value)
-              : "not reported";
+          const v = typeof it.value === "number" ? fmtUSDFull(it.value) : "not reported";
           return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
         });
-        return head + lines.join("");
+        const partners = partnersByYear.get(year);
+        const partnersLine =
+          partners !== undefined
+            ? `<div style="margin-top:2px;color:${COLORS.text}">Comparable partners: <span style="font-weight:600">${fmtNum(partners)}</span></div>`
+            : "";
+        return head + lines.join("") + partnersLine;
       },
     },
     xAxis: catAxis(years),
-    yAxis: [
-      valueAxis("USD"),
-      {
-        type: "value",
-        name: "comparable partners",
-        nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-        position: "right",
-        minInterval: 1,
-        axisLabel: { color: COLORS.axis, fontSize: 10 },
-        splitLine: { show: false },
-        axisLine: { show: false },
-      },
-    ],
+    yAxis: valueAxis("USD"),
     series: [
       {
         name: POSITIVE_SERIES,
         type: "bar",
         data: annual.map((a) => Math.round(a.positive)),
-        itemStyle: { color: COLORS.positive, borderRadius: [2, 2, 0, 0] },
-        barMaxWidth: 32,
+        ...BAR_SPEC,
+        itemStyle: {
+          ...BAR_SPEC.itemStyle,
+          color: COLORS.positive,
+          borderColor: COLORS.surface,
+          borderWidth: 1,
+        },
         markLine:
           breaks.length > 0
             ? {
@@ -101,7 +95,7 @@ export default function TrendChart({
                     color: COLORS.axis,
                     fontSize: 9,
                   },
-                  lineStyle: { color: COLORS.axis, type: "dashed", width: 1 },
+                  lineStyle: { color: COLORS.axis, type: "solid", width: 1 },
                 })),
               }
             : undefined,
@@ -110,18 +104,13 @@ export default function TrendChart({
         name: REVERSE_SERIES,
         type: "bar",
         data: annual.map((a) => Math.round(a.reverse)),
-        itemStyle: { color: COLORS.reverse, borderRadius: [2, 2, 0, 0] },
-        barMaxWidth: 32,
-      },
-      {
-        name: PARTNERS_SERIES,
-        type: "line",
-        yAxisIndex: 1,
-        data: annual.map((a) => a.comparablePartners),
-        symbol: "circle",
-        symbolSize: 4,
-        lineStyle: { color: COLORS.ok, width: 2 },
-        itemStyle: { color: COLORS.ok },
+        ...BAR_SPEC,
+        itemStyle: {
+          ...BAR_SPEC.itemStyle,
+          color: COLORS.reverse,
+          borderColor: COLORS.surface,
+          borderWidth: 1,
+        },
       },
     ],
   };
@@ -130,11 +119,11 @@ export default function TrendChart({
     <div>
       <EChart option={option} style={{ height }} />
       <p className="mt-1.5 max-w-3xl text-xs text-faint">
-        Amber bars: positive discrepancy (partner &gt; UZB records). Blue bars: reverse (UZB records &gt;
-        partner) — accumulated separately, never netted. Green line (right axis): partners with comparable
-        data that year. Dashed markers flag structural breaks — 2020 COVID-19, 2022 partner reporting stop,
-        2023 HS granularity expansion — to separate real trade shocks from data-coverage artifacts; a step
-        change at a marker may reflect reporting, not flows. Source: UN Comtrade.
+        Orange bars: positive discrepancy (partner &gt; UZB records). Blue bars: reverse (UZB records &gt;
+        partner) — accumulated separately, never netted. The number of partners with comparable data each
+        year is shown in the tooltip. Grey markers flag structural breaks — 2020 COVID-19, 2022 partner
+        reporting stop, 2023 HS granularity expansion — to separate real trade shocks from data-coverage
+        artifacts; a step change at a marker may reflect reporting, not flows. Source: UN Comtrade.
       </p>
     </div>
   );

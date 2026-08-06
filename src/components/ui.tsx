@@ -4,23 +4,36 @@ import { anomalyColor, evidenceColor, CLASS_COLORS } from "@/lib/format";
 import { CLASS_LABELS, ROBUSTNESS_LABELS, contextLine, type Filter, type Robustness, type SignalClass, type Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 
+/**
+ * Stat tile (dataviz contract): sentence-case label, semibold proportional
+ * value (auto-compact), optional context line and signed delta. Numbers use
+ * proportional figures — tabular is reserved for table columns.
+ */
 export function Stat({
-  label, value, sub, accent, info, onClick,
+  label, value, sub, accent, info, delta, deltaGood, onClick,
 }: {
-  label: string; value: string; sub?: string; accent?: string; info?: string; onClick?: () => void;
+  label: string; value: string; sub?: string; accent?: string; info?: string;
+  delta?: string; deltaGood?: boolean; onClick?: () => void;
 }) {
   return (
     <div className={`card p-3.5 ${onClick ? "card-hover cursor-pointer" : ""}`} onClick={onClick}
       role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-faint">{label}</div>
+        <div className="text-[12px] leading-snug text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      <div className="tabular mt-1 text-[21px] font-semibold leading-tight" style={accent ? { color: accent } : undefined}>
-        {value}
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-[22px] font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
+          {value}
+        </span>
+        {delta && (
+          <span className="text-[11px] font-medium" style={{ color: deltaGood ? "var(--color-ok)" : "var(--color-serious)" }}>
+            {delta}
+          </span>
+        )}
       </div>
-      {sub && <div className="mt-0.5 text-xs leading-snug text-muted">{sub}</div>}
+      {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
@@ -54,59 +67,49 @@ export function ContextLine({ filter }: { filter: Filter }) {
   );
 }
 
-/* ---------- quiet chip primitives ---------- */
+/* ---------- chips: identity comes from a small colored dot beside ink text ---------- */
 
-function chip(color?: string) {
-  return {
-    className: "inline-flex items-center gap-1 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4",
-    style: {
-      color: color ?? "var(--color-muted)",
-      borderColor: "var(--color-border)",
-      background: "var(--color-panel)",
-    } as React.CSSProperties,
-  };
-}
-
-/** Anomaly strength 0–100 — number-first, subtle color. */
-export function AnomalyBadge({ score }: { score: number }) {
-  const p = chip(anomalyColor(score));
+function DotChip({ dot, children, title, className = "" }: { dot?: string; children: React.ReactNode; title?: string; className?: string }) {
   return (
-    <span {...p} title={`Anomaly strength ${score.toFixed(0)}/100 — how unusual the discrepancy is (magnitude, relative size, persistence, dynamics, unit values). Says nothing about data quality.`}>
-      A·{score.toFixed(0)}
+    <span className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted ${className}`} title={title}>
+      {dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dot }} />}
+      {children}
     </span>
   );
 }
 
-/** Evidence quality 0–100. */
-export function EvidenceBadge({ score }: { score: number }) {
-  const p = chip(evidenceColor(score));
+export function AnomalyBadge({ score }: { score: number }) {
   return (
-    <span {...p} title={`Evidence quality ${score.toFixed(0)}/100 — how reliable and comparable the underlying data is (coverage, reporter reliability, HS comparability, weight availability, freight robustness, transit exposure).`}>
-      E·{score.toFixed(0)}
-    </span>
+    <DotChip dot={anomalyColor(score)} title={`Anomaly strength ${score.toFixed(0)}/100 — how unusual the discrepancy is (magnitude, relative size, persistence, dynamics, unit values). Says nothing about data quality.`}>
+      A {score.toFixed(0)}
+    </DotChip>
+  );
+}
+
+export function EvidenceBadge({ score }: { score: number }) {
+  return (
+    <DotChip dot={evidenceColor(score)} title={`Evidence quality ${score.toFixed(0)}/100 — how reliable and comparable the underlying data is (coverage, reporter reliability, HS comparability, weight availability, freight robustness, transit exposure).`}>
+      E {score.toFixed(0)}
+    </DotChip>
   );
 }
 
 export function ClassBadge({ cls }: { cls: SignalClass }) {
   const { t } = useI18n();
-  const c = CLASS_COLORS[cls];
   return (
-    <span className="inline-flex items-center gap-1.5 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4"
-      style={{ color: cls === "low" ? "var(--color-muted)" : c, borderColor: "var(--color-border)", background: "var(--color-panel)" }}
-      title={CLASS_LABELS[cls].desc}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
+    <DotChip dot={CLASS_COLORS[cls]} title={CLASS_LABELS[cls].desc}>
       {t(`cls.${cls}` as never)}
-    </span>
+    </DotChip>
   );
 }
 
 export function RobustnessBadge({ r }: { r: Robustness }) {
   const { t } = useI18n();
-  const p = chip(r === "robust" ? "#2f7d4f" : "var(--color-muted)");
   return (
-    <span {...p} title={`Robustness: ${ROBUSTNESS_LABELS[r]}. Robust = the sign holds at 6%, 10% and 15% freight, with enough comparable years and no major quality flags.`}>
+    <DotChip dot={r === "robust" ? "#0ca30c" : r === "insufficient" ? "#898781" : "#ec835a"}
+      title={`Robustness: ${ROBUSTNESS_LABELS[r]}. Robust = the sign holds at 6%, 10% and 15% freight, with enough comparable years and no major quality flags.`}>
       {t(`rob.${r}` as never)}
-    </span>
+    </DotChip>
   );
 }
 
@@ -116,23 +119,15 @@ const TIER_TIP: Record<Tier, string> = {
   Low: "Weak mirror: sparse or lapsed reporting — the discrepancy may be a data artifact.",
 };
 export function QualityTag({ tier, tip }: { tier: Tier; tip?: string }) {
-  const c = tier === "High" ? "#2f7d4f" : tier === "Medium" ? "#a16207" : "#8a948e";
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded border px-1.5 py-px text-[10.5px] font-medium leading-4"
-      style={{ color: "var(--color-muted)", borderColor: "var(--color-border)" }} title={tip ?? TIER_TIP[tier]}>
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
-      data {tier.toLowerCase()}
-    </span>
-  );
+  const dot = tier === "High" ? "#0ca30c" : tier === "Medium" ? "#fab219" : "#898781";
+  return <DotChip dot={dot} title={tip ?? TIER_TIP[tier]}>data {tier.toLowerCase()}</DotChip>;
 }
 
 export function TransitTag() {
-  const p = chip("var(--color-transit)");
   return (
-    <span {...p} className={`${p.className} cursor-help`}
-      title="Transit / re-export hub. Uzbekistan records imports by country of ORIGIN while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies. Assessed separately from core channels.">
+    <DotChip className="cursor-help" title="Transit / re-export hub. Uzbekistan records imports by country of ORIGIN while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies. Assessed separately from core channels.">
       transit
-    </span>
+    </DotChip>
   );
 }
 
@@ -151,7 +146,7 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-center gap-1">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1">
-            <span className={`rounded border px-1.5 py-0.5 text-[11px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
+            <span className={`rounded-md border px-1.5 py-0.5 text-[11px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
               title={s.active ? "Supported by open trade data" : s.n === 4 ? "Requires tariff/behavioural evidence — planned phase 2" : "Requires declarations, audit or administrative decision — never claimed on this site"}>
               {s.n} · {t(s.key as never)}
             </span>
@@ -165,7 +160,7 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
 }
 
 export function Pill({ children }: { children: React.ReactNode }) {
-  return <span className="rounded border border-[var(--color-border)] px-1.5 py-px text-[10.5px] font-medium text-muted">{children}</span>;
+  return <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[10.5px] font-medium text-muted">{children}</span>;
 }
 
 export function EmptyState({ text }: { text?: string }) {

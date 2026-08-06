@@ -25,7 +25,7 @@ export default function Sparkline({
           showSymbol: false,
           smooth: true,
           lineStyle: { color, width: 1.5 },
-          areaStyle: { color, opacity: 0.12 },
+          areaStyle: { color, opacity: 0.1 },
         }
       : {
           type: "bar" as const,

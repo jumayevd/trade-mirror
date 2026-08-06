@@ -87,16 +87,16 @@ export default function Heatmap({
         orient: "horizontal",
         left: "center",
         bottom: 4,
-        textStyle: { color: COLORS.text, fontSize: 10 },
-        text: ["Positive (amber)", "Reverse (blue)"],
-        inRange: { color: [COLORS.reverse, "#f7f8f7", COLORS.positive] },
+        textStyle: { color: COLORS.axis, fontSize: 10 },
+        text: ["Positive", "Reverse"],
+        inRange: { color: [COLORS.reverse, COLORS.neutralMid, COLORS.positive] },
         formatter: (v: unknown) => fmtUSDFull(Number(v)),
       },
       series: [
         {
           type: "heatmap",
           data: cells,
-          itemStyle: { borderColor: "#ffffff", borderWidth: 1 },
+          itemStyle: { borderColor: COLORS.surface, borderWidth: 1 },
           emphasis: { itemStyle: { borderColor: COLORS.text, borderWidth: 1 } },
         },
       ],
@@ -118,8 +118,18 @@ export default function Heatmap({
   return (
     <div>
       <div className="mb-2 text-xs text-muted">
-        <span style={{ color: COLORS.positive }}>amber</span> = positive discrepancy (partner &gt; UZB records) ·{" "}
-        <span style={{ color: COLORS.reverse }}>blue</span> = reverse (UZB records &gt; partner) · near-white ≈ zero ·
+        <span
+          className="mr-1 inline-block h-2 w-2 rounded-full align-baseline"
+          style={{ background: COLORS.positive }}
+          aria-hidden
+        />
+        orange = positive discrepancy (partner &gt; UZB records) ·{" "}
+        <span
+          className="mr-1 inline-block h-2 w-2 rounded-full align-baseline"
+          style={{ background: COLORS.reverse }}
+          aria-hidden
+        />
+        blue = reverse (UZB records &gt; partner) · neutral ≈ zero ·
         blank = no comparable observation (never treated as a zero gap) · click a cell to open the partner profile
       </div>
       <div className="card p-3" style={{ height: 620 }}>

@@ -5,7 +5,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { DIRECTION_LABELS, type ChapterAgg, type Direction } from "@/lib/dataset";
 import { COLORS, fmtUSD, fmtUSDFull } from "@/lib/format";
-import { baseTooltip, baseTextStyle } from "@/lib/echartBase";
+import { BAR_SPEC, baseTooltip, baseTextStyle } from "@/lib/echartBase";
 
 /**
  * Top-15 HS2 chapters ranked by the ACTIVE direction metric (spec §6.7).
@@ -79,8 +79,15 @@ export default function CommodityBars({
         {
           name: DIRECTION_LABELS[direction],
           type: "bar",
-          data: top.map((c) => ({ value: Math.round(val(c)), itemStyle: { color: barColor(c), borderRadius: [0, 3, 3, 0] as [number, number, number, number] } })),
-          barMaxWidth: 20,
+          data: top.map((c) => ({
+            value: Math.round(val(c)),
+            itemStyle: {
+              color: barColor(c),
+              // data-end rounded toward the value direction; square at the baseline
+              borderRadius: (val(c) >= 0 ? [0, 4, 4, 0] : [4, 0, 0, 4]) as [number, number, number, number],
+            },
+          })),
+          barMaxWidth: BAR_SPEC.barMaxWidth,
         },
       ],
     }),

@@ -71,6 +71,13 @@ function aggregateByCode(chs: Channel[], prefix: string): CodeAgg[] {
 /* Small chrome pieces                                                 */
 /* ------------------------------------------------------------------ */
 
+/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
+
 function ResidualFlag() {
   return (
     <span
@@ -95,13 +102,13 @@ function SortableTh({
 }) {
   const active = sort.key === k;
   return (
-    <th className={`px-3 py-1.5 font-medium ${align === "right" ? "text-right" : "text-left"}`} style={color ? { color } : undefined}>
+    <th className={`px-3 py-1.5 font-medium ${align === "right" ? "text-right" : "text-left"}`}>
       <button
         onClick={() => onSort(k)}
         className={`inline-flex items-center gap-1 ${active ? "" : "hover:text-foreground"}`}
-        style={color ? { color } : undefined}
         title={title ?? `Sort by ${label.toLowerCase()}`}
       >
+        {color && <HeadDot color={color} />}
         {label}
         <span className={active ? "" : "opacity-30"}>{active && !sort.desc ? "↑" : "↓"}</span>
       </button>
@@ -159,16 +166,17 @@ interface Mover {
 }
 
 function MoverList({
-  title, rows, color, onDrill,
+  title, rows, color, deltaColor, onDrill,
 }: {
   title: string;
   rows: Mover[];
   color: string;
+  deltaColor: string;
   onDrill: (chapter: string) => void;
 }) {
   return (
     <div>
-      <p className="mb-1.5 text-[10.5px] font-medium uppercase tracking-wider text-faint">{title}</p>
+      <p className="mb-1.5 text-[10.5px] font-medium text-faint">{title}</p>
       {rows.length === 0 ? (
         <p className="text-[12px] text-faint">No chapters in this group under the active filters.</p>
       ) : (
@@ -189,7 +197,7 @@ function MoverList({
               <span className="shrink-0">
                 <Sparkline data={g.series.map((x) => Math.round(x.v))} color={color} type="line" width={88} height={24} />
               </span>
-              <span className="tabular w-16 shrink-0 text-right font-medium text-muted" title={`Trend: ${fmtUSDFull(g.trend)} — average of the latest reported years minus the earliest (see footnote)`}>
+              <span className="tabular w-16 shrink-0 text-right font-medium" style={{ color: deltaColor }} title={`Trend: ${fmtUSDFull(g.trend)} — average of the latest reported years minus the earliest (see footnote)`}>
                 {fmtUSD(g.trend, { sign: true })}
               </span>
             </div>
@@ -346,10 +354,10 @@ export default function ProductsView() {
     <button
       key={lv}
       onClick={() => setToggle(lv)}
-      className={`whitespace-nowrap rounded-md border px-2 py-1 text-[12px] font-medium ${
+      className={`whitespace-nowrap rounded-md border px-2 py-1 text-[12px] ${
         level === lv
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-          : "border-[var(--color-border)] text-muted hover:text-foreground"
+          ? "border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold text-foreground"
+          : "border-[var(--color-border)] font-medium text-muted hover:text-foreground"
       }`}
       title={tip}
     >
@@ -363,7 +371,7 @@ export default function ProductsView() {
     <div className="space-y-6">
       {/* 1. header + export */}
       <section className="space-y-2">
-        <p className="text-[11px] uppercase tracking-wider text-faint">
+        <p className="text-[10.5px] font-medium text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · HS2 → HS4 (derived) → HS6 hierarchy
         </p>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -474,7 +482,7 @@ export default function ProductsView() {
         <section>
           <SectionTitle
             title="Composition by positive discrepancy"
-            desc={`Largest ${childUnit} within ${nodeTitle.toLowerCase() === "all chapters in view" ? "the current view" : nodeTitle} by positive discrepancy (amber). Top ${composition.length} shown.`}
+            desc={`Largest ${childUnit} within ${nodeTitle.toLowerCase() === "all chapters in view" ? "the current view" : nodeTitle} by positive discrepancy (orange). Top ${composition.length} shown.`}
           />
           <div className="card space-y-1.5 p-4">
             {composition.map((r) => (
@@ -485,8 +493,14 @@ export default function ProductsView() {
                 </span>
                 <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-sm bg-[var(--color-panel-2)]">
                   <span
-                    className="absolute inset-y-0 left-0 rounded-sm"
-                    style={{ width: `${Math.max(1.5, (r.posT / compMax) * 100)}%`, background: COLORS.positive, opacity: 0.55 }}
+                    className="absolute inset-y-0 left-0"
+                    style={{
+                      width: `${Math.max(1.5, (r.posT / compMax) * 100)}%`,
+                      background: COLORS.positive,
+                      opacity: 0.65,
+                      borderRadius: "0 4px 4px 0",
+                      boxShadow: `0 0 0 1px ${COLORS.surface}`,
+                    }}
                     title={fmtUSDFull(r.posT)}
                   />
                 </span>
@@ -521,7 +535,7 @@ export default function ProductsView() {
             <div className="card overflow-x-auto">
               <table className="w-full min-w-[960px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] uppercase tracking-wider text-faint">
+                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] font-medium text-faint">
                     <th className="px-3 py-1.5 font-medium">Code</th>
                     <th className="px-3 py-1.5 font-medium">Chapter</th>
                     <SortableTh label="Comparable trade" k="peT" sort={sort} onSort={onSort} title="Partner-reported exports (FOB) in the chapter — the comparison base" />
@@ -549,10 +563,10 @@ export default function ProductsView() {
                       <td className="tabular px-3 py-1.5 text-right text-muted" title={fmtUSDFull(c.peT)}>
                         {c.peT > 0 ? fmtUSD(c.peT) : <MissingValue />}
                       </td>
-                      <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>
+                      <td className="tabular px-3 py-1.5 text-right font-medium" title={fmtUSDFull(c.posT)}>
                         {fmtUSD(c.posT)}
                       </td>
-                      <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(c.revT)}>
+                      <td className="tabular px-3 py-1.5 text-right font-medium" title={fmtUSDFull(c.revT)}>
                         {fmtUSD(c.revT)}
                       </td>
                       <td className="tabular px-3 py-1.5 text-right text-muted" title="Positive discrepancy ÷ expected CIF value of the chapter">
@@ -580,7 +594,7 @@ export default function ProductsView() {
             <div className="card overflow-x-auto">
               <table className="w-full min-w-[960px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] uppercase tracking-wider text-faint">
+                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] font-medium text-faint">
                     <th className="px-3 py-1.5 font-medium">Code</th>
                     <th className="px-3 py-1.5 font-medium">{t("common.product")}</th>
                     <SortableTh label="Reported exports" k="peT" sort={sort} onSort={onSort} title="Partner-reported exports (FOB), summed across partners" />
@@ -623,10 +637,10 @@ export default function ProductsView() {
                         <td className="tabular px-3 py-1.5 text-right text-muted" title={fmtUSDFull(r.uiT)}>
                           {r.uiT > 0 ? fmtUSD(r.uiT) : <MissingValue />}
                         </td>
-                        <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>
+                        <td className="tabular px-3 py-1.5 text-right font-medium" title={fmtUSDFull(r.posT)}>
                           {fmtUSD(r.posT)}
                         </td>
-                        <td className="tabular px-3 py-1.5 text-right font-medium" style={{ color: COLORS.reverse }} title={fmtUSDFull(r.revT)}>
+                        <td className="tabular px-3 py-1.5 text-right font-medium" title={fmtUSDFull(r.revT)}>
                           {fmtUSD(r.revT)}
                         </td>
                         <td className="tabular px-3 py-1.5 text-right text-muted">{fmtNum(r.partners)}</td>
@@ -659,12 +673,14 @@ export default function ProductsView() {
               title="Rising"
               rows={movers.rising}
               color={dirIsReverse ? COLORS.reverse : COLORS.positive}
+              deltaColor="var(--color-serious)"
               onDrill={drillChapter}
             />
             <MoverList
               title="Easing"
               rows={movers.easing}
               color={COLORS.axis}
+              deltaColor="var(--color-ok)"
               onDrill={drillChapter}
             />
           </div>

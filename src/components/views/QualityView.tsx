@@ -10,9 +10,7 @@ import { useFilter } from "@/lib/filter-context";
 import { meta, DATA_VERSION, METHODOLOGY_VERSION, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
-import { baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
-
-const QUALITY_GREEN = "#15803d";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /* ------------------------------------------------------------------ */
 /* 1. Reporter coverage heatmap cells                                  */
@@ -34,7 +32,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     return (
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-full"
-        style={{ background: QUALITY_GREEN }}
+        style={{ background: COLORS.good }}
         title={`${p.name} reported to UN Comtrade in ${y}.`}
       />
     );
@@ -43,7 +41,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     return (
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-sm border-2"
-        style={{ borderColor: "var(--color-transit)" }}
+        style={{ borderColor: "var(--color-serious)" }}
         title={`${p.name}: reporting stops here — last reported year is ${p.lastReportedYear}. Later years are missing, not zero flows.`}
       />
     );
@@ -58,31 +56,38 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
   }
   return (
     <span
-      className="mx-auto block h-2.5 w-2.5 rounded-full border border-[var(--color-faint)]"
+      className="mx-auto block h-2.5 w-2.5 rounded-full border"
+      style={{ borderColor: COLORS.baseline }}
       title={`${p.name} did not report in ${y}. Partner data missing; not treated as a zero gap.`}
     />
   );
 }
 
+/** Legend chips — DotChip pattern: identity via a small mark beside ink text. */
+function LegendChip({ marker, children }: { marker: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted">
+      {marker}
+      {children}
+    </span>
+  );
+}
+
 function CoverageLegend() {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted">
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: QUALITY_GREEN }} />
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COLORS.good }} />}>
         Reported
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-2.5 w-2.5 rounded-full border border-[var(--color-faint)]" />
+      </LegendChip>
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full border" style={{ borderColor: COLORS.baseline }} />}>
         Not reported (missing — never a zero gap)
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-2.5 w-2.5 rounded-sm border-2" style={{ borderColor: "var(--color-transit)" }} />
+      </LegendChip>
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-sm border-2" style={{ borderColor: "var(--color-serious)" }} />}>
         Reporting stops here
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span className="inline-block h-[3px] w-2.5 rounded-full bg-[var(--color-border)]" />
+      </LegendChip>
+      <LegendChip marker={<span className="h-[3px] w-2 shrink-0 rounded-full bg-[var(--color-border)]" />}>
         No longer reporting
-      </span>
+      </LegendChip>
     </div>
   );
 }
@@ -115,56 +120,43 @@ export default function QualityView() {
     return meta.years.map((y) => ({ y, count: m.get(y)?.count ?? 0, pe: m.get(y)?.pe ?? 0 }));
   }, [series]);
 
+  // Single measure on the axis (channel counts); partner-reported USD value is a
+  // second measure of a different scale, so it lives in the tooltip — never a dual axis.
   const coverageOption = useMemo<EChartsOption>(() => {
     return {
       backgroundColor: "transparent",
       textStyle: baseTextStyle,
-      grid: { ...baseGrid, right: 72 },
-      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: 12 } },
+      grid: baseGrid,
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
         formatter: (params: unknown) => {
-          const ps = (Array.isArray(params) ? params : [params]) as {
-            seriesName?: string; value?: number; axisValueLabel?: string; marker?: string;
-          }[];
-          const head = ps[0]?.axisValueLabel ?? "";
-          const lines = ps.map((p) =>
-            `${p.marker ?? ""}${p.seriesName}: ${
-              p.seriesName === "Partner-reported value" ? fmtUSDFull(p.value ?? 0) : fmtNum(p.value ?? 0)
-            }`,
-          );
-          return [`<b>${head}</b>`, ...lines].join("<br/>");
+          const p = (Array.isArray(params) ? params[0] : params) as { dataIndex?: number; axisValueLabel?: string };
+          const row = hs6ByYear[p?.dataIndex ?? -1];
+          if (!row) return "";
+          return [
+            `<b>${p?.axisValueLabel ?? row.y}</b>`,
+            `HS6 channels with data: <b>${fmtNum(row.count)}</b>`,
+            `Partner-reported value: ${fmtUSDFull(row.pe)}`,
+          ].join("<br/>");
         },
       },
       xAxis: catAxis(hs6ByYear.map((r) => r.y)),
-      yAxis: [
-        {
-          type: "value",
-          name: "HS6 channels",
-          nameTextStyle: { color: COLORS.axis },
-          axisLabel: { color: COLORS.axis, formatter: (v: number) => fmtNum(v) },
-          splitLine: { lineStyle: { color: COLORS.grid } },
-          axisLine: { show: false },
-        },
-        { ...valueAxis("partner value"), splitLine: { show: false } },
-      ],
+      yAxis: {
+        type: "value",
+        name: "HS6 channels",
+        nameTextStyle: { color: COLORS.axis, fontSize: 10 },
+        axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
+        splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
+        axisLine: { show: false },
+      },
       series: [
         {
           name: "HS6 channels with data",
           type: "bar",
+          ...BAR_SPEC,
           data: hs6ByYear.map((r) => r.count),
-          itemStyle: { color: QUALITY_GREEN, opacity: 0.75, borderRadius: [3, 3, 0, 0] },
-          barWidth: "55%",
-        },
-        {
-          name: "Partner-reported value",
-          type: "line",
-          yAxisIndex: 1,
-          data: hs6ByYear.map((r) => Math.round(r.pe)),
-          lineStyle: { color: COLORS.partner, width: 2 },
-          itemStyle: { color: COLORS.partner },
-          symbolSize: 6,
+          itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.baseline },
         },
       ],
     };
@@ -183,7 +175,7 @@ export default function QualityView() {
     <div className="space-y-8">
       {/* header */}
       <section className="space-y-2">
-        <p className="text-xs uppercase tracking-wider text-faint">
+        <p className="text-[11px] text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · reporting coverage &amp; comparability
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
@@ -209,7 +201,7 @@ export default function QualityView() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
+              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 {meta.years.map((y) => (
                   <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
@@ -255,7 +247,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Product-level (HS6) coverage by year"
-          desc="Count of country × HS6 channels with at least one side reported in each year (bars, left axis) against total partner-reported export value in those channels (line, right axis). Full window under the current partner/sector filters. Source: UN Comtrade."
+          desc="Count of country × HS6 channels with at least one side reported in each year. Hover a bar for the total partner-reported export value in those channels. Full window under the current partner/sector filters. Source: UN Comtrade."
         />
         {hs6.length === 0 ? (
           <EmptyState />
@@ -266,8 +258,8 @@ export default function QualityView() {
               Granularity expansion effect: the number of distinct HS6 channels grows over the window
               partly because partners report at finer commodity detail in later years. A rising channel
               count therefore reflects reporting granularity as much as trade itself — year-on-year
-              channel counts are not comparable without this caveat, which is why value (line) is shown
-              alongside counts (bars).
+              channel counts are not comparable without this caveat, which is why each bar&apos;s tooltip
+              also carries the partner-reported value for that year.
             </p>
           </div>
         )}
@@ -288,14 +280,12 @@ export default function QualityView() {
                 label="HS6 channels with dual weight"
                 value={fmtPct(weightShare, 0)}
                 sub={`${fmtNum(withWeight.length)} of ${fmtNum(hs6.length)} channels have ≥1 year with weight on both sides`}
-                accent={QUALITY_GREEN}
                 info="Share of country × HS6 channels where at least one year has net weight reported by both the partner and Uzbekistan."
               />
               <Stat
                 label="Value-weighted share"
                 value={fmtPct(weightValueShare, 0)}
                 sub={`${fmtUSD(peWithWeight)} of ${fmtUSD(peTotal)} partner-reported value`}
-                accent={QUALITY_GREEN}
                 info="Partner-reported export value in dual-weight channels as a share of all HS6 partner-reported value — larger channels report weights more often."
               />
               <Stat
@@ -336,7 +326,7 @@ export default function QualityView() {
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
+                <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
                   <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                   <th className="px-3 py-2 font-medium">Region</th>
                   <th className="px-3 py-2 font-medium">Reporting</th>
@@ -430,25 +420,25 @@ export default function QualityView() {
         />
         <div className="card divide-y divide-[var(--color-border-soft)]">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium uppercase tracking-wider text-faint">{t("meta.dataVersion")}</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.dataVersion")}</span>
             <span className="tabular text-sm font-semibold">{DATA_VERSION}</span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium uppercase tracking-wider text-faint">{t("meta.generated")}</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.generated")}</span>
             <span className="tabular text-sm">{meta.generatedAt}</span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium uppercase tracking-wider text-faint">{t("meta.methodologyVersion")}</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.methodologyVersion")}</span>
             <span className="tabular text-sm">v{METHODOLOGY_VERSION}</span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium uppercase tracking-wider text-faint">Source</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Source</span>
             <span className="text-sm">
               UN Comtrade (annual trade data, HS2 + HS6), window {meta.window.start}–{meta.window.end}
             </span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium uppercase tracking-wider text-faint">Update policy</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Update policy</span>
             <span className="max-w-2xl text-sm text-muted">
               Snapshots replace atomically: a refresh regenerates the entire dataset and swaps it in one
               step, so the site never mixes figures from two data versions. Comtrade itself revises past

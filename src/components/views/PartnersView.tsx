@@ -28,6 +28,13 @@ const PAGE_SIZE = 15;
 
 const gapRate = (p: PartnerAgg) => (p.peT > 0 ? p.posT / p.peT : 0);
 
+/** Series-identity dot for column headers / labels — the text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
+
 const SORT_TIPS: Record<SortKey, string> = {
   positive: "Sort by cumulative positive discrepancy (partner reported more than Uzbekistan recorded).",
   reverse: "Sort by cumulative reverse discrepancy (Uzbekistan recorded more than the partner reported).",
@@ -57,7 +64,7 @@ function Pager({
   );
 }
 
-/** Quiet segmented toggle — bordered buttons, active = primary fill. */
+/** Quiet segmented toggle — bordered buttons, active = recessed well + semibold ink. */
 function Segmented<T extends string>({
   value, options, onChange, ariaLabel,
 }: {
@@ -72,7 +79,7 @@ function Segmented<T extends string>({
           title={o.tip}
           className={`rounded-md border px-2 py-1 text-[12px] font-medium ${
             value === o.key
-              ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+              ? "border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold text-foreground"
               : "border-[var(--color-border)] text-muted hover:text-foreground"
           }`}
         >
@@ -94,13 +101,13 @@ interface CountryMover {
 
 /** One quiet column of movers — Rising or Easing. */
 function MoverColumn({
-  title, rows, color, dirLabel,
+  title, rows, color, deltaColor, dirLabel,
 }: {
-  title: string; rows: CountryMover[]; color: string; dirLabel: string;
+  title: string; rows: CountryMover[]; color: string; deltaColor: string; dirLabel: string;
 }) {
   return (
     <div className="card p-3.5">
-      <div className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-faint">{title}</div>
+      <div className="mb-2 text-[10.5px] font-medium text-faint">{title}</div>
       {rows.length === 0 ? (
         <p className="py-4 text-center text-[12px] text-faint">No partners with this trend under the active filters.</p>
       ) : (
@@ -121,7 +128,7 @@ function MoverColumn({
                   <span className="inline-block w-[88px] text-center text-[10.5px] text-faint" title="Fewer than two reported years — no trend can be drawn.">—</span>
                 )}
               </span>
-              <span className="tabular w-16 shrink-0 text-right text-[12px] font-medium" style={{ color }}
+              <span className="tabular w-16 shrink-0 text-right text-[12px] font-medium" style={{ color: deltaColor }}
                 title={`Trend: mean of the most recent reported years minus mean of the earliest reported years (${dirLabel} direction, full window): ${fmtUSDFull(m.trend)}`}>
                 {fmtUSD(m.trend, { sign: true })}
               </span>
@@ -216,7 +223,7 @@ export default function PartnersView() {
 
   const K = 1 + filter.cif;
 
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-semibold uppercase tracking-wider text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
   const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
@@ -225,7 +232,7 @@ export default function PartnersView() {
     <button
       onClick={() => setSort(k)}
       title={SORT_TIPS[k]}
-      className={`inline-flex items-center gap-0.5 uppercase tracking-wider hover:text-foreground ${sort === k ? "text-foreground" : ""}`}
+      className={`inline-flex items-center gap-0.5 hover:text-foreground ${sort === k ? "text-foreground" : ""}`}
     >
       {label}
       <span aria-hidden>{sort === k ? "▾" : ""}</span>
@@ -249,8 +256,8 @@ export default function PartnersView() {
               <th className={th}>{t("common.partner")}</th>
               <th className={th}>Data quality</th>
               <th className={thNum} title="Partner-reported exports (FOB) in channels where both sides reported.">Comparable trade</th>
-              <th className={thNum}>{sortBtn("positive", "Positive")}</th>
-              <th className={thNum}>{sortBtn("reverse", "Reverse")}</th>
+              <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", "Positive")}</th>
+              <th className={thNum}><HeadDot color={COLORS.reverse} />{sortBtn("reverse", "Reverse")}</th>
               <th className={thNum}>{sortBtn("share", "Gap rate")}</th>
               <th className={thNum} title="Share of window years in which the partner reported to Comtrade. Missing years have no mirror reference and are never treated as zero gaps.">Coverage</th>
               <th className={th} title="HS2 chapter carrying the largest discrepancy (active direction) for this partner.">Top HS2</th>
@@ -286,10 +293,10 @@ export default function PartnersView() {
                     </span>
                   </td>
                   <td className={tdNum} title={fmtUSDFull(p.peT)}>{fmtUSD(p.peT)}</td>
-                  <td className={tdNum} style={{ color: COLORS.positive }} title={`Positive discrepancy (partner > UZB records): ${fmtUSDFull(p.posT)}`}>
+                  <td className={tdNum} title={`Positive discrepancy (partner > UZB records): ${fmtUSDFull(p.posT)}`}>
                     {fmtUSD(p.posT)}
                   </td>
-                  <td className={tdNum} style={{ color: COLORS.reverse }} title={`Reverse discrepancy (UZB records > partner): ${fmtUSDFull(p.revT)}`}>
+                  <td className={tdNum} title={`Reverse discrepancy (UZB records > partner): ${fmtUSDFull(p.revT)}`}>
                     {fmtUSD(p.revT)}
                   </td>
                   <td className={tdNum} title="Positive discrepancy / partner-reported exports.">{fmtPct(gapRate(p), 0)}</td>
@@ -325,13 +332,13 @@ export default function PartnersView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[10.5px] uppercase tracking-wider text-faint">
+            <p className="text-[10.5px] font-medium text-faint">
               Explore · country screening · UN Comtrade · {meta.window.start}–{meta.window.end}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
             <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
               Where the residual unexplained discrepancies sit geographically, and how each partner
-              country ranks under the active filters. Positive (amber) means the partner reported more
+              country ranks under the active filters. Positive (orange) means the partner reported more
               exports than Uzbekistan recorded as imports; reverse (blue) means Uzbekistan recorded
               more. Both are statistical screening signals, never evidence of wrongdoing. Click a
               country on the map or in the table to open its full profile.
@@ -468,12 +475,12 @@ export default function PartnersView() {
                       <dd className="tabular" title={fmtUSDFull(p.peT)}>{fmtUSD(p.peT)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Positive</dt>
-                      <dd className="tabular" style={{ color: COLORS.positive }} title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>
+                      <dt className="text-faint"><HeadDot color={COLORS.positive} />Positive</dt>
+                      <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Reverse</dt>
-                      <dd className="tabular" style={{ color: COLORS.reverse }} title={fmtUSDFull(p.revT)}>{fmtUSD(p.revT)}</dd>
+                      <dt className="text-faint"><HeadDot color={COLORS.reverse} />Reverse</dt>
+                      <dd className="tabular" title={fmtUSDFull(p.revT)}>{fmtUSD(p.revT)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
                       <dt className="text-faint">Gap rate</dt>
@@ -522,8 +529,8 @@ export default function PartnersView() {
           <EmptyState />
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            <MoverColumn title="Rising" rows={risers} color={COLORS.positive} dirLabel={dirLabel} />
-            <MoverColumn title="Easing" rows={easers} color={COLORS.ok} dirLabel={dirLabel} />
+            <MoverColumn title="Rising" rows={risers} color={COLORS.positive} deltaColor="var(--color-serious)" dirLabel={dirLabel} />
+            <MoverColumn title="Easing" rows={easers} color={COLORS.axis} deltaColor="var(--color-ok)" dirLabel={dirLabel} />
           </div>
         )}
         <p className="max-w-3xl text-xs text-faint">
@@ -556,8 +563,8 @@ export default function PartnersView() {
                   <th className={thNum} title="Partner countries with at least one comparable channel in that year.">Comparable partners</th>
                   <th className={thNum} title="Partner-reported exports to Uzbekistan (FOB), comparable channels only.">Partner exports (FOB)</th>
                   <th className={thNum} title="Uzbekistan-recorded imports (CIF), comparable channels only.">UZB imports (CIF)</th>
-                  <th className={thNum} title="Sum of channel-year gaps where the partner reported more (after the freight adjustment).">Positive</th>
-                  <th className={thNum} title="Sum of channel-year gaps where Uzbekistan recorded more (after the freight adjustment).">Reverse</th>
+                  <th className={thNum} title="Sum of channel-year gaps where the partner reported more (after the freight adjustment)."><HeadDot color={COLORS.positive} />Positive</th>
+                  <th className={thNum} title="Sum of channel-year gaps where Uzbekistan recorded more (after the freight adjustment)."><HeadDot color={COLORS.reverse} />Reverse</th>
                   <th className={thNum} title={`Positive discrepancy as a share of expected imports (partner exports × ${K.toFixed(2)} freight uplift) in that year.`}>Positive share</th>
                 </tr>
               </thead>
@@ -571,10 +578,10 @@ export default function PartnersView() {
                       <td className={tdNum}>{noData ? <MissingValue kind="notComparable" /> : fmtNum(r.comparablePartners)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.pe)}>{noData ? <MissingValue /> : fmtUSD(r.pe)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.ui)}>{noData ? <MissingValue /> : fmtUSD(r.ui)}</td>
-                      <td className={tdNum} style={noData ? undefined : { color: COLORS.positive }} title={noData ? undefined : fmtUSDFull(r.positive)}>
+                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.positive)}>
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
                       </td>
-                      <td className={tdNum} style={noData ? undefined : { color: COLORS.reverse }} title={noData ? undefined : fmtUSDFull(r.reverse)}>
+                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.reverse)}>
                         {noData ? <MissingValue /> : fmtUSD(r.reverse)}
                       </td>
                       <td className={tdNum}>
@@ -610,8 +617,8 @@ export default function PartnersView() {
                   <th className={th}>{t("common.partner")}</th>
                   <th className={thNum} title="Partner-reported exports to Uzbekistan (FOB), comparable channels only.">Partner exports (FOB)</th>
                   <th className={thNum} title="Uzbekistan-recorded imports (CIF), comparable channels only.">UZB imports (CIF)</th>
-                  <th className={thNum} title="Cumulative positive discrepancy (partner > UZB records) after the freight adjustment.">Positive</th>
-                  <th className={thNum} title="Cumulative reverse discrepancy (UZB records > partner) after the freight adjustment.">Reverse</th>
+                  <th className={thNum} title="Cumulative positive discrepancy (partner > UZB records) after the freight adjustment."><HeadDot color={COLORS.positive} />Positive</th>
+                  <th className={thNum} title="Cumulative reverse discrepancy (UZB records > partner) after the freight adjustment."><HeadDot color={COLORS.reverse} />Reverse</th>
                   <th className={thNum} title="This partner's share of total comparable (partner-reported) trade in view.">Share of trade</th>
                 </tr>
               </thead>
@@ -625,8 +632,8 @@ export default function PartnersView() {
                     </td>
                     <td className={tdNum} title={fmtUSDFull(r.peT)}>{fmtUSD(r.peT)}</td>
                     <td className={tdNum} title={fmtUSDFull(r.uiT)}>{fmtUSD(r.uiT)}</td>
-                    <td className={tdNum} style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>{fmtUSD(r.posT)}</td>
-                    <td className={tdNum} style={{ color: COLORS.reverse }} title={fmtUSDFull(r.revT)}>{fmtUSD(r.revT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(r.posT)}>{fmtUSD(r.posT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(r.revT)}>{fmtUSD(r.revT)}</td>
                     <td className={tdNum}>
                       {data.kpis.comparableTrade > 0 ? fmtPct(r.peT / data.kpis.comparableTrade, 1) : <MissingValue kind="notComparable" />}
                     </td>
@@ -640,10 +647,10 @@ export default function PartnersView() {
                   </td>
                   <td className={tdNum} title={fmtUSDFull(data.kpis.comparableTrade)}>{fmtUSD(data.kpis.comparableTrade)}</td>
                   <td className={tdNum} title={fmtUSDFull(uiBase)}>{fmtUSD(uiBase)}</td>
-                  <td className={tdNum} style={{ color: COLORS.positive }} title={`${fmtUSDFull(data.kpis.positive.central)} (central freight scenario; range ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} across 6–15%)`}>
+                  <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (central freight scenario; range ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} across 6–15%)`}>
                     {fmtUSD(data.kpis.positive.central)}
                   </td>
-                  <td className={tdNum} style={{ color: COLORS.reverse }} title={fmtUSDFull(data.kpis.reverse)}>{fmtUSD(data.kpis.reverse)}</td>
+                  <td className={tdNum} title={fmtUSDFull(data.kpis.reverse)}>{fmtUSD(data.kpis.reverse)}</td>
                   <td className={tdNum}>{fmtPct(1, 0)}</td>
                 </tr>
               </tfoot>

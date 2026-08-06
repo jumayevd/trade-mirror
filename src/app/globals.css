@@ -1,49 +1,53 @@
 @import "tailwindcss";
 
 /*
- * Minimal professional system:
- *  - one ink color (deep pine green) for brand, nav, links, emphasis
- *  - exactly two data colors: amber = positive, blue = reverse
- *  - red appears ONLY on the Investigate class; everything else is neutral
- *  - badges are quiet outline chips; color never shouts
+ * Design system: validated dataviz reference palette.
+ *  - chrome is neutral warm-grey ink; the only brand color is a deep green used
+ *    for links, active states and primary buttons
+ *  - data colors: orange #eb6834 = positive discrepancy, blue #2a78d6 = reverse
+ *    (categorical slots 2 and 1; the pair passes CVD + normal-vision gates)
+ *  - status set (fixed): critical #d03b3b = Investigate only; serious #ec835a;
+ *    good #0ca30c; everything else neutral
+ *  - hairline borders, solid hairline gridlines, whitespace does the separating
  */
 :root {
-  --background: #fafaf9;
-  --foreground: #1c2420;
+  --background: #f9f9f7;
+  --foreground: #0b0b0b;
 }
 
 @theme inline {
   /* surfaces */
-  --color-bg: #fafaf9;
-  --color-panel: #ffffff;
-  --color-panel-2: #f4f5f4;
-  --color-border: #e4e7e4;
-  --color-border-soft: #eef0ee;
+  --color-bg: #f9f9f7;          /* page plane */
+  --color-panel: #fcfcfb;       /* card / chart surface */
+  --color-panel-2: #f0efec;     /* recessed wells, neutral midpoint */
+  --color-border: rgba(11, 11, 11, 0.1);
+  --color-border-soft: rgba(11, 11, 11, 0.06);
 
-  /* text */
-  --color-foreground: #1c2420;
-  --color-muted: #55605a;
-  --color-faint: #8a948e;
+  /* ink */
+  --color-foreground: #0b0b0b;
+  --color-muted: #52514e;
+  --color-faint: #898781;
 
-  /* ink / brand */
-  --color-primary: #173a26;        /* deep pine — sidebar, links, active states */
+  /* brand ink — used sparingly */
+  --color-primary: #17603a;
   --color-primary-soft: #1d6b40;
 
-  /* data semantics — the only two chart colors */
-  --color-positive: #c2701e;       /* calm amber — positive discrepancy */
-  --color-reverse: #3565c0;        /* calm blue — reverse discrepancy */
+  /* data semantics (the only two series colors) */
+  --color-positive: #eb6834;
+  --color-reverse: #2a78d6;
 
-  /* status (used sparingly) */
-  --color-investigate: #b91c1c;    /* red — Investigate class only */
-  --color-transit: #6b6480;        /* muted slate-violet — transit chip text */
-  --color-quality: #2f7d4f;        /* green — good data quality */
+  /* status (fixed, never themed) */
+  --color-investigate: #d03b3b;
+  --color-serious: #ec835a;
+  --color-transit: #52514e;
+  --color-quality: #0ca30c;
   --color-warn: #a16207;
-  --color-ok: #2f7d4f;
+  --color-ok: #006300;
 
   /* chart mirrors */
-  --color-uzb: #3565c0;
-  --color-partner: #c2701e;
-  --color-accent: #173a26;
+  --color-uzb: #2a78d6;
+  --color-partner: #eb6834;
+  --color-accent: #17603a;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -73,22 +77,21 @@ body {
 .card {
   background: var(--color-panel);
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .card-hover {
-  transition: border-color 0.12s ease;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .card-hover:hover {
-  border-color: #c6cec9;
+  border-color: rgba(11, 11, 11, 0.2);
 }
 
 /* quiet zebra */
 .zebra > *:nth-child(even) {
-  background: #fafbfa;
+  background: #f7f7f5;
 }
 
-/* links inside prose */
 a {
   color: inherit;
 }
@@ -98,7 +101,7 @@ a {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d3d9d5;
+  background: #d6d5cf;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-track {

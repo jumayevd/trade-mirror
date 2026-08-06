@@ -16,7 +16,7 @@ import { meta, DATA_VERSION, METHODOLOGY_VERSION, DIRECTION_LABELS, type Partner
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
-import { baseGrid, baseTextStyle, baseTooltip } from "@/lib/echartBase";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip } from "@/lib/echartBase";
 
 const CAN = [
   "Identify where partner-reported exports and Uzbekistan's import records diverge, and by how much under stated freight scenarios.",
@@ -53,7 +53,7 @@ export default function OverviewView() {
       <section className="space-y-2.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[11px] uppercase tracking-wider text-faint">
+            <p className="text-[11px] text-faint">
               UN Comtrade · {meta.window.start}–{meta.window.end} · statistical reconciliation &amp; risk screening
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
@@ -88,16 +88,16 @@ export default function OverviewView() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <Stat label={t("kpi.comparableTrade")} value={fmtUSD(k.comparableTrade)} sub={t("kpi.comparableTrade.sub")}
             info="Partner-reported exports (FOB) in channels where both sides reported for the selected period — the denominator of the analysis." />
-          <Stat label={t("kpi.positive")} value={fmtUSD(k.positive.central)}
-            sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} across 6–15% freight`} accent={COLORS.positive}
+          <HeroStat label={t("kpi.positive")} value={fmtUSD(k.positive.central)}
+            sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} across 6–15% freight`}
             info="Σ max(expected CIF − UZB imports, 0) per channel-year. Expected CIF = partner exports × (1 + freight)." />
-          <Stat label={t("kpi.reverse")} value={fmtUSD(k.reverse)} sub={t("kpi.reverse.sub")} accent={COLORS.reverse}
+          <Stat label={t("kpi.reverse")} value={fmtUSD(k.reverse)} sub={t("kpi.reverse.sub")}
             info="Σ max(UZB imports − expected CIF, 0). Shown separately — never netted away against positive discrepancies." />
           <Stat label={t("kpi.absolute")} value={fmtUSD(k.absolute)} sub={t("kpi.absolute.sub")}
             info="Positive + reverse: the total two-sided asymmetry." />
           <Stat label={t("kpi.coverage")} value={fmtPct(k.coveragePct, 0)} sub={t("kpi.coverage.sub")}
             info="Share of partner-years in the selected period where the partner actually reported. Missing partner-years are never treated as zero flows." />
-          <Stat label={t("kpi.robust")} value={String(k.robustSignals)} sub={t("kpi.robust.sub")} accent="var(--color-primary)"
+          <Stat label={t("kpi.robust")} value={String(k.robustSignals)} sub={t("kpi.robust.sub")}
             info="HS6 channels classified Investigate (high anomaly + high evidence) whose sign holds across the whole 6–15% freight band." />
         </div>
       </section>
@@ -211,7 +211,9 @@ export default function OverviewView() {
                 </Link>
                 {c.transit && <TransitTag />}
                 <RobustnessBadge r={c.robustness} />
-                <span className="tabular w-24 text-right text-sm" style={{ color: c.signedT >= 0 ? COLORS.positive : COLORS.reverse }}>
+                <span className="tabular inline-flex w-24 items-center justify-end gap-1.5 text-right text-sm"
+                  title={c.signedT >= 0 ? "Positive discrepancy" : "Reverse discrepancy"}>
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.signedT >= 0 ? COLORS.positive : COLORS.reverse }} />
                   {fmtUSD(c.primary)}
                 </span>
               </div>
@@ -222,10 +224,10 @@ export default function OverviewView() {
 
       {/* 9. what can / cannot be concluded */}
       <section className="grid gap-3 md:grid-cols-2">
-        <div className="card border-l-2 border-l-[var(--color-quality)] p-4">
+        <div className="card border-l-2 border-l-[var(--color-ok)] p-4">
           <h3 className="mb-2 text-sm font-semibold">{t("ov.can")}</h3>
           <ul className="space-y-2 text-[13px] text-muted">
-            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px]" style={{ color: "var(--color-quality)" }}>✓</span><span>{x}</span></li>)}
+            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px]" style={{ color: "var(--color-ok)" }}>✓</span><span>{x}</span></li>)}
           </ul>
         </div>
         <div className="card border-l-2 border-l-[var(--color-investigate)] p-4">
@@ -235,6 +237,25 @@ export default function OverviewView() {
           </ul>
         </div>
       </section>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Hero stat: the ONE lead number on the page (26px; others stay 22px) */
+/* ------------------------------------------------------------------ */
+
+function HeroStat({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: string }) {
+  return (
+    <div className="card p-3.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-[12px] leading-snug text-muted">{label}</div>
+        {info && <InfoTip text={info} />}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-[26px] font-semibold leading-none tracking-tight">{value}</span>
+      </div>
+      {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
@@ -266,7 +287,7 @@ function TopCounterparts() {
   }, [data, mode, filter.direction]);
 
   const barColor = (v: number) =>
-    mode === "trade" ? COLORS.axis
+    mode === "trade" ? COLORS.baseline
       : filter.direction === "reverse" ? COLORS.reverse
         : filter.direction === "net" ? (v >= 0 ? COLORS.positive : COLORS.reverse)
           : COLORS.positive;
@@ -287,22 +308,31 @@ function TopCounterparts() {
       },
       xAxis: {
         type: "value",
-        axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
-        splitLine: { lineStyle: { color: COLORS.grid } },
+        axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtUSD(v) },
+        splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
         axisLine: { show: false },
       },
       yAxis: {
         type: "category",
         data: ordered.map((r) => (r.transit ? `${r.name} ⇄` : r.name)),
-        axisLabel: { color: COLORS.text, fontSize: 10 },
-        axisLine: { lineStyle: { color: COLORS.grid } },
+        axisLabel: { color: COLORS.text, fontSize: 11 },
+        axisLine: { lineStyle: { color: COLORS.baseline } },
         axisTick: { show: false },
       },
       series: [
         {
           type: "bar",
-          data: ordered.map((r) => ({ value: Math.round(r.value), itemStyle: { color: barColor(r.value), borderRadius: [0, 2, 2, 0] } })),
-          barMaxWidth: 18,
+          ...BAR_SPEC,
+          data: ordered.map((r) => ({
+            value: Math.round(r.value),
+            // horizontal bars: rounded data-end, square at the baseline; 2px surface gap
+            itemStyle: {
+              color: barColor(r.value),
+              borderRadius: [0, 4, 4, 0] as [number, number, number, number],
+              borderColor: COLORS.surface,
+              borderWidth: 1,
+            },
+          })),
           cursor: "pointer",
         },
       ],
@@ -352,19 +382,19 @@ function TopCounterparts() {
           </div>
           <dl className="space-y-3">
             <div>
-              <dt className="text-[11px] font-medium uppercase tracking-wider text-faint">Top-5 channel share</dt>
+              <dt className="text-[11px] text-faint">Top-5 channel share</dt>
               <dd className="tabular text-xl font-semibold">{fmtPct(k.top5Share, 0)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium uppercase tracking-wider text-faint">HHI (0–10,000)</dt>
+              <dt className="text-[11px] text-faint">HHI (0–10,000)</dt>
               <dd className="tabular text-xl font-semibold">{fmtNum(k.hhi)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium uppercase tracking-wider text-faint">Partners with signal</dt>
+              <dt className="text-[11px] text-faint">Partners with signal</dt>
               <dd className="tabular text-xl font-semibold">{fmtNum(k.partnerCount)}</dd>
             </div>
             <div>
-              <dt className="text-[11px] font-medium uppercase tracking-wider text-faint">Channels (HS2)</dt>
+              <dt className="text-[11px] text-faint">Channels (HS2)</dt>
               <dd className="tabular text-xl font-semibold">{fmtNum(k.channelCount)}</dd>
             </div>
           </dl>
@@ -385,8 +415,8 @@ function UncBar({ low, central, high }: { low: number; central: number; high: nu
     <div className="min-w-[260px] flex-1">
       <div className="relative h-8 overflow-hidden rounded-md bg-[var(--color-panel-2)]">
         <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(high), background: "color-mix(in srgb, var(--color-positive) 20%, transparent)" }} />
-        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(low), background: "color-mix(in srgb, var(--color-positive) 40%, transparent)" }} />
-        <div className="absolute inset-y-0 w-[3px] bg-[var(--color-positive)]" style={{ left: pct(central) }} title={`Central (10%): ${fmtUSD(central)}`} />
+        <div className="absolute inset-y-0 left-0 rounded-md" style={{ width: pct(low), background: "color-mix(in srgb, var(--color-positive) 45%, transparent)" }} />
+        <div className="absolute inset-y-0 w-[2px] bg-[var(--color-foreground)]" style={{ left: pct(central) }} title={`Central (10%): ${fmtUSD(central)}`} />
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-faint">
         <span>6%: {fmtUSD(low)}</span><span>10%: {fmtUSD(central)}</span><span>15%: {fmtUSD(high)}</span>
@@ -403,7 +433,7 @@ function Funnel({ steps }: { steps: { label: string; count: number; value: numbe
         <div key={s.label} className="flex items-center gap-3">
           <span className="w-52 shrink-0 truncate text-sm text-muted" title={s.note}>{s.label}</span>
           <div className="h-6 flex-1 overflow-hidden rounded bg-[var(--color-panel-2)]">
-            <div className="flex h-full items-center rounded bg-[color-mix(in_srgb,var(--color-primary)_15%,transparent)] px-2 text-[11px] font-medium text-[var(--color-primary)]"
+            <div className="flex h-full items-center rounded bg-[color-mix(in_srgb,var(--color-primary)_12%,transparent)] px-2 text-[11px] font-medium text-foreground"
               style={{ width: `${Math.max(4, (s.count / max) * 100)}%` }}>
               {s.count.toLocaleString()}
             </div>

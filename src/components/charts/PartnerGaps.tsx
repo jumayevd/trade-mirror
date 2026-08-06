@@ -4,13 +4,13 @@ import { useMemo } from "react";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { PartnerAgg } from "@/lib/dataset";
-import { COLORS, fmtUSD } from "@/lib/format";
-import { baseGrid, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { COLORS, fmtUSDFull } from "@/lib/format";
+import { BAR_SPEC, baseGrid, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
 /**
  * Partner profile chart (spec §6.6.4): per-year grouped bars of partner-reported
- * exports (amber, FOB) vs Uzbekistan-recorded imports (blue, CIF), overlaid with
- * the positive (amber dashed) and reverse (blue dashed) discrepancy lines.
+ * exports (orange, FOB) vs Uzbekistan-recorded imports (blue, CIF). The positive
+ * and reverse discrepancies per year live in the tooltip — never as extra series.
  * Years where the partner did not report are skipped entirely — a missing
  * partner-year has no mirror reference and is never drawn as a zero.
  */
@@ -26,24 +26,43 @@ export default function PartnerGaps({
 
   const ptnLabel = `${partner} reported exports (FOB)`;
   const uzbLabel = "Uzbekistan recorded imports (CIF)";
-  const posLabel = "Positive discrepancy (partner > UZB)";
-  const revLabel = "Reverse discrepancy (UZB > partner)";
 
   const option = useMemo<EChartsOption>(() => {
     const years = reported.map((y) => y.year);
+    const rowByYear = new Map(reported.map((y) => [String(y.year), y]));
     return {
       backgroundColor: "transparent",
-      grid: { ...baseGrid, top: 56 },
+      grid: { ...baseGrid, top: 44 },
       legend: {
         top: 0,
         textStyle: { color: COLORS.text, fontSize: 11 },
         itemWidth: 14,
-        data: [ptnLabel, uzbLabel, posLabel, revLabel],
+        data: [ptnLabel, uzbLabel],
       },
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
-        valueFormatter: (v: unknown) => (typeof v === "number" ? fmtUSD(v) : String(v ?? "")),
+        formatter: (raw: unknown) => {
+          const items = (Array.isArray(raw) ? raw : [raw]) as {
+            seriesName?: string;
+            axisValue?: string | number;
+            marker?: string;
+            value?: number;
+          }[];
+          if (items.length === 0) return "";
+          const year = String(items[0]?.axisValue ?? "");
+          const head = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
+          const lines = items.map((it) => {
+            const v = typeof it.value === "number" ? fmtUSDFull(it.value) : "not reported";
+            return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
+          });
+          const row = rowByYear.get(year);
+          const gapLines = row
+            ? `<div style="margin-top:4px;color:${COLORS.text}">Positive discrepancy: <b style="color:${COLORS.positive}">${fmtUSDFull(Math.round(row.positive))}</b></div>` +
+              `<div style="margin-top:2px;color:${COLORS.text}">Reverse discrepancy: <b style="color:${COLORS.reverse}">${fmtUSDFull(Math.round(row.reverse))}</b></div>`
+            : "";
+          return head + lines.join("") + gapLines;
+        },
       },
       xAxis: catAxis(years),
       yAxis: valueAxis(),
@@ -52,38 +71,30 @@ export default function PartnerGaps({
           name: ptnLabel,
           type: "bar",
           data: reported.map((y) => Math.round(y.pe)),
-          itemStyle: { color: COLORS.partner, borderRadius: [2, 2, 0, 0] },
-          barMaxWidth: 32,
+          ...BAR_SPEC,
+          itemStyle: {
+            ...BAR_SPEC.itemStyle,
+            color: COLORS.partner,
+            borderColor: COLORS.surface,
+            borderWidth: 1,
+          },
           barGap: "10%",
         },
         {
           name: uzbLabel,
           type: "bar",
           data: reported.map((y) => Math.round(y.ui)),
-          itemStyle: { color: COLORS.uzb, borderRadius: [2, 2, 0, 0] },
-          barMaxWidth: 32,
-        },
-        {
-          name: posLabel,
-          type: "line",
-          data: reported.map((y) => Math.round(y.positive)),
-          itemStyle: { color: COLORS.positive },
-          lineStyle: { width: 2, type: "dashed", color: COLORS.positive },
-          symbol: "circle",
-          symbolSize: 4,
-        },
-        {
-          name: revLabel,
-          type: "line",
-          data: reported.map((y) => Math.round(y.reverse)),
-          itemStyle: { color: COLORS.reverse },
-          lineStyle: { width: 2, type: "dashed", color: COLORS.reverse },
-          symbol: "circle",
-          symbolSize: 4,
+          ...BAR_SPEC,
+          itemStyle: {
+            ...BAR_SPEC.itemStyle,
+            color: COLORS.uzb,
+            borderColor: COLORS.surface,
+            borderWidth: 1,
+          },
         },
       ],
     };
-  }, [reported, ptnLabel, uzbLabel, posLabel, revLabel]);
+  }, [reported, ptnLabel, uzbLabel]);
 
   if (reported.length === 0) {
     return (
