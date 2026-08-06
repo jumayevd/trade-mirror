@@ -2,20 +2,26 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { EmptyState, MissingValue } from "@/components/ui";
-import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, CLASS_COLORS } from "@/lib/format";
+import { AnomalyBadge, ClassBadge, EmptyState, EvidenceBadge, MissingValue, RobustnessBadge } from "@/components/ui";
+import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { CLASS_LABELS, ROBUSTNESS_LABELS, productByCmd, type Channel, type Filter } from "@/lib/dataset";
+import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
 
 /**
- * The queue (Modernist redesign, README §4) — toolbar (HS level, 220px search,
- * sort), 4-cell stat strip framed by 2px rules, the full-width ranked table,
- * and a single-select detail panel below the table with the per-year record
- * and the alternative explanations to weigh. Each row is a statistical
- * screening signal, never a finding of wrongdoing.
+ * Ranked analytical components (Discrepancy & Risk page) — every partner × code
+ * combination at the active HS level under the current filters, with the raw
+ * components of the composite ranking laid out column by column. Each row is a
+ * statistical screening signal, never a finding of wrongdoing.
  */
 
 export type HsLevel = 2 | 4 | 6;
+
+/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
 
 export const LEVEL_LABELS: Record<HsLevel, string> = {
   2: "HS2",
@@ -29,20 +35,21 @@ const LEVEL_TIPS: Record<HsLevel, string> = {
   6: "HS6 product combinations — the finest screening granularity in the dataset.",
 };
 
-type SortKey = "class" | "gap" | "anomaly" | "evidence" | "persistence";
+type SortKey = "class" | "gap" | "anomaly" | "evidence" | "persistence" | "value";
 
 const SORTS: { key: SortKey; label: string }[] = [
-  { key: "class", label: "Class + anomaly" },
+  { key: "class", label: "Class + anomaly (default)" },
   { key: "gap", label: "Discrepancy size" },
   { key: "anomaly", label: "Anomaly strength" },
   { key: "evidence", label: "Evidence quality" },
   { key: "persistence", label: "Persistence" },
+  { key: "value", label: "Trade value (partner FOB)" },
 ];
 
-const PAGE_SIZE = 25;
+const PAGE_SIZES = [25, 50, 100];
 
-/** Short labels + alternative-explanation hints per engine flag. */
-export const FLAG_INFO: Record<string, { chip: string; hint: string }> = {
+/** Short chip labels + alternative-explanation hints per engine flag. */
+const FLAG_INFO: Record<string, { chip: string; hint: string }> = {
   transit: {
     chip: "transit hub",
     hint: "The partner is a re-export/transit hub — origin-vs-consignment recording can create legitimate discrepancies without any misreporting.",
@@ -78,6 +85,7 @@ function sortChannels(rows: Channel[], sort: SortKey): Channel[] {
     evidence: (a, b) => b.evidence - a.evidence || b.anomaly - a.anomaly || abs(b) - abs(a),
     persistence: (a, b) =>
       b.posYears - a.posYears || b.longestPosStreak - a.longestPosStreak || abs(b) - abs(a),
+    value: (a, b) => b.peT - a.peT || abs(b) - abs(a),
   };
   return [...rows].sort(by[sort]);
 }
@@ -97,15 +105,6 @@ function interpretation(c: Channel, f: Filter): string {
   );
 }
 
-/* ---------------- table chrome (2px head rule, 1px row rules) ---------------- */
-const TH = "py-2 pr-2.5 text-left align-bottom text-[10px] font-semibold uppercase tracking-[.1em] text-faint whitespace-nowrap";
-const THN = `${TH} text-right`;
-const TD = "py-[7px] pr-2.5 align-middle text-[13px]";
-const TDN = `${TD} tabular text-right whitespace-nowrap`;
-const HEAD_ROW = "border-b-2 border-[rgba(32,30,29,.4)]";
-
-const BTN = "border border-[rgba(32,30,29,.4)] px-2 py-1 text-[11.5px] font-semibold text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
-
 export default function QueueTable({
   channels,
   level,
@@ -123,17 +122,9 @@ export default function QueueTable({
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("class");
+  const [pageSize, setPageSize] = useState(25);
   const [pageRaw, setPageRaw] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
-
-  // any filter change closes the detail panel — its per-year figures would be
-  // stale (adjust-during-render pattern)
-  const [prevFilter, setPrevFilter] = useState(filter);
-  if (prevFilter !== filter) {
-    setPrevFilter(filter);
-    setExpanded(null);
-    setPageRaw(0);
-  }
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -149,23 +140,12 @@ export default function QueueTable({
     return sortChannels(searched, sort);
   }, [channels, query, sort]);
 
-  // 4-cell stat strip over the rows in scope (after search, before pagination)
-  const strip = useMemo(() => {
-    const investigate = rows.filter((c) => c.cls === "investigate").length;
-    const partners = new Set(rows.map((c) => c.partnerIso)).size;
-    const sortedAbs = [...rows].sort((a, b) => Math.abs(b.primary) - Math.abs(a.primary));
-    const total = sortedAbs.reduce((s, c) => s + Math.abs(c.primary), 0);
-    const top5 = sortedAbs.slice(0, 5).reduce((s, c) => s + Math.abs(c.primary), 0);
-    return { investigate, partners, top5Share: total > 0 ? top5 / total : 0 };
-  }, [rows]);
-
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
-  const start = page * PAGE_SIZE;
-  const pageRows = rows.slice(start, start + PAGE_SIZE);
+  const start = page * pageSize;
+  const pageRows = rows.slice(start, start + pageSize);
 
   const keyOf = (c: Channel) => `${c.partnerIso}|${c.cmd}|${c.level}`;
-  const detail = expanded ? rows.find((c) => keyOf(c) === expanded) ?? null : null;
 
   const controls = (patch: () => void) => {
     patch();
@@ -173,27 +153,23 @@ export default function QueueTable({
     setExpanded(null);
   };
 
-  const stripCells: { value: string; label: string; color?: string }[] = [
-    { value: fmtNum(rows.length), label: `channels in scope (${LEVEL_LABELS[level]})` },
-    { value: fmtNum(strip.investigate), label: "Investigate class · A ≥ 55 and E ≥ 60 (§6)", color: "#ae1800" },
-    { value: fmtNum(strip.partners), label: "distinct partners represented" },
-    { value: fmtPct(strip.top5Share, 0), label: "top-5 share of the active-direction total" },
-  ];
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+  const thNum = `${th} text-right`;
+  const td = "px-3 py-1.5 align-middle text-[13px]";
+  const tdNum = `${td} tabular text-right whitespace-nowrap`;
 
   return (
-    <div className="space-y-4">
-      {/* toolbar */}
-      <div className="flex flex-wrap items-center gap-2.5">
-        <div className="flex border border-[rgba(32,30,29,.4)]" role="group" aria-label="HS level">
+    <div className="space-y-3">
+      {/* controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label="HS level">
           {([2, 4, 6] as const).map((l) => (
             <button
               key={l}
               onClick={() => controls(() => onLevelChange(l))}
               aria-pressed={level === l}
+              className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               title={LEVEL_TIPS[l]}
-              className={`px-2.5 py-[5px] text-[11.5px] font-extrabold whitespace-nowrap ${
-                level === l ? "bg-[#201e1d] text-[#f3f2f2]" : "text-muted hover:text-foreground"
-              }`}
             >
               {LEVEL_LABELS[l]}
             </button>
@@ -204,249 +180,272 @@ export default function QueueTable({
           type="search"
           value={query}
           onChange={(e) => controls(() => setQuery(e.target.value))}
-          placeholder="Search partner, code or label…"
-          aria-label="Search the queue"
-          className="w-[220px] border border-[rgba(32,30,29,.4)] bg-[#f3f2f2] px-2.5 py-[5px] text-[12.5px] outline-none placeholder:text-faint"
+          placeholder="Search partner, HS code or label…"
+          aria-label="Search the ranked components"
+          className="w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 py-1 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
-        <select
-          value={sort}
-          onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-          aria-label="Sort the queue"
-          className="border border-[rgba(32,30,29,.4)] bg-[#f3f2f2] px-2 py-[5px] text-[12.5px] font-semibold text-foreground outline-none"
-        >
-          {SORTS.map((s) => (
-            <option key={s.key} value={s.key}>{s.label}</option>
-          ))}
-        </select>
+        <label className="flex items-center gap-1.5 text-[12px] text-muted">
+          Sort
+          <select
+            value={sort}
+            onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+          >
+            {SORTS.map((s) => (
+              <option key={s.key} value={s.key}>{s.label}</option>
+            ))}
+          </select>
+        </label>
 
-        <span className="tabular ml-auto text-[11px] text-faint">
+        <span className="tabular text-[12px] text-faint">
           {rows.length === 0
-            ? "0 channels"
-            : `${fmtNum(start + 1)}–${fmtNum(Math.min(start + PAGE_SIZE, rows.length))} of ${fmtNum(rows.length)}`}
+            ? "0 combinations"
+            : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} of ${rows.length.toLocaleString()} combinations`}
         </span>
-      </div>
-
-      {/* stat strip — framed by 2px rules top and bottom */}
-      <div className="grid grid-cols-2 border-y-2 border-[rgba(32,30,29,.4)] lg:grid-cols-4">
-        {stripCells.map((s, i) => (
-          <div key={s.label} className={`py-3 pr-3.5 ${i > 0 ? "pl-3.5" : ""} ${i < stripCells.length - 1 ? "border-r border-[rgba(32,30,29,.2)]" : ""}`}>
-            <div className="tabular text-[22px] font-semibold leading-none" style={s.color ? { color: s.color } : undefined}>
-              {s.value}
-            </div>
-            <div className="mt-1 text-[11.5px] leading-snug text-[rgba(32,30,29,.62)]">{s.label}</div>
-          </div>
-        ))}
       </div>
 
       {/* table */}
       {rows.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse">
-            <thead>
-              <tr className={HEAD_ROW}>
-                <th className={TH} aria-label="Expand" />
-                <th className={TH} title="Signal class (§6): anomaly × evidence matrix — a review order, not a verdict.">Class</th>
-                <th className={TH}>{t("common.partner")}</th>
-                <th className={TH} title={LEVEL_TIPS[level]}>Code · label</th>
-                <th className={THN} title="Partner-reported exports, FOB.">Partner FOB</th>
-                <th className={THN} title={`Partner exports × (1 + ${Math.round(filter.cif * 100)}% freight) — the expected CIF import value (§2.1).`}>Expected CIF</th>
-                <th className={THN} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
-                <th className={THN} title="Expected CIF − UZB imports over comparable years (§2.1). + = positive (partner > UZB); − = reverse.">Signed</th>
-                <th className={THN} title="Bounded asymmetry: absolute discrepancy ÷ max(expected CIF, UZB imports) (§2.2).">Asym</th>
-                <th className={THN} title="Anomaly strength 0–100 (§4) — how unusual the discrepancy is; independent of data quality.">A</th>
-                <th className={THN} title="Evidence quality 0–100 (§5) — how reliable and comparable the underlying data is.">E</th>
-                <th className={TH} title="Robustness: does the sign hold across the 6–15% freight band with enough comparable years?">Robustness</th>
-                <th className={TH}>{t("common.flags")}</th>
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[1320px] border-collapse">
+            <thead className="border-b border-[var(--color-border)]">
+              <tr>
+                <th className={th} aria-label="Expand" />
+                <th className={th}>Class</th>
+                <th className={th} title="Anomaly strength 0–100 — how unusual the discrepancy is. Independent of data quality.">A</th>
+                <th className={th} title="Evidence quality 0–100 — how reliable and comparable the underlying data is.">E</th>
+                <th className={th}>{t("common.partner")}</th>
+                <th className={th} title={LEVEL_TIPS[level]}>{LEVEL_LABELS[level]} code</th>
+                <th className={thNum} title="Partner-reported exports, FOB.">Partner FOB</th>
+                <th className={thNum} title={`Partner exports × (1 + ${Math.round(filter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
+                <th className={thNum} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
+                <th className={thNum} title="Expected CIF − UZB imports, summed over comparable years. + = positive (partner > UZB, orange dot); − = reverse (UZB > partner, blue dot)."><HeadDot color={COLORS.positive} /><HeadDot color={COLORS.reverse} />Signed</th>
+                <th className={thNum} title="Positive discrepancy — years where expected CIF exceeded UZB records, accumulated separately, never netted away."><HeadDot color={COLORS.positive} />Positive</th>
+                <th className={thNum} title="Reverse discrepancy — years where UZB records exceeded expected CIF, accumulated separately, never netted away."><HeadDot color={COLORS.reverse} />Reverse</th>
+                <th className={thNum} title="Bounded asymmetry: absolute discrepancy over max(expected CIF, UZB imports), 0–100%.">Asym</th>
+                <th className={th} title="Years with a positive discrepancy out of comparable years, and the longest consecutive streak.">{t("common.persistence")}</th>
+                <th className={th}>{t("filter.robustness")}</th>
+                <th className={th}>{t("common.flags")}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="zebra">
               {pageRows.map((c) => {
                 const key = keyOf(c);
                 const open = expanded === key;
                 const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
-                const label = c.cmdLabel.length > 40 ? `${c.cmdLabel.slice(0, 40)}…` : c.cmdLabel;
-                return (
+                return [
                   <tr
                     key={key}
                     onClick={() => setExpanded(open ? null : key)}
-                    className="cursor-pointer border-b border-[rgba(32,30,29,.18)]"
-                    style={open ? { background: "rgba(236,48,19,.06)" } : undefined}
-                    title="Click for the per-year record and the alternative explanations to weigh"
+                    className="cursor-pointer border-b border-[var(--color-border-soft)] hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]"
+                    title="Click to expand per-year detail"
                   >
-                    <td className={`${TD} w-4 text-[rgba(32,30,29,.45)]`} aria-hidden>{open ? "▾" : "▸"}</td>
-                    <td className={`${TD} whitespace-nowrap text-[12px] font-extrabold`} style={{ color: CLASS_COLORS[c.cls] }} title={CLASS_LABELS[c.cls].desc}>
-                      {t(`cls.${c.cls}` as never)}
-                    </td>
-                    <td className={`${TD} whitespace-nowrap font-extrabold`}>
+                    <td className={`${td} w-6 text-faint`} aria-hidden>{open ? "▾" : "▸"}</td>
+                    <td className={td}><ClassBadge cls={c.cls} /></td>
+                    <td className={td}><AnomalyBadge score={c.anomaly} /></td>
+                    <td className={td}><EvidenceBadge score={c.evidence} /></td>
+                    <td className={`${td} whitespace-nowrap`}>
                       <Link
                         href={`/partners/${c.partnerIso.toLowerCase()}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="hover:underline"
+                        className="font-medium hover:underline"
                       >
                         {c.partner}
                       </Link>
                     </td>
-                    <td className={`${TD} max-w-[280px]`}>
-                      <span className="tabular mr-1.5 text-[11px] text-[rgba(32,30,29,.5)]">{c.cmd}</span>
+                    <td className={`${td} max-w-[280px]`}>
+                      <span className="tabular mr-1.5 font-mono text-xs text-faint">{c.cmd}</span>
                       {product ? (
                         <Link
                           href={`/products/${c.cmd}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="text-[rgba(32,30,29,.75)] hover:underline"
+                          className="hover:underline"
                           title={c.cmdLabel}
                         >
-                          {label}
+                          {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
                         </Link>
                       ) : (
-                        <span className="text-[rgba(32,30,29,.75)]" title={c.cmdLabel}>{label}</span>
+                        <span title={c.cmdLabel}>
+                          {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
+                        </span>
                       )}
                     </td>
-                    <td className={TDN} title={fmtUSDFull(c.peT)}>{fmtUSD(c.peT)}</td>
-                    <td className={TDN} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
-                    <td className={TDN} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(c.peT)}>{fmtUSD(c.peT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
                     <td
-                      className={`${TDN} font-semibold`}
-                      style={{ color: c.signedT >= 0 ? "#ae1800" : "rgba(32,30,29,.7)" }}
+                      className={`${tdNum} font-semibold`}
                       title={`${fmtUSDFull(c.signedT)} — ${c.signedT >= 0 ? "positive: partner > UZB records" : "reverse: UZB records > partner"}`}
                     >
                       {fmtUSD(c.signedT, { sign: true })}
                     </td>
-                    <td className={TDN}>{fmtPct(c.boundedAsymmetry, 0)}</td>
-                    <td className={TDN}>{c.anomaly.toFixed(0)}</td>
-                    <td className={`${TDN} text-[rgba(32,30,29,.7)]`}>{c.evidence.toFixed(0)}</td>
-                    <td className={`${TD} whitespace-nowrap text-[11.5px] text-[rgba(32,30,29,.7)]`} title={ROBUSTNESS_LABELS[c.robustness]}>
-                      {t(`rob.${c.robustness}` as never)}
+                    <td className={tdNum} title={`Positive: ${fmtUSDFull(c.posT)}`}>
+                      {fmtUSD(c.posT)}
                     </td>
-                    <td
-                      className={`${TD} max-w-[200px] text-[11px] text-[rgba(32,30,29,.6)]`}
-                      title={c.flags.map((f) => FLAG_INFO[f]?.hint ?? f).join("\n")}
-                    >
-                      {c.flags.length === 0 ? <span className="text-faint">—</span> : c.flags.map((f) => FLAG_INFO[f]?.chip ?? f).join(" · ")}
+                    <td className={tdNum} title={`Reverse: ${fmtUSDFull(c.revT)}`}>
+                      {fmtUSD(c.revT)}
                     </td>
-                  </tr>
-                );
+                    <td className={tdNum}>{fmtPct(c.boundedAsymmetry, 0)}</td>
+                    <td className={`${td} tabular whitespace-nowrap`} title={`${c.posYears} of ${c.comparableYears} comparable years show a positive discrepancy; longest consecutive streak ${c.longestPosStreak}.`}>
+                      {c.posYears}/{c.comparableYears} yr · streak {c.longestPosStreak}
+                    </td>
+                    <td className={td}><RobustnessBadge r={c.robustness} /></td>
+                    <td className={td}>
+                      <span className="flex max-w-[180px] flex-wrap gap-1">
+                        {c.flags.map((f) => (
+                          <span
+                            key={f}
+                            className="cursor-help whitespace-nowrap rounded border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted"
+                            title={FLAG_INFO[f]?.hint ?? f}
+                          >
+                            {FLAG_INFO[f]?.chip ?? f}
+                          </span>
+                        ))}
+                      </span>
+                    </td>
+                  </tr>,
+                  open ? (
+                    <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">
+                      <td colSpan={16} className="px-4 py-3">
+                        <YearDetail c={c} filter={filter} years={years} />
+                      </td>
+                    </tr>
+                  ) : null,
+                ];
               })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* detail panel — single-select, below the table */}
-      {detail && <DetailPanel c={detail} filter={filter} years={years} onClose={() => setExpanded(null)} />}
-
       {/* pagination */}
-      {rows.length > PAGE_SIZE && (
-        <div className="flex items-center justify-end gap-2">
-          <button className={BTN} onClick={() => { setPageRaw(Math.max(0, page - 1)); setExpanded(null); }} disabled={page === 0}>
-            ← Prev
-          </button>
-          <span className="tabular text-[11.5px] text-muted">
-            {page + 1} / {pageCount}
-          </span>
-          <button className={BTN} onClick={() => { setPageRaw(Math.min(pageCount - 1, page + 1)); setExpanded(null); }} disabled={page >= pageCount - 1}>
-            Next →
-          </button>
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 text-[12px] text-muted">
+            Rows per page
+            <select
+              value={pageSize}
+              onChange={(e) => controls(() => setPageSize(+e.target.value))}
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            >
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => { setPageRaw(Math.max(0, page - 1)); setExpanded(null); }}
+              disabled={page === 0}
+              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ← Prev
+            </button>
+            <span className="tabular text-[12px] text-muted">
+              Page {page + 1} of {pageCount}
+            </span>
+            <button
+              onClick={() => { setPageRaw(Math.min(pageCount - 1, page + 1)); setExpanded(null); }}
+              disabled={page >= pageCount - 1}
+              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
 
-      <p className="max-w-[44rem] text-[11.5px] leading-normal text-[rgba(32,30,29,.55)]">
-        Nominal USD; FOB = partner-reported exports, CIF = Uzbekistan-recorded imports; HS4 is derived
-        from HS6 by truncation. Missing partner-years read “{t("common.notReported")}”, never zero. {t("common.source")}.
+      <p className="max-w-3xl text-xs text-faint">
+        Values in nominal USD. FOB = partner-reported exports; CIF = Uzbekistan-recorded
+        imports; expected CIF applies the active freight scenario. HS4 rows are derived
+        from HS6 by code truncation, not independently reported. Missing partner-years are
+        shown as “{t("common.notReported")}”, never as zero. Source: UN Comtrade.
       </p>
     </div>
   );
 }
 
-/** Detail panel: per-year record + cautious reading + alternative explanations. */
-function DetailPanel({
-  c, filter, years, onClose,
-}: {
-  c: Channel; filter: Filter; years: number[]; onClose: () => void;
-}) {
+/** Expanded row: per-year mini table + cautious auto-interpretation + alternative explanations. */
+function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: number[] }) {
   const { t } = useI18n();
   const byYear = new Map(c.years.map((yr) => [yr.y, yr]));
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint";
+  const thNum = `${th} text-right`;
+  const td = "px-3 py-1.5 text-[12px]";
+  const tdNum = `${td} tabular text-right whitespace-nowrap`;
   const hints = c.flags.map((f) => FLAG_INFO[f]?.hint).filter((h): h is string => !!h);
-  const dth = "py-1.5 pr-2.5 text-left text-[10px] font-semibold uppercase tracking-[.1em] text-faint";
-  const dthn = `${dth} text-right`;
-  const dtd = "py-1.5 pr-2.5 text-[12px]";
-  const dtdn = `${dtd} tabular text-right whitespace-nowrap`;
 
   return (
-    <div className="border-2 border-[rgba(32,30,29,.4)] bg-[#eae9e9] px-5 py-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <h3 className="text-[16px] font-extrabold tracking-tight">
-          {c.partner} × HS <span className="tabular">{c.cmd}</span> — {c.cmdLabel}
-        </h3>
-        <button
-          onClick={onClose}
-          className="shrink-0 border border-[rgba(32,30,29,.4)] px-2 py-1 text-[11px] font-semibold text-muted hover:text-foreground"
-        >
-          Close
-        </button>
+    <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
+      <div>
+        <h4 className="mb-1 text-[10.5px] font-medium text-faint">
+          Per-year detail · {c.partner} × HS <span className="font-mono">{c.cmd}</span>
+        </h4>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-[var(--color-border)]">
+              <th className={th}>{t("common.year")}</th>
+              <th className={thNum}>Partner FOB</th>
+              <th className={thNum}>UZB imports</th>
+              <th className={thNum}><HeadDot color={COLORS.positive} /><HeadDot color={COLORS.reverse} />Signed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {years.map((y) => {
+              const yr = byYear.get(y);
+              return (
+                <tr key={y} className="border-b border-[var(--color-border-soft)]">
+                  <td className={`${td} tabular`}>{y}</td>
+                  {yr ? (
+                    <>
+                      <td className={tdNum} title={fmtUSDFull(yr.pe)}>{fmtUSD(yr.pe)}</td>
+                      <td className={tdNum} title={fmtUSDFull(yr.ui)}>{fmtUSD(yr.ui)}</td>
+                      <td className={tdNum} title={fmtUSDFull(yr.signed)}>
+                        {fmtUSD(yr.signed, { sign: true })}
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className={tdNum}><MissingValue /></td>
+                      <td className={tdNum}><MissingValue /></td>
+                      <td className={tdNum}><MissingValue kind="notComparable" /></td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="mt-1 text-[11px] text-faint">
+          “{t("common.notReported")}” = partner data missing for that year; not treated as a zero gap.
+        </p>
       </div>
 
-      <div className="mt-3 grid gap-7 lg:grid-cols-[minmax(320px,420px)_1fr]">
+      <div className="space-y-3 text-[13px] leading-relaxed">
         <div>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-[rgba(32,30,29,.4)]">
-                <th className={dth}>{t("common.year")}</th>
-                <th className={dthn}>Partner FOB</th>
-                <th className={dthn}>UZB imports</th>
-                <th className={dthn}>Signed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {years.map((y) => {
-                const yr = byYear.get(y);
-                return (
-                  <tr key={y} className="border-b border-[rgba(32,30,29,.14)]">
-                    <td className={`${dtd} tabular`}>{y}</td>
-                    {yr ? (
-                      <>
-                        <td className={dtdn} title={fmtUSDFull(yr.pe)}>{fmtUSD(yr.pe)}</td>
-                        <td className={dtdn} title={fmtUSDFull(yr.ui)}>{fmtUSD(yr.ui)}</td>
-                        <td className={dtdn} style={{ color: yr.signed >= 0 ? "#ae1800" : "rgba(32,30,29,.7)" }} title={fmtUSDFull(yr.signed)}>
-                          {fmtUSD(yr.signed, { sign: true })}
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className={dtdn}><MissingValue /></td>
-                        <td className={dtdn}><MissingValue /></td>
-                        <td className={dtdn}><MissingValue kind="notComparable" /></td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="mt-1.5 text-[11px] text-faint">
-            “{t("common.notReported")}” = partner data missing for that year; never treated as a zero gap.
-          </p>
+          <h4 className="mb-1 text-[10.5px] font-medium text-faint">Reading</h4>
+          <p className="text-muted">{interpretation(c, filter)}</p>
         </div>
-
         <div>
-          <div className="lbl">Reading</div>
-          <p className="mt-1.5 mb-3.5 text-[13px] leading-[1.55] text-[rgba(32,30,29,.75)]">{interpretation(c, filter)}</p>
-          <div className="lbl">Alternative explanations to weigh</div>
+          <h4 className="mb-1 text-[10.5px] font-medium text-faint">
+            Alternative explanations to weigh
+          </h4>
           {hints.length > 0 ? (
-            <ul className="mt-1.5 flex flex-col gap-1.5 text-[12.5px] leading-normal text-[rgba(32,30,29,.7)]">
+            <ul className="space-y-1">
               {hints.map((h, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="font-extrabold text-[#ec3013]" aria-hidden>!</span>
+                <li key={i} className="flex gap-2 text-muted">
+                  <span className="text-[var(--color-warn,#a16207)]">!</span>
                   <span>{h}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-1.5 text-[12.5px] leading-normal text-[rgba(32,30,29,.7)]">
-              No standard alternative-explanation flags apply; valuation, timing and classification
-              differences can still account for part of the discrepancy.
+            <p className="text-muted">
+              No standard alternative-explanation flags apply to this combination; valuation,
+              timing and classification differences can still account for part of the discrepancy.
             </p>
           )}
         </div>

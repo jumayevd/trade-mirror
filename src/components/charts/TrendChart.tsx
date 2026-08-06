@@ -2,33 +2,26 @@
 
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
-import { COLORS, fmtNum, fmtUSD, fmtUSDFull } from "@/lib/format";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { COLORS, fmtNum, fmtUSDFull } from "@/lib/format";
 
-const POSITIVE_SERIES = "Positive (partner > UZB)";
-const REVERSE_SERIES = "Reverse (UZB > partner)";
-
-const INK = "#201e1d";
-const MUTED = "rgba(32,30,29,.55)";
+const POSITIVE_SERIES = "Positive discrepancy (partner > UZB)";
+const REVERSE_SERIES = "Reverse discrepancy (UZB > partner)";
 
 /**
- * Structural breaks (Methodology §6.10): marked so that real trade shocks are
- * not read as screening signals and data-coverage artifacts are not read as
- * real shocks. Quiet dashed lines with tiny labels.
+ * Structural breaks (spec §6.10): marked so that real trade shocks are not read
+ * as screening signals and data-coverage artifacts are not read as real shocks.
+ * All markers are quiet grey solid lines with tiny labels.
  */
 const STRUCTURAL_BREAKS: { year: number; label: string }[] = [
   { year: 2020, label: "COVID-19" },
-  { year: 2022, label: "reporting stop" },
+  { year: 2022, label: "Partner reporting stop" },
+  { year: 2023, label: "HS granularity expansion" },
 ];
 
-/**
- * Eight-year record (Modernist redesign, Screens §1): a single stacked bar per
- * year — reverse discrepancy stacked BELOW in ink-22% grey, positive stacked
- * above in the accent. Always fed the full-window `series.annual`, so the
- * chart ignores the period filter while every other filter applies.
- */
 export default function TrendChart({
   annual,
-  height = 236,
+  height = 320,
 }: {
   annual: { year: number; pe: number; ui: number; positive: number; reverse: number; comparablePartners: number }[];
   height?: number;
@@ -39,25 +32,19 @@ export default function TrendChart({
 
   const option: EChartsOption = {
     backgroundColor: "transparent",
-    textStyle: { color: MUTED, fontFamily: "var(--font-archivo), Archivo, sans-serif" },
-    grid: { left: 52, right: 14, top: 26, bottom: 24, containLabel: true },
+    textStyle: baseTextStyle,
+    grid: baseGrid,
     legend: {
       top: 0,
-      right: 0,
-      itemWidth: 10,
+      itemWidth: 12,
       itemHeight: 8,
-      textStyle: { color: MUTED, fontSize: 10.5 },
+      textStyle: { color: COLORS.text, fontSize: 11 },
       data: [POSITIVE_SERIES, REVERSE_SERIES],
     },
     tooltip: {
+      ...baseTooltip(),
       trigger: "axis",
       axisPointer: { type: "shadow" },
-      backgroundColor: "#f3f2f2",
-      borderColor: INK,
-      borderWidth: 1,
-      padding: [8, 12],
-      textStyle: { color: INK, fontSize: 12 },
-      extraCssText: "border-radius:0;box-shadow:none",
       formatter: (raw: unknown) => {
         const items = (Array.isArray(raw) ? raw : [raw]) as {
           seriesName?: string;
@@ -75,41 +62,25 @@ export default function TrendChart({
         const partners = partnersByYear.get(year);
         const partnersLine =
           partners !== undefined
-            ? `<div style="margin-top:2px">Comparable partners: <span style="font-weight:600">${fmtNum(partners)}</span></div>`
+            ? `<div style="margin-top:2px;color:${COLORS.text}">Comparable partners: <span style="font-weight:600">${fmtNum(partners)}</span></div>`
             : "";
         return head + lines.join("") + partnersLine;
       },
     },
-    xAxis: {
-      type: "category",
-      data: years,
-      axisLabel: { color: MUTED, fontSize: 10 },
-      axisLine: { lineStyle: { color: INK } },
-      axisTick: { show: false },
-    },
-    yAxis: {
-      type: "value",
-      axisLabel: { color: MUTED, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
-      splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
-      axisLine: { show: false },
-    },
+    xAxis: catAxis(years),
+    yAxis: valueAxis("USD"),
     series: [
-      {
-        // reverse sits at the bottom of the stack — ink-22% grey, never a hue
-        name: REVERSE_SERIES,
-        type: "bar",
-        stack: "g",
-        data: annual.map((a) => Math.round(a.reverse)),
-        barMaxWidth: 34,
-        itemStyle: { color: COLORS.reverse, borderRadius: 0 },
-      },
       {
         name: POSITIVE_SERIES,
         type: "bar",
-        stack: "g",
         data: annual.map((a) => Math.round(a.positive)),
-        barMaxWidth: 34,
-        itemStyle: { color: COLORS.positive, borderRadius: 0 },
+        ...BAR_SPEC,
+        itemStyle: {
+          ...BAR_SPEC.itemStyle,
+          color: COLORS.positive,
+          borderColor: COLORS.surface,
+          borderWidth: 1,
+        },
         markLine:
           breaks.length > 0
             ? {
@@ -121,16 +92,39 @@ export default function TrendChart({
                   label: {
                     formatter: b.label,
                     position: "insideEndTop",
-                    color: MUTED,
+                    color: COLORS.axis,
                     fontSize: 9,
                   },
-                  lineStyle: { color: MUTED, type: "dashed", width: 1 },
+                  lineStyle: { color: COLORS.axis, type: "solid", width: 1 },
                 })),
               }
             : undefined,
       },
+      {
+        name: REVERSE_SERIES,
+        type: "bar",
+        data: annual.map((a) => Math.round(a.reverse)),
+        ...BAR_SPEC,
+        itemStyle: {
+          ...BAR_SPEC.itemStyle,
+          color: COLORS.reverse,
+          borderColor: COLORS.surface,
+          borderWidth: 1,
+        },
+      },
     ],
   };
 
-  return <EChart option={option} style={{ height }} />;
+  return (
+    <div>
+      <EChart option={option} style={{ height }} />
+      <p className="mt-1.5 max-w-3xl text-xs text-faint">
+        Orange bars: positive discrepancy (partner &gt; UZB records). Blue bars: reverse (UZB records &gt;
+        partner) — accumulated separately, never netted. The number of partners with comparable data each
+        year is shown in the tooltip. Grey markers flag structural breaks — 2020 COVID-19, 2022 partner
+        reporting stop, 2023 HS granularity expansion — to separate real trade shocks from data-coverage
+        artifacts; a step change at a marker may reflect reporting, not flows. Source: UN Comtrade.
+      </p>
+    </div>
+  );
 }

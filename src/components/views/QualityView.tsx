@@ -1,63 +1,103 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
+import type { EChartsOption } from "echarts";
+import FilterBar from "@/components/FilterBar";
+import EChart from "@/components/EChart";
+import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, Pill, EmptyState } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, DATA_VERSION, METHODOLOGY_VERSION, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
-import { fmtNum, fmtPct, fmtUSD } from "@/lib/format";
+import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
 
-/**
- * Data quality (Modernist redesign, README §5) — the dataset facts strip
- * (moved here from Overview), the reporter coverage square grid, exclusions
- * as a definition list and weight availability as labelled bars. None of the
- * gaps documented here are treated as evidence of misreporting.
- */
+/* ------------------------------------------------------------------ */
+/* 1. Reporter coverage heatmap cells                                  */
+/* ------------------------------------------------------------------ */
 
-const TH = "py-2 pr-3 text-left align-bottom text-[10px] font-semibold uppercase tracking-[.1em] text-faint whitespace-nowrap";
-const THN = `${TH} text-right`;
-const TD = "py-[7px] pr-3 align-middle text-[13px]";
-const TDN = `${TD} tabular text-right whitespace-nowrap`;
-const HEAD_ROW = "border-b-2 border-[rgba(32,30,29,.4)]";
-const BODY_ROW = "border-b border-[rgba(32,30,29,.18)]";
+type CellState = "reported" | "missing" | "stopMarker" | "stopped";
 
-/** Mono § method-reference chip. */
-function Ref({ s }: { s: string }) {
+function cellState(p: PartnerMeta, y: number): CellState {
+  if (p.reportedYears.includes(y)) return "reported";
+  if (p.lapse && y > p.lastReportedYear) {
+    return y === p.lastReportedYear + 1 ? "stopMarker" : "stopped";
+  }
+  return "missing";
+}
+
+function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
+  const state = cellState(p, y);
+  if (state === "reported") {
+    return (
+      <span
+        className="mx-auto block h-2.5 w-2.5 rounded-full"
+        style={{ background: COLORS.good }}
+        title={`${p.name} reported to UN Comtrade in ${y}.`}
+      />
+    );
+  }
+  if (state === "stopMarker") {
+    return (
+      <span
+        className="mx-auto block h-2.5 w-2.5 rounded-sm border-2"
+        style={{ borderColor: "var(--color-serious)" }}
+        title={`${p.name}: reporting stops here — last reported year is ${p.lastReportedYear}. Later years are missing, not zero flows.`}
+      />
+    );
+  }
+  if (state === "stopped") {
+    return (
+      <span
+        className="mx-auto block h-[3px] w-2.5 rounded-full bg-[var(--color-border)]"
+        title={`${p.name} no longer reports (stopped after ${p.lastReportedYear}). Partner data missing; not treated as a zero gap.`}
+      />
+    );
+  }
   return (
-    <Link
-      href="/methodology"
-      className="tabular whitespace-nowrap bg-[rgba(32,30,29,.08)] px-1.5 py-px text-[10.5px] text-[rgba(32,30,29,.7)] hover:text-foreground"
-      title={`Methodology ${s}`}
-    >
-      {s}
-    </Link>
+    <span
+      className="mx-auto block h-2.5 w-2.5 rounded-full border"
+      style={{ borderColor: COLORS.baseline }}
+      title={`${p.name} did not report in ${y}. Partner data missing; not treated as a zero gap.`}
+    />
   );
 }
 
-function partnerTag(p: PartnerMeta): string {
-  const tags: string[] = [];
-  if (p.transit) tags.push("transit hub");
-  if (p.lapse) tags.push(`last report ${p.lastReportedYear}`);
-  return tags.join(" · ");
+/** Legend chips — DotChip pattern: identity via a small mark beside ink text. */
+function LegendChip({ marker, children }: { marker: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted">
+      {marker}
+      {children}
+    </span>
+  );
 }
 
-/** Labelled CSS bar (6px track, ink fill). */
-function WeightBar({ name, share, sub }: { name: string; share: number; sub?: string }) {
+function CoverageLegend() {
   return (
-    <div>
-      <div className="flex items-baseline justify-between text-[12px]">
-        <span className="font-extrabold">{name}</span>
-        <span className="tabular text-[rgba(32,30,29,.6)]" title={sub}>{fmtPct(share, 0)}</span>
-      </div>
-      <div className="mt-[3px] h-[6px] bg-[rgba(32,30,29,.12)]">
-        <div className="h-full bg-[#201e1d]" style={{ width: `${Math.min(100, Math.round(share * 100))}%` }} />
-      </div>
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COLORS.good }} />}>
+        Reported
+      </LegendChip>
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full border" style={{ borderColor: COLORS.baseline }} />}>
+        Not reported (missing — never a zero gap)
+      </LegendChip>
+      <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-sm border-2" style={{ borderColor: "var(--color-serious)" }} />}>
+        Reporting stops here
+      </LegendChip>
+      <LegendChip marker={<span className="h-[3px] w-2 shrink-0 rounded-full bg-[var(--color-border)]" />}>
+        No longer reporting
+      </LegendChip>
     </div>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* View                                                                */
+/* ------------------------------------------------------------------ */
+
 export default function QualityView() {
-  const { series } = useFilter();
+  const { filter, series } = useFilter();
   const { t } = useI18n();
 
   const partnersByCoverage = useMemo(
@@ -66,199 +106,256 @@ export default function QualityView() {
   );
   const transitPartners = useMemo(() => partnersByCoverage.filter((p) => p.transit), [partnersByCoverage]);
 
-  // dataset facts (moved here from the Overview)
-  const datasetStats = useMemo(
-    () => [
-      { value: fmtNum(meta.datasetRows), label: "dataset rows" },
-      { value: `${meta.window.start}–${meta.window.end}`, label: "window" },
-      { value: fmtNum(meta.partners.length), label: "partners" },
-      { value: fmtNum(meta.chapters.length), label: "HS2 chapters" },
-      { value: fmtNum(Object.keys(meta.hs4labels).length), label: "HS4 groups · derived" },
-      { value: fmtNum(Object.keys(meta.hs6labels).length), label: "HS6 products" },
-    ],
-    [],
-  );
+  // ---- 2. product (HS6) coverage per year, from the full-window aggregate ----
+  const hs6ByYear = useMemo(() => {
+    const m = new Map<number, { count: number; pe: number }>();
+    for (const c of series.baseChannels6) {
+      for (const yr of c.years) {
+        const e = m.get(yr.y) ?? { count: 0, pe: 0 };
+        e.count += 1;
+        e.pe += yr.pe;
+        m.set(yr.y, e);
+      }
+    }
+    return meta.years.map((y) => ({ y, count: m.get(y)?.count ?? 0, pe: m.get(y)?.pe ?? 0 }));
+  }, [series]);
 
-  // weight & quantity availability, from the full-window HS6 base
+  // Single measure on the axis (channel counts); partner-reported USD value is a
+  // second measure of a different scale, so it lives in the tooltip — never a dual axis.
+  const coverageOption = useMemo<EChartsOption>(() => {
+    return {
+      backgroundColor: "transparent",
+      textStyle: baseTextStyle,
+      grid: baseGrid,
+      tooltip: {
+        ...baseTooltip(),
+        trigger: "axis",
+        formatter: (params: unknown) => {
+          const p = (Array.isArray(params) ? params[0] : params) as { dataIndex?: number; axisValueLabel?: string };
+          const row = hs6ByYear[p?.dataIndex ?? -1];
+          if (!row) return "";
+          return [
+            `<b>${p?.axisValueLabel ?? row.y}</b>`,
+            `HS6 channels with data: <b>${fmtNum(row.count)}</b>`,
+            `Partner-reported value: ${fmtUSDFull(row.pe)}`,
+          ].join("<br/>");
+        },
+      },
+      xAxis: catAxis(hs6ByYear.map((r) => r.y)),
+      yAxis: {
+        type: "value",
+        name: "HS6 channels",
+        nameTextStyle: { color: COLORS.axis, fontSize: 10 },
+        axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
+        splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
+        axisLine: { show: false },
+      },
+      series: [
+        {
+          name: "HS6 channels with data",
+          type: "bar",
+          ...BAR_SPEC,
+          data: hs6ByYear.map((r) => r.count),
+          itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.baseline },
+        },
+      ],
+    };
+  }, [hs6ByYear]);
+
+  // ---- 3. weight & quantity availability, from the full-window HS6 base ----
   const hs6 = series.baseChannels6;
-  const weights = useMemo(() => {
-    const withWeight = hs6.filter((c) => c.uvYears > 0);
-    const withUvRatio = hs6.filter((c) => c.uvRatio != null);
-    const peTotal = hs6.reduce((s, c) => s + c.peT, 0);
-    const peWithWeight = withWeight.reduce((s, c) => s + c.peT, 0);
-    return [
-      {
-        name: "HS6 channels with dual weight",
-        share: hs6.length > 0 ? withWeight.length / hs6.length : 0,
-        sub: `${fmtNum(withWeight.length)} of ${fmtNum(hs6.length)} channels have ≥1 year with net weight on both sides`,
-      },
-      {
-        name: "Value-weighted share",
-        share: peTotal > 0 ? peWithWeight / peTotal : 0,
-        sub: `${fmtUSD(peWithWeight)} of ${fmtUSD(peTotal)} partner-reported value sits in dual-weight channels`,
-      },
-      {
-        name: "Channels with a usable unit-value ratio",
-        share: hs6.length > 0 ? withUvRatio.length / hs6.length : 0,
-        sub: `${fmtNum(withUvRatio.length)} channels have ≥2 dual-weight years — the minimum for a unit-value ratio`,
-      },
-    ];
-  }, [hs6]);
-
-  const nonReporters = useMemo(
-    () => meta.partners.filter((p) => p.reportedYears.length === 0).map((p) => p.name),
-    [],
-  );
+  const withWeight = useMemo(() => hs6.filter((c) => c.uvYears > 0), [hs6]);
+  const withUvRatio = useMemo(() => hs6.filter((c) => c.uvRatio != null), [hs6]);
+  const peTotal = useMemo(() => hs6.reduce((s, c) => s + c.peT, 0), [hs6]);
+  const peWithWeight = useMemo(() => withWeight.reduce((s, c) => s + c.peT, 0), [withWeight]);
+  const weightShare = hs6.length > 0 ? withWeight.length / hs6.length : 0;
+  const weightValueShare = peTotal > 0 ? peWithWeight / peTotal : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* header */}
-      <section>
-        <h1 className="text-[20px] font-extrabold tracking-tight">{t("nav.quality")}</h1>
-        <p className="mt-1 max-w-[44rem] text-[13px] leading-[1.55] text-[rgba(32,30,29,.68)]">
-          What the snapshot contains and what it cannot mirror — every exclusion below is a stated
-          rule, not a judgement <Ref s="§7.1" /> <Ref s="§7.2" />.
+      <section className="space-y-2">
+        <p className="text-[11px] text-faint">
+          UN Comtrade · {meta.window.start}–{meta.window.end} · reporting coverage &amp; comparability
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
+        <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
+          A residual unexplained discrepancy is only as informative as the data behind it. This page
+          documents who reported what and when, where weight and quantity fields exist, which partners
+          are treated as transit hubs, and which observations are excluded before any screening signal
+          is ranked. None of the gaps documented here are treated as evidence of misreporting — they
+          bound what the comparison can and cannot support.
         </p>
       </section>
 
-      {/* dataset strip — six cells framed by 2px rules */}
-      <div className="grid grid-cols-2 border-y-2 border-[rgba(32,30,29,.4)] sm:grid-cols-3 lg:grid-cols-6">
-        {datasetStats.map((s, i) => (
-          <div key={s.label} className={`py-3 pr-3 ${i > 0 ? "pl-3" : ""} ${i < datasetStats.length - 1 ? "border-r border-[rgba(32,30,29,.2)]" : ""}`}>
-            <div className="tabular text-[20px] font-semibold leading-tight">{s.value}</div>
-            <div className="text-[11px] text-[rgba(32,30,29,.6)]">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <FilterBar />
+      <ContextLine filter={filter} />
 
-      {/* reporter coverage grid */}
+      {/* 1. reporter coverage heatmap */}
       <section>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-[16px] font-extrabold tracking-tight">Reporter coverage by partner and year</h2>
-          <span className="tabular text-[10.5px] text-[rgba(32,30,29,.5)]">
-            filled = reported · outline = no report, excluded from comparison <Ref s="§7.1" />
-          </span>
-        </div>
-        <div className="mt-2.5 overflow-x-auto">
-          <div className="min-w-[560px]">
-            <div className="grid grid-cols-[180px_1fr] border-t border-[rgba(32,30,29,.2)]">
-              {partnersByCoverage.map((p) => {
-                const tag = partnerTag(p);
-                return (
-                  <Fragment key={p.iso3}>
-                    <div className="border-b border-[rgba(32,30,29,.14)] py-[7px] pr-3 text-[12.5px] font-extrabold">
-                      <Link href={`/partners/${p.iso3.toLowerCase()}`} className="hover:underline">{p.name}</Link>
-                      {tag && <span className="tabular ml-1.5 text-[10.5px] font-normal text-[rgba(32,30,29,.5)]">{tag}</span>}
-                    </div>
-                    <div className="flex items-center gap-1 border-b border-[rgba(32,30,29,.14)] py-[7px]">
-                      {meta.years.map((y) => {
-                        const reported = p.reportedYears.includes(y);
-                        return (
-                          <span
-                            key={y}
-                            className="h-[14px] w-[26px] shrink-0"
-                            style={reported ? { background: "#201e1d" } : { border: "1px solid rgba(32,30,29,.35)" }}
-                            title={
-                              reported
-                                ? `${p.name} reported to UN Comtrade in ${y}.`
-                                : `${p.name} did not report in ${y} — the partner-year is excluded from comparison, never treated as a zero flow.`
-                            }
-                          />
-                        );
-                      })}
-                      <span className="tabular ml-2 text-[11px] text-[rgba(32,30,29,.55)]">{fmtPct(p.coverage, 0)}</span>
-                    </div>
-                  </Fragment>
-                );
-              })}
-            </div>
-            <div className="tabular mt-1.5 flex gap-1 pl-[180px] text-[10px] text-[rgba(32,30,29,.5)]">
-              {meta.years.map((y) => (
-                <span key={y} className="w-[26px] shrink-0 text-center">{String(y).slice(2)}</span>
+        <SectionTitle
+          title="Reporter coverage by partner and year"
+          desc={`Which partners reported exports to Uzbekistan to UN Comtrade in each year of the ${meta.window.start}–${meta.window.end} window. A missing year removes the mirror for that partner-year entirely — it is excluded from comparison, never entered as a zero flow. Source: UN Comtrade reporter metadata.`}
+        />
+        <CoverageLegend />
+        <div className="card overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+                <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
+                {meta.years.map((y) => (
+                  <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
+                ))}
+                <th className="px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="zebra">
+              {partnersByCoverage.map((p) => (
+                <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
+                  <td className="px-3 py-1.5">
+                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                      {p.name}
+                    </Link>
+                  </td>
+                  {meta.years.map((y) => (
+                    <td key={y} className="px-1.5 py-1.5 text-center">
+                      <CoverageCell p={p} y={y} />
+                    </td>
+                  ))}
+                  <td className="tabular px-3 py-1.5 text-right text-muted">{fmtPct(p.coverage, 0)}</td>
+                  <td className="px-3 py-1.5">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <QualityTag tier={p.tier} />
+                      {p.transit && <TransitTag />}
+                      {p.lapse && <Pill>stopped after {p.lastReportedYear}</Pill>}
+                    </span>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
+        <p className="mt-2 max-w-3xl text-xs text-faint">
+          Coverage = share of window years the partner reported. For lapsed reporters, discrepancies in
+          years after the stop are labelled coverage-sensitive throughout the site and are down-weighted
+          in evidence quality — a data lapse, not a trade pattern.
+        </p>
       </section>
 
-      {/* exclusions + weight availability */}
-      <div className="grid gap-7 md:grid-cols-2">
-        <section>
-          <h2 className="text-[16px] font-extrabold tracking-tight">Excluded observations &amp; floors</h2>
-          <ul className="mt-2.5 flex flex-col gap-2 text-[12.5px] leading-normal text-[rgba(32,30,29,.72)]">
-            <li className="flex gap-2.5 border-b border-[rgba(32,30,29,.14)] pb-2">
-              <span className="tabular w-[78px] shrink-0 font-semibold">{fmtUSD(meta.orphans.importValue)}</span>
-              <span>Orphan flows — Uzbek imports with no partner mirror ({fmtNum(meta.orphans.importCells)} cells). Excluded, never compared against a fabricated zero.</span>
-            </li>
-            <li className="flex gap-2.5 border-b border-[rgba(32,30,29,.14)] pb-2">
-              <span className="tabular w-[78px] shrink-0 font-semibold">±$100K</span>
-              <span>Channel-year noise floor — smaller signed values are read as zero and never count toward persistence.</span>
-            </li>
-            <li className="flex gap-2.5 border-b border-[rgba(32,30,29,.14)] pb-2">
-              <span className="tabular w-[78px] shrink-0 font-semibold">HS 98–99</span>
-              <span>Residual and confidential codes cannot be mirror-matched by construction — visible for transparency, excluded from residual-stage ranking <Ref s="§7.2" />.</span>
-            </li>
-            <li className="flex gap-2.5 border-b border-[rgba(32,30,29,.14)] pb-2">
-              <span className="tabular w-[78px] shrink-0 font-semibold">$8M / $4M</span>
-              <span>HS6 materiality floor — 6-digit channels below $8M partner-reported value or $4M discrepancy over the window are dropped; HS2 totals are unaffected.</span>
-            </li>
-            <li className="flex gap-2.5">
-              <span className="tabular w-[78px] shrink-0 font-semibold">Non-reporters</span>
-              <span>
-                {(nonReporters.length > 0 ? nonReporters : ["Turkmenistan"]).join(", ")}{" "}
-                {(nonReporters.length || 1) === 1 ? "does" : "do"} not report to UN Comtrade — no mirror comparison is possible.
-              </span>
-            </li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-[16px] font-extrabold tracking-tight">Weight &amp; quantity availability</h2>
-          <p className="mt-1.5 text-[12.5px] leading-normal text-[rgba(32,30,29,.68)]">
-            Dual weights enable the unit-value cross-check <Ref s="§4" /> — where they are missing the
-            remaining anomaly weights are renormalised, never imputed.
-          </p>
-          <div className="mt-2.5 flex flex-col gap-[9px]">
-            {weights.map((w) => (
-              <WeightBar key={w.name} {...w} />
-            ))}
+      {/* 2. product coverage */}
+      <section>
+        <SectionTitle
+          title="Product-level (HS6) coverage by year"
+          desc="Count of country × HS6 channels with at least one side reported in each year. Hover a bar for the total partner-reported export value in those channels. Full window under the current partner/sector filters. Source: UN Comtrade."
+        />
+        {hs6.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="card p-4">
+            <EChart option={coverageOption} style={{ height: 300 }} />
+            <p className="mt-2 max-w-3xl text-xs text-faint">
+              Granularity expansion effect: the number of distinct HS6 channels grows over the window
+              partly because partners report at finer commodity detail in later years. A rising channel
+              count therefore reflects reporting granularity as much as trade itself — year-on-year
+              channel counts are not comparable without this caveat, which is why each bar&apos;s tooltip
+              also carries the partner-reported value for that year.
+            </p>
           </div>
-        </section>
-      </div>
+        )}
+      </section>
 
-      {/* transit metadata */}
-      <section className="rule-2 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Transit &amp; re-export partners</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] leading-normal text-[rgba(32,30,29,.62)]">
-          Uzbekistan records imports by origin while hubs report re-exports by consignment, so routed
-          goods create legitimate discrepancies — these partners are classed Transit-sensitive{" "}
-          <Ref s="§6" /> and held out of the residual stage.
+      {/* 3. weight & quantity */}
+      <section>
+        <SectionTitle
+          title="Weight &amp; quantity availability"
+          desc="Unit-value cross-checks (price-per-kg comparison between the two sides) require net weight reported by BOTH sides in the same channel-year. This section sizes that sample across the full window under the current filters. Source: UN Comtrade weight fields."
+        />
+        {hs6.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Stat
+                label="HS6 channels with dual weight"
+                value={fmtPct(weightShare, 0)}
+                sub={`${fmtNum(withWeight.length)} of ${fmtNum(hs6.length)} channels have ≥1 year with weight on both sides`}
+                info="Share of country × HS6 channels where at least one year has net weight reported by both the partner and Uzbekistan."
+              />
+              <Stat
+                label="Value-weighted share"
+                value={fmtPct(weightValueShare, 0)}
+                sub={`${fmtUSD(peWithWeight)} of ${fmtUSD(peTotal)} partner-reported value`}
+                info="Partner-reported export value in dual-weight channels as a share of all HS6 partner-reported value — larger channels report weights more often."
+              />
+              <Stat
+                label="Usable unit-value ratios"
+                value={fmtNum(withUvRatio.length)}
+                sub="channels with ≥2 dual-weight years (minimum for a UV ratio)"
+                info="A unit-value ratio is only computed with at least two comparable dual-weight years; single-year ratios are too volatile to interpret."
+              />
+            </div>
+            <p className="mt-3 max-w-3xl text-xs text-faint">
+              Unit-value checks exist only for this sample. For the remaining channels no price-level
+              comparison is possible, so their anomaly score is computed without the unit-value component
+              (re-weighted, per Methodology §7.4) — absence of weight data is a coverage limitation, not
+              a signal in either direction.
+            </p>
+          </>
+        )}
+      </section>
+
+      {/* 4. transit metadata */}
+      <section>
+        <SectionTitle
+          title="Transit &amp; re-export partner metadata"
+          desc="Partners flagged transit-sensitive and the basis for the flag. Classification basis: known re-export/consignment hubs on Uzbekistan import routes."
+        />
+        <p className="mb-3 max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-muted">
+          <strong className="text-foreground">Why transit is assessed separately.</strong> Uzbekistan
+          records imports by country of <em>origin</em>, while re-export hubs report their outbound
+          shipments by <em>consignment</em>. Goods routed through a hub can therefore appear in the
+          hub&apos;s export figures without ever appearing in Uzbekistan&apos;s imports from that hub —
+          a legitimate methodological discrepancy, not misreporting. Channels involving these partners
+          are classed Transit-sensitive and are excluded from the residual stage and from audit-priority
+          rankings.
         </p>
         {transitPartners.length === 0 ? (
-          <p className="mt-3 text-[13px] text-muted">No partners in the current dataset are flagged as transit hubs.</p>
+          <EmptyState text="No partners in the current dataset are flagged as transit hubs." />
         ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse">
+          <div className="card overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className={HEAD_ROW}>
-                  <th className={TH}>{t("common.partner")}</th>
-                  <th className={TH}>Region</th>
-                  <th className={TH}>Reporting</th>
-                  <th className={THN}>{t("kpi.coverage")}</th>
+                <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+                  <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
+                  <th className="px-3 py-2 font-medium">Region</th>
+                  <th className="px-3 py-2 font-medium">Reporting</th>
+                  <th className="tabular px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
+                  <th className="px-3 py-2 font-medium">Classification basis</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="zebra">
                 {transitPartners.map((p) => (
-                  <tr key={p.iso3} className={BODY_ROW}>
-                    <td className={`${TD} whitespace-nowrap`}>
-                      <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-extrabold hover:underline">{p.name}</Link>
-                      <span className="tabular ml-1.5 text-[10.5px] text-[rgba(32,30,29,.5)]">transit hub</span>
+                  <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
+                    <td className="px-3 py-2">
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                          {p.name}
+                        </Link>
+                        <TransitTag />
+                      </span>
                     </td>
-                    <td className={`${TD} text-[rgba(32,30,29,.7)]`}>{p.region}</td>
-                    <td className={`${TD} tabular text-[12px] text-[rgba(32,30,29,.7)]`}>
-                      {p.lapse ? `stopped after ${p.lastReportedYear}` : "reporting"}
+                    <td className="px-3 py-2 text-muted">{p.region}</td>
+                    <td className="px-3 py-2">
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <QualityTag tier={p.tier} />
+                        {p.lapse && <Pill>stopped after {p.lastReportedYear}</Pill>}
+                      </span>
                     </td>
-                    <td className={TDN}>{fmtPct(p.coverage, 0)}</td>
+                    <td className="tabular px-3 py-2 text-right text-muted">{fmtPct(p.coverage, 0)}</td>
+                    <td className="px-3 py-2 text-muted">
+                      Known re-export/consignment hub on Uzbekistan import routes
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -267,25 +364,89 @@ export default function QualityView() {
         )}
       </section>
 
-      {/* versions */}
-      <section className="rule-2 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Data refresh &amp; versioning</h2>
-        <dl className="mt-2.5 max-w-[44rem] text-[12.5px] leading-normal text-[rgba(32,30,29,.72)]">
-          {(
-            [
-              [t("meta.dataVersion"), DATA_VERSION],
-              [t("meta.generated"), meta.generatedAt],
-              [t("meta.methodologyVersion"), `v${METHODOLOGY_VERSION}`],
-              ["Source", `UN Comtrade · annual HS2 + HS6 · window ${meta.window.start}–${meta.window.end}`],
-              ["Update policy", "Snapshots replace atomically — the site never mixes figures from two data versions; cite the version identifier when comparing."],
-            ] as const
-          ).map(([term, def]) => (
-            <div key={term} className="flex gap-2.5 border-b border-[rgba(32,30,29,.14)] py-2 last:border-b-0">
-              <dt className="w-[140px] shrink-0 text-[11px] font-semibold uppercase tracking-[.08em] text-faint">{term}</dt>
-              <dd className="tabular min-w-0">{def}</dd>
-            </div>
-          ))}
-        </dl>
+      {/* 5. excluded observations */}
+      <section>
+        <SectionTitle
+          title="Excluded observations &amp; floors"
+          desc="What is filtered out before ranking, and why. Exclusions limit false positives; they are documented here so the funnel from observed to residual channels stays auditable."
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="card p-4">
+            <h3 className="mb-1.5 text-sm font-semibold">Residual HS chapters 98–99</h3>
+            <p className="text-sm text-muted">
+              Special-transaction and confidential-commodity codes (HS <span className="tabular">98</span>,{" "}
+              <span className="tabular">99</span>) are not comparable at product level: countries park
+              unallocated or confidential trade there under differing national rules. They remain visible
+              in the Comparable stage for transparency but are excluded from the residual stage and from
+              all audit-priority rankings.
+            </p>
+          </div>
+          <div className="card p-4">
+            <h3 className="mb-1.5 text-sm font-semibold">Noise floor: $0.1M per channel-year</h3>
+            <p className="text-sm text-muted">
+              A channel-year discrepancy below $0.1M in magnitude is treated as statistical noise: it does
+              not count as a positive or reverse year for persistence, and channels where both sides total
+              under $0.1M over the period are dropped entirely. This prevents rounding and small-shipment
+              timing effects from registering as signals.
+            </p>
+          </div>
+          <div className="card p-4">
+            <h3 className="mb-1.5 text-sm font-semibold">HS6 materiality floor</h3>
+            <p className="text-sm text-muted">
+              HS6 channels enter the dataset only if they reach{" "}
+              <span className="tabular">$8M</span> partner-reported value or{" "}
+              <span className="tabular">$4M</span> discrepancy over the {meta.window.start}–{meta.window.end}{" "}
+              window. Below that, mirror comparison at 6-digit detail is dominated by classification and
+              timing differences. HS2 totals are unaffected — the floor limits only product-level detail.
+            </p>
+          </div>
+          <div className="card p-4">
+            <h3 className="mb-1.5 text-sm font-semibold">Missing is never zero</h3>
+            <p className="text-sm text-muted">
+              When a partner did not report a year, that partner-year is removed from the comparison —
+              it is never entered as a zero export that would fabricate a reverse discrepancy. Such gaps
+              appear as &quot;{t("common.notReported")}&quot; throughout the site and reduce the coverage
+              KPI instead of inflating any discrepancy total.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. refresh history */}
+      <section>
+        <SectionTitle
+          title="Data refresh &amp; versioning"
+          desc="Every figure on this site is computed from a single versioned snapshot; the version identifier appears in the context line above every analytical block and in every CSV export."
+        />
+        <div className="card divide-y divide-[var(--color-border-soft)]">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.dataVersion")}</span>
+            <span className="tabular text-sm font-semibold">{DATA_VERSION}</span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.generated")}</span>
+            <span className="tabular text-sm">{meta.generatedAt}</span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.methodologyVersion")}</span>
+            <span className="tabular text-sm">v{METHODOLOGY_VERSION}</span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Source</span>
+            <span className="text-sm">
+              UN Comtrade (annual trade data, HS2 + HS6), window {meta.window.start}–{meta.window.end}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Update policy</span>
+            <span className="max-w-2xl text-sm text-muted">
+              Snapshots replace atomically: a refresh regenerates the entire dataset and swaps it in one
+              step, so the site never mixes figures from two data versions. Comtrade itself revises past
+              years, so totals can change between versions — comparisons across data versions should cite
+              the version identifier.
+            </span>
+          </div>
+        </div>
       </section>
     </div>
   );

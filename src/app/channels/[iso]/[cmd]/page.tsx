@@ -143,7 +143,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
     `It is not proof of intentional misreporting.`;
 
   return (
-    <div className="space-y-8 px-7 py-6">
+    <div className="space-y-8">
       {/* 1. header */}
       <div>
         <Link href="/risk" className="text-sm text-muted hover:text-foreground">← Screening queue</Link>

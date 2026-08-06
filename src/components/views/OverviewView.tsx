@@ -1,292 +1,343 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { EChartsOption } from "echarts";
+import FilterBar from "@/components/FilterBar";
+import EChart from "@/components/EChart";
 import TrendChart from "@/components/charts/TrendChart";
-import { Stat, MethodRef } from "@/components/ui";
+import {
+  Stat, SectionTitle, ContextLine, EvidenceLadder, AnomalyBadge, EvidenceBadge,
+  ClassBadge, RobustnessBadge, TransitTag, EmptyState, InfoTip,
+} from "@/components/ui";
 import { Cite } from "@/lib/references";
 import { useFilter } from "@/lib/filter-context";
-import {
-  meta, DATA_VERSION, METHODOLOGY_VERSION, DIRECTION_LABELS, STAGE_LABELS, CLASS_LABELS,
-  type Channel, type Direction,
-} from "@/lib/dataset";
-import { fmtUSD, fmtPct, fmtNum, CLASS_COLORS } from "@/lib/format";
+import { meta, DATA_VERSION, METHODOLOGY_VERSION, DIRECTION_LABELS, type PartnerAgg } from "@/lib/dataset";
+import { useI18n } from "@/lib/i18n";
+import { channelsToCsv, downloadCsv } from "@/lib/export";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip } from "@/lib/echartBase";
 
-/* Headline label + mono formula chip follow the active direction (Screens §1). */
-const HEADLINE: Record<Direction, { label: string; formula: string }> = {
-  positive: { label: "Residual unexplained discrepancy · positive", formula: "§2.1 · Σ max(X·(1+f) − M, 0)" },
-  reverse: { label: "Reverse discrepancy · UZB records exceed partner", formula: "§2.1 · Σ max(M − X·(1+f), 0)" },
-  absolute: { label: "Absolute two-sided asymmetry", formula: "§2.1 · positive + reverse" },
-  net: { label: "Net signed discrepancy", formula: "§2.1 · Σ (X·(1+f) − M)" },
-};
-
-const READ_FIRST = [
-  "A screening signal: where the two record systems disagree, and by how much.",
-  "Not proof of smuggling, fraud or under-declaration — that is evidence level 5.",
-  "Not a shadow-economy size or budget-loss estimate; no tax rate is applied.",
+const CAN: React.ReactNode[] = [
+  "Locate where partner-reported exports and Uzbekistan's import records diverge, and by how much under stated freight scenarios.",
+  "Separate complete, comparable discrepancies from cases driven by missing reporting, transit routing or residual codes.",
+  "Rank country × HS6 channels by anomaly strength and evidence quality as priorities for statistical or customs review.",
+  "Show whether a discrepancy persists across years and survives the freight assumption.",
 ];
-
-const COL_RULE = "1px solid rgba(32,30,29,.2)";
-const ROW_RULE_2 = "2px solid rgba(32,30,29,.4)";
-const BTN_SECONDARY =
-  "inline-flex cursor-pointer items-center justify-center border border-[rgba(32,30,29,.4)] bg-transparent px-2.5 py-[5px] text-[11.5px] font-semibold text-foreground no-underline hover:bg-[rgba(32,30,29,.07)] active:bg-[rgba(32,30,29,.14)]";
+const CANNOT: React.ReactNode[] = [
+  "Prove smuggling, fraud, illegal imports or any specific violation — that requires declarations, audit or inspection (evidence level 5).",
+  <>
+    Measure the shadow economy or budget losses — mirror gaps are one input signal to that research, never the measure itself
+    <Cite ids={["medina2018"]} />.
+  </>,
+  "Attribute a discrepancy to a single cause: valuation, timing, classification, re-export and reporting differences all contribute.",
+  "Establish that any named country or company acted improperly.",
+];
 
 export default function OverviewView() {
   const { data, series, filter } = useFilter();
+  const { t } = useI18n();
   const k = data.kpis;
+  const top = data.channels6.slice(0, 5);
 
-  const head = HEADLINE[filter.direction];
-  const headValue =
-    filter.direction === "reverse" ? k.reverse
-      : filter.direction === "absolute" ? k.absolute
-        : filter.direction === "net" ? k.net
-          : k.positive.central;
-  const share = k.comparableTrade > 0 ? headValue / k.comparableTrade : 0;
-  const period = filter.from === filter.to ? String(filter.from) : `${filter.from}–${filter.to}`;
-
-  // freight sensitivity strip: fill to the 6% value as a share of the 15% value
-  const lowW = k.positive.high > 0 ? Math.round((k.positive.low / k.positive.high) * 100) : 0;
-  const centralW = k.positive.high > 0 ? Math.round((k.positive.central / k.positive.high) * 100) : 0;
+  const exportCsv = () =>
+    downloadCsv(`uzb-mirror-overview-hs6-${DATA_VERSION}.csv`, channelsToCsv(data.channels6, filter));
 
   return (
-    <div>
-      {/* ---- Row 1: headline (1fr) | Read this first (320px) ---- */}
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0,1fr) 320px", borderBottom: ROW_RULE_2 }}>
-        <div style={{ padding: "26px 28px", borderRight: COL_RULE }}>
-          <div className="flex flex-wrap items-baseline gap-2.5">
-            <span className="lbl">{head.label}</span>
-            <MethodRef>{head.formula}</MethodRef>
-          </div>
-          <div className="flex flex-wrap items-end gap-5" style={{ marginTop: 10 }}>
-            <div className="tabular" style={{ fontSize: 64, fontWeight: 600, lineHeight: 0.95, letterSpacing: "-0.03em" }}>
-              {fmtUSD(headValue)}
-            </div>
-            <div style={{ paddingBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "#ae1800" }}>
-                {fmtPct(share, 1)} of comparable trade
-              </div>
-              <div className="tabular" style={{ fontSize: 11.5, color: "rgba(32,30,29,.6)" }}>
-                {fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)} across 6–15% freight
-              </div>
-            </div>
-          </div>
-          <p style={{ margin: "12px 0 0", maxWidth: "36rem", fontSize: 13.5, lineHeight: 1.55, color: "rgba(32,30,29,.72)" }}>
-            {period} · {DIRECTION_LABELS[filter.direction].toLowerCase()} · {STAGE_LABELS[filter.stage].toLowerCase()} stage.
-            The share of partner-reported flows that Uzbekistan&apos;s own records do not account for after a{" "}
-            {Math.round(filter.cif * 100)}% freight adjustment, over {fmtNum(k.channelCount)} partner × chapter channels.
-          </p>
-          <p style={{ margin: "6px 0 0", maxWidth: "36rem", fontSize: 12, lineHeight: 1.5, color: "rgba(32,30,29,.55)" }}>
-            Built in the mirror-statistics tradition of partner-country comparison, from Bhagwati onward — one
-            input to shadow-economy research, never its measure
-            <Cite ids={["bhagwati1964", "carrere2015", "medina2018"]} />.
-          </p>
-          <div
-            className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[rgba(32,30,29,.2)]"
-            style={{ marginTop: 18, borderTop: COL_RULE }}
-          >
-            <div style={{ padding: "12px 12px 0 0" }}>
-              <Stat value={fmtUSD(k.comparableTrade)} label="comparable trade" refId="§1.2" />
-            </div>
-            <div style={{ padding: "12px 12px 0 12px" }}>
-              <Stat
-                value={fmtUSD(filter.direction === "reverse" ? k.positive.central : k.reverse)}
-                label={filter.direction === "reverse" ? "positive, separate" : "reverse, separate"}
-                refId="§2.1"
-              />
-            </div>
-            <div style={{ padding: "12px 12px 0 12px" }}>
-              <Stat value={fmtPct(k.coveragePct, 0)} label="partner-year coverage" refId="§7.1" />
-            </div>
-            <div style={{ padding: "12px 0 0 12px" }}>
-              <Stat value={String(k.robustSignals)} label="robust Investigate signals" refId="§6" accent="#ae1800" />
-            </div>
-          </div>
-        </div>
-
-        {/* right rail on the secondary surface */}
-        <div style={{ padding: "26px 28px", background: "#eae9e9" }}>
-          <div className="lbl">Read this first</div>
-          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10, fontSize: 12.5, lineHeight: 1.5, color: "rgba(32,30,29,.72)" }}>
-            {READ_FIRST.map((s) => (
-              <li key={s} style={{ display: "flex", gap: 8 }}>
-                <span style={{ color: "#ec3013", fontWeight: 800 }}>→</span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ul>
-          <Link href="/methodology" className={BTN_SECONDARY} style={{ marginTop: 14 }}>
-            Formulas &amp; method §2
-          </Link>
-          <div style={{ marginTop: 18, borderTop: "1px solid rgba(32,30,29,.25)", paddingTop: 12 }}>
-            <div className="lbl">Freight sensitivity §2.3</div>
-            <div style={{ marginTop: 8, position: "relative", height: 12, background: "rgba(32,30,29,.12)" }}>
-              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${lowW}%`, background: "rgba(236,48,19,.3)" }} />
-              <div style={{ position: "absolute", top: -4, bottom: -4, width: 3, left: `${centralW}%`, background: "#ec3013" }} />
-            </div>
-            <div className="tabular" style={{ marginTop: 6, display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "rgba(32,30,29,.6)" }}>
-              <span>6% {fmtUSD(k.positive.low)}</span>
-              <span>10% {fmtUSD(k.positive.central)}</span>
-              <span>15% {fmtUSD(k.positive.high)}</span>
-            </div>
-            <p style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.5, color: "rgba(32,30,29,.6)" }}>
-              {fmtPct(k.flipShare, 0)} of channels change sign inside the band and are held back from the
-              residual stage.
+    <div className="space-y-6">
+      {/* 1. hero: eyebrow · H1 · subtitle · disclaimer · research grounding · ladder */}
+      <section className="space-y-2.5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-faint">
+              UN Comtrade · {meta.window.start}–{meta.window.end} · statistical reconciliation &amp; risk screening
             </p>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+              {t("nav.overview")}
+            </h1>
+            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">{t("ov.question")}</p>
           </div>
+          <button
+            onClick={exportCsv}
+            className="no-print shrink-0 rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground"
+            title="All country × HS6 channels under the active filters, with raw and derived fields, data version and filter context."
+          >
+            {t("common.exportCsv")} ↓
+          </button>
         </div>
-      </div>
-
-      {/* ---- Row 2: eight-year record (1fr) | concentration (320px) ---- */}
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0,1fr) 320px", borderBottom: ROW_RULE_2 }}>
-        <div style={{ padding: "22px 28px", borderRight: COL_RULE }}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Eight-year record</h2>
-            <span className="tabular" style={{ fontSize: 10.5, color: "rgba(32,30,29,.5)" }}>
-              red = positive · grey = reverse · dashes = structural breaks §6.10
-            </span>
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <TrendChart annual={series.annual} height={236} />
-          </div>
-        </div>
-        <Concentration />
-      </div>
-
-      {/* ---- Bottom: priority queue preview ---- */}
-      <QueuePreview channels={data.channels6} />
-
-      {/* dataset footer — one mono line; full detail lives on Data quality */}
-      <p className="tabular" style={{ padding: "0 28px 26px", margin: 0, fontSize: 11, color: "rgba(32,30,29,.55)" }}>
-        {fmtNum(meta.datasetRows)} records · {meta.window.start}–{meta.window.end} · {fmtNum(meta.partners.length)}{" "}
-        partners · UN Comtrade · data {DATA_VERSION} · methodology v{METHODOLOGY_VERSION} ·{" "}
-        <Link href="/quality" style={{ textDecoration: "underline" }}>Data quality</Link>
-      </p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Concentration: six CSS bars on the active direction (no chart)      */
-/* ------------------------------------------------------------------ */
-
-function Concentration() {
-  const { data } = useFilter();
-  const k = data.kpis;
-  const rows = data.concentration.slice(0, 6);
-  const max = rows.length ? Math.abs(rows[0].value) : 1;
-
-  return (
-    <div style={{ padding: "22px 28px" }}>
-      <div className="flex items-baseline justify-between">
-        <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Concentration</h2>
-        <span className="tabular" style={{ fontSize: 10.5, color: "rgba(32,30,29,.5)" }}>§9</span>
-      </div>
-      {rows.length === 0 ? (
-        <p style={{ margin: "12px 0 0", fontSize: 12.5, color: "rgba(32,30,29,.6)" }}>
-          No channels above the noise floor under the active filters.
+        <p className="max-w-3xl border-l-2 border-l-[var(--color-border)] pl-3 text-[13px] leading-relaxed text-muted">
+          {t("ov.disclaimer")}
         </p>
-      ) : (
-        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 9 }}>
-          {rows.map((c) => (
-            <div key={`${c.iso3}-${c.cmd}`}>
-              <div className="flex justify-between gap-2" style={{ fontSize: 12 }}>
-                <span
-                  style={{ fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                  title={c.name}
-                >
-                  {c.partner} · {c.cmd}
+        <p className="max-w-3xl text-[12px] leading-relaxed text-faint">
+          Built in the mirror-statistics tradition of partner-country comparison, from Bhagwati onward — a
+          window onto unrecorded trade and one input to shadow-economy research, never its measure
+          <Cite ids={["bhagwati1964", "carrere2015", "medina2018"]} />.
+        </p>
+        <EvidenceLadder compact />
+      </section>
+
+      {/* 2. filters + calculation context */}
+      <FilterBar />
+      <ContextLine filter={filter} />
+
+      {/* 3. national snapshot — four non-overlapping tiles */}
+      <section>
+        <SectionTitle
+          title="National snapshot"
+          desc="Headline reconciliation figures for the selected period and filters. All values are residual unexplained discrepancies unless stated otherwise — screening signals, not findings."
+        />
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <Stat label={t("kpi.comparableTrade")} value={fmtUSD(k.comparableTrade)}
+            sub={`${t("kpi.comparableTrade.sub")} · ${fmtPct(k.coveragePct, 0)} of partner-years covered`}
+            info="Partner-reported exports (FOB) in channels where both sides reported for the selected period — the denominator of the analysis. The coverage share counts partner-years where the partner actually reported; missing partner-years are never treated as zero flows (full detail on the Data Quality page)." />
+          <HeroStat label={t("kpi.positive")} value={fmtUSD(k.positive.central)}
+            sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} across 6–15% freight`}
+            info="Σ max(expected CIF − UZB imports, 0) per channel-year. Expected CIF = partner exports × (1 + freight)." />
+          <Stat label={t("kpi.reverse")} value={fmtUSD(k.reverse)} sub={t("kpi.reverse.sub")}
+            info="Σ max(UZB imports − expected CIF, 0). Shown separately — never netted away against positive discrepancies." />
+          <Stat label={t("kpi.robust")} value={String(k.robustSignals)} sub={t("kpi.robust.sub")}
+            info="HS6 channels classified Investigate (high anomaly + high evidence) whose sign holds across the whole 6–15% freight band." />
+        </div>
+      </section>
+
+      {/* 4. trade development (full window) */}
+      <section>
+        <SectionTitle
+          title="Trade development"
+          desc={`${t("ov.trend")} — full ${meta.window.start}–${meta.window.end} window under the current filters. Amber: positive discrepancy. Blue: reverse. Line: comparable partners per year.`}
+        />
+        <TrendChart annual={series.annual} />
+      </section>
+
+      {/* 5. where it concentrates */}
+      <TopCounterparts />
+
+      {/* 6. top screening signals */}
+      <section>
+        <SectionTitle title={t("ov.topSignals")}
+          desc="Country × HS6 channels ranked by class, anomaly strength and evidence quality under the current filters."
+          right={<Link href="/risk" className="text-sm font-medium text-[var(--color-primary)] hover:underline">{t("nav.queue")} →</Link>} />
+        {top.length === 0 ? <EmptyState /> : (
+          <div className="card zebra divide-y divide-[var(--color-border-soft)]">
+            {top.map((c) => (
+              <div key={`${c.partnerIso}-${c.cmd}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
+                <ClassBadge cls={c.cls} />
+                <AnomalyBadge score={c.anomaly} />
+                <EvidenceBadge score={c.evidence} />
+                <Link href={`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
+                  {c.partner} · {c.cmdLabel} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
+                </Link>
+                {c.transit && <TransitTag />}
+                <RobustnessBadge r={c.robustness} />
+                <span className="tabular inline-flex w-24 items-center justify-end gap-1.5 text-right text-sm"
+                  title={c.signedT >= 0 ? "Positive discrepancy" : "Reverse discrepancy"}>
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c.signedT >= 0 ? COLORS.positive : COLORS.reverse }} />
+                  {fmtUSD(c.primary)}
                 </span>
-                <span className="tabular" style={{ color: "rgba(32,30,29,.6)" }}>{fmtUSD(Math.abs(c.value))}</span>
               </div>
-              <div style={{ marginTop: 3, height: 6, background: "rgba(32,30,29,.12)" }}>
-                <div style={{ height: "100%", width: `${Math.max(4, Math.round((Math.abs(c.value) / max) * 100))}%`, background: "#ec3013" }} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 7. dataset & grounding — one compact card */}
+      <section className="card p-4">
+        <SectionTitle
+          title="Dataset & grounding"
+          desc="What every figure on this site is computed from, and the literature the method follows. These facts describe the whole snapshot and do not change with the filters above."
+        />
+        <dl className="flex flex-wrap gap-x-8 gap-y-3">
+          <DatasetFact label="Source records" value={fmtNum(meta.datasetRows)}
+            tip="Annual UN Comtrade rows (HS2 + HS6, both reporting sides) pulled into this snapshot." />
+          <DatasetFact label="Window" value={`${meta.window.start}–${meta.window.end}`}
+            tip={`${meta.years.length} years of annual data. Comtrade revises past years, so totals can change between data versions.`} />
+          <DatasetFact label="Partners" value={fmtNum(meta.partners.length)}
+            tip="Partner countries whose exports to Uzbekistan are mirrored against Uzbekistan's import records. Turkmenistan does not report to UN Comtrade and cannot be mirrored." />
+          <DatasetFact label="Orphan imports" value={fmtUSD(meta.orphans.importValue)}
+            tip={`${fmtNum(meta.orphans.importCells)} country-chapter-year observations of Uzbekistan-recorded imports lack a partner mirror. Treating the missing side as a zero export would fabricate a reverse discrepancy, so they are excluded from all discrepancy metrics and lower the coverage share instead.`} />
+        </dl>
+        <p className="mt-3 border-t border-[var(--color-border-soft)] pt-3 text-[12.5px] leading-relaxed text-muted">
+          UN Comtrade annual trade data (HS2 + HS6) · data version{" "}
+          <span className="tabular font-medium text-foreground">{DATA_VERSION}</span> · methodology{" "}
+          <span className="tabular font-medium text-foreground">v{METHODOLOGY_VERSION}</span> ·{" "}
+          <Link href="/quality" className="font-medium text-[var(--color-primary)] hover:underline">{t("nav.quality")}</Link> ·{" "}
+          <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">{t("nav.methodology")}</Link>
+        </p>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
+          Expected-CIF mirror comparison<Cite ids={["gaulier2010", "hummels2006"]} /> · gross positive/reverse
+          aggregation<Cite ids={["buehn2011", "gfi2021"]} /> · screening practice<Cite ids={["imf2023", "unsd2019"]} />
+        </p>
+      </section>
+
+      {/* 8. what can / cannot be concluded */}
+      <section className="grid gap-3 md:grid-cols-2">
+        <div className="card border-l-2 border-l-[var(--color-ok)] p-4">
+          <h3 className="mb-2 text-sm font-semibold">{t("ov.can")}</h3>
+          <ul className="space-y-2 text-[13px] text-muted">
+            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px]" style={{ color: "var(--color-ok)" }}>✓</span><span>{x}</span></li>)}
+          </ul>
         </div>
-      )}
-      <p className="tabular" style={{ margin: "12px 0 0", fontSize: 11, lineHeight: 1.5, color: "rgba(32,30,29,.6)" }}>
-        Top-5 share {fmtPct(k.top5Share, 0)} · HHI {fmtNum(k.hhi)} · {fmtNum(k.channelCount)} channels
-      </p>
+        <div className="card border-l-2 border-l-[var(--color-investigate)] p-4">
+          <h3 className="mb-2 text-sm font-semibold">{t("ov.cannot")}</h3>
+          <ul className="space-y-2 text-[13px] text-muted">
+            {CANNOT.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px] text-[var(--color-investigate)]">✕</span><span>{x}</span></li>)}
+          </ul>
+        </div>
+      </section>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/* Priority queue preview: top 6 of N, columns carry their § reference */
+/* Hero stat: the ONE lead number on the page (26px; others stay 22px) */
 /* ------------------------------------------------------------------ */
 
-const TH = "pb-[7px] pr-2.5 pt-[7px] text-left align-middle text-[10px] font-semibold uppercase tracking-[.1em] text-[rgba(32,30,29,.55)] whitespace-nowrap";
-const TD = "py-[9px] pr-2.5 align-middle text-[13px]";
+function HeroStat({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: string }) {
+  return (
+    <div className="card p-3.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="text-[12px] leading-snug text-muted">{label}</div>
+        {info && <InfoTip text={info} />}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-[26px] font-semibold leading-none tracking-tight">{value}</span>
+      </div>
+      {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
+    </div>
+  );
+}
 
-function QueuePreview({ channels }: { channels: Channel[] }) {
+/* ------------------------------------------------------------------ */
+/* Dataset fact: one quiet label–value pair in the grounding card      */
+/* ------------------------------------------------------------------ */
+
+function DatasetFact({ label, value, tip }: { label: string; value: string; tip: string }) {
+  return (
+    <div className="flex items-start gap-1.5">
+      <div>
+        <dt className="text-[11px] text-faint">{label}</dt>
+        <dd className="tabular text-[15px] font-semibold leading-tight">{value}</dd>
+      </div>
+      <InfoTip text={tip} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Where it concentrates: horizontal bar (top-10 partners)             */
+/* ------------------------------------------------------------------ */
+
+type RankMode = "gap" | "trade";
+
+function partnerValue(p: PartnerAgg, mode: RankMode, direction: string): number {
+  if (mode === "trade") return p.peT;
+  return direction === "reverse" ? p.revT : direction === "absolute" ? p.absT : direction === "net" ? p.signedT : p.posT;
+}
+
+function TopCounterparts() {
+  const { data, filter } = useFilter();
+  const { t } = useI18n();
   const router = useRouter();
-  const top = channels.slice(0, 6);
+  const [mode, setMode] = useState<RankMode>("gap");
+  const k = data.kpis;
+
+  const rows = useMemo(() => {
+    return [...data.partners]
+      .map((p) => ({ iso3: p.iso3, name: p.name, transit: p.transit, value: partnerValue(p, mode, filter.direction) }))
+      .filter((r) => Math.abs(r.value) > 0)
+      .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+      .slice(0, 10);
+  }, [data, mode, filter.direction]);
+
+  const barColor = (v: number) =>
+    mode === "trade" ? COLORS.baseline
+      : filter.direction === "reverse" ? COLORS.reverse
+        : filter.direction === "net" ? (v >= 0 ? COLORS.positive : COLORS.reverse)
+          : COLORS.positive;
+
+  const option = useMemo<EChartsOption>(() => {
+    const ordered = [...rows].reverse(); // largest on top with inverse-free layout
+    return {
+      backgroundColor: "transparent",
+      textStyle: baseTextStyle,
+      grid: { ...baseGrid, left: 8, top: 12, bottom: 8 },
+      tooltip: {
+        ...baseTooltip(),
+        formatter: (raw: unknown) => {
+          const p = raw as { name?: string; value?: number };
+          const metric = mode === "trade" ? "Comparable trade (partner FOB)" : DIRECTION_LABELS[filter.direction];
+          return `<b>${p.name ?? ""}</b><br/>${metric}: <b>${fmtUSDFull(p.value ?? 0)}</b><br/><span style="font-size:11px">Click the bar for the country page.</span>`;
+        },
+      },
+      xAxis: {
+        type: "value",
+        axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtUSD(v) },
+        splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
+        axisLine: { show: false },
+      },
+      yAxis: {
+        type: "category",
+        data: ordered.map((r) => (r.transit ? `${r.name} ⇄` : r.name)),
+        axisLabel: { color: COLORS.text, fontSize: 11 },
+        axisLine: { lineStyle: { color: COLORS.baseline } },
+        axisTick: { show: false },
+      },
+      series: [
+        {
+          type: "bar",
+          ...BAR_SPEC,
+          data: ordered.map((r) => ({
+            value: Math.round(r.value),
+            // horizontal bars: rounded data-end, square at the baseline; 2px surface gap
+            itemStyle: {
+              color: barColor(r.value),
+              borderRadius: [0, 4, 4, 0] as [number, number, number, number],
+              borderColor: COLORS.surface,
+              borderWidth: 1,
+            },
+          })),
+          cursor: "pointer",
+        },
+      ],
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, mode, filter.direction]);
+
+  const onEvents = useMemo(() => ({
+    click: (params: unknown) => {
+      const { dataIndex } = params as { dataIndex: number };
+      const ordered = [...rows].reverse();
+      const iso = ordered[dataIndex]?.iso3;
+      if (iso) router.push(`/partners/${iso.toLowerCase()}`);
+    },
+  }), [rows, router]);
+
+  const modeBtn = (m: RankMode, label: string, tip: string) => (
+    <button key={m} onClick={() => setMode(m)} title={tip}
+      className={`rounded-md border px-2 py-1 text-[12px] font-medium ${mode === m ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white" : "border-[var(--color-border)] text-muted hover:text-foreground"}`}>
+      {label}
+    </button>
+  );
 
   return (
-    <div style={{ padding: "22px 28px 34px" }}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>
-            Priority queue — top {top.length} of {fmtNum(channels.length)}
-          </h2>
-          <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(32,30,29,.6)" }}>
-            Ranked by class, then anomaly strength, then evidence quality. Click a row for the per-year record.
-          </p>
-        </div>
-        <Link href="/risk" className={BTN_SECONDARY}>Open full queue</Link>
-      </div>
-      {top.length === 0 ? (
-        <p style={{ margin: "14px 0 0", fontSize: 13, color: "rgba(32,30,29,.6)" }}>
-          No channels match the active filters.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table style={{ width: "100%", marginTop: 14, borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: ROW_RULE_2 }}>
-                <th className={TH}>Class §6</th>
-                <th className={TH}>Partner · product</th>
-                <th className={`${TH} text-right`}>A §4</th>
-                <th className={`${TH} text-right`}>E §5</th>
-                <th className={`${TH} text-right`}>Persistence</th>
-                <th className={`${TH} text-right`}>Discrepancy</th>
-              </tr>
-            </thead>
-            <tbody>
-              {top.map((c) => (
-                <tr
-                  key={`${c.partnerIso}-${c.cmd}`}
-                  onClick={() => router.push(`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`)}
-                  style={{ borderBottom: "1px solid rgba(32,30,29,.18)", cursor: "pointer" }}
-                  title={`${c.partner} × HS ${c.cmd} — open the per-year record`}
-                >
-                  <td className={TD} style={{ fontSize: 12, fontWeight: 800, color: CLASS_COLORS[c.cls], whiteSpace: "nowrap" }}>
-                    {CLASS_LABELS[c.cls].label}
-                  </td>
-                  <td className={TD}>
-                    <span style={{ fontWeight: 800 }}>{c.partner}</span>{" "}
-                    <span style={{ color: "rgba(32,30,29,.65)" }}>{c.cmdLabel}</span>{" "}
-                    <span className="tabular" style={{ fontSize: 11, color: "rgba(32,30,29,.5)" }}>HS {c.cmd}</span>
-                  </td>
-                  <td className={`${TD} tabular text-right whitespace-nowrap`}>{c.anomaly.toFixed(0)}</td>
-                  <td className={`${TD} tabular text-right whitespace-nowrap`}>{c.evidence.toFixed(0)}</td>
-                  <td className={`${TD} tabular text-right whitespace-nowrap`} style={{ color: "rgba(32,30,29,.7)" }}>
-                    {c.posYears}/{c.comparableYears} yr · streak {c.longestPosStreak}
-                  </td>
-                  <td className={`${TD} tabular text-right whitespace-nowrap`} style={{ fontWeight: 600 }}>
-                    {fmtUSD(c.primary)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <section>
+      <SectionTitle
+        title="Where it concentrates"
+        desc={`Top-10 partner countries under the current filters, ranked ${mode === "trade" ? "by comparable trade (partner-reported exports, FOB)" : `by ${DIRECTION_LABELS[filter.direction].toLowerCase()} discrepancy`}. The top-5 channels carry ${fmtPct(k.top5Share, 0)} of the total across ${fmtNum(k.channelCount)} country × HS2 channels (HHI ${fmtNum(k.hhi)}) — review can be targeted. A large discrepancy is a screening signal, not a finding; click a bar for the country page. ⇄ marks transit-sensitive partners.`}
+        right={
+          <div className="flex items-center gap-1">
+            {modeBtn("gap", "by discrepancy", "Rank partners by the active direction's residual unexplained discrepancy.")}
+            {modeBtn("trade", "by comparable trade", "Rank partners by partner-reported export value where both sides reported.")}
+          </div>
+        }
+      />
+      {rows.length === 0 ? <EmptyState /> : (
+        <div className="card p-4">
+          <EChart option={option} onEvents={onEvents} style={{ height: Math.max(240, rows.length * 32 + 40) }} />
+          <p className="mt-1.5 text-xs text-faint">{t("common.source")} · values under the active filters and freight scenario.</p>
         </div>
       )}
-      <p style={{ margin: "14px 0 0", maxWidth: "46rem", fontSize: 11.5, lineHeight: 1.5, color: "rgba(32,30,29,.55)" }}>
-        Anomaly and evidence are scored independently (§4, §5): a strong anomaly on weak data is labelled
-        &ldquo;verify data first&rdquo;, never escalated. Source: UN Comtrade.
-      </p>
-    </div>
+    </section>
   );
 }

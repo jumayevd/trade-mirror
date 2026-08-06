@@ -2,105 +2,39 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { EChartsOption, TooltipComponentOption, YAXisComponentOption } from "echarts";
+import type { EChartsOption, YAXisComponentOption } from "echarts";
 import EChart from "@/components/EChart";
-import QueueTable, { FLAG_INFO, LEVEL_LABELS, type HsLevel } from "@/components/QueueTable";
+import FilterBar from "@/components/FilterBar";
+import QueueTable, { LEVEL_LABELS, type HsLevel } from "@/components/QueueTable";
 import RiskMatrix from "@/components/charts/RiskMatrix";
-import { EmptyState } from "@/components/ui";
+import { ContextLine, EmptyState, EvidenceBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { useI18n } from "@/lib/i18n";
 import { Cite } from "@/lib/references";
+import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import {
   aggregate, meta, ROBUSTNESS_LABELS,
   type Aggregate, type Channel, type Filter, type Robustness,
 } from "@/lib/dataset";
-import { BAR_SPEC, LINE_SPEC, baseGrid, catAxis } from "@/lib/echartBase";
+import { BAR_SPEC, LINE_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /**
- * Discrepancy & Risk (Modernist redesign, README §4) — the queue at full
- * width. Three square-segmented tabs share one HS-level state; charts inherit
- * the two-colour palette (positive accent, reverse ink-22%). Every number is
- * a statistical screening signal — never a finding of wrongdoing.
+ * Discrepancy & Risk — the analytical hub. Three quiet tabs share one HS-level state:
+ *  1. Ranked components  — risk matrix + ranked table (the screening queue)
+ *  2. Reverse focus      — the reverse direction, analysed separately, never netted
+ *  3. Statistical profile — distribution, thresholds, concentration, robustness
+ * Every number is a statistical screening signal — never a finding of wrongdoing.
  */
 
 type TabKey = "ranked" | "reverse" | "profile";
 const TABS: { key: TabKey; label: string; tip: string }[] = [
-  { key: "ranked", label: "Ranked components", tip: "The ranked queue of all partner × code combinations under the current filters." },
+  { key: "ranked", label: "Ranked components", tip: "Risk matrix and the ranked table of all partner × code combinations under the current filters." },
   { key: "reverse", label: "Reverse focus", tip: "Reverse discrepancies (UZB records > partner) analysed separately — never netted against positive ones." },
-  { key: "profile", label: "Statistical profile", tip: "Distribution, thresholds, concentration and robustness of the discrepancy across base channels." },
+  { key: "profile", label: "Statistical profile", tip: "Distribution, materiality thresholds, concentration and robustness of the discrepancy across base channels." },
 ];
 
-/* ---------------- shared chrome ---------------- */
-
-const TH = "py-2 pr-2.5 text-left align-bottom text-[10px] font-semibold uppercase tracking-[.1em] text-faint whitespace-nowrap";
-const THN = `${TH} text-right`;
-const TD = "py-[7px] pr-2.5 align-middle text-[13px]";
-const TDN = `${TD} tabular text-right whitespace-nowrap`;
-const HEAD_ROW = "border-b-2 border-[rgba(32,30,29,.4)]";
-const BODY_ROW = "border-b border-[rgba(32,30,29,.18)]";
-
-/** Mono § method-reference chip. */
-function Ref({ s }: { s: string }) {
-  return (
-    <Link
-      href="/methodology"
-      className="tabular whitespace-nowrap bg-[rgba(32,30,29,.08)] px-1.5 py-px text-[10.5px] text-[rgba(32,30,29,.7)] hover:text-foreground"
-      title={`Methodology ${s}`}
-    >
-      {s}
-    </Link>
-  );
-}
-
-/** Stat strip framed by 2px rules top and bottom. */
-function Strip({ cells, colsClass = "grid-cols-2 lg:grid-cols-4" }: {
-  cells: { value: string; label: string; color?: string }[]; colsClass?: string;
-}) {
-  return (
-    <div className={`grid ${colsClass} border-y-2 border-[rgba(32,30,29,.4)]`}>
-      {cells.map((s, i) => (
-        <div key={s.label} className={`py-3 pr-3.5 ${i > 0 ? "pl-3.5" : ""} ${i < cells.length - 1 ? "border-r border-[rgba(32,30,29,.2)]" : ""}`}>
-          <div className="tabular text-[22px] font-semibold leading-none" style={s.color ? { color: s.color } : undefined}>
-            {s.value}
-          </div>
-          <div className="mt-1 text-[11.5px] leading-snug text-[rgba(32,30,29,.62)]">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Square segmented HS-level toggle. */
-function LevelToggle({ level, onChange }: { level: HsLevel; onChange: (l: HsLevel) => void }) {
-  return (
-    <div className="flex self-start border border-[rgba(32,30,29,.4)]" role="group" aria-label="HS level">
-      {([2, 4, 6] as const).map((l) => (
-        <button
-          key={l}
-          onClick={() => onChange(l)}
-          aria-pressed={level === l}
-          className={`px-2.5 py-[5px] text-[11.5px] font-extrabold whitespace-nowrap ${
-            level === l ? "bg-[#201e1d] text-[#f3f2f2]" : "text-muted hover:text-foreground"
-          }`}
-        >
-          {LEVEL_LABELS[l]}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- quiet chart helpers (two-colour palette, square tooltip) ---------------- */
-
-const sqTooltip = (): TooltipComponentOption => ({
-  backgroundColor: "#f3f2f2",
-  borderColor: "#201e1d",
-  borderWidth: 1,
-  textStyle: { color: "#201e1d", fontSize: 12 },
-  padding: [8, 12],
-  extraCssText: "border-radius:0;box-shadow:none",
-});
+/* ---------- quiet chart axis helpers (fontSize 10, palette-only) ---------- */
 
 const cat = (data: (string | number)[]) => ({
   ...catAxis(data),
@@ -120,11 +54,14 @@ const countAxis = (name?: string): YAXisComponentOption => ({
   splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
-const quietLegend = {
-  top: 0, right: 0, icon: "rect", itemWidth: 12, itemHeight: 8,
-  textStyle: { color: "#201e1d", fontSize: 10.5 },
-} as const;
-const SQUARE_BAR = { ...BAR_SPEC, itemStyle: { borderRadius: [0, 0, 0, 0] as [number, number, number, number] } };
+const quietLegend = { top: 0, textStyle: { color: COLORS.text, fontSize: 11 }, itemWidth: 12, itemHeight: 8 };
+
+/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
@@ -139,6 +76,29 @@ function quantile(sortedAsc: number[], q: number): number {
   const hi = Math.ceil(pos);
   if (lo === hi) return sortedAsc[lo];
   return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
+}
+
+/* shared table cell classes (design rules) */
+const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+const TH_NUM = `${TH} text-right`;
+const TD = "px-3 py-1.5 align-middle text-[13px]";
+const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
+
+function LevelToggle({ level, onChange }: { level: HsLevel; onChange: (l: HsLevel) => void }) {
+  return (
+    <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label="HS level">
+      {([2, 4, 6] as const).map((l) => (
+        <button
+          key={l}
+          onClick={() => onChange(l)}
+          aria-pressed={level === l}
+          className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+        >
+          {LEVEL_LABELS[l]}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export default function QueueView() {
@@ -163,20 +123,45 @@ export default function QueueView() {
 
   const statsBase = levelBase(data, level);
 
+  const exportCsv = () => {
+    if (tab === "reverse") downloadCsv(`reverse-focus-hs${level}-${filter.from}-${filter.to}.csv`, channelsToCsv(revRanked, revFilter));
+    else if (tab === "profile") downloadCsv(`statistical-profile-base-hs${level}-${filter.from}-${filter.to}.csv`, channelsToCsv(statsBase, filter));
+    else downloadCsv(`discrepancy-risk-hs${level}.csv`, channelsToCsv(channels, filter));
+  };
+  const exportEmpty = tab === "reverse" ? revRanked.length === 0 : tab === "profile" ? statsBase.length === 0 : channels.length === 0;
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* header */}
-      <section>
-        <h1 className="text-[20px] font-extrabold tracking-tight">{t("nav.queue")}</h1>
-        <p className="mt-1 max-w-[44rem] text-[13px] leading-[1.55] text-[rgba(32,30,29,.68)]">
-          The ranked queue — every row is a partner × code channel with the components behind its
-          ranking (<Ref s="§4" /> anomaly, <Ref s="§5" /> evidence, <Ref s="§6" /> class); click a row
-          for the per-year record and the alternative explanations to rule out.
-        </p>
+      <section className="space-y-1.5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <p className="text-[10.5px] font-medium text-faint">
+              UN Comtrade · {meta.window.start}–{meta.window.end} · mirror-statistics screening
+            </p>
+            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
+            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
+              Ranked residual unexplained discrepancies with the components behind their ranking —
+              anomaly strength, evidence quality, persistence and robustness. Screening signals for
+              statistical or customs review, not proof of smuggling, fraud or under-declaration.
+            </p>
+          </div>
+          <button
+            onClick={exportCsv}
+            disabled={exportEmpty}
+            className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            title={`Download the rows behind the active tab (${LEVEL_LABELS[level]}) under the current filters, with the calculation context in the header.`}
+          >
+            {t("common.exportCsv")} ↓
+          </button>
+        </div>
       </section>
 
-      {/* square segmented tabs */}
-      <div className="no-print flex w-fit self-start border border-[rgba(32,30,29,.4)]" role="tablist" aria-label="Analysis tabs">
+      <FilterBar showMateriality />
+      <ContextLine filter={filter} />
+
+      {/* segmented tab control */}
+      <div className="no-print flex overflow-hidden rounded-md border border-[var(--color-border)] self-start w-fit" role="tablist" aria-label="Analysis tabs">
         {TABS.map((tb) => (
           <button
             key={tb.key}
@@ -184,9 +169,7 @@ export default function QueueView() {
             aria-selected={tab === tb.key}
             onClick={() => setTab(tb.key)}
             title={tb.tip}
-            className={`px-3 py-[6px] text-[11.5px] font-extrabold whitespace-nowrap ${
-              tab === tb.key ? "bg-[#201e1d] text-[#f3f2f2]" : "text-muted hover:text-foreground"
-            }`}
+            className={`px-2.5 py-1 text-[12px] whitespace-nowrap ${tab === tb.key ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
           >
             {tb.label}
           </button>
@@ -214,29 +197,54 @@ function RankedTab({
   channels: Channel[]; level: HsLevel; onLevelChange: (l: HsLevel) => void;
   filter: Filter; years: number[];
 }) {
+  const stats = useMemo(() => {
+    const investigate = channels.filter((c) => c.cls === "investigate").length;
+    const sorted = [...channels].sort((a, b) => Math.abs(b.primary) - Math.abs(a.primary));
+    const total = sorted.reduce((s, c) => s + Math.abs(c.primary), 0);
+    const top5 = sorted.slice(0, 5).reduce((s, c) => s + Math.abs(c.primary), 0);
+    const dirTotal = sorted.reduce((s, c) => s + c.primary, 0);
+    return { investigate, top5Share: total > 0 ? top5 / total : 0, dirTotal };
+  }, [channels]);
+
   return (
-    <div className="space-y-5">
-      <section className="rule-2 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Analytical significance</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          Every {LEVEL_LABELS[level]} combination positioned by evidence quality (x, <Ref s="§5" />) and
-          anomaly strength (y, <Ref s="§4" />); bubble area ∝ discrepancy in the active direction, quadrant
-          guides mirror the classification thresholds (E 60, A 55).
-        </p>
-        <div className="mt-3">
-          <RiskMatrix channels={channels} filter={filter} />
-        </div>
+    <div className="space-y-6">
+      <section>
+        <SectionTitle
+          title="Analytical significance"
+          desc={`Every ${LEVEL_LABELS[level]} combination positioned by evidence quality (x) and anomaly strength (y); bubble area ∝ discrepancy in the active direction, colour is the signal class. Quadrant guides mirror the classification thresholds (E 60, A 55).`}
+        />
+        <RiskMatrix channels={channels} filter={filter} />
       </section>
 
-      <section className="rule-2 pt-3">
+      <section className="space-y-3">
+        <SectionTitle
+          title="Ranked analytical components"
+          desc="All partner × code combinations at the selected HS level, ranked by signal class, anomaly strength and evidence quality. HS4 is derived from HS6 by code truncation. Click a row to expand per-year detail."
+        />
+
+        <p className="max-w-3xl text-[12px] text-muted">
+          <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
+          {LEVEL_LABELS[level]} combinations under the current filters
+          · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span> Investigate-class
+          (anomaly ≥ 55 and evidence ≥ 60 — a review priority, not a finding of wrongdoing)
+          · top 5 = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> of
+          the {fmtUSD(Math.abs(stats.dirTotal))} active-direction total.
+        </p>
+
         <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={filter} years={years} />
       </section>
 
-      <p className="max-w-[44rem] text-[11.5px] leading-normal text-[rgba(32,30,29,.55)]">
-        Anomaly and evidence are scored independently (<Ref s="§4" />, <Ref s="§5" />): a strong anomaly
-        on weak data is labelled “verify data first”, never escalated. Screening ranks blend both
-        components <Cite ids={["imf2023", "kellenberg2019"]} /> — see{" "}
-        <Link href="/methodology" className="underline hover:text-foreground">Methodology</Link>.
+      <p className="flex max-w-3xl items-start gap-2 text-xs text-faint">
+        <InfoTip text="Ranking order: signal class, then anomaly strength, then evidence quality, then discrepancy size." />
+        <span>
+          The composite ranking is a screening heuristic for ordering additional review — not a measure
+          of likelihood or wrongdoing. Score definitions, weights and thresholds are documented in the{" "}
+          <Link href="/methodology" className="hover:underline">Methodology</Link>.
+        </span>
+      </p>
+      <p className="max-w-3xl text-xs text-faint">
+        Screening ranks blend anomaly and evidence components <Cite ids={["imf2023", "kellenberg2019"]} /> —
+        see <Link href="/methodology" className="hover:underline">Methodology</Link>.
       </p>
     </div>
   );
@@ -244,14 +252,44 @@ function RankedTab({
 
 /* ================================ TAB 2 — reverse =============================== */
 
-/** Neutral, non-accusatory explanations for reverse discrepancies (compressed). */
+/** Neutral, non-accusatory explanations for reverse discrepancies. */
 const REVERSE_EXPLANATIONS: { title: string; body: string }[] = [
-  { title: "Origin vs consignment", body: "goods routed via a third country appear as an Uzbek import with no matching export in the origin's books." },
-  { title: "Re-export through third countries", body: "the origin may record its export to the hub rather than to Uzbekistan." },
-  { title: "Partner under-reporting or coverage gaps", body: "sparse reporting or mid-window stops inflate the reverse side; missing partner-years are never treated as zero." },
-  { title: "Timing differences", body: "shipments crossing year-ends fall into different reference periods, producing offsetting discrepancies." },
-  { title: "Classification differences", body: "the same goods classified under different HS codes move value between chapters, creating paired discrepancies." },
+  { title: "Origin vs consignment", body: "Uzbekistan records imports by country of origin while many partners record exports by last consignment — goods routed via a third country appear as an Uzbek import with no matching export in the origin's books." },
+  { title: "Re-export through third countries", body: "The origin country may record its export to the hub rather than to Uzbekistan, leaving the Uzbek import record larger than the partner's directly reported export." },
+  { title: "Partner under-reporting or coverage gaps", body: "Sparse reporting, mid-window reporting stops or confidentiality suppression inflate the reverse side without any real flow difference. Missing partner-years are never treated as zero." },
+  { title: "Timing differences", body: "Shipments departing late in one year and clearing Uzbek customs in the next fall into different reference periods, producing offsetting discrepancies in adjacent years." },
+  { title: "Classification differences", body: "The two administrations may classify the same goods under different HS codes or revisions, moving value between chapters and creating paired positive/reverse discrepancies." },
 ];
+
+const FLAG_LABELS: Record<string, string> = {
+  transit: "transit",
+  "residual-hs": "residual HS",
+  "reporting-stop": "reporting stop",
+  "sparse-reporter": "sparse reporter",
+  "missing-weight": "no weight data",
+  "freight-sensitive": "freight-sensitive",
+};
+
+function FlagChips({ c }: { c: Channel }) {
+  return (
+    <span className="inline-flex max-w-[180px] flex-wrap gap-1">
+      {c.flags.length === 0 && <span className="text-faint">—</span>}
+      {c.flags.map((f) =>
+        f === "transit" ? (
+          <TransitTag key={f} />
+        ) : (
+          <span
+            key={f}
+            className="cursor-help whitespace-nowrap rounded border border-[var(--color-border)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted"
+            title={`Quality flag: ${FLAG_LABELS[f] ?? f}`}
+          >
+            {FLAG_LABELS[f] ?? f}
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
 
 function ReverseTab({
   rev, revFull, revFilter, ranked, level, onLevelChange,
@@ -267,7 +305,7 @@ function ReverseTab({
   const trendOption = useMemo<EChartsOption>(() => ({
     backgroundColor: "transparent",
     grid: baseGrid,
-    tooltip: { ...sqTooltip(), trigger: "axis", valueFormatter: (v) => fmtUSDFull(Number(v ?? 0)) },
+    tooltip: { ...baseTooltip(), trigger: "axis", valueFormatter: (v) => fmtUSDFull(Number(v ?? 0)) },
     legend: quietLegend,
     xAxis: cat(revFull.annual.map((a) => a.year)),
     yAxis: moneyAxis(),
@@ -276,9 +314,8 @@ function ReverseTab({
         name: "Reverse (UZB > partner)",
         type: "bar",
         data: revFull.annual.map((a) => Math.round(a.reverse)),
-        ...SQUARE_BAR,
-        barMaxWidth: 34,
-        itemStyle: { ...SQUARE_BAR.itemStyle, color: COLORS.reverse },
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.reverse },
       },
       {
         name: "Positive, for contrast",
@@ -293,81 +330,93 @@ function ReverseTab({
   }), [revFull.annual]);
 
   return (
-    <div className="space-y-5">
-      <p className="max-w-[44rem] text-[13px] leading-[1.55] text-[rgba(32,30,29,.68)]">
+    <div className="space-y-6">
+      <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
         A reverse discrepancy means Uzbekistan&apos;s import record exceeds the partner&apos;s expected
-        export <Ref s="§2.1" /> — analysed separately, never netted;{" "}
-        <strong className="text-foreground">this site never automatically concludes that Uzbekistan
-        over-reports imports</strong>.
+        export (partner exports × (1 + freight)). It is analysed separately from positive discrepancies
+        and never netted against them.{" "}
+        <strong className="text-foreground">This site never automatically concludes that Uzbekistan
+        over-reports imports</strong> — a reverse discrepancy is a statistical asymmetry between two
+        record-keeping systems, not evidence of misreporting by either side.
       </p>
 
-      <Strip
-        colsClass="grid-cols-1 sm:grid-cols-3"
-        cells={[
-          { value: fmtUSD(rev.kpis.reverse), label: `${t("kpi.reverse")} · ${t("kpi.reverse.sub")} (§2.1)` },
-          { value: fmtNum(robustCount), label: `robust reverse channels (${LEVEL_LABELS[level]}) · sign holds at 6–15% freight` },
-          { value: topPartner ? topPartner.name : "None", label: topPartner ? `top partner by reverse · ${fmtUSD(topPartner.revT)} in period` : "no comparable observations" },
-        ]}
-      />
+      <ContextLine filter={revFilter} />
+
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <Stat
+          label={t("kpi.reverse")}
+          value={fmtUSD(rev.kpis.reverse)}
+          sub={t("kpi.reverse.sub")}
+          accent={COLORS.reverse}
+          info="Σ max(UZB imports − expected CIF, 0) across comparable channel-years under the current filters. Shown separately — never netted against positive discrepancies."
+        />
+        <Stat
+          label="Robust reverse channels"
+          value={fmtNum(robustCount)}
+          sub={`${LEVEL_LABELS[level]} · sign holds at 6–15% freight`}
+          info={`Count of ${LEVEL_LABELS[level]} combinations with a reverse discrepancy whose sign holds across the whole 6% / 10% / 15% freight band, with ≥2 comparable years and no major coverage flags.`}
+        />
+        <Stat
+          label="Top partner by reverse"
+          value={topPartner ? topPartner.name : "None"}
+          sub={topPartner ? `${fmtUSD(topPartner.revT)} in period` : "no comparable observations"}
+          info="Partner with the largest total reverse discrepancy (Σ max(UZB imports − expected CIF, 0)) under the current filters."
+        />
+      </section>
 
       <section>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-[16px] font-extrabold tracking-tight">Reverse discrepancy over time</h2>
-          <span className="tabular text-[10.5px] text-[rgba(32,30,29,.5)]">
-            full {meta.window.start}–{meta.window.end} window · never netted · {t("common.source")}
-          </span>
-        </div>
+        <SectionTitle
+          title="Reverse discrepancy over time"
+          desc={`Full ${meta.window.start}–${meta.window.end} window under the current filters. Blue bars: reverse discrepancy (UZB records > partner). Orange line: positive discrepancy, for scale contrast only — the two are never netted. Source: UN Comtrade.`}
+        />
         {revFull.annual.length === 0 ? (
-          <div className="mt-3"><EmptyState /></div>
+          <EmptyState />
         ) : (
-          <div className="mt-2" style={{ height: 300 }}>
+          <div className="card p-3" style={{ height: 320 }}>
             <EChart option={trendOption} />
           </div>
         )}
       </section>
 
       <section>
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-[16px] font-extrabold tracking-tight">Largest reverse channels</h2>
-          <LevelToggle level={level} onChange={onLevelChange} />
-        </div>
+        <SectionTitle
+          title={`Largest reverse channels (${LEVEL_LABELS[level]})`}
+          desc="Partner × code combinations ranked by total reverse discrepancy in the selected period. Evidence quality and flags show how comparable the underlying records are before any interpretation is attempted."
+          right={<LevelToggle level={level} onChange={onLevelChange} />}
+        />
         {top15.length === 0 ? (
-          <div className="mt-3"><EmptyState /></div>
+          <EmptyState />
         ) : (
-          <div className="mt-2 overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full min-w-[880px] border-collapse">
-              <thead>
-                <tr className={HEAD_ROW}>
+              <thead className="border-b border-[var(--color-border)]">
+                <tr>
                   <th className={TH}>{t("common.partner")}</th>
-                  <th className={TH}>Code · label</th>
-                  <th className={THN} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
-                  <th className={THN} title={`Partner exports × (1 + ${Math.round(revFilter.cif * 100)}% freight) — the expected CIF import value (§2.1).`}>Expected CIF</th>
-                  <th className={THN} title="Σ max(UZB imports − expected CIF, 0) over comparable years (§2.1).">Reverse value</th>
-                  <th className={THN} title="Evidence quality 0–100 (§5).">E</th>
-                  <th className={THN} title="Years with a reverse discrepancy above the ±$100K noise floor, out of comparable years.">Rev / comp. yrs</th>
+                  <th className={TH}>{LEVEL_LABELS[level]} code</th>
+                  <th className={TH_NUM} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
+                  <th className={TH_NUM} title={`Partner exports × (1 + ${Math.round(revFilter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
+                  <th className={TH_NUM} title="Σ max(UZB imports − expected CIF, 0) over comparable years."><HeadDot color={COLORS.reverse} />Reverse value</th>
+                  <th className={TH}>{t("common.evidence")}</th>
+                  <th className={TH_NUM} title="Years with a reverse discrepancy above the ±$100K noise floor, out of comparable years in the selected period.">Rev / comp. yrs</th>
                   <th className={TH}>{t("common.flags")}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="zebra">
                 {top15.map((c) => (
-                  <tr key={`${c.partnerIso}-${c.cmd}`} className={BODY_ROW}>
-                    <td className={`${TD} whitespace-nowrap font-extrabold`}>
-                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="hover:underline">{c.partner}</Link>
+                  <tr key={`${c.partnerIso}-${c.cmd}`} className="border-b border-[var(--color-border-soft)]">
+                    <td className={`${TD} whitespace-nowrap`}>
+                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">{c.partner}</Link>
                     </td>
                     <td className={`${TD} max-w-[300px]`}>
-                      <span className="tabular mr-1.5 text-[11px] text-[rgba(32,30,29,.5)]">{c.cmd}</span>
-                      <span className="text-[rgba(32,30,29,.75)]" title={c.cmdLabel}>
-                        {c.cmdLabel.length > 46 ? `${c.cmdLabel.slice(0, 46)}…` : c.cmdLabel}
-                      </span>
+                      <span className="tabular mr-1.5 text-xs text-faint">{c.cmd}</span>
+                      <span title={c.cmdLabel}>{c.cmdLabel.length > 46 ? `${c.cmdLabel.slice(0, 46)}…` : c.cmdLabel}</span>
                     </td>
-                    <td className={TDN} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
-                    <td className={TDN} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
-                    <td className={`${TDN} font-semibold`} title={fmtUSDFull(c.revT)}>{fmtUSD(c.revT)}</td>
-                    <td className={`${TDN} text-[rgba(32,30,29,.7)]`}>{c.evidence.toFixed(0)}</td>
-                    <td className={TDN}>{c.revYears}/{c.comparableYears} yr</td>
-                    <td className={`${TD} max-w-[200px] text-[11px] text-[rgba(32,30,29,.6)]`} title={c.flags.map((f) => FLAG_INFO[f]?.hint ?? f).join("\n")}>
-                      {c.flags.length === 0 ? <span className="text-faint">—</span> : c.flags.map((f) => FLAG_INFO[f]?.chip ?? f).join(" · ")}
-                    </td>
+                    <td className={TD_NUM} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
+                    <td className={TD_NUM} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
+                    <td className={`${TD_NUM} font-semibold`} title={fmtUSDFull(c.revT)}>{fmtUSD(c.revT)}</td>
+                    <td className={TD}><EvidenceBadge score={c.evidence} /></td>
+                    <td className={TD_NUM}>{c.revYears}/{c.comparableYears} yr</td>
+                    <td className={TD}><FlagChips c={c} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -375,22 +424,30 @@ function ReverseTab({
           </div>
         )}
         {ranked.length > 15 && (
-          <p className="mt-2 text-[11.5px] text-[rgba(32,30,29,.55)]">
-            Showing the 15 largest of {fmtNum(ranked.length)} reverse channels. {t("common.source")}.
+          <p className="mt-2 text-xs text-faint">
+            Showing the 15 largest of {fmtNum(ranked.length)} reverse channels — the CSV export contains all of them. {t("common.source")}.
           </p>
         )}
       </section>
 
-      <section className="rule-1 pt-3">
-        <div className="lbl">How to read a reverse discrepancy — rule these out first</div>
-        <ul className="mt-2 flex max-w-[44rem] flex-col gap-1.5 text-[12.5px] leading-normal text-[rgba(32,30,29,.7)]">
+      <section className="card p-4">
+        <SectionTitle
+          title="How to read a reverse discrepancy"
+          desc="Neutral explanations to rule out before any substantive interpretation. Several typically act at once, and open trade data alone cannot separate their contributions."
+        />
+        <ul className="max-w-3xl space-y-1.5 text-[13px] leading-relaxed text-muted">
           {REVERSE_EXPLANATIONS.map((e) => (
-            <li key={e.title} className="flex gap-2">
-              <span className="font-extrabold text-[#ec3013]" aria-hidden>!</span>
-              <span><span className="font-extrabold text-foreground">{e.title}</span> — {e.body}</span>
+            <li key={e.title}>
+              <span className="font-medium text-foreground">{e.title}.</span> {e.body}
             </li>
           ))}
         </ul>
+        <p className="mt-3 max-w-3xl text-xs text-faint">
+          The site never automatically concludes that Uzbekistan over-reports imports, or that any partner
+          under-reports exports. A persistent reverse discrepancy — even a robust one — remains a screening
+          signal; confirmation requires declarations, audit or administrative review (evidence level 5),
+          which open data cannot provide.
+        </p>
       </section>
     </div>
   );
@@ -412,10 +469,10 @@ const HIST_POS_LABELS = ["$100K–1M", "$1M–10M", "$10M–100M", "$100M–1B",
 const HIST_LABELS = [...HIST_POS_LABELS.map((l) => `− ${l}`).reverse(), "± < $100K", ...HIST_POS_LABELS];
 
 const ROB_ORDER: { key: Robustness; color: string }[] = [
-  { key: "robust", color: "#201e1d" },
-  { key: "freight-sensitive", color: "#605d5d" },
-  { key: "coverage-sensitive", color: "rgba(32,30,29,.35)" },
-  { key: "insufficient", color: "rgba(32,30,29,.14)" },
+  { key: "robust", color: COLORS.good },
+  { key: "freight-sensitive", color: COLORS.warn },
+  { key: "coverage-sensitive", color: COLORS.axis },
+  { key: "insufficient", color: COLORS.grid },
 ];
 
 function ProfileTab({
@@ -456,7 +513,7 @@ function ProfileTab({
       backgroundColor: "transparent",
       grid: { ...baseGrid, bottom: 48 },
       tooltip: {
-        ...sqTooltip(),
+        ...baseTooltip(),
         trigger: "axis",
         axisPointer: { type: "shadow" },
         formatter: (params: unknown) => {
@@ -473,9 +530,11 @@ function ProfileTab({
         data: counts.map((v, i) => ({
           value: v,
           itemStyle: {
-            // one accent, diverging by tone: accent positive / ink-22% reverse / faint noise band
-            color: i < center ? COLORS.reverse : i === center ? COLORS.grid : COLORS.positive,
-            borderRadius: [0, 0, 0, 0] as [number, number, number, number],
+            // one axis, diverging: orange positive / blue reverse / neutral noise band
+            color: i < center ? COLORS.reverse : i === center ? COLORS.neutralMid : COLORS.positive,
+            borderRadius: [4, 4, 0, 0] as [number, number, number, number],
+            borderColor: COLORS.surface,
+            borderWidth: 1,
           },
         })),
         barMaxWidth: 24,
@@ -494,11 +553,13 @@ function ProfileTab({
     return { rows, posTotal };
   }, [base]);
 
+  // single value axis — the cumulative share lives in the tooltip and in the
+  // "Share of positive total" column of the table above (no dual-axis charts)
   const thresOption = useMemo<EChartsOption>(() => ({
     backgroundColor: "transparent",
     grid: baseGrid,
     tooltip: {
-      ...sqTooltip(),
+      ...baseTooltip(),
       trigger: "axis",
       axisPointer: { type: "shadow" },
       formatter: (params: unknown) => {
@@ -514,8 +575,8 @@ function ProfileTab({
         name: "Channels above threshold",
         type: "bar",
         data: thres.rows.map((r) => r.count),
-        ...SQUARE_BAR,
-        itemStyle: { ...SQUARE_BAR.itemStyle, color: COLORS.positive },
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
       },
     ],
   }), [thres]);
@@ -554,7 +615,7 @@ function ProfileTab({
     backgroundColor: "transparent",
     grid: { ...baseGrid, bottom: 56 },
     tooltip: {
-      ...sqTooltip(),
+      ...baseTooltip(),
       trigger: "axis",
       axisPointer: { type: "shadow" },
       formatter: (params: unknown) => {
@@ -566,16 +627,17 @@ function ProfileTab({
     },
     xAxis: {
       ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
-      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 10, fontFamily: "ui-monospace, Menlo, monospace", interval: 0 },
+      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 10, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
     },
+    // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
     yAxis: moneyAxis(),
     series: [
       {
         name: "Positive discrepancy",
         type: "bar",
         data: conc.pareto.map((c) => Math.round(c.posT)),
-        ...SQUARE_BAR,
-        itemStyle: { ...SQUARE_BAR.itemStyle, color: COLORS.positive },
+        ...BAR_SPEC,
+        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
       },
     ],
   }), [conc]);
@@ -605,8 +667,8 @@ function ProfileTab({
   if (n === 0) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[13px] text-[rgba(32,30,29,.68)]">Statistical profile of the base channel set.</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] text-muted">Statistical profile of the base channel set.</p>
           <LevelToggle level={level} onChange={onLevelChange} />
         </div>
         <EmptyState />
@@ -615,185 +677,220 @@ function ProfileTab({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-[44rem] text-[13px] leading-[1.55] text-[rgba(32,30,29,.68)]">
-          Computed over the <strong className="text-foreground">base</strong> channel set at the
-          selected HS level — stage, signal-class and materiality filters are intentionally not
-          applied, so counts and denominators stay stable <Ref s="§2.2" />.
+        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
+          Computed over the <strong className="text-foreground">base</strong> channel set at the selected
+          HS level — the evidence-stage, signal-class and materiality filters are intentionally not applied,
+          so counts and denominators stay stable. Period, direction, partner view, freight and HS/category
+          filters do apply. A channel is one partner × {LEVEL_LABELS[level]} pair observed in the selected period.
         </p>
         <LevelToggle level={level} onChange={onLevelChange} />
       </div>
 
       {/* (a) distribution */}
-      <section>
-        <h2 className="text-[16px] font-extrabold tracking-tight">Distribution of the signed discrepancy</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          Signed discrepancy per channel <Ref s="§2.1" /> at the {Math.round(filter.cif * 100)}% freight
-          assumption — heavy-tailed, so read the mean together with the median.
-        </p>
+      <section className="space-y-3">
+        <SectionTitle
+          title="Distribution of the signed discrepancy"
+          desc={`Signed discrepancy per channel = expected CIF (partner exports × 1 + ${Math.round(filter.cif * 100)}% freight) − UZB-recorded imports, summed over the selected period. Heavy-tailed: read the mean together with the median.`}
+        />
         {dist && (
-          <div className="mt-3">
-            <Strip
-              cells={[
-                { value: fmtUSD(dist.mean), label: `mean (signed) · median ${fmtUSD(dist.median)}` },
-                { value: fmtUSD(dist.sd), label: "sample standard deviation" },
-                { value: fmtUSD(dist.p95), label: "P95 · upper tail" },
-                { value: fmtUSD(dist.p99), label: "P99 · extreme tail" },
-              ]}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat
+              label="Mean (signed)"
+              value={fmtUSD(dist.mean)}
+              sub={`median ${fmtUSD(dist.median)}`}
+              info={`Arithmetic mean: Σ signedT / N over all N = ${fmtNum(n)} base channels. Heavily influenced by the tails — read it together with the median (50th percentile) shown beneath.`}
+            />
+            <Stat
+              label="Std. deviation"
+              value={fmtUSD(dist.sd)}
+              sub="sample SD"
+              info={`Sample standard deviation: √( Σ(x − mean)² / (N − 1) ) over N = ${fmtNum(n)} channels.`}
+            />
+            <Stat
+              label="P95"
+              value={fmtUSD(dist.p95)}
+              sub="upper tail"
+              info={`95th percentile of the signed channel discrepancy (linear interpolation, N = ${fmtNum(n)}). The upper tail carries most of the positive total.`}
+            />
+            <Stat
+              label="P99"
+              value={fmtUSD(dist.p99)}
+              sub="extreme tail"
+              info={`99th percentile of the signed channel discrepancy (linear interpolation, N = ${fmtNum(n)}).`}
             />
           </div>
         )}
-        <div className="mt-3" style={{ height: 280 }}>
+        <div className="card p-3" style={{ height: 300 }}>
           <EChart option={histOption} />
         </div>
-        <p className="max-w-[44rem] text-[11.5px] leading-normal text-[rgba(32,30,29,.55)]">
-          Symmetric log10 bins: accent right = positive (partner &gt; UZB), grey left = reverse, faint
-          centre = within the ±$100K noise band. {t("common.source")}.
+        <p className="max-w-3xl text-xs text-faint">
+          Channels binned on a symmetric log10 scale. Blue (left) = reverse (UZB &gt; partner); orange
+          (right) = positive (partner &gt; UZB); neutral centre = within the ±$100K noise band. {t("common.source")}.
         </p>
       </section>
 
       {/* (b) thresholds */}
-      <section className="rule-1 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Materiality thresholds</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          Channels surviving a materiality floor on the positive direction, and the share of the
-          positive total they carry — reverse is screened separately, never netted.
-        </p>
-        <div className="mt-3 max-w-[640px] overflow-x-auto">
+      <section className="space-y-3">
+        <SectionTitle
+          title="Materiality thresholds"
+          desc="How many channels survive a given materiality floor on the positive direction, and how much of the positive total they carry. Reverse discrepancies are screened separately and never netted against these figures."
+        />
+        <div className="card overflow-x-auto">
           <table className="w-full border-collapse">
-            <thead>
-              <tr className={HEAD_ROW}>
-                <th className={TH}>Threshold</th>
-                <th className={THN}>Channels</th>
-                <th className={THN}>Σ positive</th>
-                <th className={THN} title={`Σ positive at or above the threshold ÷ ${fmtUSD(thres.posTotal)} (the positive total over all ${fmtNum(n)} base channels).`}>Share of total</th>
+            <thead className="border-b border-[var(--color-border)]">
+              <tr>
+                <th className={TH}>
+                  Threshold <InfoTip text="Materiality floor applied to the channel's total positive discrepancy, Σ max(signed, 0) over the selected period." />
+                </th>
+                <th className={TH_NUM}>Channels</th>
+                <th className={TH_NUM}><HeadDot color={COLORS.positive} />Σ positive</th>
+                <th className={TH_NUM}>
+                  Share of positive total <InfoTip text={`Σ positive discrepancy of channels at or above the threshold ÷ ${fmtUSD(thres.posTotal)} (the positive total over all ${fmtNum(n)} base channels).`} />
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="zebra">
               {thres.rows.map((r) => (
-                <tr key={r.label} className={BODY_ROW}>
-                  <td className={`${TD} tabular font-semibold`}>{r.label}</td>
-                  <td className={TDN}>{fmtNum(r.count)}</td>
-                  <td className={TDN}>{fmtUSD(r.value)}</td>
-                  <td className={TDN}>{fmtPct(r.share)}</td>
+                <tr key={r.label} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <td className={`${TD} tabular font-medium`}>{r.label}</td>
+                  <td className={TD_NUM}>{fmtNum(r.count)}</td>
+                  <td className={TD_NUM}>{fmtUSD(r.value)}</td>
+                  <td className={TD_NUM}>{fmtPct(r.share)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="mt-3" style={{ height: 260 }}>
+        <div className="card p-3" style={{ height: 300 }}>
           <EChart option={thresOption} />
         </div>
       </section>
 
       {/* (c) concentration */}
-      <section className="rule-1 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Concentration</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          A small number of large channels carries most of the positive total — concentration is not,
-          by itself, evidence of misreporting.
-        </p>
-        <div className="mt-3">
-          <Strip
-            cells={[
-              { value: `${fmtPct(conc.top1, 0)} / ${fmtPct(conc.top5, 0)}`, label: "top-1 / top-5 share of the positive total" },
-              { value: `${fmtPct(conc.top10, 0)} / ${fmtPct(conc.top20, 0)}`, label: "top-10 / top-20 share" },
-              { value: fmtNum(conc.hhi), label: "HHI · 0–10,000 scale" },
-              { value: `${fmtNum(conc.n50)} / ${fmtNum(conc.n75)} / ${fmtNum(conc.n90)}`, label: "channels to 50 / 75 / 90% of the total" },
-            ]}
+      <section className="space-y-3">
+        <SectionTitle
+          title="Concentration"
+          desc="A small number of large channels carries most of the positive total — review effort can focus there. Concentration is not, by itself, evidence of misreporting."
+        />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat
+            label="Top 1 / Top 5 share"
+            value={`${fmtPct(conc.top1, 0)} / ${fmtPct(conc.top5, 0)}`}
+            sub="of the positive total"
+            info={`Σ positive of the largest 1 and 5 channels ÷ the positive total (${fmtUSD(conc.total)}). Denominator: ${fmtNum(conc.n)} channels with positive discrepancy > 0.`}
+          />
+          <Stat
+            label="Top 10 / Top 20 share"
+            value={`${fmtPct(conc.top10, 0)} / ${fmtPct(conc.top20, 0)}`}
+            sub="of the positive total"
+            info={`Σ positive of the largest 10 and 20 channels ÷ the positive total. Denominator: ${fmtNum(conc.n)} positive channels.`}
+          />
+          <Stat
+            label="HHI"
+            value={fmtNum(conc.hhi)}
+            sub="0–10,000 scale"
+            info={`Herfindahl–Hirschman index: Σ (channel share of the positive total)² × 10,000 over all ${fmtNum(conc.n)} positive channels. Above ~2,500 is conventionally 'highly concentrated'.`}
+          />
+          <Stat
+            label="Channels to 50 / 75 / 90%"
+            value={`${fmtNum(conc.n50)} / ${fmtNum(conc.n75)} / ${fmtNum(conc.n90)}`}
+            sub="smallest sets covering the total"
+            info={`Minimum number of channels (sorted by positive discrepancy, descending) whose cumulative sum reaches 50%, 75% and 90% of the positive total (${fmtUSD(conc.total)}).`}
           />
         </div>
-        <div className="mt-3" style={{ height: 300 }}>
+        <div className="card p-3" style={{ height: 320 }}>
           <EChart option={paretoOption} />
         </div>
-        <p className="max-w-[44rem] text-[11.5px] leading-normal text-[rgba(32,30,29,.55)]">
-          Pareto: top {conc.pareto.length} of {fmtNum(conc.n)} positive channels; the cumulative share
-          lives in the tooltip. {t("common.source")}.
+        <p className="max-w-3xl text-xs text-faint">
+          Pareto: top {conc.pareto.length} of {fmtNum(conc.n)} positive channels (partner ISO3 + code on the
+          axis; hover for full names). Orange bars: channel positive discrepancy; the cumulative share of the
+          positive total is shown in the tooltip. {t("common.source")}.
         </p>
       </section>
 
       {/* (d) robustness split */}
-      <section className="rule-1 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Robustness split</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          All base channels by scenario robustness <Ref s="§2.3" /> — sensitive channels are not
-          discarded, they screen at the comparable stage with lower evidence scores.
-        </p>
-        <div className="mt-3 flex h-4 w-full border border-[rgba(32,30,29,.4)]">
-          {ROB_ORDER.map(({ key, color }) =>
-            rob.by[key] > 0 ? (
-              <div
-                key={key}
-                style={{ width: `${(rob.by[key] / n) * 100}%`, background: color }}
-                title={`${ROBUSTNESS_LABELS[key]}: ${fmtNum(rob.by[key])} channels (${fmtPct(rob.by[key] / n, 0)} of ${fmtNum(n)})`}
-              />
-            ) : null,
-          )}
+      <section className="space-y-3">
+        <SectionTitle
+          title="Robustness split"
+          desc="All base channels by scenario robustness. Sensitive channels are not discarded — they are screened at the comparable stage with lower evidence scores."
+        />
+        <div className="card p-4">
+          <div className="flex h-4 w-full gap-[2px] overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-panel)]">
+            {ROB_ORDER.map(({ key, color }) =>
+              rob.by[key] > 0 ? (
+                <div
+                  key={key}
+                  style={{ width: `${(rob.by[key] / n) * 100}%`, background: color }}
+                  title={`${ROBUSTNESS_LABELS[key]}: ${fmtNum(rob.by[key])} channels (${fmtPct(rob.by[key] / n, 0)} of ${fmtNum(n)})`}
+                />
+              ) : null,
+            )}
+          </div>
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[12px] text-muted">
+            {ROB_ORDER.map(({ key, color }) => (
+              <span key={key} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
+                {ROBUSTNESS_LABELS[key]} <span className="tabular text-faint">{fmtNum(rob.by[key])} · {fmtPct(n > 0 ? rob.by[key] / n : 0, 0)}</span>
+              </span>
+            ))}
+            <InfoTip text="Robust: the discrepancy sign holds across the whole 6% / 10% / 15% freight band, with ≥2 comparable years and no coverage flags. Freight-sensitive: the sign flips within the band. Coverage-sensitive: sparse or lapsed reporter. Insufficient: fewer than 2 comparable years in the full window." />
+          </div>
+          <p className="mt-2.5 text-[12px] text-muted">
+            Persistent 3+ years:{" "}
+            <span className="tabular font-medium text-foreground">{fmtPct(n > 0 ? rob.persistent / n : 0, 0)}</span>{" "}
+            <span className="text-faint">({fmtNum(rob.persistent)} of {fmtNum(n)} channels)</span>{" "}
+            <InfoTip text={`Share of base channels with a positive-discrepancy streak of at least 3 consecutive years within the selected period (longestPosStreak ≥ 3). Denominator: all ${fmtNum(n)} base channels. Persistence strengthens a screening signal but is still not proof of intent.`} />
+          </p>
         </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11.5px] text-[rgba(32,30,29,.7)]">
-          {ROB_ORDER.map(({ key, color }) => (
-            <span key={key} className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 shrink-0 border border-[rgba(32,30,29,.35)]" style={{ background: color }} />
-              {ROBUSTNESS_LABELS[key]}{" "}
-              <span className="tabular text-faint">{fmtNum(rob.by[key])} · {fmtPct(n > 0 ? rob.by[key] / n : 0, 0)}</span>
-            </span>
-          ))}
-        </div>
-        <p className="mt-2 text-[12px] text-[rgba(32,30,29,.7)]">
-          Persistent 3+ years:{" "}
-          <span className="tabular font-semibold text-foreground">{fmtPct(n > 0 ? rob.persistent / n : 0, 0)}</span>{" "}
-          <span className="text-faint">({fmtNum(rob.persistent)} of {fmtNum(n)} channels — persistence strengthens a signal, never proves intent)</span>
-        </p>
       </section>
 
       {/* (e) persistent channels */}
-      <section className="rule-1 pt-3">
-        <h2 className="text-[16px] font-extrabold tracking-tight">Persistent channels</h2>
-        <p className="mt-0.5 max-w-[44rem] text-[12.5px] text-[rgba(32,30,29,.62)]">
-          Top 10 by the longest consecutive run of positive-discrepancy years over the full{" "}
-          {meta.window.start}–{meta.window.end} window — persistence makes a one-off artifact less
-          likely, not misreporting more proven.
-        </p>
+      <section className="space-y-3">
+        <SectionTitle
+          title="Persistent channels"
+          desc={`${LEVEL_LABELS[level]} channels with at least 3 comparable years over the full ${meta.window.start}–${meta.window.end} window, ranked by the longest consecutive run of positive-discrepancy years. Persistence makes a one-off artifact less likely — it is not proof of intentional misreporting.`}
+        />
         {persistent.length === 0 ? (
-          <div className="mt-3"><EmptyState /></div>
+          <EmptyState />
         ) : (
-          <div className="mt-3 overflow-x-auto">
+          <div className="card overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse">
-              <thead>
-                <tr className={HEAD_ROW}>
+              <thead className="border-b border-[var(--color-border)]">
+                <tr>
                   <th className={TH}>{t("common.partner")}</th>
-                  <th className={TH}>Code · label</th>
-                  <th className={THN} title="Longest consecutive run of positive-discrepancy years in the full window.">Streak</th>
-                  <th className={THN} title="Years with a positive discrepancy out of comparable years in the full window.">Pos / comp. yrs</th>
-                  <th className={THN} title="Positive discrepancy accumulated over the full window — never netted against reverse years.">Positive total</th>
+                  <th className={TH}>{LEVEL_LABELS[level]} code</th>
+                  <th className={TH_NUM} title="Longest consecutive run of years with a positive discrepancy (partner > UZB records) in the full window.">Streak</th>
+                  <th className={TH_NUM} title="Years with a positive discrepancy out of comparable years in the full window.">Pos / comp. yrs</th>
+                  <th className={TH_NUM} title="Positive discrepancy accumulated over the full window — never netted against reverse years."><HeadDot color={COLORS.positive} />Positive total</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="zebra">
                 {persistent.map((c) => (
-                  <tr key={`${c.partnerIso}-${c.cmd}`} className={BODY_ROW}>
-                    <td className={`${TD} whitespace-nowrap font-extrabold`}>
-                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="hover:underline">{c.partner}</Link>
-                      {c.transit && <span className="tabular ml-1.5 text-[10.5px] font-normal text-[rgba(32,30,29,.5)]">transit hub</span>}
+                  <tr key={`${c.partnerIso}-${c.cmd}`} className="border-b border-[var(--color-border-soft)]">
+                    <td className={`${TD} whitespace-nowrap`}>
+                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">{c.partner}</Link>
+                      {c.transit && <span className="ml-1.5"><TransitTag /></span>}
                     </td>
                     <td className={`${TD} max-w-[320px]`}>
-                      <span className="tabular mr-1.5 text-[11px] text-[rgba(32,30,29,.5)]">{c.cmd}</span>
-                      <span className="text-[rgba(32,30,29,.75)]" title={c.cmdLabel}>
-                        {c.cmdLabel.length > 52 ? `${c.cmdLabel.slice(0, 52)}…` : c.cmdLabel}
-                      </span>
+                      <span className="tabular mr-1.5 text-xs text-faint">{c.cmd}</span>
+                      <span title={c.cmdLabel}>{c.cmdLabel.length > 52 ? `${c.cmdLabel.slice(0, 52)}…` : c.cmdLabel}</span>
                     </td>
-                    <td className={TDN}>{c.longestPosStreak} yr</td>
-                    <td className={TDN}>{c.posYears}/{c.comparableYears}</td>
-                    <td className={`${TDN} font-semibold`} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
+                    <td className={TD_NUM} title={`Longest consecutive positive streak: ${c.longestPosStreak} year${c.longestPosStreak === 1 ? "" : "s"}.`}>
+                      {c.longestPosStreak} yr
+                    </td>
+                    <td className={TD_NUM}>{c.posYears}/{c.comparableYears}</td>
+                    <td className={TD_NUM} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        <p className="mt-2 max-w-[44rem] text-[11.5px] leading-normal text-[rgba(32,30,29,.55)]">
-          Comparable years count only years where both sides reported — missing partner-years are
-          excluded, never treated as zero. {t("common.source")}.
+        <p className="max-w-3xl text-xs text-faint">
+          Top 10 by streak. Comparable years count only years where both sides reported — missing
+          partner-years are excluded, never treated as zero. {t("common.source")}.
         </p>
       </section>
     </div>
