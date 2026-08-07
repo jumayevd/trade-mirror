@@ -89,7 +89,6 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
     pm.transit
       ? `As a transit/re-export hub, part of the discrepancy can reflect goods routed through ${p.name} and attributed by Uzbekistan to their country of origin — a legitimate recording difference assessed in a separate track.`
       : "",
-    `These are statistical screening signals, not findings of wrongdoing.`,
   ].filter(Boolean).join(" ");
 
   // ---- alternative explanations (spec §6.6.8) — partner-level, statuses from measured fields ----
@@ -168,7 +167,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
           info={`Cumulative partner-reported exports to Uzbekistan in channels where both sides reported, ${period}. ${fmtUSDFull(p.peT)}. Uzbekistan recorded ${fmtUSDFull(p.uiT)}.`} />
         <Stat label="Positive discrepancy" value={fmtUSD(p.posT)} accent={COLORS.positive}
           sub={`${fmtPct(posShare, 0)} of expected CIF imports`}
-          info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal, not proof of under-recording. ${fmtUSDFull(p.posT)}.`} />
+          info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal. ${fmtUSDFull(p.posT)}.`} />
         <Stat label="Reverse discrepancy" value={fmtUSD(p.revT)} accent={COLORS.reverse}
           sub="UZB records > partner"
           info={`Σ max(UZB imports − expected CIF, 0) per channel-year — shown separately, never netted away against the positive side. ${fmtUSDFull(p.revT)}.`} />
@@ -180,7 +179,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
           info="HS2 chapters with at least one comparable channel above the noise floor for this partner (positive direction)." />
         <Stat label="HS6 channels" value={String(hs6.length)}
           sub={`${p.investigate} classified Investigate (HS2)`}
-          info="Country × HS6 product channels with comparable data for this partner. The sub-line counts this partner's HS2 channels in the Investigate class (high anomaly + high evidence) — a review priority, not a finding." />
+          info="Country × HS6 product channels with comparable data for this partner. The sub-line counts this partner's HS2 channels in the Investigate class (high anomaly + high evidence) — a review priority." />
       </section>
 
       {/* 3. reporting quality */}
@@ -263,7 +262,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
       <section>
         <SectionTitle
           title="Top HS6 screening signals"
-          desc="This partner's product channels ranked by signal class, anomaly strength and evidence quality. Every row is a statistical screening signal for further review — never a finding of wrongdoing. Click a channel for its full profile."
+          desc="This partner's product channels ranked by signal class, anomaly strength and evidence quality. Every row is a statistical screening signal for further review. Click a channel for its full profile."
         />
         {topSignals.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">

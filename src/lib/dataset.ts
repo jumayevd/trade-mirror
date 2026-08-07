@@ -119,7 +119,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   residual: "Residual unexplained",
 };
 export const CLASS_LABELS: Record<SignalClass, { label: string; desc: string }> = {
-  investigate: { label: "Investigate", desc: "High anomaly with high-quality data — the strongest open-data signal; a priority for further statistical or customs review. Not a finding of wrongdoing." },
+  investigate: { label: "Investigate", desc: "High anomaly with high-quality data — the strongest open-data signal; a priority for further statistical or customs review." },
   verify: { label: "Verify data first", desc: "High anomaly but weaker data quality — confirm statistical comparability before interpreting." },
   monitor: { label: "Monitor", desc: "Good data quality but the anomaly is not yet strong or persistent." },
   low: { label: "Low priority", desc: "Neither strong nor well-evidenced — do not use for substantive conclusions." },

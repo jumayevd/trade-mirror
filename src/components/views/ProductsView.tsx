@@ -380,7 +380,7 @@ export default function ProductsView() {
             <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
               Where the residual unexplained discrepancy sits in the commodity classification — drill
               from HS2 chapters through derived HS4 groups to HS6 products. Every figure is a
-              statistical screening signal, never proof of misreporting.
+              statistical screening signal.
             </p>
           </div>
           <button
@@ -464,7 +464,7 @@ export default function ProductsView() {
               value={fmtUSD(node.posT)}
               sub={`partner > UZB after ${Math.round(filter.cif * 100)}% freight`}
               accent={COLORS.positive}
-              info="Sum of channel-years where the partner-reported figure (freight-adjusted) exceeds Uzbekistan's record. A screening signal with several legitimate explanations — not proof of under-declaration."
+              info="Sum of channel-years where the partner-reported figure (freight-adjusted) exceeds Uzbekistan's record. A screening signal with several legitimate explanations."
             />
             <Stat
               label="Reverse discrepancy"
@@ -602,7 +602,7 @@ export default function ProductsView() {
                     <SortableTh label="Positive" k="posT" sort={sort} onSort={onSort} color={COLORS.positive} title="Positive discrepancy: partner > UZB after freight adjustment" />
                     <SortableTh label="Reverse" k="revT" sort={sort} onSort={onSort} color={COLORS.reverse} title="Reverse discrepancy: UZB records more than the partner reported" />
                     <SortableTh label="Partners" k="partners" sort={sort} onSort={onSort} title="Distinct partner countries with an observation channel on this code" />
-                    <SortableTh label="Max A / E" k="anomaly" sort={sort} onSort={onSort} align="left" title="Strongest partner channel on this code: anomaly strength / evidence quality (0–100). A signal ranking aid, never proof." />
+                    <SortableTh label="Max A / E" k="anomaly" sort={sort} onSort={onSort} align="left" title="Strongest partner channel on this code: anomaly strength / evidence quality (0–100). A signal ranking aid." />
                   </tr>
                 </thead>
                 <tbody className="zebra">
@@ -688,7 +688,7 @@ export default function ProductsView() {
             Trend = average of the last (up to three) reported years minus the average of the first (up to
             three), on the annual {dirIsReverse ? "reverse" : "positive"} discrepancy. Residual chapters
             (98–99) and chapters with fewer than two reported years are excluded. A rising residual
-            discrepancy is a screening signal, not evidence of misreporting.
+            discrepancy is a screening signal.
           </p>
         </section>
       )}

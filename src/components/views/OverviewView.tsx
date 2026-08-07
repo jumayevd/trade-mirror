@@ -37,7 +37,6 @@ export default function OverviewView() {
               {t("nav.overview")}
             </h1>
             <p className="text-[13px] text-muted">
-              Screening signals — not proof of wrongdoing ·{" "}
               <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">Methodology →</Link>
             </p>
           </div>
@@ -160,7 +159,6 @@ function partnerValue(p: PartnerAgg, mode: RankMode, direction: string): number 
 
 function TopCounterparts() {
   const { data, filter } = useFilter();
-  const { t } = useI18n();
   const router = useRouter();
   const [mode, setMode] = useState<RankMode>("gap");
   const k = data.kpis;

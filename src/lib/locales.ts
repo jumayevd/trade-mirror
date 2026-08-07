@@ -29,7 +29,7 @@ const en = {
   "nav.evidence": "Tariff & Behavioural Evidence",
   "nav.planned": "Planned",
   "nav.signConvention": "sign convention",
-  "nav.attribution": "Mirror-trade screening · UN Comtrade · screening signals, not proof of wrongdoing",
+  "nav.attribution": "Mirror-trade screening · UN Comtrade",
   "header.dataAsOf": "Data as of",
   "header.howto": "How to interpret",
 
@@ -111,7 +111,7 @@ const en = {
   // overview
   "ov.title": "Uzbekistan Mirror Trade Evidence & Risk Screening Dashboard",
   "ov.question": "Where do Uzbekistan import records differ from partner-reported exports?",
-  "ov.disclaimer": "Statistical discrepancies are screening signals, not proof of wrongdoing. Legitimate causes include freight valuation, transit routing, classification and reporting differences.",
+  "ov.disclaimer": "Legitimate causes include freight valuation, transit routing, classification and reporting differences.",
   "ov.ladder": "Evidence ladder",
   "ov.ladder.observed": "Observed",
   "ov.ladder.comparable": "Comparable",
@@ -159,7 +159,7 @@ const ru: Record<LocaleKey, string> = {
   "nav.evidence": "Тарифные и поведенческие тесты",
   "nav.planned": "Планируется",
   "nav.signConvention": "конвенция знака",
-  "nav.attribution": "Скрининг зеркальной торговли · UN Comtrade · сигналы для проверки, не доказательство нарушений",
+  "nav.attribution": "Скрининг зеркальной торговли · UN Comtrade",
   "header.dataAsOf": "Данные на",
   "header.howto": "Как интерпретировать",
 
@@ -235,7 +235,7 @@ const ru: Record<LocaleKey, string> = {
 
   "ov.title": "Скрининг зеркальной торговли Узбекистана: доказательность и риски",
   "ov.question": "Где записи импорта Узбекистана расходятся с экспортом, заявленным партнёрами?",
-  "ov.disclaimer": "Статистические расхождения — это сигналы для проверки, а не доказательство нарушений. Законные причины: оценка фрахта, транзит, классификация и различия в отчётности.",
+  "ov.disclaimer": "Законные причины: оценка фрахта, транзит, классификация и различия в отчётности.",
   "ov.ladder": "Лестница доказательности",
   "ov.ladder.observed": "Наблюдаемо",
   "ov.ladder.comparable": "Сопоставимо",

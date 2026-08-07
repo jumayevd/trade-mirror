@@ -9,7 +9,7 @@ export function channelsToCsv(channels: Channel[], filter: Filter): string {
     `# Uzbekistan Mirror Trade Evidence & Risk Screening Dashboard`,
     `# Context: ${contextLine(filter)}`,
     `# Data version: ${DATA_VERSION} | Methodology: v${METHODOLOGY_VERSION} | Generated: ${new Date().toISOString()}`,
-    `# Units: USD (nominal). A discrepancy is a statistical screening signal, not evidence of wrongdoing.`,
+    `# Units: USD (nominal).`,
     `# Source: UN Comtrade`,
   ].join("\n");
 

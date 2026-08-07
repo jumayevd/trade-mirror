@@ -47,7 +47,7 @@ const CARDS: FormulaCard[] = [
     usedIn: "Headline tile; amber series everywhere; country/product rankings",
     population: "Matched pairs, accumulated year by year",
     denominator: "Not applicable",
-    interpretation: "A potential under-recording signal — never netted against reverse, never proof.",
+    interpretation: "A potential under-recording signal — never netted against reverse.",
     refs: ["buehn2011", "gfi2021"],
   },
   {
@@ -71,7 +71,7 @@ const CARDS: FormulaCard[] = [
   {
     name: "anomaly strength (A)",
     formula: "100 × (0.35·mag + 0.25·rel + 0.20·pers + 0.10·dyn + 0.10·uv)",
-    usedIn: "“A” score on every channel; risk-matrix vertical axis",
+    usedIn: "“A” score on every channel; input to the risk score R",
     population: "Per channel (partner × code), weights sum to 1",
     denominator: "Fixed anchors: $1M → 0, $10B → 1 on the magnitude term",
     interpretation: "How unusual the discrepancy is. Contains no data-quality information.",
@@ -80,7 +80,7 @@ const CARDS: FormulaCard[] = [
   {
     name: "evidence quality (E)",
     formula: "100 × (0.25·cov + 0.20·rel + 0.15·hs + 0.15·wq + 0.10·fr + 0.10·tr + 0.05·res)",
-    usedIn: "“E” score on every channel; risk-matrix horizontal axis",
+    usedIn: "“E” score on every channel; input to the risk score R",
     population: "Per channel, weights sum to 1",
     denominator: "Component shares each bounded 0–1",
     interpretation: "How reliable and comparable the underlying records are — scored separately from A.",
@@ -88,11 +88,11 @@ const CARDS: FormulaCard[] = [
   },
   {
     name: "risk score (R)",
-    formula: "R = √(A × E)",
-    usedIn: "“Risk” column and summary tiles in Discrepancy & Risk; iso-risk curve on the matrix",
+    formula: "R = √(A × E),  A = anomaly strength, E = evidence quality",
+    usedIn: "“Risk” column, summary tiles and the top-channels chart in Discrepancy & Risk",
     population: "Per channel (partner × code)",
     denominator: "Both inputs bounded 0–100, so R is bounded 0–100",
-    interpretation: "Composite screening priority — it ranks channels only and never alters the signal class or its transit handling. The geometric mean limits compensability: weak evidence bounds the score at R ≤ 10·√E, so the anomaly alone can never carry it. Not a probability of wrongdoing.",
+    interpretation: "Composite screening priority — it ranks channels only and never alters the signal class or its transit handling. The geometric mean limits compensability: weak evidence bounds the score at R ≤ 10·√E, so the anomaly alone can never carry it.",
     refs: ["oecdjrc2008", "imf2023", "wco2011"],
   },
   {
@@ -101,7 +101,7 @@ const CARDS: FormulaCard[] = [
     usedIn: "Class labels across the site; queue default ordering",
     population: "Per channel",
     denominator: "Fixed thresholds, versioned with the methodology",
-    interpretation: "Screening priority (Investigate / Verify data first / Monitor / Low) — not a finding.",
+    interpretation: "Screening priority (Investigate / Verify data first / Monitor / Low).",
     refs: ["imf2023", "kellenberg2019"],
   },
 ];
@@ -180,7 +180,7 @@ export default function MethodologyPage() {
           After a freight adjustment the two should roughly agree; each card below defines one figure the
           dashboard shows, where it is used, and the literature it rests on. Every number is a{" "}
           <strong className="text-foreground">statistical screening signal</strong> — mirror gaps inform
-          shadow-economy research but never measure it, and never prove misconduct.
+          shadow-economy research but never measure it.
         </p>
         <p className="tabular text-[11.5px] text-faint">
           {meta.window.start}–{meta.window.end} cumulative at central freight: comparable trade {fmtUSD(k.comparableTrade)} ·

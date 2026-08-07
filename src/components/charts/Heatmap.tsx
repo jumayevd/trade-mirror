@@ -62,7 +62,7 @@ export default function Heatmap({
           const color = v >= 0 ? COLORS.positive : COLORS.reverse;
           return `<b>${partners[xi].name}</b> · HS ${chapters[yi]} ${chapterLabels[chapters[yi]] ?? ""}<br/>
             ${dir}<br/>Signed discrepancy: <b style="color:${color}">${fmtUSDFull(v)}</b><br/>
-            <span style="color:${COLORS.axis}">Screening signal, not proof of misreporting. Click for the partner profile.</span>`;
+            <span style="color:${COLORS.axis}">Click for the partner profile.</span>`;
         },
       },
       xAxis: {

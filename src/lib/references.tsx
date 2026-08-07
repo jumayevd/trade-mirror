@@ -97,7 +97,7 @@ export const REFERENCES: Ref[] = [
     year: "2019",
     title: "Misreporting Trade: Tariff Evasion, Corruption, and Auditing Standards",
     source: "Review of International Economics, 27(1)",
-    note: "Cross-country evidence that mirror gaps correlate with institutions and audit standards — screening, not proof, at the country level.",
+    note: "Cross-country evidence that mirror gaps correlate with institutions and audit standards at the country level.",
   },
   {
     id: "oecdjrc2008",

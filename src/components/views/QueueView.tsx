@@ -6,7 +6,7 @@ import type { EChartsOption, YAXisComponentOption } from "echarts";
 import EChart from "@/components/EChart";
 import FilterBar from "@/components/FilterBar";
 import QueueTable, { LEVEL_LABELS, type HsLevel } from "@/components/QueueTable";
-import RiskMatrix from "@/components/charts/RiskMatrix";
+import RiskBars from "@/components/charts/RiskBars";
 import { ContextLine, EmptyState, EvidenceBadge, InfoTip, RiskScore, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { Cite } from "@/lib/references";
 import { useFilter } from "@/lib/filter-context";
@@ -29,9 +29,9 @@ import { BAR_SPEC, LINE_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echar
 
 type TabKey = "ranked" | "reverse" | "profile";
 const TABS: { key: TabKey; label: string; tip: string }[] = [
-  { key: "profile", label: "Statistical profile", tip: "Distribution, materiality thresholds, concentration and robustness of the discrepancy across base channels." },
+  { key: "ranked", label: "Ranked components", tip: "Risk scores and the ranked table of all partner × code combinations under the current filters." },
   { key: "reverse", label: "Reverse focus", tip: "Reverse discrepancies (UZB records > partner) analysed separately — never netted against positive ones." },
-  { key: "ranked", label: "Ranked components", tip: "Risk matrix and the ranked table of all partner × code combinations under the current filters." },
+  { key: "profile", label: "Statistical profile", tip: "Distribution, materiality thresholds, concentration and robustness of the discrepancy across base channels." },
 ];
 
 /* ---------- quiet chart axis helpers (fontSize 10, palette-only) ---------- */
@@ -105,7 +105,7 @@ export default function QueueView() {
   const { data, series, filter } = useFilter();
   const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(2);
-  const [tab, setTab] = useState<TabKey>("profile");
+  const [tab, setTab] = useState<TabKey>("ranked");
 
   const channels = levelChannels(data, level);
 
@@ -141,7 +141,6 @@ export default function QueueView() {
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
             <p className="text-[13px] text-muted">
-              Screening signals — not proof of wrongdoing ·{" "}
               <Link href="/methodology" className="hover:underline">Methodology →</Link>
             </p>
           </div>
@@ -222,8 +221,8 @@ function RankedTab({
       <section className="space-y-3">
         <SectionTitle
           title="Risk score"
-          desc="One number per combination: R = √(A × E)."
-          right={<InfoTip text="Composite risk score, 0–100: the geometric mean of anomaly strength (A) and evidence quality (E). Geometric aggregation limits compensability — weak evidence bounds the score at R ≤ 10·√E, so even a maximal anomaly cannot exceed R 60 at E 36. R ranks channels only; it never alters the signal class or its transit handling. Formula and literature: Methodology." />}
+          desc="R = √(A × E) — A anomaly strength, E evidence quality, each 0–100."
+          right={<InfoTip text="Composite risk score, 0–100: the geometric mean of anomaly strength (A — how unusual the discrepancy is) and evidence quality (E — how reliable and comparable the underlying records are). Geometric aggregation limits compensability — weak evidence bounds the score at R ≤ 10·√E, so even a maximal anomaly cannot exceed R 60 at E 36. R ranks channels only; it never alters the signal class or its transit handling. Formula and literature: Methodology." />}
         />
         {riskStats && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -248,18 +247,18 @@ function RankedTab({
           </div>
         )}
         <p className="max-w-3xl text-xs text-faint">
-          A screening priority for review ordering — never a probability of wrongdoing
+          Screening priority for review ordering
           <Cite ids={["oecdjrc2008", "imf2023", "wco2011"]} />.
         </p>
       </section>
 
       <section>
         <SectionTitle
-          title="Analytical significance"
-          desc="Evidence quality (x) × anomaly strength (y)."
-          right={<InfoTip text={`Every ${LEVEL_LABELS[level]} combination; bubble area ∝ discrepancy in the active direction, colour = signal class. Quadrant guides mirror the classification thresholds (E 60, A 55); the dashed curve joins points of constant risk score R = √(55 × 60) ≈ 57.`} />}
+          title="Top channels by risk score"
+          desc="Longest bar = highest screening priority."
+          right={<InfoTip text={`The 15 ${LEVEL_LABELS[level]} combinations with the highest composite risk score R = √(A × E) under the current filters. Bar colour = signal class; the dashed line marks R 57.4 = √(55 × 60), the score at both classification thresholds. Click a bar to open the channel profile.`} />}
         />
-        <RiskMatrix channels={channels} filter={filter} />
+        <RiskBars channels={channels} filter={filter} />
       </section>
 
       <section className="space-y-3">
@@ -273,7 +272,7 @@ function RankedTab({
           <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
           {LEVEL_LABELS[level]} combinations
           · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span>{" "}
-          <span className="cursor-help" title="Investigate class: anomaly ≥ 55 and evidence ≥ 60 — a review priority, not a finding of wrongdoing.">Investigate-class</span>
+          <span className="cursor-help" title="Investigate class: anomaly ≥ 55 and evidence ≥ 60 — a review priority.">Investigate-class</span>
           · top 5 = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> of {fmtUSD(Math.abs(stats.dirTotal))}
         </p>
 
@@ -872,7 +871,7 @@ function ProfileTab({
             Persistent 3+ years:{" "}
             <span className="tabular font-medium text-foreground">{fmtPct(n > 0 ? rob.persistent / n : 0, 0)}</span>{" "}
             <span className="text-faint">({fmtNum(rob.persistent)} of {fmtNum(n)} channels)</span>{" "}
-            <InfoTip text={`Share of base channels with a positive-discrepancy streak of at least 3 consecutive years within the selected period (longestPosStreak ≥ 3). Denominator: all ${fmtNum(n)} base channels. Persistence strengthens a screening signal but is still not proof of intent.`} />
+            <InfoTip text={`Share of base channels with a positive-discrepancy streak of at least 3 consecutive years within the selected period (longestPosStreak ≥ 3). Denominator: all ${fmtNum(n)} base channels.`} />
           </p>
         </div>
       </section>
@@ -881,7 +880,7 @@ function ProfileTab({
       <section className="space-y-3">
         <SectionTitle
           title="Persistent channels"
-          desc={`${LEVEL_LABELS[level]} channels with at least 3 comparable years over the full ${meta.window.start}–${meta.window.end} window, ranked by the longest consecutive run of positive-discrepancy years. Persistence makes a one-off artifact less likely — it is not proof of intentional misreporting.`}
+          desc={`${LEVEL_LABELS[level]} channels with at least 3 comparable years over the full ${meta.window.start}–${meta.window.end} window, ranked by the longest consecutive run of positive-discrepancy years. Persistence makes a one-off artifact less likely.`}
         />
         {persistent.length === 0 ? (
           <EmptyState />

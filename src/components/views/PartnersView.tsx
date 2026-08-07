@@ -293,7 +293,7 @@ export default function PartnersView() {
                       <span className="text-faint" title="No HS2 chapter above the noise floor in the active direction for this partner.">below noise</span>
                     )}
                   </td>
-                  <td className={tdNum} title="Number of this partner's HS2 channels classified Investigate (high anomaly + high evidence). A screening priority count, not a finding of wrongdoing.">
+                  <td className={tdNum} title="Number of this partner's HS2 channels classified Investigate (high anomaly + high evidence). A screening priority count.">
                     {p.investigate}
                   </td>
                 </tr>
@@ -330,7 +330,6 @@ export default function PartnersView() {
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
             <p className="text-[12px] text-muted">
-              Screening signals — not proof of wrongdoing ·{" "}
               <Link href="/methodology" className="hover:underline">Methodology →</Link>
             </p>
           </div>

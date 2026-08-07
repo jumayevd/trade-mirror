@@ -139,8 +139,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
     `the residual positive asymmetry is ${fmtUSD(channel.posT)} and ${channel.flipsAcrossFreight ? "does not hold" : "holds"} ` +
     `across all three freight scenarios (6%, 10%, 15%). The channel has ${channel.comparableYears} of ${WINDOW.length} ` +
     `comparable years and evidence quality ${channel.evidence.toFixed(0)}/100. Main limitations: ${limitations}. ` +
-    `The pattern is classified as “${CLASS_LABELS[channel.cls].label}” and warrants ${NEXT_STEP[channel.cls]}. ` +
-    `It is not proof of intentional misreporting.`;
+    `The pattern is classified as “${CLASS_LABELS[channel.cls].label}” and warrants ${NEXT_STEP[channel.cls]}.`;
 
   return (
     <div className="space-y-8">
@@ -186,7 +185,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
           <Stat label="UZB imports (CIF)" value={fmtUSD(channel.uiT)} accent={COLORS.uzb}
             sub="Uzbekistan recorded" info={`Cumulative imports of HS ${channel.cmd} from ${channel.partner} as recorded by Uzbekistan. ${fmtUSDFull(channel.uiT)}.`} />
           <Stat label="Positive discrepancy" value={fmtUSD(channel.posT)} accent={COLORS.positive}
-            sub="partner > UZB, by year" info="Σ max(expected CIF − UZB imports, 0) over comparable years — a screening signal, not proof of under-recording." />
+            sub="partner > UZB, by year" info="Σ max(expected CIF − UZB imports, 0) over comparable years." />
           <Stat label="Reverse discrepancy" value={fmtUSD(channel.revT)} accent={COLORS.reverse}
             sub="UZB > partner, by year" info="Σ max(UZB imports − expected CIF, 0) over comparable years — shown separately, never netted away." />
           <Stat label="Signed (net)" value={fmtUSD(channel.signedT, { sign: true })}
@@ -230,7 +229,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
       <section className="card p-5">
         <SectionTitle
           title="Value–quantity decomposition"
-          desc="Where both sides report weight, unit values ($/kg) help separate price under-declaration from missing volume. A unit-value gap alone is still a screening signal, not proof."
+          desc="Where both sides report weight, unit values ($/kg) help separate price under-declaration from missing volume. A unit-value gap alone is still a screening signal."
         />
         {channel.uvRatio != null ? (
           <div className="flex flex-wrap items-start gap-8 text-sm">

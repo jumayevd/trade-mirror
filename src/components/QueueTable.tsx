@@ -102,8 +102,7 @@ function interpretation(c: Channel, f: Filter): string {
   return (
     `For ${c.partner} × HS ${c.cmd}, ${dominant}, leaving a signed discrepancy of ` +
     `${fmtUSD(c.signedT, { sign: true })} at the ${Math.round(f.cif * 100)}% freight assumption ` +
-    `(bounded asymmetry ${fmtPct(c.boundedAsymmetry, 0)}); this residual unexplained discrepancy ` +
-    `is a statistical screening signal and is not proof of intentional misreporting.`
+    `(bounded asymmetry ${fmtPct(c.boundedAsymmetry, 0)}).`
   );
 }
 
@@ -217,7 +216,7 @@ export default function QueueTable({
               <tr>
                 <th className={th} aria-label="Expand" />
                 <th className={th}>Class</th>
-                <th className={th} title="Composite risk score 0–100 = √(A × E), the geometric mean of anomaly strength and evidence quality. Weak evidence bounds the score (R ≤ 10·√E), so the anomaly alone can never carry it. A screening priority, not a probability of wrongdoing.">Risk</th>
+                <th className={th} title="Composite risk score 0–100 = √(A × E), the geometric mean of anomaly strength and evidence quality. Weak evidence bounds the score (R ≤ 10·√E), so the anomaly alone can never carry it. A screening priority.">Risk</th>
                 <th className={th} title="Anomaly strength 0–100 — how unusual the discrepancy is. Independent of data quality.">A</th>
                 <th className={th} title="Evidence quality 0–100 — how reliable and comparable the underlying data is.">E</th>
                 <th className={th}>{t("common.partner")}</th>

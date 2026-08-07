@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Trade Mirror — Uzbekistan Mirror Trade Evidence & Risk Screening",
   description:
-    "Statistical reconciliation and risk-screening platform comparing Uzbekistan's import records with partner-reported exports (UN Comtrade). Discrepancies are screening signals, not proof of wrongdoing.",
+    "Statistical reconciliation and risk-screening platform comparing Uzbekistan's import records with partner-reported exports (UN Comtrade).",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -45,7 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <footer className="border-t border-[var(--color-border)] px-5 py-5 text-xs text-faint">
                 <div className="flex max-w-[1200px] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <span>
-                    Source: UN Comtrade · mirror statistics · screening tool, not proof of wrongdoing ·{" "}
+                    Source: UN Comtrade · mirror statistics ·{" "}
                     <Link href="/methodology" className="underline hover:text-foreground">Methodology v{METHODOLOGY_VERSION}</Link>
                   </span>
                   <span>Data version {DATA_VERSION}</span>

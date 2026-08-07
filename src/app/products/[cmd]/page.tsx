@@ -111,7 +111,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
     `positive gap is ${fmtUSD(p.positiveGap)} (${fmtPct(gapShare, 0)} of expected CIF imports) and is ${trendWord} across the window. ` +
     `${routingSentence} ${uvSentence} ${confSentence} ${clsSentence} These discrepancies are statistical screening signals — ` +
     `legitimate causes such as freight valuation, transit routing, timing, classification and reporting differences typically act ` +
-    `together — and the pattern is not proof of intentional misreporting, under-declaration or smuggling by any party.`;
+    `together.`;
 
   return (
     <div className="space-y-8">
@@ -146,7 +146,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label="Positive gap (cumulative)" value={fmtUSD(p.positiveGap)} accent={COLORS.positive}
           sub={`${fmtPct(gapShare, 0)} of expected CIF imports`}
-          info={`Sum of positive yearly CIF-adjusted discrepancies across all partners, ${period}, at the central ${cifPct}% freight assumption. ${fmtUSDFull(p.positiveGap)}. A screening signal, not proof of under-recording.`} />
+          info={`Sum of positive yearly CIF-adjusted discrepancies across all partners, ${period}, at the central ${cifPct}% freight assumption. ${fmtUSDFull(p.positiveGap)}.`} />
         <Stat label="Partner exports (FOB)" value={fmtUSD(p.ptnExp)} accent={COLORS.partner}
           sub={`vs ${fmtUSD(p.uzbImp)} UZB recorded (CIF)`}
           info={`Cumulative partner-reported exports of HS ${p.cmd} to Uzbekistan vs Uzbekistan-recorded imports. ${fmtUSDFull(p.ptnExp)} vs ${fmtUSDFull(p.uzbImp)}.`} />
@@ -155,7 +155,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
           info="Share of the product's total positive discrepancy held by the single largest country channel. High concentration means one country pair drives the signal." />
         <Stat label="Trend" value={trendWord} accent={trendWord === "rising" ? COLORS.positive : undefined}
           sub={`avg ${fmtUSD(recent)}/yr recent vs ${fmtUSD(early)}/yr early`}
-          info="Average yearly positive gap in the most recent half of the window vs the earliest half. A rising gap is a screening signal, not proof of a worsening problem." />
+          info="Average yearly positive gap in the most recent half of the window vs the earliest half. A rising gap is a screening signal." />
         <Stat label="Reporter quality" value={confTier}
           sub={`${fmtPct(p.highConfShare, 0)} of gap from reliable reporters`}
           info="Share of the gap that comes from partners with complete, consistent Comtrade reporting (High ≥ 70%, Medium ≥ 40%). About the data, never about conduct." />
@@ -193,7 +193,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
             ))}
             <p className="basis-full text-xs text-faint">
               {channels.length} comparable channel{channels.length === 1 ? "" : "s"} in total. “{CLASS_LABELS.investigate.label}”
-              marks a priority for further statistical or customs review — it is never a finding of wrongdoing.
+              marks a priority for further statistical or customs review.
             </p>
           </div>
         )}
@@ -277,7 +277,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
       <section className="card p-5">
         <SectionTitle
           title="Data coverage: weight and unit values"
-          desc="Where both sides report net weight, unit values ($/kg) help separate price under-declaration from missing volume. A unit-value gap alone is still a screening signal, not proof."
+          desc="Where both sides report net weight, unit values ($/kg) help separate price under-declaration from missing volume. A unit-value gap alone is still a screening signal."
           right={<QualityTag tier={confTier} tip={`${fmtPct(p.highConfShare, 0)} of the gap comes from partners with complete, consistent Comtrade reporting.`} />}
         />
         {p.uv ? (
