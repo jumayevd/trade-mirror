@@ -26,14 +26,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Sidebar />
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-panel)_94%,transparent)] backdrop-blur">
-                <div className="flex items-center justify-between gap-3 px-5 py-2">
+                <div className="mx-auto flex w-full max-w-[var(--shell-max)] items-center justify-between gap-3 px-5 py-2">
                   <MobileNav />
                   <HeaderStrapline />
                   <HeaderMeta />
                 </div>
               </header>
 
-              <main className="w-full max-w-[1200px] flex-1 px-5 py-6">
+              <main className="mx-auto w-full max-w-[var(--shell-max)] flex-1 px-5 py-6">
                 <Suspense fallback={null}>
                   <FilterProvider>{children}</FilterProvider>
                 </Suspense>

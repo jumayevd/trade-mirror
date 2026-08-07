@@ -23,7 +23,7 @@ export function SiteFooter() {
   const { t } = useI18n();
   return (
     <footer className="border-t border-[var(--color-border)] px-5 py-5 text-xs text-faint">
-      <div className="flex max-w-[1200px] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <span>
           {t("common.source")} · {t("chrome.mirrorStatistics")} ·{" "}
           <Link href="/methodology" className="underline hover:text-foreground">

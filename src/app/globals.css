@@ -78,6 +78,31 @@ body {
   zoom: 1.1;
 }
 
+/*
+ * Content shell width. `zoom` above scales the layout, so these are pre-zoom CSS
+ * pixels: the rendered column is ~10% wider than the number. The shell grows with
+ * the display instead of stranding a wide gutter on large monitors, and stays
+ * capped so table rows never become an uncomfortably long scan line.
+ */
+:root {
+  --shell-max: 1200px;
+}
+@media (min-width: 1600px) {
+  :root {
+    --shell-max: 1440px;
+  }
+}
+@media (min-width: 1920px) {
+  :root {
+    --shell-max: 1680px;
+  }
+}
+@media (min-width: 2400px) {
+  :root {
+    --shell-max: 1960px;
+  }
+}
+
 .tabular {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
