@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
 /*
- * Design system: validated dataviz reference palette.
- *  - chrome is neutral warm-grey ink; the only brand color is a deep green used
- *    for links, active states and primary buttons
- *  - data colors: orange #eb6834 = positive discrepancy, blue #2a78d6 = reverse
- *    (categorical slots 2 and 1; the pair passes CVD + normal-vision gates)
- *  - status set (fixed): critical #d03b3b = Investigate only; serious #ec835a;
- *    good #0ca30c; everything else neutral
+ * Design system: CBU house palette — deep navy + gold on a warm paper surface.
+ *  - chrome is neutral warm-grey ink; brand color is CBU navy #1e3a6e, used for
+ *    links, active states and primary buttons; gold #d99a2b is the accent rail
+ *  - data colors: navy #1e3a6e = the screened (positive) discrepancy — the
+ *    primary series; #2b4c8c / #4a6ea8 are the secondary navy slots; gold
+ *    #b07d1e is the counterpart series (navy vs gold is CVD-safe)
+ *  - status set (fixed): critical #b3261e = Investigate ONLY — the single red in
+ *    the system; serious = gold; good = deep green; everything else neutral
+ *  - fills are solid and saturated (no alpha washes) so marks stay crisp
  *  - hairline borders, solid hairline gridlines, whitespace does the separating
  */
 :root {
@@ -28,28 +30,31 @@
   --color-muted: #52514e;
   --color-faint: #898781;
 
-  /* brand: deep navy chrome + gold highlight (sidebar/emphasis) */
+  /* brand: CBU deep navy chrome + gold highlight (sidebar/emphasis) */
   --color-primary: #1e3a6e;
   --color-primary-soft: #2b4c8c;
+  --color-primary-light: #4a6ea8;
   --color-navy: #16233b;
-  --color-gold: #d99a2b;
+  --color-gold: #d99a2b;      /* accent / rails / selection */
+  --color-gold-deep: #b07d1e; /* gold as a data fill */
+  --color-gold-ink: #8f6212;  /* gold as text — legible at 11px */
 
-  /* data semantics (the only two series colors) */
-  --color-positive: #eb6834;
-  --color-reverse: #2a78d6;
+  /* data semantics */
+  --color-positive: #1e3a6e;  /* the screened discrepancy — primary series */
+  --color-reverse: #b07d1e;   /* deprecated: reverse is no longer screened */
 
   /* status (fixed, never themed) */
-  --color-investigate: #d03b3b;
-  --color-serious: #ec835a;
-  --color-transit: #52514e;
-  --color-quality: #0ca30c;
-  --color-warn: #a16207;
-  --color-ok: #006300;
+  --color-investigate: #b3261e; /* the only red in the system */
+  --color-serious: #8f6212;
+  --color-transit: #575c67;
+  --color-quality: #1a6b45;
+  --color-warn: #8f6212;
+  --color-ok: #155c3b;
 
   /* chart mirrors */
-  --color-uzb: #2a78d6;
-  --color-partner: #eb6834;
-  --color-accent: #17603a;
+  --color-uzb: #2b4c8c;
+  --color-partner: #b07d1e;
+  --color-accent: #d99a2b;
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -88,7 +93,7 @@ body {
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .card-hover:hover {
-  border-color: rgba(11, 11, 11, 0.2);
+  border-color: rgba(30, 58, 110, 0.28);
 }
 
 /* quiet zebra */

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { DICT, type Lang, type LocaleKey } from "@/lib/locales";
+import { DICT, LANGS, type Lang, type LocaleKey } from "@/lib/locales";
 
 interface I18n {
   lang: Lang;
@@ -20,7 +20,7 @@ const readLang = (): Lang => {
   if (override) return override;
   let saved: string | null = null;
   try { saved = localStorage.getItem("tm-lang"); } catch { /* ignore */ }
-  return saved === "en" || saved === "ru" ? (saved as Lang) : "en";
+  return (LANGS as readonly string[]).includes(saved ?? "") ? (saved as Lang) : "en";
 };
 const writeLang = (l: Lang) => {
   override = l;

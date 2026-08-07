@@ -1,10 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PartnerGaps from "@/components/charts/PartnerGaps";
-import {
-  Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, ClassBadge,
-  RobustnessBadge, QualityTag, TransitTag,
-} from "@/components/ui";
+import PartnerChannels, { type ChannelRow, type ChapterRow } from "./PartnerChannels";
+import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag } from "@/components/ui";
 import {
   aggregate, meta, DEFAULT_FILTER, partnerMetaOf, isResidualChapter, type Filter,
 } from "@/lib/dataset";
@@ -13,19 +11,18 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 
 /**
  * Partner profile (spec §6.6) — one partner country in depth. Server component:
- * computes its own full-window aggregate with explicit filters (comparable stage,
- * no materiality floor) so the profile is stable regardless of the visitor's
- * interactive filter state elsewhere on the site.
+ * computes its own full-window aggregate with explicit filters (every year
+ * ticked, no materiality floor) so the profile is stable regardless of the
+ * visitor's interactive filter state elsewhere on the site.
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  from: meta.window.start,
-  to: meta.window.end,
-  stage: "comparable",
+  years: [...meta.years],
   minGap: 0,
 };
 const FULL = aggregate(FULL_FILTER);
-const SNAP = aggregate({ ...DEFAULT_FILTER, stage: "comparable", minGap: 0 });
+/** Latest single year — the one-year callout inside the executive summary. */
+const SNAP = aggregate({ ...DEFAULT_FILTER, years: [meta.defaultYear], minGap: 0 });
 const WINDOW = meta.years;
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
@@ -58,8 +55,17 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
 
   const hs2 = FULL.channels.filter((c) => c.partnerIso === p.iso3);
   const hs6 = FULL.channels6.filter((c) => c.partnerIso === p.iso3);
-  const structure = [...hs2].sort((a, b) => b.posT - a.posT).filter((c) => c.posT > 0).slice(0, 8);
-  const topSignals = hs6.slice(0, 10); // engine order: class → anomaly → evidence → size
+  // slim, serializable rows for the client-side HS2 › HS4 › HS6 narrowing
+  const structure: ChapterRow[] = [...hs2]
+    .filter((c) => c.posT > 0)
+    .sort((a, b) => b.posT - a.posT)
+    .map((c) => ({ chapter: c.chapter, label: c.cmdLabel, posT: Math.round(c.posT) }));
+  const signalRows: ChannelRow[] = hs6.map((c) => ({
+    // engine order is preserved: class → anomaly → evidence → size
+    cmd: c.cmd, label: c.cmdLabel, chapter: c.chapter, hs4: c.cmd.slice(0, 4),
+    cls: c.cls, anomaly: c.anomaly, evidence: c.evidence, robustness: c.robustness,
+    posT: Math.round(c.posT),
+  }));
 
   // weight availability among this partner's HS6 channels, value-weighted (measured, optional)
   const pe6 = hs6.reduce((s, c) => s + c.peT, 0);
@@ -80,11 +86,11 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
         : `${p.name} reported to UN Comtrade in every year of the window, so reporting gaps are an unlikely driver of the discrepancy.`;
   const summary = [
     `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.peT)} in comparable channels, while Uzbekistan recorded ${fmtUSD(p.uiT)} of imports from ${p.name}.`,
-    `Accumulated year by year at the central ${cifPct}% freight adjustment, the positive discrepancy (partner > UZB records) is ${fmtUSD(p.posT)} and the reverse discrepancy (UZB records > partner) is ${fmtUSD(p.revT)}; the two sides are kept separate and never netted into a single headline.`,
+    `Accumulated year by year at the central ${cifPct}% freight adjustment, the positive discrepancy — partner-reported exports uplifted for freight, minus Uzbekistan-recorded imports, counted only where that difference is positive — is ${fmtUSD(p.posT)}.`,
     topSector
-      ? `The positive side concentrates in ${topSector.cmdLabel.toLowerCase()} (HS ${topSector.chapter}, ${fmtUSD(topSector.posT)}) and is ${trendWord} over the window.`
+      ? `It concentrates in ${topSector.label.toLowerCase()} (HS ${topSector.chapter}, ${fmtUSD(topSector.posT)}) and is ${trendWord} over the window.`
       : `No single HS2 chapter carries a positive discrepancy above the noise floor, and the series is ${trendWord} over the window.`,
-    snap ? `In ${meta.defaultYear} alone the positive discrepancy was ${fmtUSD(snap.posT)} and the reverse ${fmtUSD(snap.revT)}.` : "",
+    snap ? `In ${meta.defaultYear} alone the positive discrepancy was ${fmtUSD(snap.posT)}.` : "",
     coverageSentence,
     pm.transit
       ? `As a transit/re-export hub, part of the discrepancy can reflect goods routed through ${p.name} and attributed by Uzbekistan to their country of origin — a legitimate recording difference assessed in a separate track.`
@@ -161,22 +167,19 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
       </section>
 
       {/* 2. key indicators */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label="Comparable trade" value={fmtUSD(p.peT)} accent={COLORS.partner}
           sub={`${p.name} reported, FOB`}
           info={`Cumulative partner-reported exports to Uzbekistan in channels where both sides reported, ${period}. ${fmtUSDFull(p.peT)}. Uzbekistan recorded ${fmtUSDFull(p.uiT)}.`} />
         <Stat label="Positive discrepancy" value={fmtUSD(p.posT)} accent={COLORS.positive}
           sub={`${fmtPct(posShare, 0)} of expected CIF imports`}
           info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal. ${fmtUSDFull(p.posT)}.`} />
-        <Stat label="Reverse discrepancy" value={fmtUSD(p.revT)} accent={COLORS.reverse}
-          sub="UZB records > partner"
-          info={`Σ max(UZB imports − expected CIF, 0) per channel-year — shown separately, never netted away against the positive side. ${fmtUSDFull(p.revT)}.`} />
         <Stat label="Coverage" value={`${pm.reportedYears.length}/${WINDOW.length} yrs`}
           sub={pm.lapse ? `stopped after ${pm.lastReportedYear}` : `${fmtPct(pm.coverage, 0)} of window years`}
           info="Years inside the window where the partner reported to UN Comtrade. Missing years have no mirror reference and are never treated as zero gaps." />
         <Stat label="HS2 sectors with signals" value={String(hs2.length)}
           sub={`${trendWord} trend`}
-          info="HS2 chapters with at least one comparable channel above the noise floor for this partner (positive direction)." />
+          info="HS2 chapters with at least one comparable channel carrying a positive discrepancy above the noise floor for this partner." />
         <Stat label="HS6 channels" value={String(hs6.length)}
           sub={`${p.investigate} classified Investigate (HS2)`}
           info="Country × HS6 product channels with comparable data for this partner. The sub-line counts this partner's HS2 channels in the Investigate class (high anomaly + high evidence) — a review priority." />
@@ -225,71 +228,19 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
       <section>
         <SectionTitle
           title="Reported vs recorded, by year"
-          desc={`Source: UN Comtrade mirror data, ${period}. Amber bars = ${p.name}'s reported exports (FOB); blue bars = Uzbekistan's recorded imports (CIF); dashed lines = positive (amber) and reverse (blue) discrepancies at the central ${cifPct}% freight adjustment. Years without a partner report are skipped, never drawn as zero.`}
+          desc={`Source: UN Comtrade mirror data, ${period}. Amber bars = ${p.name}'s reported exports (FOB); blue bars = Uzbekistan's recorded imports (CIF); the yearly positive discrepancy at the central ${cifPct}% freight adjustment is in the tooltip. Years without a partner report are skipped, never drawn as zero.`}
         />
         <PartnerGaps byYear={p.byYear} partner={p.name} />
       </section>
 
-      {/* 5. HS2 structure */}
-      <section className="card p-5">
-        <SectionTitle
-          title="HS2 structure of the positive discrepancy"
-          desc={`Where ${p.name}'s positive discrepancy concentrates, at chapter level. Shares are of the partner's total positive discrepancy (${fmtUSD(p.posT)}). Source: UN Comtrade.`}
-        />
-        {structure.length === 0 ? (
-          <p className="text-sm text-muted">
-            No HS2 chapter carries a positive discrepancy above the noise floor for this
-            partner — the comparable channels are dominated by reverse or negligible gaps.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {structure.map((c) => (
-              <div key={c.chapter} className="flex items-center gap-3">
-                <span className="tabular w-8 shrink-0 text-xs text-faint">{c.chapter}</span>
-                <span className="w-52 shrink-0 truncate text-sm text-muted" title={c.cmdLabel}>{c.cmdLabel}</span>
-                <div className="h-5 flex-1 overflow-hidden rounded bg-[var(--color-panel-2)]">
-                  <div className="h-full rounded" style={{ width: `${Math.max(2, (c.posT / (structure[0].posT || 1)) * 100)}%`, background: COLORS.positive }} />
-                </div>
-                <span className="tabular w-20 shrink-0 text-right text-sm" title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</span>
-                <span className="tabular hidden w-12 shrink-0 text-right text-xs text-faint sm:block">{fmtPct(p.posT > 0 ? c.posT / p.posT : 0, 0)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 6. HS6 signals */}
-      <section>
-        <SectionTitle
-          title="Top HS6 screening signals"
-          desc="This partner's product channels ranked by signal class, anomaly strength and evidence quality. Every row is a statistical screening signal for further review. Click a channel for its full profile."
-        />
-        {topSignals.length === 0 ? (
-          <p className="card p-8 text-center text-sm text-muted">
-            No HS6 channel of {p.name} has a comparable positive discrepancy above the noise
-            floor in the full window.
-          </p>
-        ) : (
-          <div className="card zebra divide-y divide-[var(--color-border-soft)]">
-            {topSignals.map((c) => (
-              <div key={c.cmd} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-                <ClassBadge cls={c.cls} />
-                <AnomalyBadge score={c.anomaly} />
-                <EvidenceBadge score={c.evidence} />
-                <Link href={`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline" title={c.cmdLabel}>
-                  {c.cmdLabel} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
-                </Link>
-                <RobustnessBadge r={c.robustness} />
-                <span className="tabular w-28 whitespace-nowrap text-right text-sm">
-                  <span style={{ color: COLORS.positive }} title={`Positive: ${fmtUSDFull(c.posT)}`}>{fmtUSD(c.posT)}</span>
-                  <span className="text-faint"> / </span>
-                  <span style={{ color: COLORS.reverse }} title={`Reverse: ${fmtUSDFull(c.revT)}`}>{fmtUSD(c.revT)}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* 5+6. product-code narrowing over the HS2 structure and HS6 signals */}
+      <PartnerChannels
+        iso={p.iso3}
+        partner={p.name}
+        totalPos={p.posT}
+        chapters={structure}
+        rows={signalRows}
+      />
 
       {/* 7. transit & attribution note */}
       {pm.transit && (
@@ -331,12 +282,6 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
             );
           })}
         </ul>
-        <p className="mt-3 text-xs text-faint">
-          Even after these checks, a residual unexplained discrepancy remains a statistical
-          screening signal: attributing it to any specific cause — including intentional
-          misreporting — requires declarations, audit or inspection, which open trade
-          statistics cannot provide.
-        </p>
       </section>
 
       {/* 9. downloads */}
@@ -345,8 +290,9 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
           <h2 className="text-sm font-semibold">Downloads</h2>
           <p className="mt-1 text-xs text-muted">
             All {hs6.length} of {p.name}&apos;s HS6 channels over the full {period} window
-            (comparable stage, no materiality floor), with raw and derived fields plus the
-            calculation context, data version and methodology version in the header block.
+            (every year, no materiality floor — not just the product codes selected above),
+            with raw and derived fields plus the calculation context, data version and
+            methodology version in the header block.
           </p>
         </div>
         <a

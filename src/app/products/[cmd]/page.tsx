@@ -20,9 +20,7 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS, CLASS_COLORS } from "@/lib/format";
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  from: meta.window.start,
-  to: meta.window.end,
-  stage: "comparable",
+  years: [...meta.years],
   minGap: 0,
 };
 const FULL = aggregate(FULL_FILTER);
@@ -53,10 +51,10 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
   const gapShare = expected > 0 ? p.positiveGap / expected : 0;
   const confTier: Tier = p.highConfShare >= 0.7 ? "High" : p.highConfShare >= 0.4 ? "Medium" : "Low";
 
-  // full-window channel drill-down for this HS6 line (comparable stage, no materiality floor)
+  // full-window channel drill-down for this HS6 line (no materiality floor)
   const channels = FULL.channels6
     .filter((c) => c.cmd === cmd)
-    .sort((a, b) => b.posT - a.posT || b.revT - a.revT);
+    .sort((a, b) => b.posT - a.posT);
 
   // concentration on the positive side
   const totalPos = channels.reduce((s, c) => s + c.posT, 0);
@@ -203,7 +201,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
       <section>
         <SectionTitle
           title="Country decomposition"
-          desc="Every comparable country channel for this HS6 line over the full window (no materiality floor). Positive and reverse discrepancies are listed separately; badges show anomaly strength, evidence quality and the resulting class. Open a channel for the year-by-year record."
+          desc="Every comparable country channel for this HS6 line over the full window (no materiality floor). Badges show anomaly strength, evidence quality and the resulting class. Open a channel for the year-by-year record."
         />
         {channels.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
@@ -211,7 +209,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
           </p>
         ) : (
           <div className="card overflow-x-auto">
-            <table className="zebra w-full min-w-[960px] text-sm">
+            <table className="zebra w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
                   <th className="px-3 py-2 font-medium">Partner</th>
@@ -219,8 +217,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
                   <th className="px-3 py-2 font-medium">Scores</th>
                   <th className="px-3 py-2 text-right font-medium">Partner exports (FOB)</th>
                   <th className="px-3 py-2 text-right font-medium">UZB imports (CIF)</th>
-                  <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.positive }}>Positive</th>
-                  <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.reverse }}>Reverse</th>
+                  <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.positive }}>Positive discrepancy</th>
                   <th className="px-3 py-2 text-right font-medium">
                     Years <InfoTip text="Comparable years (both sides reported) out of the window. Missing partner-years are excluded, never zero-filled." />
                   </th>
@@ -250,9 +247,6 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
                     </td>
                     <td className="tabular px-3 py-2 text-right font-semibold" style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>
                       {fmtUSD(c.posT)}
-                    </td>
-                    <td className="tabular px-3 py-2 text-right font-semibold" style={{ color: COLORS.reverse }} title={fmtUSDFull(c.revT)}>
-                      {fmtUSD(c.revT)}
                     </td>
                     <td className="tabular px-3 py-2 text-right">{c.comparableYears}/{meta.years.length}</td>
                     <td className="px-3 py-2"><RobustnessBadge r={c.robustness} /></td>

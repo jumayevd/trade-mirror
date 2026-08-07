@@ -1,12 +1,12 @@
 /**
  * Mirror Trade Dashboard v2 — single calculation source (spec §7).
  *
- * Implements: expected CIF, signed/positive/reverse/absolute discrepancy, bounded
- * asymmetry, positive share, reconciliation stages (observed → comparable → residual),
- * Anomaly Strength (0–100), Evidence Quality (0–100), the classification matrix
- * (Investigate / Verify data first / Monitor / Low priority / Transit-sensitive) and
- * robustness labels. All pages and exports read from aggregate() — one version of the
- * numbers everywhere. Missing partner-years are never treated as zero flows.
+ * Implements: expected CIF, the positive discrepancy, bounded asymmetry, positive
+ * share, Anomaly Strength (0–100), Evidence Quality (0–100), the composite Risk score
+ * R = √(A × E) and the classification matrix (Investigate / Verify data first /
+ * Monitor / Low priority / Transit-sensitive). Only the positive direction is
+ * screened. All pages and exports read from aggregate() — one version of the numbers
+ * everywhere. Missing partner-years are never treated as zero flows.
  */
 import cellsRaw from "@/data/cells.json";
 import metaRaw from "@/data/meta.json";
@@ -16,9 +16,6 @@ import productsRaw from "@/data/products.json";
 export const METHODOLOGY_VERSION = "2.0";
 
 export type Tier = "High" | "Medium" | "Low";
-export type Direction = "positive" | "reverse" | "absolute" | "net";
-export type ViewMode = "all" | "high" | "core" | "transit";
-export type Stage = "comparable" | "residual";
 export type SignalClass = "investigate" | "verify" | "monitor" | "low" | "transit";
 export type Robustness = "robust" | "freight-sensitive" | "coverage-sensitive" | "insufficient";
 
@@ -102,22 +99,6 @@ const wgtShare = (() => {
   return out;
 })();
 
-export const VIEW_LABELS: Record<ViewMode, string> = {
-  all: "All data",
-  high: "High-quality data",
-  core: "Core (excl. transit)",
-  transit: "Transit-sensitive only",
-};
-export const DIRECTION_LABELS: Record<Direction, string> = {
-  positive: "Positive (partner > UZB)",
-  reverse: "Reverse (UZB > partner)",
-  absolute: "Absolute",
-  net: "Net (signed)",
-};
-export const STAGE_LABELS: Record<Stage, string> = {
-  comparable: "Comparable",
-  residual: "Residual unexplained",
-};
 export const CLASS_LABELS: Record<SignalClass, { label: string; desc: string }> = {
   investigate: { label: "Investigate", desc: "High anomaly with high-quality data — the strongest open-data signal; a priority for further statistical or customs review." },
   verify: { label: "Verify data first", desc: "High anomaly but weaker data quality — confirm statistical comparability before interpreting." },
@@ -133,32 +114,27 @@ export const ROBUSTNESS_LABELS: Record<Robustness, string> = {
 };
 
 export interface Filter {
-  from: number;
-  to: number;
-  direction: Direction;
-  view: ViewMode;
-  stage: Stage;
+  /** Ticked years — any subset of meta.years, never a range. */
+  years: number[];
   cif: number;
   country: string; // "all" | iso3
   hs2: string; // "all" | chapter
+  hs4: string; // "all" | 4-digit code
+  hs6: string; // "all" | 6-digit code
   category: string; // "all" | key
-  minGap: number; // materiality floor on the direction metric
+  minGap: number; // materiality floor on the positive discrepancy
   signal: "all" | SignalClass;
-  robust: "all" | "robust" | "sensitive";
 }
 export const DEFAULT_FILTER: Filter = {
-  from: meta.defaultYear,
-  to: meta.defaultYear,
-  direction: "positive",
-  view: "all",
-  stage: "residual",
+  years: [...meta.years],
   cif: meta.cif.central,
   country: "all",
   hs2: "all",
+  hs4: "all",
+  hs6: "all",
   category: "all",
   minGap: 0,
   signal: "all",
-  robust: "all",
 };
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
@@ -177,9 +153,9 @@ export interface Channel {
   comparableYears: number; posYears: number; revYears: number; longestPosStreak: number;
   flipsAcrossFreight: boolean;
   uvYears: number; uvRatio: number | null;
-  stage: Stage; robustness: Robustness; flags: string[];
+  robustness: Robustness; flags: string[];
   anomaly: number; evidence: number; risk: number; cls: SignalClass;
-  /** ranking value for the active direction */
+  /** positive discrepancy used for ranking */
   primary: number;
   trend: number;
 }
@@ -209,18 +185,16 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
     rs.sort((a, b) => a.y - b.y);
 
     const years: YearRow[] = [];
-    let peT = 0, uiT = 0, posT = 0, revT = 0, posLo = 0, posHi = 0, revLo = 0, revHi = 0;
-    let posYears = 0, revYears = 0, streak = 0, longest = 0, revStreak = 0, longestRev = 0;
+    let peT = 0, uiT = 0, posT = 0, revT = 0;
+    let posYears = 0, revYears = 0, streak = 0, longest = 0;
     let uvYears = 0, uw = 0, pw = 0, uwv = 0, pwv = 0;
     for (const r of rs) {
       const signed = r.pe * K - r.ui;
       years.push({ y: r.y, pe: r.pe, ui: r.ui, signed, uvOk: !!(r.uw && r.pw) });
       peT += r.pe; uiT += r.ui;
       posT += pos(signed); revT += pos(-signed);
-      posLo += pos(r.pe * Klo - r.ui); posHi += pos(r.pe * Khi - r.ui);
-      revLo += pos(r.ui - r.pe * Klo); revHi += pos(r.ui - r.pe * Khi);
       if (signed > NOISE) { posYears++; streak++; longest = Math.max(longest, streak); } else streak = 0;
-      if (signed < -NOISE) { revYears++; revStreak++; longestRev = Math.max(longestRev, revStreak); } else revStreak = 0;
+      if (signed < -NOISE) revYears++;
       if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
     }
     if (peT <= NOISE && uiT <= NOISE) continue;
@@ -252,32 +226,21 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
         : flipsAcrossFreight ? "freight-sensitive"
           : pm.lapse || pm.coverage < 0.5 ? "coverage-sensitive"
             : "robust";
-    const stage: Stage =
-      !pm.transit && !isResidualChapter(r0.c) && nHist >= 2 && !flipsAcrossFreight ? "residual" : "comparable";
 
     // (label resolution handles HS2 / derived HS4 / HS6 uniformly)
-    // direction metric
-    const primary =
-      f.direction === "positive" ? posT
-        : f.direction === "reverse" ? revT
-          : f.direction === "absolute" ? absT
-            : signedT;
+    // the dashboard screens the positive discrepancy only
+    const primary = posT;
 
     // ---- Anomaly Strength (spec §7.4): 35 magnitude / 25 relative / 20 persistence / 10 dynamics / 10 UV ----
-    const dirYears = f.direction === "reverse" ? revYears : posYears;
-    const dirSeries = years.map((x) => ({
-      y: x.y,
-      v: f.direction === "reverse" ? pos(-x.signed) : f.direction === "absolute" ? Math.abs(x.signed) : pos(x.signed),
-    }));
+    const dirYears = posYears;
+    const dirSeries = years.map((x) => ({ y: x.y, v: pos(x.signed) }));
     const trend = trendOf(dirSeries);
     const meanYearly = dirSeries.reduce((s, x) => s + x.v, 0) / Math.max(dirSeries.length, 1);
     const mag = clamp((Math.log10(1 + Math.abs(primary)) - 6) / 4);
     const rel = boundedAsymmetry;
-    const dirStreak = f.direction === "reverse" ? longestRev : longest;
-    const pers = 0.7 * (dirYears / Math.max(n, 3)) + 0.3 * (dirStreak / Math.max(n, 3));
+    const pers = 0.7 * (dirYears / Math.max(n, 3)) + 0.3 * (longest / Math.max(n, 3));
     const dyn = trend > 0 && meanYearly > 0 ? clamp(trend / meanYearly) : 0;
-    const uvA = uvRatio == null ? null
-      : f.direction === "reverse" ? clamp((uvRatio - 1) / 0.5) : clamp((1 - uvRatio) / 0.5);
+    const uvA = uvRatio == null ? null : clamp((1 - uvRatio) / 0.5);
     const anomaly = Math.round(10 * 100 * (uvA == null
       ? (0.35 * mag + 0.25 * rel + 0.2 * pers + 0.1 * dyn) / 0.9
       : 0.35 * mag + 0.25 * rel + 0.2 * pers + 0.1 * dyn + 0.1 * uvA)) / 10;
@@ -311,7 +274,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
-      stage, robustness, flags, anomaly, evidence, risk, cls, primary, trend,
+      robustness, flags, anomaly, evidence, risk, cls, primary, trend,
     });
   }
   return out;
@@ -322,13 +285,13 @@ const CLS_RANK: Record<SignalClass, number> = { investigate: 0, verify: 1, trans
 function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
   return chs
     .filter((c) => {
-      if (f.stage === "residual" && c.stage !== "residual") return false;
+      // HS 98/99 ("commodities not specified", confidential) are not comparable at
+      // product level: they stay in baseChannels for totals and the statistical
+      // profile, but never rank as screening priorities.
+      if (isResidualChapter(c.chapter)) return false;
       if (f.signal !== "all" && c.cls !== f.signal) return false;
-      if (f.robust === "robust" && c.robustness !== "robust") return false;
-      if (f.robust === "sensitive" && c.robustness === "robust") return false;
-      if (Math.abs(c.primary) < f.minGap) return false;
-      if (f.direction === "positive" && c.posT <= NOISE) return false;
-      if (f.direction === "reverse" && c.revT <= NOISE) return false;
+      if (c.primary < f.minGap) return false;
+      if (c.posT <= NOISE) return false;
       return true;
     })
     .sort((a, b) =>
@@ -338,15 +301,15 @@ function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
 export interface PartnerAgg {
   iso3: string; name: string; region: string; transit: boolean; tier: Tier;
   coverage: number; lapse: boolean; lastReportedYear: number; reportedYears: number[];
-  peT: number; uiT: number; posT: number; revT: number; absT: number; signedT: number;
-  channels: number; investigate: number; anomaly: number; evidence: number;
-  byYear: { year: number; pe: number; ui: number; positive: number; reverse: number; reported: boolean }[];
+  peT: number; uiT: number; posT: number; signedT: number;
+  channels: number; investigate: number; anomaly: number; evidence: number; risk: number;
+  byYear: { year: number; pe: number; ui: number; positive: number; reported: boolean }[];
   topChapters: { chapter: string; label: string; value: number; share: number }[];
   trend: number;
 }
 export interface ChapterAgg {
   chapter: string; label: string; category: string; residual: boolean;
-  peT: number; uiT: number; posT: number; revT: number; absT: number; signedT: number;
+  peT: number; uiT: number; posT: number; signedT: number;
   gapRate: number; channels: number; topPartner: { name: string; iso3: string; value: number } | null; trend: number;
 }
 
@@ -362,43 +325,41 @@ export interface Aggregate {
   partners: PartnerAgg[];
   chapters: ChapterAgg[];
   categories: { key: string; label: string; value: number; share: number }[];
-  annual: { year: number; pe: number; ui: number; positive: number; reverse: number; comparablePartners: number }[];
+  annual: { year: number; pe: number; ui: number; positive: number; comparablePartners: number }[];
   concentration: { name: string; partner: string; iso3: string; cmd: string; value: number; share: number; cumShare: number }[];
   movers: {
     goods: { key: string; label: string; total: number; trend: number; series: { y: number; v: number }[] }[];
     countries: { key: string; label: string; iso3: string; total: number; trend: number; series: { y: number; v: number }[] }[];
   };
   heatmap: { import: Record<string, Record<string, number>>; partners: { iso3: string; name: string; tier: Tier }[] };
-  funnel: { observedChannels: number; comparableChannels: number; residualChannels: number; comparableValue: number; residualValue: number };
+  funnel: { observedChannels: number; comparableChannels: number; comparableValue: number };
   kpis: {
     comparableTrade: number;
     positive: { low: number; central: number; high: number };
-    reverse: number; absolute: number; net: number;
-    residualPositive: number;
     coveragePct: number; // comparable partner-years / possible partner-years
-    robustSignals: number;
-    flipShare: number; // share of channels changing sign across the freight band
     channelCount: number; partnerCount: number;
     top5Share: number; hhi: number;
   };
 }
 
 export function aggregate(f: Filter): Aggregate {
-  const years = meta.years.filter((y) => y >= f.from && y <= f.to);
+  const picked = f.years.length ? new Set(f.years) : new Set(meta.years);
+  const years = meta.years.filter((y) => picked.has(y));
   const yearsInRange = years.length;
   const allowPartner = (iso: string) => {
     const pm = pMeta.get(iso);
     if (!pm) return false;
     if (f.country !== "all" && iso !== f.country) return false;
-    if (f.view === "high" && pm.tier !== "High") return false;
-    if (f.view === "core" && pm.transit) return false;
-    if (f.view === "transit" && !pm.transit) return false;
     return true;
   };
-  const fc = cells.filter(
-    (r) => r.y >= f.from && r.y <= f.to && allowPartner(r.p) &&
-      (f.category === "all" || r.cat === f.category) && (f.hs2 === "all" || r.c === f.hs2),
-  );
+  /** HS filters cascade: the most specific code wins. */
+  const allowCode = (r: Cell) => {
+    if (f.hs6 !== "all") return r.k === f.hs6 || (r.l < 6 && f.hs6.startsWith(r.k));
+    if (f.hs4 !== "all") return r.k === f.hs4 || (r.l < 4 && f.hs4.startsWith(r.k)) || (r.l === 6 && r.k.startsWith(f.hs4));
+    if (f.hs2 !== "all") return r.c === f.hs2;
+    return f.category === "all" || r.cat === f.category;
+  };
+  const fc = cells.filter((r) => picked.has(r.y) && allowPartner(r.p) && allowCode(r));
 
   const baseChannels = buildChannels(fc, 2, f, yearsInRange);
   const baseChannels4 = buildChannels(fc, 4, f, yearsInRange);
@@ -407,8 +368,7 @@ export function aggregate(f: Filter): Aggregate {
   const channels4 = applyChannelFilters(baseChannels4, f);
   const channels6 = applyChannelFilters(baseChannels6, f);
 
-  const dirVal = (c: Channel) =>
-    f.direction === "positive" ? c.posT : f.direction === "reverse" ? c.revT : f.direction === "absolute" ? c.absT : c.signedT;
+  const dirVal = (c: Channel) => c.posT;
 
   // ---- partner rollups (from filtered HS2 channels) ----
   const pMap = new Map<string, Channel[]>();
@@ -416,33 +376,34 @@ export function aggregate(f: Filter): Aggregate {
   const partners: PartnerAgg[] = [];
   for (const [iso, cs] of pMap) {
     const pm = pMeta.get(iso)!;
-    const byYearMap = new Map<number, { pe: number; ui: number; positive: number; reverse: number }>();
+    const byYearMap = new Map<number, { pe: number; ui: number; positive: number }>();
     for (const c of cs) for (const yr of c.years) {
-      const e = byYearMap.get(yr.y) ?? { pe: 0, ui: 0, positive: 0, reverse: 0 };
-      e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.reverse += pos(-yr.signed);
+      const e = byYearMap.get(yr.y) ?? { pe: 0, ui: 0, positive: 0 };
+      e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed);
       byYearMap.set(yr.y, e);
     }
     const posTotal = cs.reduce((s, c) => s + c.posT, 0);
     const dirSeries = years.filter((y) => byYearMap.has(y) && pm.reportedYears.includes(y))
-      .map((y) => ({ y, v: f.direction === "reverse" ? byYearMap.get(y)!.reverse : byYearMap.get(y)!.positive }));
-    const topChapters = [...cs].sort((a, b) => dirVal(b) - dirVal(a)).filter((c) => Math.abs(dirVal(c)) > NOISE).slice(0, 8)
+      .map((y) => ({ y, v: byYearMap.get(y)!.positive }));
+    const topChapters = [...cs].sort((a, b) => dirVal(b) - dirVal(a)).filter((c) => dirVal(c) > NOISE).slice(0, 8)
       .map((c) => ({ chapter: c.chapter, label: c.cmdLabel, value: Math.round(dirVal(c)), share: posTotal > 0 ? c.posT / posTotal : 0 }));
     partners.push({
       iso3: iso, name: pm.name, region: pm.region, transit: pm.transit, tier: pm.tier,
       coverage: pm.coverage, lapse: pm.lapse, lastReportedYear: pm.lastReportedYear, reportedYears: pm.reportedYears,
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
-      posT: posTotal, revT: cs.reduce((s, c) => s + c.revT, 0),
-      absT: cs.reduce((s, c) => s + c.absT, 0), signedT: cs.reduce((s, c) => s + c.signedT, 0),
+      posT: posTotal, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       channels: cs.length, investigate: cs.filter((c) => c.cls === "investigate").length,
-      anomaly: cs.reduce((m, c) => Math.max(m, c.anomaly), 0), evidence: cs.reduce((m, c) => Math.max(m, c.evidence), 0),
+      anomaly: cs.reduce((m, c) => Math.max(m, c.anomaly), 0),
+      evidence: cs.reduce((m, c) => Math.max(m, c.evidence), 0),
+      risk: cs.reduce((m, c) => Math.max(m, c.risk), 0),
       byYear: years.map((y) => {
         const e = byYearMap.get(y);
-        return { year: y, pe: e?.pe ?? 0, ui: e?.ui ?? 0, positive: e?.positive ?? 0, reverse: e?.reverse ?? 0, reported: pm.reportedYears.includes(y) };
+        return { year: y, pe: e?.pe ?? 0, ui: e?.ui ?? 0, positive: e?.positive ?? 0, reported: pm.reportedYears.includes(y) };
       }),
       topChapters, trend: trendOf(dirSeries),
     });
   }
-  partners.sort((a, b) => (f.direction === "reverse" ? b.revT - a.revT : b.posT - a.posT));
+  partners.sort((a, b) => b.posT - a.posT);
 
   // ---- chapter rollups ----
   const cMap = new Map<string, Channel[]>();
@@ -451,67 +412,63 @@ export function aggregate(f: Filter): Aggregate {
   for (const [chapter, cs] of cMap) {
     const byYear = new Map<number, number>();
     for (const c of cs) for (const yr of c.years) {
-      const v = f.direction === "reverse" ? pos(-yr.signed) : pos(yr.signed);
-      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + v);
+      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + pos(yr.signed));
     }
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const peT = cs.reduce((s, c) => s + c.peT, 0);
     const posT = cs.reduce((s, c) => s + c.posT, 0);
-    const top = [...cs].sort((a, b) => Math.abs(dirVal(b)) - Math.abs(dirVal(a)))[0];
+    const top = [...cs].sort((a, b) => dirVal(b) - dirVal(a))[0];
     chapters.push({
       chapter, label: chapLabel.get(chapter) ?? `HS ${chapter}`, category: cs[0].category, residual: isResidualChapter(chapter),
       peT, uiT: cs.reduce((s, c) => s + c.uiT, 0),
-      posT, revT: cs.reduce((s, c) => s + c.revT, 0),
-      absT: cs.reduce((s, c) => s + c.absT, 0), signedT: cs.reduce((s, c) => s + c.signedT, 0),
+      posT, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       gapRate: peT > 0 ? posT / (peT * (1 + f.cif)) : 0, channels: cs.length,
       topPartner: top ? { name: top.partner, iso3: top.partnerIso, value: Math.round(dirVal(top)) } : null,
       trend: trendOf(series),
     });
   }
-  chapters.sort((a, b) => Math.abs(f.direction === "reverse" ? b.revT : b.posT) - Math.abs(f.direction === "reverse" ? a.revT : a.posT));
+  chapters.sort((a, b) => b.posT - a.posT);
 
   // ---- categories ----
   const catTotals = new Map<string, number>();
-  for (const c of channels) catTotals.set(c.category, (catTotals.get(c.category) ?? 0) + (f.direction === "reverse" ? c.revT : c.posT));
+  for (const c of channels) catTotals.set(c.category, (catTotals.get(c.category) ?? 0) + c.posT);
   const catSum = [...catTotals.values()].reduce((a, b) => a + b, 0) || 1;
   const categories = [...catTotals.entries()].map(([key, v]) => ({ key, label: catLabel.get(key) ?? key, value: v, share: v / catSum }))
     .filter((c) => c.value > 0).sort((a, b) => b.value - a.value);
 
-  // ---- annual (positive AND reverse, plus comparable partner count) ----
-  const yAgg = new Map<number, { pe: number; ui: number; positive: number; reverse: number; partners: Set<string> }>();
+  // ---- annual (positive discrepancy, plus comparable partner count) ----
+  const yAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
   for (const c of baseChannels) for (const yr of c.years) {
-    const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, positive: 0, reverse: 0, partners: new Set<string>() };
-    e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.reverse += pos(-yr.signed); e.partners.add(c.partnerIso);
+    const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
+    e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.partners.add(c.partnerIso);
     yAgg.set(yr.y, e);
   }
   const annual = years.map((y) => {
-    const e = yAgg.get(y) ?? { pe: 0, ui: 0, positive: 0, reverse: 0, partners: new Set<string>() };
-    return { year: y, pe: e.pe, ui: e.ui, positive: e.positive, reverse: e.reverse, comparablePartners: e.partners.size };
+    const e = yAgg.get(y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
+    return { year: y, pe: e.pe, ui: e.ui, positive: e.positive, comparablePartners: e.partners.size };
   });
 
-  // ---- concentration (on the active direction over filtered channels) ----
-  const sorted = [...channels].filter((c) => Math.abs(dirVal(c)) > NOISE).sort((a, b) => Math.abs(dirVal(b)) - Math.abs(dirVal(a)));
-  const dirTotal = sorted.reduce((s, c) => s + Math.abs(dirVal(c)), 0) || 1;
+  // ---- concentration (positive discrepancy over filtered channels) ----
+  const sorted = [...channels].filter((c) => dirVal(c) > NOISE).sort((a, b) => dirVal(b) - dirVal(a));
+  const dirTotal = sorted.reduce((s, c) => s + dirVal(c), 0) || 1;
   let cum = 0;
   const concentration = sorted.slice(0, 20).map((c) => {
-    cum += Math.abs(dirVal(c));
-    return { name: `${c.partner} · ${c.cmdLabel}`, partner: c.partner, iso3: c.partnerIso, cmd: c.cmd, value: Math.round(dirVal(c)), share: Math.abs(dirVal(c)) / dirTotal, cumShare: cum / dirTotal };
+    cum += dirVal(c);
+    return { name: `${c.partner} · ${c.cmdLabel}`, partner: c.partner, iso3: c.partnerIso, cmd: c.cmd, value: Math.round(dirVal(c)), share: dirVal(c) / dirTotal, cumShare: cum / dirTotal };
   });
 
   // ---- movers ----
   const goods = chapters.map((c) => {
     const byYear = new Map<number, number>();
     for (const ch of channels) if (ch.chapter === c.chapter) for (const yr of ch.years) {
-      const v = f.direction === "reverse" ? pos(-yr.signed) : pos(yr.signed);
-      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + v);
+      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + pos(yr.signed));
     }
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const total = series.reduce((s, x) => s + x.v, 0);
     return { key: c.chapter, label: c.label, total, trend: trendOf(series), series };
   });
   const countries = partners.filter((p) => !p.lapse).map((p) => {
-    const series = p.byYear.filter((x) => x.reported && (x.positive > 0 || x.reverse > 0))
-      .map((x) => ({ y: x.year, v: f.direction === "reverse" ? x.reverse : x.positive }));
+    const series = p.byYear.filter((x) => x.reported && x.positive > 0).map((x) => ({ y: x.year, v: x.positive }));
     const total = series.reduce((s, x) => s + x.v, 0);
     return { key: p.iso3, label: p.name, iso3: p.iso3, total, trend: trendOf(series), series };
   });
@@ -520,14 +477,11 @@ export function aggregate(f: Filter): Aggregate {
   const heatImport: Record<string, Record<string, number>> = {};
   for (const c of channels) (heatImport[c.chapter] ??= {})[c.partnerIso] = Math.round(c.signedT);
 
-  // ---- funnel & KPIs (from base = pre-stage/signal/materiality channels) ----
-  const residualBase = baseChannels.filter((c) => c.stage === "residual");
+  // ---- funnel & KPIs (from base = pre-signal/materiality channels) ----
   const funnel = {
     observedChannels: baseChannels.length,
     comparableChannels: baseChannels.length,
-    residualChannels: residualBase.length,
     comparableValue: baseChannels.reduce((s, c) => s + c.peT, 0),
-    residualValue: residualBase.reduce((s, c) => s + c.posT, 0),
   };
   const Klo = 1 + meta.cif.low;
   const Khi = 1 + meta.cif.high;
@@ -535,22 +489,15 @@ export function aggregate(f: Filter): Aggregate {
     baseChannels.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe * mult - yr.ui), 0), 0);
   const activePartners = meta.partners.filter((p) => allowPartner(p.iso3));
   const possiblePY = activePartners.length * yearsInRange || 1;
-  const comparablePY = activePartners.reduce((s, p) => s + p.reportedYears.filter((y) => y >= f.from && y <= f.to).length, 0);
-  const flippers = baseChannels.filter((c) => c.flipsAcrossFreight).length;
+  const comparablePY = activePartners.reduce((s, p) => s + p.reportedYears.filter((y) => picked.has(y)).length, 0);
 
   const kpis = {
     comparableTrade: baseChannels.reduce((s, c) => s + c.peT, 0),
     positive: { low: posAt(Klo), central: baseChannels.reduce((s, c) => s + c.posT, 0), high: posAt(Khi) },
-    reverse: baseChannels.reduce((s, c) => s + c.revT, 0),
-    absolute: baseChannels.reduce((s, c) => s + c.absT, 0),
-    net: baseChannels.reduce((s, c) => s + c.signedT, 0),
-    residualPositive: funnel.residualValue,
     coveragePct: comparablePY / possiblePY,
-    robustSignals: baseChannels6.filter((c) => c.cls === "investigate" && c.robustness === "robust").length,
-    flipShare: baseChannels.length ? flippers / baseChannels.length : 0,
     channelCount: channels.length, partnerCount: partners.length,
-    top5Share: sorted.slice(0, 5).reduce((s, c) => s + Math.abs(dirVal(c)), 0) / dirTotal,
-    hhi: Math.round(sorted.reduce((s, c) => s + (Math.abs(dirVal(c)) / dirTotal) ** 2, 0) * 10000),
+    top5Share: sorted.slice(0, 5).reduce((s, c) => s + dirVal(c), 0) / dirTotal,
+    hhi: Math.round(sorted.reduce((s, c) => s + (dirVal(c) / dirTotal) ** 2, 0) * 10000),
   };
 
   return {
@@ -562,11 +509,27 @@ export function aggregate(f: Filter): Aggregate {
   };
 }
 
+/** Compact label for a set of ticked years: "2017–2024", "2019, 2021" or "2019–2021, 2024". */
+export function yearsLabel(years: number[]): string {
+  const ys = [...new Set(years)].sort((a, b) => a - b);
+  if (ys.length === 0) return "no years";
+  const runs: string[] = [];
+  let start = ys[0], prev = ys[0];
+  for (const y of ys.slice(1)) {
+    if (y === prev + 1) { prev = y; continue; }
+    runs.push(start === prev ? `${start}` : `${start}–${prev}`);
+    start = prev = y;
+  }
+  runs.push(start === prev ? `${start}` : `${start}–${prev}`);
+  return runs.join(", ");
+}
+
 /** Context line per spec §5.3 — shown above every analytical block. */
 export function contextLine(f: Filter): string {
-  const period = f.from === f.to ? String(f.from) : `${f.from}–${f.to}`;
-  const parts = [period, DIRECTION_LABELS[f.direction], STAGE_LABELS[f.stage]];
-  if (f.view !== "all") parts.push(VIEW_LABELS[f.view]);
+  const parts = [yearsLabel(f.years.length ? f.years : meta.years)];
+  if (f.hs6 !== "all") parts.push(`HS ${f.hs6}`);
+  else if (f.hs4 !== "all") parts.push(`HS ${f.hs4}`);
+  else if (f.hs2 !== "all") parts.push(`HS ${f.hs2}`);
   parts.push(`freight ${Math.round(f.cif * 100)}%`);
   return parts.join(" · ");
 }

@@ -6,11 +6,12 @@ import EChart from "@/components/EChart";
 import type { PartnerAgg } from "@/lib/dataset";
 import { COLORS, fmtUSDFull } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Partner profile chart (spec §6.6.4): per-year grouped bars of partner-reported
  * exports (orange, FOB) vs Uzbekistan-recorded imports (blue, CIF). The positive
- * and reverse discrepancies per year live in the tooltip — never as extra series.
+ * discrepancy per year lives in the tooltip — never as an extra series.
  * Years where the partner did not report are skipped entirely — a missing
  * partner-year has no mirror reference and is never drawn as a zero.
  */
@@ -21,11 +22,12 @@ export default function PartnerGaps({
   byYear: PartnerAgg["byYear"];
   partner: string;
 }) {
+  const { t } = useI18n();
   const reported = useMemo(() => byYear.filter((y) => y.reported), [byYear]);
   const missing = useMemo(() => byYear.filter((y) => !y.reported).map((y) => y.year), [byYear]);
 
-  const ptnLabel = `${partner} reported exports (FOB)`;
-  const uzbLabel = "Uzbekistan recorded imports (CIF)";
+  const ptnLabel = `${partner} — ${t("ctry.chart.reportedExportsFob")}`;
+  const uzbLabel = t("ctry.chart.uzbRecordedImportsCif");
 
   const option = useMemo<EChartsOption>(() => {
     const years = reported.map((y) => y.year);
@@ -53,13 +55,12 @@ export default function PartnerGaps({
           const year = String(items[0]?.axisValue ?? "");
           const head = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
           const lines = items.map((it) => {
-            const v = typeof it.value === "number" ? fmtUSDFull(it.value) : "not reported";
+            const v = typeof it.value === "number" ? fmtUSDFull(it.value) : t("common.notReported");
             return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
           });
           const row = rowByYear.get(year);
           const gapLines = row
-            ? `<div style="margin-top:4px;color:${COLORS.text}">Positive discrepancy: <b style="color:${COLORS.positive}">${fmtUSDFull(Math.round(row.positive))}</b></div>` +
-              `<div style="margin-top:2px;color:${COLORS.text}">Reverse discrepancy: <b style="color:${COLORS.reverse}">${fmtUSDFull(Math.round(row.reverse))}</b></div>`
+            ? `<div style="margin-top:4px;color:${COLORS.text}">${t("kpi.positive")}: <b style="color:${COLORS.positive}">${fmtUSDFull(Math.round(row.positive))}</b></div>`
             : "";
           return head + lines.join("") + gapLines;
         },
@@ -94,14 +95,12 @@ export default function PartnerGaps({
         },
       ],
     };
-  }, [reported, ptnLabel, uzbLabel]);
+  }, [reported, ptnLabel, uzbLabel, t]);
 
   if (reported.length === 0) {
     return (
       <p className="card p-8 text-center text-sm text-muted">
-        {partner} did not report to UN Comtrade in any year of the selected window, so no
-        mirror comparison can be drawn. Missing partner data is a data limitation — it is
-        not treated as a zero gap.
+        {partner} {t("ctry.chart.noReportedYears")}
       </p>
     );
   }
@@ -113,10 +112,9 @@ export default function PartnerGaps({
       </div>
       {missing.length > 0 && (
         <p className="mt-2 text-xs text-faint">
-          Not drawn: {missing.join(", ")} — {partner} did not report to UN Comtrade in{" "}
-          {missing.length === 1 ? "that year" : "those years"}, so there is no mirror
-          reference and no discrepancy is computed; missing partner data is not treated as a
-          zero gap. Source: UN Comtrade.
+          {t("ctry.chart.notDrawn")}: {missing.join(", ")} — {partner}{" "}
+          {missing.length === 1 ? t("ctry.chart.notDrawnOne") : t("ctry.chart.notDrawnMany")}{" "}
+          {t("common.source")}.
         </p>
       )}
     </div>

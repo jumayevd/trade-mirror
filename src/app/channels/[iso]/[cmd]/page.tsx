@@ -18,9 +18,7 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  from: meta.window.start,
-  to: meta.window.end,
-  stage: "comparable",
+  years: [...meta.years],
   minGap: 0,
 };
 const FULL = aggregate(FULL_FILTER);
@@ -174,9 +172,9 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
       <section>
         <SectionTitle
           title="Trade comparison"
-          desc="Cumulative full-window values for this single country × HS6 pair. Positive and reverse discrepancies are shown separately — the net figure alone never tells the whole story."
+          desc="Cumulative full-window values for this single country × HS6 pair. The positive discrepancy is accumulated year by year, so it is never diluted by the net figure."
         />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <Stat label="Partner exports (FOB)" value={fmtUSD(channel.peT)} accent={COLORS.partner}
             sub={`${channel.partner} reported`} info={`Cumulative exports of HS ${channel.cmd} to Uzbekistan as reported by ${channel.partner}, FOB. ${fmtUSDFull(channel.peT)}.`} />
           <Stat label={`Expected CIF (${cifPct}%)`} value={fmtUSD(channel.expectedT)}
@@ -186,11 +184,9 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
             sub="Uzbekistan recorded" info={`Cumulative imports of HS ${channel.cmd} from ${channel.partner} as recorded by Uzbekistan. ${fmtUSDFull(channel.uiT)}.`} />
           <Stat label="Positive discrepancy" value={fmtUSD(channel.posT)} accent={COLORS.positive}
             sub="partner > UZB, by year" info="Σ max(expected CIF − UZB imports, 0) over comparable years." />
-          <Stat label="Reverse discrepancy" value={fmtUSD(channel.revT)} accent={COLORS.reverse}
-            sub="UZB > partner, by year" info="Σ max(UZB imports − expected CIF, 0) over comparable years — shown separately, never netted away." />
           <Stat label="Signed (net)" value={fmtUSD(channel.signedT, { sign: true })}
             sub={`bounded asymmetry ${fmtPct(channel.boundedAsymmetry)}`}
-            info="Expected CIF minus UZB imports, summed. Read alongside the positive/reverse split — positive and reverse years can offset inside the net figure." />
+            info="Expected CIF minus UZB imports, summed over the window. Shown for context only — years of opposite sign offset inside this figure, which is why screening uses the positive discrepancy." />
         </div>
       </section>
 
@@ -213,12 +209,12 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
           <Stat label="Comparable years" value={`${channel.comparableYears}/${WINDOW.length}`}
             sub="both sides reported" info="Years inside the window where both the partner and Uzbekistan reported this pair. Missing years are excluded, never zero-filled." />
           <Stat label="Positive years" value={String(channel.posYears)} accent={COLORS.positive}
-            sub={`reverse in ${channel.revYears} yr${channel.revYears === 1 ? "" : "s"}`}
-            info="Comparable years where expected CIF exceeded UZB imports beyond the noise floor, vs years the other way round." />
+            sub={`of ${channel.comparableYears} comparable`}
+            info="Comparable years where expected CIF exceeded UZB imports beyond the noise floor. Only these years contribute to the positive discrepancy." />
           <Stat label="Longest positive streak" value={`${channel.longestPosStreak} yr${channel.longestPosStreak === 1 ? "" : "s"}`}
             sub="consecutive positive years" info="Longest run of consecutive comparable years with a positive discrepancy." />
           <Stat label="Sign reversals" value={String(reversals)}
-            sub="direction changes over time" info="How many times the discrepancy switched between positive and reverse across comparable years (noise-floor filtered). Frequent reversals weaken a directional reading." />
+            sub="sign changes over time" info="How many times the signed discrepancy changed sign across comparable years (noise-floor filtered). Frequent changes weaken a persistent reading." />
           <Stat label="Trend" value={trendWord} accent={trendWord === "rising" ? COLORS.positive : undefined}
             sub={`${channel.trend >= 0 ? "+" : "−"}${fmtUSD(Math.abs(channel.trend))} recent vs early avg`}
             info="Average yearly discrepancy in the most recent years minus the earliest years of the comparable series." />

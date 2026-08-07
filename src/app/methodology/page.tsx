@@ -5,7 +5,7 @@ import { REFERENCES, type Ref } from "@/lib/references";
 
 export const metadata = { title: "Methodology — Trade Mirror" };
 
-const FULL = aggregate({ ...DEFAULT_FILTER, from: meta.window.start, to: meta.window.end, stage: "comparable", minGap: 0 });
+const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
 const refById = new Map(REFERENCES.map((r) => [r.id, r]));
 
 /* ------------------------------------------------------------------ */
@@ -36,10 +36,10 @@ const CARDS: FormulaCard[] = [
   {
     name: "signed discrepancy",
     formula: "D = X_fob × (1 + f) − M_cif",
-    usedIn: "Queue “Signed” column; sector × partner heatmap; per-year detail panels",
+    usedIn: "Sector × partner heatmap; per-year detail panels; channel profiles",
     population: "Matched pairs where both sides reported",
     denominator: "Not applicable",
-    interpretation: "Interpret as a statistical discrepancy only.",
+    interpretation: "Interpret as a statistical discrepancy only. Shown for context — only its positive side is carried into screening.",
     refs: ["bhagwati1964", "unsd2019"],
   },
   {
@@ -48,23 +48,14 @@ const CARDS: FormulaCard[] = [
     usedIn: "Headline tile; amber series everywhere; country/product rankings",
     population: "Matched pairs, accumulated year by year",
     denominator: "Not applicable",
-    interpretation: "A potential under-recording signal — never netted against reverse.",
+    interpretation: "A potential under-recording signal and the only quantity screened — years where Uzbekistan records more than the partner contribute nothing rather than offsetting.",
     refs: ["buehn2011", "gfi2021"],
-  },
-  {
-    name: "reverse discrepancy",
-    formula: "Σ max(−D, 0)  per channel-year",
-    usedIn: "Reverse tile; blue series; Reverse focus tab",
-    population: "Matched pairs, accumulated year by year",
-    denominator: "Not applicable",
-    interpretation: "UZB records exceed the partner’s — shown separately; never read as over-reporting by default.",
-    refs: ["buehn2011"],
   },
   {
     name: "gap rate / positive share",
     formula: "Σ max(D,0) ÷ Σ X_cif_exp",
     usedIn: "Country and sector tables (“Gap rate”)",
-    population: "Positive direction, matched pairs",
+    population: "Matched pairs; positive years only",
     denominator: "Expected CIF imports",
     interpretation: "Share of expected imports that is potentially unrecorded.",
     refs: ["gfi2021"],
@@ -111,9 +102,7 @@ const CARDS: FormulaCard[] = [
 const SUPPORTING: { name: string; formula: string; usedIn: string; refs: string[] }[] = [
   { name: "bounded asymmetry %", formula: "|D| ÷ max(X_cif_exp, M_cif)", usedIn: "Queue “Asym” column; anomaly input", refs: ["unsd2019"] },
   { name: "partner-year coverage", formula: "reported ÷ window partner-years", usedIn: "Comparable-trade tile; Data Quality grid", refs: ["yeats1990"] },
-  { name: "robustness", formula: "sign(D) stable at 6/10/15% ∧ ≥2 years", usedIn: "Robustness labels; robust-signals tile", refs: ["hummels2006"] },
-  { name: "residual stage", formula: "comparable ∧ ¬transit ∧ ¬HS98–99 ∧ ≥2 yrs ∧ sign-stable", usedIn: "Default evidence-stage filter", refs: ["carrere2015", "unsd2019"] },
-  { name: "concentration / HHI", formula: "Σ sᵢ² × 10 000 over direction shares", usedIn: "Overview caption; Statistical profile", refs: ["imf2023"] },
+  { name: "concentration / HHI", formula: "Σ sᵢ² × 10 000 over positive-discrepancy shares", usedIn: "Overview caption; Statistical profile", refs: ["imf2023"] },
 ];
 
 const FORBIDDEN: [string, string][] = [
@@ -144,9 +133,9 @@ export default function MethodologyPage() {
           shadow-economy research but never measure it.
         </p>
         <p className="tabular text-[11.5px] text-faint">
-          {meta.window.start}–{meta.window.end} cumulative at central freight: comparable trade {fmtUSD(k.comparableTrade)} ·
-          positive {fmtUSD(k.positive.central)} ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) ·
-          reverse {fmtUSD(k.reverse)} · flip share {fmtPct(k.flipShare, 0)}
+          {meta.window.start}–{meta.window.end} cumulative at central freight, across all {meta.partners.length} reporting
+          partners: comparable trade {fmtUSD(k.comparableTrade)} · positive discrepancy {fmtUSD(k.positive.central)}{" "}
+          ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · partner-year coverage {fmtPct(k.coveragePct, 0)}
         </p>
       </section>
 

@@ -12,6 +12,10 @@ import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
 
+/** Fill {placeholders} in a translated string with dataset values. */
+const fill = (s: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
+
 /* ------------------------------------------------------------------ */
 /* 1. Reporter coverage heatmap cells                                  */
 /* ------------------------------------------------------------------ */
@@ -27,13 +31,14 @@ function cellState(p: PartnerMeta, y: number): CellState {
 }
 
 function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
+  const { t } = useI18n();
   const state = cellState(p, y);
   if (state === "reported") {
     return (
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-full"
         style={{ background: COLORS.good }}
-        title={`${p.name} reported to UN Comtrade in ${y}.`}
+        title={fill(t("qual.cell.reported"), { name: p.name, year: y })}
       />
     );
   }
@@ -42,7 +47,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-sm border-2"
         style={{ borderColor: "var(--color-serious)" }}
-        title={`${p.name}: reporting stops here — last reported year is ${p.lastReportedYear}. Later years are missing, not zero flows.`}
+        title={fill(t("qual.cell.stopMarker"), { name: p.name, year: p.lastReportedYear })}
       />
     );
   }
@@ -50,7 +55,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     return (
       <span
         className="mx-auto block h-[3px] w-2.5 rounded-full bg-[var(--color-border)]"
-        title={`${p.name} no longer reports (stopped after ${p.lastReportedYear}). Partner data missing; not treated as a zero gap.`}
+        title={fill(t("qual.cell.stopped"), { name: p.name, year: p.lastReportedYear })}
       />
     );
   }
@@ -58,7 +63,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     <span
       className="mx-auto block h-2.5 w-2.5 rounded-full border"
       style={{ borderColor: COLORS.baseline }}
-      title={`${p.name} did not report in ${y}. Partner data missing; not treated as a zero gap.`}
+      title={fill(t("qual.cell.missing"), { name: p.name, year: y })}
     />
   );
 }
@@ -74,19 +79,20 @@ function LegendChip({ marker, children }: { marker: React.ReactNode; children: R
 }
 
 function CoverageLegend() {
+  const { t } = useI18n();
   return (
     <div className="mb-3 flex flex-wrap items-center gap-1.5">
       <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full" style={{ background: COLORS.good }} />}>
-        Reported
+        {t("qual.legend.reported")}
       </LegendChip>
       <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-full border" style={{ borderColor: COLORS.baseline }} />}>
-        Not reported (missing — never a zero gap)
+        {t("qual.legend.notReported")}
       </LegendChip>
       <LegendChip marker={<span className="h-2 w-2 shrink-0 rounded-sm border-2" style={{ borderColor: "var(--color-serious)" }} />}>
-        Reporting stops here
+        {t("qual.legend.stopsHere")}
       </LegendChip>
       <LegendChip marker={<span className="h-[3px] w-2 shrink-0 rounded-full bg-[var(--color-border)]" />}>
-        No longer reporting
+        {t("qual.legend.noLonger")}
       </LegendChip>
     </div>
   );
@@ -136,15 +142,15 @@ export default function QualityView() {
           if (!row) return "";
           return [
             `<b>${p?.axisValueLabel ?? row.y}</b>`,
-            `HS6 channels with data: <b>${fmtNum(row.count)}</b>`,
-            `Partner-reported value: ${fmtUSDFull(row.pe)}`,
+            `${t("qual.hs6.channelsWithData")}: <b>${fmtNum(row.count)}</b>`,
+            `${t("qual.hs6.partnerValue")}: ${fmtUSDFull(row.pe)}`,
           ].join("<br/>");
         },
       },
       xAxis: catAxis(hs6ByYear.map((r) => r.y)),
       yAxis: {
         type: "value",
-        name: "HS6 channels",
+        name: t("qual.hs6.axis"),
         nameTextStyle: { color: COLORS.axis, fontSize: 10 },
         axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
         splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
@@ -152,7 +158,7 @@ export default function QualityView() {
       },
       series: [
         {
-          name: "HS6 channels with data",
+          name: t("qual.hs6.channelsWithData"),
           type: "bar",
           ...BAR_SPEC,
           data: hs6ByYear.map((r) => r.count),
@@ -160,7 +166,7 @@ export default function QualityView() {
         },
       ],
     };
-  }, [hs6ByYear]);
+  }, [hs6ByYear, t]);
 
   // ---- 3. weight & quantity availability, from the full-window HS6 base ----
   const hs6 = series.baseChannels6;
@@ -176,15 +182,11 @@ export default function QualityView() {
       {/* header */}
       <section className="space-y-2">
         <p className="text-[11px] text-faint">
-          UN Comtrade · {meta.window.start}–{meta.window.end} · reporting coverage &amp; comparability
+          UN Comtrade · {meta.window.start}–{meta.window.end} · {t("qual.header.kicker")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
         <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          A residual unexplained discrepancy is only as informative as the data behind it. This page
-          documents who reported what and when, where weight and quantity fields exist, which partners
-          are treated as transit hubs, and which observations are excluded before any screening signal
-          is ranked. None of the gaps documented here are treated as evidence of misreporting — they
-          bound what the comparison can and cannot support.
+          {t("qual.header.intro")}
         </p>
       </section>
 
@@ -194,8 +196,8 @@ export default function QualityView() {
       {/* 1. reporter coverage heatmap */}
       <section>
         <SectionTitle
-          title="Reporter coverage by partner and year"
-          desc={`Which partners reported exports to Uzbekistan to UN Comtrade in each year of the ${meta.window.start}–${meta.window.end} window. A missing year removes the mirror for that partner-year entirely — it is excluded from comparison, never entered as a zero flow. Source: UN Comtrade reporter metadata.`}
+          title={t("qual.coverage.title")}
+          desc={fill(t("qual.coverage.desc"), { start: meta.window.start, end: meta.window.end })}
         />
         <CoverageLegend />
         <div className="card overflow-x-auto">
@@ -207,7 +209,7 @@ export default function QualityView() {
                   <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
                 ))}
                 <th className="px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
-                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium">{t("qual.coverage.status")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -228,7 +230,7 @@ export default function QualityView() {
                     <span className="flex flex-wrap items-center gap-1.5">
                       <QualityTag tier={p.tier} />
                       {p.transit && <TransitTag />}
-                      {p.lapse && <Pill>stopped after {p.lastReportedYear}</Pill>}
+                      {p.lapse && <Pill>{fill(t("qual.coverage.stoppedAfter"), { year: p.lastReportedYear })}</Pill>}
                     </span>
                   </td>
                 </tr>
@@ -237,17 +239,15 @@ export default function QualityView() {
           </table>
         </div>
         <p className="mt-2 max-w-3xl text-xs text-faint">
-          Coverage = share of window years the partner reported. For lapsed reporters, discrepancies in
-          years after the stop are labelled coverage-sensitive throughout the site and are down-weighted
-          in evidence quality — a data lapse, not a trade pattern.
+          {t("qual.coverage.note")}
         </p>
       </section>
 
       {/* 2. product coverage */}
       <section>
         <SectionTitle
-          title="Product-level (HS6) coverage by year"
-          desc="HS6 channels with data, per year." right={<InfoTip text="Hover a bar for the total partner-reported export value. Full window under the current partner/sector filters. Source: UN Comtrade." />}
+          title={t("qual.hs6.title")}
+          desc={t("qual.hs6.desc")} right={<InfoTip text={t("qual.hs6.tip")} />}
         />
         {hs6.length === 0 ? (
           <EmptyState />
@@ -255,11 +255,7 @@ export default function QualityView() {
           <div className="card p-4">
             <EChart option={coverageOption} style={{ height: 300 }} />
             <p className="mt-2 max-w-3xl text-xs text-faint">
-              Granularity expansion effect: the number of distinct HS6 channels grows over the window
-              partly because partners report at finer commodity detail in later years. A rising channel
-              count therefore reflects reporting granularity as much as trade itself — year-on-year
-              channel counts are not comparable without this caveat, which is why each bar&apos;s tooltip
-              also carries the partner-reported value for that year.
+              {t("qual.hs6.note")}
             </p>
           </div>
         )}
@@ -268,8 +264,8 @@ export default function QualityView() {
       {/* 3. weight & quantity */}
       <section>
         <SectionTitle
-          title="Weight &amp; quantity availability"
-          desc="Where price-per-kg checks are possible." right={<InfoTip text="Unit-value cross-checks require net weight reported by BOTH sides in the same channel-year. Source: UN Comtrade weight fields." />}
+          title={t("qual.weight.title")}
+          desc={t("qual.weight.desc")} right={<InfoTip text={t("qual.weight.tip")} />}
         />
         {hs6.length === 0 ? (
           <EmptyState />
@@ -277,29 +273,26 @@ export default function QualityView() {
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Stat
-                label="HS6 channels with dual weight"
+                label={t("qual.weight.dualLabel")}
                 value={fmtPct(weightShare, 0)}
-                sub={`${fmtNum(withWeight.length)} of ${fmtNum(hs6.length)} channels have ≥1 year with weight on both sides`}
-                info="Share of country × HS6 channels where at least one year has net weight reported by both the partner and Uzbekistan."
+                sub={fill(t("qual.weight.dualSub"), { n: fmtNum(withWeight.length), total: fmtNum(hs6.length) })}
+                info={t("qual.weight.dualInfo")}
               />
               <Stat
-                label="Value-weighted share"
+                label={t("qual.weight.valueLabel")}
                 value={fmtPct(weightValueShare, 0)}
-                sub={`${fmtUSD(peWithWeight)} of ${fmtUSD(peTotal)} partner-reported value`}
-                info="Partner-reported export value in dual-weight channels as a share of all HS6 partner-reported value — larger channels report weights more often."
+                sub={fill(t("qual.weight.valueSub"), { a: fmtUSD(peWithWeight), b: fmtUSD(peTotal) })}
+                info={t("qual.weight.valueInfo")}
               />
               <Stat
-                label="Usable unit-value ratios"
+                label={t("qual.weight.uvLabel")}
                 value={fmtNum(withUvRatio.length)}
-                sub="channels with ≥2 dual-weight years (minimum for a UV ratio)"
-                info="A unit-value ratio is only computed with at least two comparable dual-weight years; single-year ratios are too volatile to interpret."
+                sub={t("qual.weight.uvSub")}
+                info={t("qual.weight.uvInfo")}
               />
             </div>
             <p className="mt-3 max-w-3xl text-xs text-faint">
-              Unit-value checks exist only for this sample. For the remaining channels no price-level
-              comparison is possible, so their anomaly score is computed without the unit-value component
-              (re-weighted, per Methodology §7.4) — absence of weight data is a coverage limitation, not
-              a signal in either direction.
+              {t("qual.weight.note")}
             </p>
           </>
         )}
@@ -308,30 +301,27 @@ export default function QualityView() {
       {/* 4. transit metadata */}
       <section>
         <SectionTitle
-          title="Transit &amp; re-export partner metadata"
-          desc="Flagged hubs and why." right={<InfoTip text="Classification basis: known re-export/consignment hubs on Uzbekistan import routes." />}
+          title={t("qual.transit.title")}
+          desc={t("qual.transit.desc")} right={<InfoTip text={t("qual.transit.tip")} />}
         />
         <p className="mb-3 max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-muted">
-          <strong className="text-foreground">Why transit is assessed separately.</strong> Uzbekistan
-          records imports by country of <em>origin</em>, while re-export hubs report their outbound
-          shipments by <em>consignment</em>. Goods routed through a hub can therefore appear in the
-          hub&apos;s export figures without ever appearing in Uzbekistan&apos;s imports from that hub —
-          a legitimate methodological discrepancy, not misreporting. Channels involving these partners
-          are classed Transit-sensitive and are excluded from the residual stage and from audit-priority
-          rankings.
+          <strong className="text-foreground">{t("qual.transit.calloutTitle")}</strong>{" "}
+          {t("qual.transit.callout1")} <em>{t("qual.transit.origin")}</em>
+          {t("qual.transit.callout2")} <em>{t("qual.transit.consignment")}</em>
+          {t("qual.transit.callout3")}
         </p>
         {transitPartners.length === 0 ? (
-          <EmptyState text="No partners in the current dataset are flagged as transit hubs." />
+          <EmptyState text={t("qual.transit.empty")} />
         ) : (
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
                   <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
-                  <th className="px-3 py-2 font-medium">Region</th>
-                  <th className="px-3 py-2 font-medium">Reporting</th>
+                  <th className="px-3 py-2 font-medium">{t("qual.transit.region")}</th>
+                  <th className="px-3 py-2 font-medium">{t("qual.transit.reporting")}</th>
                   <th className="tabular px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
-                  <th className="px-3 py-2 font-medium">Classification basis</th>
+                  <th className="px-3 py-2 font-medium">{t("qual.transit.basis")}</th>
                 </tr>
               </thead>
               <tbody className="zebra">
@@ -349,12 +339,12 @@ export default function QualityView() {
                     <td className="px-3 py-2">
                       <span className="flex flex-wrap items-center gap-1.5">
                         <QualityTag tier={p.tier} />
-                        {p.lapse && <Pill>stopped after {p.lastReportedYear}</Pill>}
+                        {p.lapse && <Pill>{fill(t("qual.coverage.stoppedAfter"), { year: p.lastReportedYear })}</Pill>}
                       </span>
                     </td>
                     <td className="tabular px-3 py-2 text-right text-muted">{fmtPct(p.coverage, 0)}</td>
                     <td className="px-3 py-2 text-muted">
-                      Known re-export/consignment hub on Uzbekistan import routes
+                      {t("qual.transit.basisValue")}
                     </td>
                   </tr>
                 ))}
@@ -367,46 +357,37 @@ export default function QualityView() {
       {/* 5. excluded observations */}
       <section>
         <SectionTitle
-          title="Excluded observations &amp; floors"
-          desc="What is filtered out before ranking." right={<InfoTip text="Exclusions limit false positives and keep the funnel from observed to residual channels auditable." />}
+          title={t("qual.excl.title")}
+          desc={t("qual.excl.desc")} right={<InfoTip text={t("qual.excl.tip")} />}
         />
         <div className="grid gap-3 md:grid-cols-2">
           <div className="card p-4">
-            <h3 className="mb-1.5 text-sm font-semibold">Residual HS chapters 98–99</h3>
+            <h3 className="mb-1.5 text-sm font-semibold">{t("qual.excl.chaptersTitle")}</h3>
             <p className="text-sm text-muted">
-              Special-transaction and confidential-commodity codes (HS <span className="tabular">98</span>,{" "}
-              <span className="tabular">99</span>) are not comparable at product level: countries park
-              unallocated or confidential trade there under differing national rules. They remain visible
-              in the Comparable stage for transparency but are excluded from the residual stage and from
-              all audit-priority rankings.
+              {t("qual.excl.chapters1")} <span className="tabular">98</span>,{" "}
+              <span className="tabular">99</span>
+              {t("qual.excl.chapters2")}
             </p>
           </div>
           <div className="card p-4">
-            <h3 className="mb-1.5 text-sm font-semibold">Noise floor: $0.1M per channel-year</h3>
+            <h3 className="mb-1.5 text-sm font-semibold">{t("qual.excl.noiseTitle")}</h3>
             <p className="text-sm text-muted">
-              A channel-year discrepancy below $0.1M in magnitude is treated as statistical noise: it does
-              not count as a positive or reverse year for persistence, and channels where both sides total
-              under $0.1M over the period are dropped entirely. This prevents rounding and small-shipment
-              timing effects from registering as signals.
+              {t("qual.excl.noiseBody")}
             </p>
           </div>
           <div className="card p-4">
-            <h3 className="mb-1.5 text-sm font-semibold">HS6 materiality floor</h3>
+            <h3 className="mb-1.5 text-sm font-semibold">{t("qual.excl.floorTitle")}</h3>
             <p className="text-sm text-muted">
-              HS6 channels enter the dataset only if they reach{" "}
-              <span className="tabular">$8M</span> partner-reported value or{" "}
-              <span className="tabular">$4M</span> discrepancy over the {meta.window.start}–{meta.window.end}{" "}
-              window. Below that, mirror comparison at 6-digit detail is dominated by classification and
-              timing differences. HS2 totals are unaffected — the floor limits only product-level detail.
+              {t("qual.excl.floor1")}{" "}
+              <span className="tabular">$8M</span> {t("qual.excl.floor2")}{" "}
+              <span className="tabular">$4M</span>{" "}
+              {fill(t("qual.excl.floor3"), { start: meta.window.start, end: meta.window.end })}
             </p>
           </div>
           <div className="card p-4">
-            <h3 className="mb-1.5 text-sm font-semibold">Missing is never zero</h3>
+            <h3 className="mb-1.5 text-sm font-semibold">{t("qual.excl.missingTitle")}</h3>
             <p className="text-sm text-muted">
-              When a partner did not report a year, that partner-year is removed from the comparison —
-              it is never entered as a zero export that would fabricate a reverse discrepancy. Such gaps
-              appear as &quot;{t("common.notReported")}&quot; throughout the site and reduce the coverage
-              KPI instead of inflating any discrepancy total.
+              {t("qual.excl.missing1")} &quot;{t("common.notReported")}&quot; {t("qual.excl.missing2")}
             </p>
           </div>
         </div>
@@ -415,8 +396,8 @@ export default function QualityView() {
       {/* 6. refresh history */}
       <section>
         <SectionTitle
-          title="Data refresh &amp; versioning"
-          desc="One versioned snapshot behind every figure." right={<InfoTip text="The version identifier appears in the context line above every analytical block and in every CSV export." />}
+          title={t("qual.refresh.title")}
+          desc={t("qual.refresh.desc")} right={<InfoTip text={t("qual.refresh.tip")} />}
         />
         <div className="card divide-y divide-[var(--color-border-soft)]">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
@@ -432,18 +413,15 @@ export default function QualityView() {
             <span className="tabular text-sm">v{METHODOLOGY_VERSION}</span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Source</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("qual.refresh.sourceLabel")}</span>
             <span className="text-sm">
-              UN Comtrade (annual trade data, HS2 + HS6), window {meta.window.start}–{meta.window.end}
+              {fill(t("qual.refresh.sourceValue"), { start: meta.window.start, end: meta.window.end })}
             </span>
           </div>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">Update policy</span>
+            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("qual.refresh.policyLabel")}</span>
             <span className="max-w-2xl text-sm text-muted">
-              Snapshots replace atomically: a refresh regenerates the entire dataset and swaps it in one
-              step, so the site never mixes figures from two data versions. Comtrade itself revises past
-              years, so totals can change between versions — comparisons across data versions should cite
-              the version identifier.
+              {t("qual.refresh.policy")}
             </span>
           </div>
         </div>

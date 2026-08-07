@@ -20,45 +20,91 @@ export function fmtNum(v: number): string {
   return new Intl.NumberFormat("en-US").format(Math.round(v));
 }
 
+/**
+ * CBU house palette — deep navy + gold.
+ *
+ *  navy     #1e3a6e  primary data series (positive discrepancy)
+ *  navy-2   #2b4c8c  secondary series (Uzbekistan-recorded imports)
+ *  navy-3   #4a6ea8  tertiary series
+ *  gold     #d99a2b  accent / highlight (rails, borders, selection)
+ *  gold-2   #b07d1e  gold used as a data FILL (partner-reported series)
+ *  gold-ink #8f6212  gold used as TEXT (stays legible at 11px)
+ *  red      #b3261e  the single reserved alert — Investigate class only
+ *
+ * All fills are solid: no alpha suffixes, so bars and markers stay crisp on
+ * the #fcfcfb card surface. Chrome (grid, axis, baseline) stays neutral grey
+ * and recessive; ink stays dark.
+ */
+const NAVY_DEEP = "#16233b";
+const NAVY = "#1e3a6e";
+const NAVY_2 = "#2b4c8c";
+const NAVY_3 = "#4a6ea8";
+const GOLD = "#d99a2b";
+const GOLD_2 = "#b07d1e";
+const GOLD_INK = "#8f6212";
+const AMBER_HOT = "#a4560f";
+const ALERT_RED = "#b3261e";
+const GREEN = "#1a6b45";
+const GREEN_MID = "#5b8a6e";
+const GREEN_INK = "#155c3b";
+const SLATE = "#575c67";
+const GREY = "#898781";
+
 /** Anomaly strength dot color — neutral, warming with the score. Never red. */
 export function anomalyColor(score: number): string {
-  if (score >= 55) return "#eb6834";
-  if (score >= 35) return "#a16207";
-  return "#898781";
+  if (score >= 55) return AMBER_HOT;
+  if (score >= 35) return GOLD_2;
+  return GREY;
 }
 /** Evidence quality dot color — grey to green. */
 export function evidenceColor(score: number): string {
-  if (score >= 60) return "#0ca30c";
-  if (score >= 40) return "#6d8a5c";
-  return "#898781";
+  if (score >= 60) return GREEN;
+  if (score >= 40) return GREEN_MID;
+  return GREY;
 }
 
-/** Status palette (fixed, dataviz reference): never reused as series colors. */
+/** Status palette (fixed): never reused as series colors. */
 export const CLASS_COLORS: Record<string, string> = {
-  investigate: "#d03b3b", // critical — the only red in the system
-  verify: "#ec835a", // serious
-  monitor: "#0ca30c", // good
-  low: "#898781",
-  transit: "#52514e",
+  investigate: ALERT_RED, // critical — the only red in the system
+  verify: GOLD_2, // serious — CBU gold
+  monitor: GREEN, // in range
+  low: GREY,
+  transit: SLATE,
 };
 
+/** Categorical slots, in order, for charts that need more than one series. */
+export const SERIES_COLORS = [NAVY, GOLD_2, NAVY_3, GREEN, NAVY_DEEP, SLATE];
+
 export const COLORS = {
-  // series (validated categorical slots 1 & 2)
-  uzb: "#2a78d6",
-  partner: "#eb6834",
-  positive: "#eb6834",
-  reverse: "#2a78d6",
+  // CBU brand ramps
+  navy: NAVY_DEEP,
+  navy1: NAVY,
+  navy2: NAVY_2,
+  navy3: NAVY_3,
+  gold: GOLD,
+  goldDeep: GOLD_2,
+  goldInk: GOLD_INK,
+
+  // series (semantic aliases — solid fills, no alpha)
+  positive: NAVY, // positive discrepancy: the primary metric
+  uzb: NAVY_2, // Uzbekistan-recorded imports (CIF)
+  partner: GOLD_2, // partner-reported exports (FOB)
+  /** @deprecated reverse discrepancy is no longer screened — alias kept for transition */
+  reverse: GOLD_2,
+
   // status / accents
-  transit: "#52514e",
-  investigate: "#d03b3b",
-  ok: "#006300", // success text
-  good: "#0ca30c",
-  warn: "#a16207",
+  transit: SLATE,
+  investigate: ALERT_RED,
+  ok: GREEN_INK, // success text
+  good: GREEN,
+  warn: GOLD_INK,
+  accent: GOLD,
+
   // chrome & ink
-  grid: "#e1e0d9",
-  baseline: "#c3c2b7",
-  axis: "#898781",
-  text: "#52514e",
+  grid: "#e5e4de",
+  baseline: "#c9c8c0",
+  axis: GREY,
+  text: "#3f3e3a",
   surface: "#fcfcfb",
-  neutralMid: "#f0efec",
+  neutralMid: "#edece7",
 };

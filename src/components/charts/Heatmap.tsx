@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { Aggregate } from "@/lib/dataset";
+import { useI18n } from "@/lib/i18n";
 import { COLORS, fmtUSDFull } from "@/lib/format";
 import { baseTooltip, baseTextStyle } from "@/lib/echartBase";
 
@@ -23,6 +24,7 @@ export default function Heatmap({
   chapterLabels: Record<string, string>;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const matrix = data.import;
 
   const { chapters, partners, cells, absMax } = useMemo(() => {
@@ -58,11 +60,11 @@ export default function Heatmap({
         formatter: (p: unknown) => {
           const it = p as { value: [number, number, number] };
           const [xi, yi, v] = it.value;
-          const dir = v >= 0 ? "Positive (partner > UZB records)" : "Reverse (UZB records > partner)";
+          const dir = v >= 0 ? t("qual.heatmap.positive") : t("qual.heatmap.reverse");
           const color = v >= 0 ? COLORS.positive : COLORS.reverse;
           return `<b>${partners[xi].name}</b> · HS ${chapters[yi]} ${chapterLabels[chapters[yi]] ?? ""}<br/>
-            ${dir}<br/>Signed discrepancy: <b style="color:${color}">${fmtUSDFull(v)}</b><br/>
-            <span style="color:${COLORS.axis}">Click for the partner profile.</span>`;
+            ${dir}<br/>${t("qual.heatmap.signed")}: <b style="color:${color}">${fmtUSDFull(v)}</b><br/>
+            <span style="color:${COLORS.axis}">${t("qual.heatmap.clickHint")}</span>`;
         },
       },
       xAxis: {
@@ -88,7 +90,7 @@ export default function Heatmap({
         left: "center",
         bottom: 4,
         textStyle: { color: COLORS.axis, fontSize: 10 },
-        text: ["Positive", "Reverse"],
+        text: [t("qual.heatmap.scalePositive"), t("qual.heatmap.scaleReverse")],
         inRange: { color: [COLORS.reverse, COLORS.neutralMid, COLORS.positive] },
         formatter: (v: unknown) => fmtUSDFull(Number(v)),
       },
@@ -101,7 +103,7 @@ export default function Heatmap({
         },
       ],
     }),
-    [cells, chapters, partners, absMax, chapterLabels],
+    [cells, chapters, partners, absMax, chapterLabels, t],
   );
 
   const onEvents = useMemo(
@@ -123,14 +125,13 @@ export default function Heatmap({
           style={{ background: COLORS.positive }}
           aria-hidden
         />
-        orange = positive discrepancy (partner &gt; UZB records) ·{" "}
+        {t("qual.heatmap.legendPositive")}{" "}
         <span
           className="mr-1 inline-block h-2 w-2 rounded-full align-baseline"
           style={{ background: COLORS.reverse }}
           aria-hidden
         />
-        blue = reverse (UZB records &gt; partner) · neutral ≈ zero ·
-        blank = no comparable observation (never treated as a zero gap) · click a cell to open the partner profile
+        {t("qual.heatmap.legendReverse")}
       </div>
       <div className="card p-3" style={{ height: 620 }}>
         <EChart option={option} onEvents={onEvents} />

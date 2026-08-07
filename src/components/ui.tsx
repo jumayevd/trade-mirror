@@ -1,8 +1,12 @@
 "use client";
 
-import { anomalyColor, evidenceColor, CLASS_COLORS } from "@/lib/format";
-import { CLASS_LABELS, ROBUSTNESS_LABELS, contextLine, type Filter, type Robustness, type SignalClass, type Tier } from "@/lib/dataset";
+import { anomalyColor, evidenceColor, CLASS_COLORS, COLORS } from "@/lib/format";
+import { contextLine, type Filter, type Robustness, type SignalClass, type Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
+
+/** Fill {placeholders} in a translated string with runtime values. */
+const fill = (s: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
 /**
  * Stat tile (dataviz contract): sentence-case label, semibold proportional
@@ -60,8 +64,9 @@ export function SectionTitle({ title, desc, right }: { title: string; desc?: str
 
 /** Context line (spec §5.3) — quiet, single line, above analytical blocks. */
 export function ContextLine({ filter }: { filter: Filter }) {
+  const { t } = useI18n();
   return (
-    <p className="mb-3 truncate font-mono text-[10.5px] text-faint" title="Active calculation context — every number below uses exactly these parameters.">
+    <p className="mb-3 truncate font-mono text-[10.5px] text-faint" title={t("qual.ui.contextTip")}>
       {contextLine(filter)}
     </p>
   );
@@ -79,16 +84,18 @@ function DotChip({ dot, children, title, className = "" }: { dot?: string; child
 }
 
 export function AnomalyBadge({ score }: { score: number }) {
+  const { t } = useI18n();
   return (
-    <DotChip dot={anomalyColor(score)} title={`Anomaly strength ${score.toFixed(0)}/100 — how unusual the discrepancy is (magnitude, relative size, persistence, dynamics, unit values). Says nothing about data quality.`}>
+    <DotChip dot={anomalyColor(score)} title={fill(t("qual.ui.anomalyTip"), { score: score.toFixed(0) })}>
       A {score.toFixed(0)}
     </DotChip>
   );
 }
 
 export function EvidenceBadge({ score }: { score: number }) {
+  const { t } = useI18n();
   return (
-    <DotChip dot={evidenceColor(score)} title={`Evidence quality ${score.toFixed(0)}/100 — how reliable and comparable the underlying data is (coverage, reporter reliability, HS comparability, weight availability, freight robustness, transit exposure).`}>
+    <DotChip dot={evidenceColor(score)} title={fill(t("qual.ui.evidenceTip"), { score: score.toFixed(0) })}>
       E {score.toFixed(0)}
     </DotChip>
   );
@@ -96,10 +103,11 @@ export function EvidenceBadge({ score }: { score: number }) {
 
 /** Composite risk score: bold number + mini track bar, coloured by the signal class. */
 export function RiskScore({ score, cls }: { score: number; cls: SignalClass }) {
+  const { t } = useI18n();
   return (
     <span
       className="inline-flex flex-col gap-[3px]"
-      title={`Risk score ${score.toFixed(0)}/100 = √(A × E), the geometric mean of anomaly strength and evidence quality. Weak evidence bounds the score (R ≤ 10·√E), so the anomaly alone can never carry it. A screening priority for review ordering.`}
+      title={fill(t("qual.ui.riskTip"), { score: score.toFixed(0) })}
     >
       <span className="tabular text-[13px] font-semibold leading-none">{score.toFixed(0)}</span>
       <span className="h-[3px] w-8 overflow-hidden rounded-full bg-[var(--color-panel-2)]">
@@ -112,7 +120,7 @@ export function RiskScore({ score, cls }: { score: number; cls: SignalClass }) {
 export function ClassBadge({ cls }: { cls: SignalClass }) {
   const { t } = useI18n();
   return (
-    <DotChip dot={CLASS_COLORS[cls]} title={CLASS_LABELS[cls].desc}>
+    <DotChip dot={CLASS_COLORS[cls]} title={t(`qual.ui.clsDesc.${cls}` as never)}>
       {t(`cls.${cls}` as never)}
     </DotChip>
   );
@@ -121,27 +129,34 @@ export function ClassBadge({ cls }: { cls: SignalClass }) {
 export function RobustnessBadge({ r }: { r: Robustness }) {
   const { t } = useI18n();
   return (
-    <DotChip dot={r === "robust" ? "#0ca30c" : r === "insufficient" ? "#898781" : "#ec835a"}
-      title={`Robustness: ${ROBUSTNESS_LABELS[r]}. Robust = the sign holds at 6%, 10% and 15% freight, with enough comparable years and no major quality flags.`}>
+    <DotChip dot={r === "robust" ? COLORS.good : r === "insufficient" ? COLORS.axis : COLORS.goldDeep}
+      title={fill(t("qual.ui.robustnessTip"), { label: t(`rob.${r}` as never) })}>
       {t(`rob.${r}` as never)}
     </DotChip>
   );
 }
 
-const TIER_TIP: Record<Tier, string> = {
-  High: "Reliable mirror: the partner reported consistently across the window.",
-  Medium: "Partial mirror: some years missing — interpret with care.",
-  Low: "Weak mirror: sparse or lapsed reporting — the discrepancy may be a data artifact.",
+const TIER_TIP_KEY: Record<Tier, string> = {
+  High: "qual.ui.tierTip.high",
+  Medium: "qual.ui.tierTip.medium",
+  Low: "qual.ui.tierTip.low",
+};
+const TIER_LABEL_KEY: Record<Tier, string> = {
+  High: "qual.ui.tier.high",
+  Medium: "qual.ui.tier.medium",
+  Low: "qual.ui.tier.low",
 };
 export function QualityTag({ tier, tip }: { tier: Tier; tip?: string }) {
-  const dot = tier === "High" ? "#0ca30c" : tier === "Medium" ? "#fab219" : "#898781";
-  return <DotChip dot={dot} title={tip ?? TIER_TIP[tier]}>data {tier.toLowerCase()}</DotChip>;
+  const { t } = useI18n();
+  const dot = tier === "High" ? COLORS.good : tier === "Medium" ? COLORS.gold : COLORS.axis;
+  return <DotChip dot={dot} title={tip ?? t(TIER_TIP_KEY[tier] as never)}>{t(TIER_LABEL_KEY[tier] as never)}</DotChip>;
 }
 
 export function TransitTag() {
+  const { t } = useI18n();
   return (
-    <DotChip className="cursor-help" title="Transit / re-export hub. Uzbekistan records imports by country of ORIGIN while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies. Assessed separately from core channels.">
-      transit
+    <DotChip className="cursor-help" title={t("qual.ui.transitTip")}>
+      {t("qual.ui.transitTag")}
     </DotChip>
   );
 }
@@ -162,7 +177,7 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1">
             <span className={`rounded-md border px-1.5 py-0.5 text-[11px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
-              title={s.active ? "Supported by open trade data" : s.n === 4 ? "Requires tariff/behavioural evidence — planned phase 2" : "Requires declarations, audit or administrative decision — never claimed on this site"}>
+              title={s.active ? t("qual.ui.ladder.tipOpen") : s.n === 4 ? t("qual.ui.ladder.tipBehavioural") : t("qual.ui.ladder.tipVerified")}>
               {s.n} · {t(s.key as never)}
             </span>
             {i < steps.length - 1 && <span className="text-[10px] text-faint">›</span>}

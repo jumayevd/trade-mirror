@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
-import RiskMap, { MAP_METRIC_LABELS, type MapMetric } from "@/components/charts/RiskMap";
+import RiskMap, { MAP_METRIC_KEYS, type MapMetric } from "@/components/charts/RiskMap";
 import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, type PartnerAgg } from "@/lib/dataset";
@@ -15,12 +15,12 @@ import { useI18n } from "@/lib/i18n";
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
  * profile), ranked country table, per-year and per-country summary statistics,
- * and a compare mode (up to 4 partners side by side). Positive and reverse
- * discrepancies are always shown together; a residual unexplained discrepancy
- * is a statistical screening signal, never proof of wrongdoing.
+ * and a compare mode (up to 4 partners side by side). Only the positive
+ * discrepancy is screened: partner-reported exports uplifted by freight, minus
+ * Uzbekistan-recorded imports, accumulated over the years where it is positive.
  */
 
-type SortKey = "positive" | "reverse" | "share" | "investigate";
+type SortKey = "positive" | "share" | "channels";
 type HeroMode = "map" | "table";
 
 const MAX_COMPARE = 4;
@@ -35,11 +35,11 @@ function HeadDot({ color }: { color: string }) {
   );
 }
 
-const SORT_TIPS: Record<SortKey, string> = {
-  positive: "Sort by cumulative positive discrepancy (partner reported more than Uzbekistan recorded).",
-  reverse: "Sort by cumulative reverse discrepancy (Uzbekistan recorded more than the partner reported).",
-  share: "Sort by positive discrepancy relative to partner-reported exports — flags pairs where the gap is large for their trade volume.",
-  investigate: "Sort by the number of HS2 channels classified Investigate (high anomaly + high evidence).",
+/** Locale keys for the column-sort tooltips — resolved through `t` at render time. */
+const SORT_TIP_KEYS: Record<SortKey, string> = {
+  positive: "ctry.sortTip.positive",
+  share: "ctry.sortTip.share",
+  channels: "ctry.sortTip.channels",
 };
 
 /** Compact client pagination footer — "X–Y of N". */
@@ -48,6 +48,7 @@ function Pager({
 }: {
   page: number; total: number; onPage: (p: number) => void;
 }) {
+  const { t } = useI18n();
   if (total <= PAGE_SIZE) return null;
   const pages = Math.ceil(total / PAGE_SIZE);
   const from = page * PAGE_SIZE + 1;
@@ -56,10 +57,10 @@ function Pager({
   return (
     <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border-soft)] px-3 py-2">
       <span className="tabular text-[12px] text-faint">
-        {from}–{to} of {total}
+        {from}–{to} {t("ctry.pager.of")} {total}
       </span>
-      <button className={btn} onClick={() => onPage(page - 1)} disabled={page === 0} aria-label="Previous page">‹</button>
-      <button className={btn} onClick={() => onPage(page + 1)} disabled={page >= pages - 1} aria-label="Next page">›</button>
+      <button className={btn} onClick={() => onPage(page - 1)} disabled={page === 0} aria-label={t("ctry.pager.prev")}>‹</button>
+      <button className={btn} onClick={() => onPage(page + 1)} disabled={page >= pages - 1} aria-label={t("ctry.pager.next")}>›</button>
     </div>
   );
 }
@@ -101,15 +102,16 @@ interface CountryMover {
 
 /** One quiet column of movers — Rising or Easing. */
 function MoverColumn({
-  title, rows, color, deltaColor, dirLabel,
+  title, rows, color, deltaColor,
 }: {
-  title: string; rows: CountryMover[]; color: string; deltaColor: string; dirLabel: string;
+  title: string; rows: CountryMover[]; color: string; deltaColor: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="card p-3.5">
       <div className="mb-2 text-[10.5px] font-medium text-faint">{title}</div>
       {rows.length === 0 ? (
-        <p className="py-4 text-center text-[12px] text-faint">No partners with this trend under the active filters.</p>
+        <p className="py-4 text-center text-[12px] text-faint">{t("ctry.movers.empty")}</p>
       ) : (
         <ul className="divide-y divide-[var(--color-border-soft)]">
           {rows.map((m) => (
@@ -118,18 +120,18 @@ function MoverColumn({
                 {m.label}
               </Link>
               <span className="tabular w-16 shrink-0 text-right text-[12px] text-muted"
-                title={`Cumulative ${dirLabel} discrepancy over the full window: ${fmtUSDFull(m.total)}`}>
+                title={`${t("ctry.movers.totalTip")}: ${fmtUSDFull(m.total)}`}>
                 {fmtUSD(m.total)}
               </span>
               <span className="shrink-0">
                 {m.series.length >= 2 ? (
                   <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={88} height={26} />
                 ) : (
-                  <span className="inline-block w-[88px] text-center text-[10.5px] text-faint" title="Fewer than two reported years — no trend can be drawn.">—</span>
+                  <span className="inline-block w-[88px] text-center text-[10.5px] text-faint" title={t("ctry.fewYears")}>—</span>
                 )}
               </span>
               <span className="tabular w-16 shrink-0 text-right text-[12px] font-medium" style={{ color: deltaColor }}
-                title={`Trend: mean of the most recent reported years minus mean of the earliest reported years (${dirLabel} direction, full window): ${fmtUSDFull(m.trend)}`}>
+                title={`${t("ctry.movers.trendTip")}: ${fmtUSDFull(m.trend)}`}>
                 {fmtUSD(m.trend, { sign: true })}
               </span>
             </li>
@@ -155,12 +157,21 @@ export default function PartnersView() {
   const rows = useMemo(() => {
     const by: Record<SortKey, (a: PartnerAgg, b: PartnerAgg) => number> = {
       positive: (a, b) => b.posT - a.posT,
-      reverse: (a, b) => b.revT - a.revT,
       share: (a, b) => gapRate(b) - gapRate(a),
-      investigate: (a, b) => b.investigate - a.investigate || b.posT - a.posT,
+      channels: (a, b) => b.channels - a.channels || b.posT - a.posT,
     };
     return [...data.partners].sort(by[sort]);
   }, [data.partners, sort]);
+
+  // full-window series per partner — the ranking sparkline is independent of the
+  // ticked years, and only reported years are drawn (never a zero for a gap year)
+  const sparkByIso = useMemo(() => {
+    const m = new Map<string, number[]>();
+    for (const p of series.partners) {
+      m.set(p.iso3, p.byYear.filter((y) => y.reported).map((y) => Math.round(y.positive)));
+    }
+    return m;
+  }, [series.partners]);
 
   // pagination is derived: it falls back to page 0 whenever the list length or
   // sort has changed since the user last paged — no reset effect needed
@@ -196,8 +207,6 @@ export default function PartnersView() {
     () => series.movers.countries.filter((m) => m.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 6),
     [series.movers.countries],
   );
-  const dirLabel = filter.direction === "reverse" ? "reverse" : "positive";
-
   const exportCsv = () =>
     downloadCsv("country_analysis_hs2_channels.csv", channelsToCsv(data.channels, filter));
 
@@ -211,7 +220,7 @@ export default function PartnersView() {
   const sortBtn = (k: SortKey, label: string) => (
     <button
       onClick={() => setSort(k)}
-      title={SORT_TIPS[k]}
+      title={t(SORT_TIP_KEYS[k] as never)}
       className={`inline-flex items-center gap-0.5 hover:text-foreground ${sort === k ? "text-foreground" : ""}`}
     >
       {label}
@@ -227,27 +236,25 @@ export default function PartnersView() {
       <EmptyState />
     ) : (
       <div className="card overflow-x-auto">
-        <table className="w-full min-w-[1060px] border-collapse">
+        <table className="w-full min-w-[860px] border-collapse">
           <thead className="border-b border-[var(--color-border)]">
             <tr>
-              <th className={th} title={`Tick up to ${MAX_COMPARE} partners to compare them side by side.`}>
-                <span className="inline-flex items-center gap-1">Cmp <InfoTip text={`Select up to ${MAX_COMPARE} partners for the side-by-side compare panel.`} /></span>
+              <th className={th} title={`${t("ctry.rank.cmpTipPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpTipPost")}`}>
+                <span className="inline-flex items-center gap-1">{t("ctry.rank.cmp")} <InfoTip text={`${t("ctry.rank.cmpInfoPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpInfoPost")}`} /></span>
               </th>
               <th className={th}>{t("common.partner")}</th>
-              <th className={th}>Data quality</th>
-              <th className={thNum} title="Partner-reported exports (FOB) in channels where both sides reported.">Comparable trade</th>
-              <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", "Positive")}</th>
-              <th className={thNum}><HeadDot color={COLORS.reverse} />{sortBtn("reverse", "Reverse")}</th>
-              <th className={thNum}>{sortBtn("share", "Gap rate")}</th>
-              <th className={thNum} title="Share of window years in which the partner reported to Comtrade. Missing years have no mirror reference and are never treated as zero gaps.">Coverage</th>
-              <th className={th} title="HS2 chapter carrying the largest discrepancy (active direction) for this partner.">Top HS2</th>
-              <th className={thNum}>{sortBtn("investigate", "Investigate")}</th>
+              <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", t("ctry.col.positive"))}</th>
+              <th className={thNum}>{sortBtn("share", t("ctry.col.gapRate"))}</th>
+              <th className={thNum}>{sortBtn("channels", t("ctry.col.channels"))}</th>
+              <th className={th} title={`${t("ctry.rank.trendTipPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.rank.trendTipPost")}`}>{t("ctry.col.trend")}</th>
+              <th className={th} title={t("ctry.rank.topHs2Tip")}>{t("ctry.col.topHs2")}</th>
             </tr>
           </thead>
           <tbody className="zebra">
             {pagedRows.map((p) => {
               const topCh = p.topChapters[0];
               const checked = sel.includes(p.iso3);
+              const spark = sparkByIso.get(p.iso3) ?? [];
               return (
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]">
                   <td className={td}>
@@ -256,7 +263,7 @@ export default function PartnersView() {
                       checked={checked}
                       disabled={!checked && sel.length >= MAX_COMPARE}
                       onChange={() => toggle(p.iso3)}
-                      aria-label={`Compare ${p.name}`}
+                      aria-label={`${t("ctry.rank.compareAria")} ${p.name}`}
                       className="h-3.5 w-3.5 accent-[var(--color-primary)] disabled:cursor-not-allowed"
                     />
                   </td>
@@ -265,37 +272,34 @@ export default function PartnersView() {
                       {p.name}
                     </Link>
                     <span className="ml-2 text-xs text-faint">{p.region}</span>
+                    {p.transit && <span className="ml-2 align-middle"><TransitTag /></span>}
                   </td>
-                  <td className={`${td} whitespace-nowrap`}>
-                    <span className="inline-flex items-center gap-1.5">
-                      <QualityTag tier={p.tier} />
-                      {p.transit && <TransitTag />}
-                    </span>
-                  </td>
-                  <td className={tdNum} title={fmtUSDFull(p.peT)}>{fmtUSD(p.peT)}</td>
-                  <td className={tdNum} title={`Positive discrepancy (partner > UZB records): ${fmtUSDFull(p.posT)}`}>
+                  <td className={tdNum} title={`${t("kpi.positive")} (${t("kpi.positive.sub")}): ${fmtUSDFull(p.posT)}`}>
                     {fmtUSD(p.posT)}
                   </td>
-                  <td className={tdNum} title={`Reverse discrepancy (UZB records > partner): ${fmtUSDFull(p.revT)}`}>
-                    {fmtUSD(p.revT)}
-                  </td>
-                  <td className={tdNum} title="Positive discrepancy / partner-reported exports.">{fmtPct(gapRate(p), 0)}</td>
-                  <td className={tdNum} title={p.lapse ? `Reported ${p.reportedYears.length} year(s); stopped after ${p.lastReportedYear}. Missing years are not zero gaps.` : `Reported in ${p.reportedYears.length} of ${meta.years.length} window years.`}>
-                    {fmtPct(p.coverage, 0)}
-                    {p.lapse && <span className="ml-1 text-[10px]" style={{ color: COLORS.warn }}>⏹ {p.lastReportedYear}</span>}
+                  <td className={tdNum} title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</td>
+                  <td className={tdNum} title={t("ctry.channelsTip")}>{fmtNum(p.channels)}</td>
+                  <td className={`${td} whitespace-nowrap`}>
+                    <span className="inline-flex items-center gap-2">
+                      {spark.length >= 2 ? (
+                        <Sparkline type="line" data={spark} color={COLORS.positive} width={72} height={22} />
+                      ) : (
+                        <span className="inline-block w-[72px] text-center text-[10.5px] text-faint" title={t("ctry.fewYears")}>—</span>
+                      )}
+                      <span className="tabular w-14 text-right text-[12px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(p.trend)}`}>
+                        {fmtUSD(p.trend, { sign: true })}
+                      </span>
+                    </span>
                   </td>
                   <td className={`${td} max-w-[220px]`}>
                     {topCh ? (
-                      <span title={`HS ${topCh.chapter} · ${topCh.label} — ${fmtUSDFull(topCh.value)} (${fmtPct(topCh.share, 0)} of this partner's positive discrepancy)`}>
+                      <span title={`HS ${topCh.chapter} · ${topCh.label} — ${fmtUSDFull(topCh.value)} (${fmtPct(topCh.share, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
                         <span className="tabular mr-1.5 text-xs text-faint">{topCh.chapter}</span>
                         <span className="text-[13px]">{topCh.label.length > 34 ? `${topCh.label.slice(0, 34)}…` : topCh.label}</span>
                       </span>
                     ) : (
-                      <span className="text-faint" title="No HS2 chapter above the noise floor in the active direction for this partner.">below noise</span>
+                      <span className="text-faint" title={t("ctry.rank.belowNoiseTip")}>{t("ctry.rank.belowNoise")}</span>
                     )}
-                  </td>
-                  <td className={tdNum} title="Number of this partner's HS2 channels classified Investigate (high anomaly + high evidence). A screening priority count.">
-                    {p.investigate}
                   </td>
                 </tr>
               );
@@ -304,14 +308,12 @@ export default function PartnersView() {
           <tfoot>
             <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold">
               <td className={td} />
-              <td className={`${td} whitespace-nowrap`} colSpan={2} title="Headline KPI figures on the comparable-stage basis (before stage/signal/materiality filters) — identical to the Executive Overview under the same period, direction and freight settings.">
-                All partners — headline totals
+              <td className={`${td} whitespace-nowrap`} title={t("ctry.rank.totalsTip")}>
+                {t("ctry.rank.totalsRow")}
               </td>
-              <td className={tdNum} title={fmtUSDFull(data.kpis.comparableTrade)}>{fmtUSD(data.kpis.comparableTrade)}</td>
-              <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (central freight scenario; range ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} across the 6–15% freight band)`}>
+              <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (${t("ctry.rank.freightRangePre")} ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} ${t("ctry.rank.freightRangePost")})`}>
                 {fmtUSD(data.kpis.positive.central)}
               </td>
-              <td className={tdNum} title={fmtUSDFull(data.kpis.reverse)}>{fmtUSD(data.kpis.reverse)}</td>
               <td className={tdNum} colSpan={4} />
             </tr>
           </tfoot>
@@ -327,18 +329,18 @@ export default function PartnersView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <p className="text-[10.5px] font-medium text-faint">
-              Explore · country screening · UN Comtrade · {meta.window.start}–{meta.window.end}
+              {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {meta.window.start}–{meta.window.end}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
             <p className="text-[12px] text-muted">
-              <Link href="/methodology" className="hover:underline">Methodology →</Link>
+              <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
             </p>
           </div>
           <button
             onClick={exportCsv}
             disabled={data.channels.length === 0}
             className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            title="Download the underlying country × HS2 channels for the active filters, with the calculation context in the header."
+            title={t("ctry.exportTip")}
           >
             {t("common.exportCsv")} ↓
           </button>
@@ -352,46 +354,46 @@ export default function PartnersView() {
       {/* 3. map hero */}
       <section className="space-y-3">
         <SectionTitle
-          title="Geographic view"
-          desc="Click a country to open its profile."
+          title={t("ctry.geo.title")}
+          desc={t("ctry.geo.desc")}
           right={
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <InfoTip text="Countries shaded by the discrepancy metric in the active direction. Grey never means a zero gap — it marks partners with no comparable data or low reporting quality." />
+              <InfoTip text={t("ctry.geo.info")} />
               <Segmented<MapMetric>
-                ariaLabel="Map metric"
+                ariaLabel={t("ctry.geo.metricAria")}
                 value={mapMetric}
                 onChange={setMapMetric}
-                options={(Object.keys(MAP_METRIC_LABELS) as MapMetric[]).map((k) => ({
+                options={(Object.keys(MAP_METRIC_KEYS) as MapMetric[]).map((k) => ({
                   key: k,
-                  label: MAP_METRIC_LABELS[k],
+                  label: t(MAP_METRIC_KEYS[k] as never),
                   tip:
-                    k === "total" ? "Cumulative discrepancy value in the active direction."
-                      : k === "intensity" ? "Discrepancy per $100M of comparable (partner-reported) trade — normalizes away country size."
-                        : "Number of country × HS2 channels passing the active filters.",
+                    k === "total" ? t("ctry.map.tipTotal")
+                      : k === "intensity" ? t("ctry.map.tipIntensity")
+                        : t("ctry.map.tipChannels"),
                 }))}
               />
               <Segmented<HeroMode>
-                ariaLabel="Map or table"
+                ariaLabel={t("ctry.geo.viewAria")}
                 value={heroMode}
                 onChange={setHeroMode}
                 options={[
-                  { key: "map", label: "Map", tip: "Geographic view — click a country to open its profile." },
-                  { key: "table", label: "Table", tip: "Skip the map and jump straight to the country ranking table." },
+                  { key: "map", label: t("ctry.geo.map"), tip: t("ctry.geo.mapTip") },
+                  { key: "table", label: t("ctry.geo.table"), tip: t("ctry.geo.tableTip") },
                 ]}
               />
             </div>
           }
         />
         <p className="max-w-3xl text-[12px] text-muted">
-          <span className="tabular font-medium text-foreground">{data.partners.length}</span> partners
-          · <span className="tabular font-medium text-foreground" title="High-tier reporting quality — gaps least likely to be reporting artifacts.">{highTier}</span> high-tier
-          · <span className="tabular font-medium text-foreground" title="Transit/re-export hubs, assessed in a separate track.">{transitCount}</span> transit hubs
+          <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
+          · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
+          · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
         </p>
         {heroMode === "map" ? (
           data.partners.length === 0 ? (
             <EmptyState />
           ) : (
-            <RiskMap partners={data.partners} filter={filter} metric={mapMetric} />
+            <RiskMap partners={data.partners} metric={mapMetric} />
           )
         ) : (
           rankingTable
@@ -402,16 +404,16 @@ export default function PartnersView() {
       {compare.length > 0 && (
         <section className="card p-4">
           <SectionTitle
-            title={`Compare partners (${compare.length}/${MAX_COMPARE})`}
-            desc="Selected-period figures side by side."
+            title={`${t("ctry.compare.title")} (${compare.length}/${MAX_COMPARE})`}
+            desc={t("ctry.compare.desc")}
             right={
               <span className="flex items-center gap-2">
-                <InfoTip text={`Mini trend: positive discrepancy by year over the full ${meta.window.start}–${meta.window.end} window (reported years only — missing partner-years are skipped, never drawn as zero).`} />
+                <InfoTip text={`${t("ctry.compare.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.compare.infoPost")}`} />
                 <button
                   onClick={() => setSel([])}
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground"
                 >
-                  Clear ✕
+                  {t("ctry.compare.clear")} ✕
                 </button>
               </span>
             }
@@ -435,32 +437,28 @@ export default function PartnersView() {
                     <Sparkline data={spark} color={COLORS.positive} width={180} height={38} />
                   ) : (
                     <p className="text-[11px] text-faint">
-                      Fewer than two reported years — no trend can be drawn.
+                      {t("ctry.fewYears")}
                     </p>
                   )}
                   <dl className="mt-2 space-y-1 text-[12px]">
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Comparable trade</dt>
+                      <dt className="text-faint">{t("kpi.comparableTrade")}</dt>
                       <dd className="tabular" title={fmtUSDFull(p.peT)}>{fmtUSD(p.peT)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint"><HeadDot color={COLORS.positive} />Positive</dt>
+                      <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
                       <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint"><HeadDot color={COLORS.reverse} />Reverse</dt>
-                      <dd className="tabular" title={fmtUSDFull(p.revT)}>{fmtUSD(p.revT)}</dd>
+                      <dt className="text-faint">{t("ctry.col.gapRate")}</dt>
+                      <dd className="tabular" title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Gap rate</dt>
-                      <dd className="tabular" title="Positive discrepancy / partner-reported exports.">{fmtPct(gapRate(p), 0)}</dd>
+                      <dt className="text-faint">{t("ctry.compare.coverage")}</dt>
+                      <dd className="tabular">{fmtPct(p.coverage, 0)}{p.lapse ? ` · ${t("ctry.compare.stopped")} ${p.lastReportedYear}` : ""}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Coverage</dt>
-                      <dd className="tabular">{fmtPct(p.coverage, 0)}{p.lapse ? ` · stopped ${p.lastReportedYear}` : ""}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint">Investigate channels</dt>
+                      <dt className="text-faint">{t("ctry.compare.investigateChannels")}</dt>
                       <dd className="tabular">{p.investigate}</dd>
                     </div>
                   </dl>
@@ -475,9 +473,9 @@ export default function PartnersView() {
       {heroMode === "map" && (
         <section className="space-y-3">
           <SectionTitle
-            title="Country ranking"
-            desc="HS2 channels rolled up per partner."
-            right={<InfoTip text="Nominal USD over the selected period, UN Comtrade. Positive = partner reported more; reverse = Uzbekistan recorded more — never netted. Missing partner-years are excluded, never zero. Totals row = headline KPIs (comparable-stage), reconciling with the Executive Overview." />}
+            title={t("ctry.rank.title")}
+            desc={t("ctry.rank.desc")}
+            right={<InfoTip text={t("ctry.rank.info")} />}
           />
           {rankingTable}
         </section>
@@ -486,16 +484,16 @@ export default function PartnersView() {
       {/* 6. dynamics (re-homed from the former Trends page) */}
       <section className="space-y-3">
         <SectionTitle
-          title="Dynamics"
-          desc={`Top 6 rising and easing partners (${dirLabel} direction).`}
-          right={<InfoTip text={`Trend = mean of the most recent reported years minus the earliest, over the full ${meta.window.start}–${meta.window.end} window (independent of the selected period). Lapsed reporters excluded — their apparent declines are reporting artifacts. Source: UN Comtrade.`} />}
+          title={t("ctry.dyn.title")}
+          desc={t("ctry.dyn.desc")}
+          right={<InfoTip text={`${t("ctry.dyn.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.dyn.infoPost")} ${t("common.source")}.`} />}
         />
         {risers.length === 0 && easers.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
-            <MoverColumn title="Rising" rows={risers} color={COLORS.positive} deltaColor="var(--color-serious)" dirLabel={dirLabel} />
-            <MoverColumn title="Easing" rows={easers} color={COLORS.axis} deltaColor="var(--color-ok)" dirLabel={dirLabel} />
+            <MoverColumn title={t("ctry.dyn.rising")} rows={risers} color={COLORS.positive} deltaColor="var(--color-serious)" />
+            <MoverColumn title={t("ctry.dyn.easing")} rows={easers} color={COLORS.axis} deltaColor="var(--color-ok)" />
           </div>
         )}
       </section>
@@ -503,9 +501,9 @@ export default function PartnersView() {
       {/* 7. summary statistics by year */}
       <section className="space-y-3">
         <SectionTitle
-          title="Summary statistics by year"
-          desc="Annual totals across comparable channels."
-          right={<InfoTip text="Computed from all comparable channels before stage/signal filters — the same basis as the headline KPIs. Years with no reporting partner are shown as missing, never zero. Follows the selected year range in the filter bar. Source: UN Comtrade." />}
+          title={t("ctry.annual.title")}
+          desc={t("ctry.annual.desc")}
+          right={<InfoTip text={`${t("ctry.annual.info")} ${t("common.source")}.`} />}
         />
         {data.annual.length === 0 ? (
           <EmptyState />
@@ -515,12 +513,11 @@ export default function PartnersView() {
               <thead className="border-b border-[var(--color-border)]">
                 <tr>
                   <th className={th}>{t("common.year")}</th>
-                  <th className={thNum} title="Partner countries with at least one comparable channel in that year.">Comparable partners</th>
-                  <th className={thNum} title="Partner-reported exports to Uzbekistan (FOB), comparable channels only.">Partner exports (FOB)</th>
-                  <th className={thNum} title="Uzbekistan-recorded imports (CIF), comparable channels only.">UZB imports (CIF)</th>
-                  <th className={thNum} title="Sum of channel-year gaps where the partner reported more (after the freight adjustment)."><HeadDot color={COLORS.positive} />Positive</th>
-                  <th className={thNum} title="Sum of channel-year gaps where Uzbekistan recorded more (after the freight adjustment)."><HeadDot color={COLORS.reverse} />Reverse</th>
-                  <th className={thNum} title={`Positive discrepancy as a share of expected imports (partner exports × ${K.toFixed(2)} freight uplift) in that year.`}>Positive share</th>
+                  <th className={thNum} title={t("ctry.annual.comparablePartnersTip")}>{t("ctry.annual.comparablePartners")}</th>
+                  <th className={thNum} title={t("ctry.annual.partnerExportsTip")}>{t("ctry.partnerExportsFob")}</th>
+                  <th className={thNum} title={t("ctry.annual.uzbImportsTip")}>{t("ctry.uzbImportsCif")}</th>
+                  <th className={thNum} title={t("ctry.annual.positiveTip")}><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</th>
+                  <th className={thNum} title={`${t("ctry.annual.positiveShareTipPre")} ${K.toFixed(2)} ${t("ctry.annual.positiveShareTipPost")}`}>{t("ctry.annual.positiveShare")}</th>
                 </tr>
               </thead>
               <tbody className="zebra">
@@ -535,9 +532,6 @@ export default function PartnersView() {
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.ui)}>{noData ? <MissingValue /> : fmtUSD(r.ui)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.positive)}>
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
-                      </td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.reverse)}>
-                        {noData ? <MissingValue /> : fmtUSD(r.reverse)}
                       </td>
                       <td className={tdNum}>
                         {noData || expected <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / expected, 1)}
