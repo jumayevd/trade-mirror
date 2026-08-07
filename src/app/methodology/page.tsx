@@ -87,6 +87,15 @@ const CARDS: FormulaCard[] = [
     refs: ["yeats1990", "unsd2019"],
   },
   {
+    name: "risk score (R)",
+    formula: "R = √(A × E)",
+    usedIn: "“Risk” column and summary tiles in Discrepancy & Risk; iso-risk curve on the matrix",
+    population: "Per channel (partner × code)",
+    denominator: "Both inputs bounded 0–100, so R is bounded 0–100",
+    interpretation: "Composite screening priority — it ranks channels only and never alters the signal class or its transit handling. The geometric mean limits compensability: weak evidence bounds the score at R ≤ 10·√E, so the anomaly alone can never carry it. Not a probability of wrongdoing.",
+    refs: ["oecdjrc2008", "imf2023", "wco2011"],
+  },
+  {
     name: "signal class",
     formula: "matrix(A ≥ 55, E ≥ 60); transit overrides",
     usedIn: "Class labels across the site; queue default ordering",

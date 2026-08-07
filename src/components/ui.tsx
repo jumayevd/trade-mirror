@@ -94,6 +94,21 @@ export function EvidenceBadge({ score }: { score: number }) {
   );
 }
 
+/** Composite risk score: bold number + mini track bar, coloured by the signal class. */
+export function RiskScore({ score, cls }: { score: number; cls: SignalClass }) {
+  return (
+    <span
+      className="inline-flex flex-col gap-[3px]"
+      title={`Risk score ${score.toFixed(0)}/100 = √(A × E), the geometric mean of anomaly strength and evidence quality. Weak evidence bounds the score (R ≤ 10·√E), so the anomaly alone can never carry it. A screening priority for review ordering, not a probability of wrongdoing.`}
+    >
+      <span className="tabular text-[13px] font-semibold leading-none">{score.toFixed(0)}</span>
+      <span className="h-[3px] w-8 overflow-hidden rounded-full bg-[var(--color-panel-2)]">
+        <span className="block h-full rounded-full" style={{ width: `${Math.min(score, 100)}%`, background: CLASS_COLORS[cls] }} />
+      </span>
+    </span>
+  );
+}
+
 export function ClassBadge({ cls }: { cls: SignalClass }) {
   const { t } = useI18n();
   return (

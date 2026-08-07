@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AnomalyBadge, ClassBadge, EmptyState, EvidenceBadge, MissingValue, RobustnessBadge } from "@/components/ui";
+import { AnomalyBadge, ClassBadge, EmptyState, EvidenceBadge, MissingValue, RiskScore, RobustnessBadge } from "@/components/ui";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
@@ -35,10 +35,11 @@ const LEVEL_TIPS: Record<HsLevel, string> = {
   6: "HS6 product combinations — the finest screening granularity in the dataset.",
 };
 
-type SortKey = "class" | "gap" | "anomaly" | "evidence" | "persistence" | "value";
+type SortKey = "class" | "risk" | "gap" | "anomaly" | "evidence" | "persistence" | "value";
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "class", label: "Class + anomaly (default)" },
+  { key: "risk", label: "Risk score (composite)" },
   { key: "gap", label: "Discrepancy size" },
   { key: "anomaly", label: "Anomaly strength" },
   { key: "evidence", label: "Evidence quality" },
@@ -80,6 +81,7 @@ function sortChannels(rows: Channel[], sort: SortKey): Channel[] {
   if (sort === "class") return rows; // engine order: class → anomaly → evidence → |primary|
   const abs = (c: Channel) => Math.abs(c.primary);
   const by: Record<Exclude<SortKey, "class">, (a: Channel, b: Channel) => number> = {
+    risk: (a, b) => b.risk - a.risk || b.evidence - a.evidence || abs(b) - abs(a),
     gap: (a, b) => abs(b) - abs(a) || b.anomaly - a.anomaly,
     anomaly: (a, b) => b.anomaly - a.anomaly || b.evidence - a.evidence || abs(b) - abs(a),
     evidence: (a, b) => b.evidence - a.evidence || b.anomaly - a.anomaly || abs(b) - abs(a),
@@ -210,11 +212,12 @@ export default function QueueTable({
         <EmptyState />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse">
+          <table className="w-full min-w-[1360px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
                 <th className={th} aria-label="Expand" />
                 <th className={th}>Class</th>
+                <th className={th} title="Composite risk score 0–100 = √(A × E), the geometric mean of anomaly strength and evidence quality. Weak evidence bounds the score (R ≤ 10·√E), so the anomaly alone can never carry it. A screening priority, not a probability of wrongdoing.">Risk</th>
                 <th className={th} title="Anomaly strength 0–100 — how unusual the discrepancy is. Independent of data quality.">A</th>
                 <th className={th} title="Evidence quality 0–100 — how reliable and comparable the underlying data is.">E</th>
                 <th className={th}>{t("common.partner")}</th>
@@ -245,6 +248,7 @@ export default function QueueTable({
                   >
                     <td className={`${td} w-6 text-faint`} aria-hidden>{open ? "▾" : "▸"}</td>
                     <td className={td}><ClassBadge cls={c.cls} /></td>
+                    <td className={td}><RiskScore score={c.risk} cls={c.cls} /></td>
                     <td className={td}><AnomalyBadge score={c.anomaly} /></td>
                     <td className={td}><EvidenceBadge score={c.evidence} /></td>
                     <td className={`${td} whitespace-nowrap`}>
@@ -309,7 +313,7 @@ export default function QueueTable({
                   </tr>,
                   open ? (
                     <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">
-                      <td colSpan={16} className="px-4 py-3">
+                      <td colSpan={17} className="px-4 py-3">
                         <YearDetail c={c} filter={filter} years={years} />
                       </td>
                     </tr>

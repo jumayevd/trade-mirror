@@ -7,7 +7,8 @@ import EChart from "@/components/EChart";
 import FilterBar from "@/components/FilterBar";
 import QueueTable, { LEVEL_LABELS, type HsLevel } from "@/components/QueueTable";
 import RiskMatrix from "@/components/charts/RiskMatrix";
-import { ContextLine, EmptyState, EvidenceBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
+import { ContextLine, EmptyState, EvidenceBadge, InfoTip, RiskScore, SectionTitle, Stat, TransitTag } from "@/components/ui";
+import { Cite } from "@/lib/references";
 import { useFilter } from "@/lib/filter-context";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -204,13 +205,59 @@ function RankedTab({
     return { investigate, top5Share: total > 0 ? top5 / total : 0, dirTotal };
   }, [channels]);
 
+  // R_BOTH = √(55 × 60) rounded to the score's 0.1 grid, so the exactly-at-both-
+  // thresholds channel (stored risk 57.4) is counted; a reference point, not a class.
+  const R_BOTH = Math.round(10 * Math.sqrt(55 * 60)) / 10;
+  const riskStats = useMemo(() => {
+    if (channels.length === 0) return null;
+    const top = channels.reduce((m, c) => (c.risk > m.risk ? c : m), channels[0]);
+    const vals = channels.map((c) => c.risk).sort((a, b) => a - b);
+    const median = quantile(vals, 0.5);
+    const above = channels.filter((c) => c.risk >= R_BOTH).length;
+    return { top, median, above };
+  }, [channels, R_BOTH]);
+
   return (
     <div className="space-y-6">
+      <section className="space-y-3">
+        <SectionTitle
+          title="Risk score"
+          desc="One number per combination: R = √(A × E)."
+          right={<InfoTip text="Composite risk score, 0–100: the geometric mean of anomaly strength (A) and evidence quality (E). Geometric aggregation limits compensability — weak evidence bounds the score at R ≤ 10·√E, so even a maximal anomaly cannot exceed R 60 at E 36. R ranks channels only; it never alters the signal class or its transit handling. Formula and literature: Methodology." />}
+        />
+        {riskStats && (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <Stat
+              label="Highest risk score"
+              value={riskStats.top.risk.toFixed(0)}
+              sub={`${riskStats.top.partner} × HS ${riskStats.top.cmd}${riskStats.top.transit ? " · transit hub" : ""}`}
+              info={`The single ${LEVEL_LABELS[level]} combination with the highest composite risk score under the current filters: A ${riskStats.top.anomaly.toFixed(1)} × E ${riskStats.top.evidence.toFixed(1)} → R ${riskStats.top.risk.toFixed(1)}.${riskStats.top.transit ? " A transit hub — origin-vs-consignment recording can create legitimate discrepancies; its class stays Transit-sensitive." : ""}`}
+            />
+            <Stat
+              label="Median risk score"
+              value={riskStats.median.toFixed(0)}
+              sub={`across ${fmtNum(channels.length)} combinations`}
+              info="Median R over all combinations under the current filters — the typical screening priority. The queue's attention belongs in the upper tail, not near the median."
+            />
+            <Stat
+              label={`R ≥ ${R_BOTH.toFixed(1)}`}
+              value={fmtNum(riskStats.above)}
+              sub="combinations at or above √(55 × 60)"
+              info={`Count of combinations with R at or above √(55 × 60), rounded to the score's 0.1 precision (${R_BOTH.toFixed(1)}) — the risk score of a channel sitting exactly on both classification thresholds (A 55, E 60). A reference point on the R scale, not a separate classification: a channel can pass it with one score below its threshold.`}
+            />
+          </div>
+        )}
+        <p className="max-w-3xl text-xs text-faint">
+          A screening priority for review ordering — never a probability of wrongdoing
+          <Cite ids={["oecdjrc2008", "imf2023", "wco2011"]} />.
+        </p>
+      </section>
+
       <section>
         <SectionTitle
           title="Analytical significance"
           desc="Evidence quality (x) × anomaly strength (y)."
-          right={<InfoTip text={`Every ${LEVEL_LABELS[level]} combination; bubble area ∝ discrepancy in the active direction, colour = signal class. Quadrant guides mirror the classification thresholds (E 60, A 55).`} />}
+          right={<InfoTip text={`Every ${LEVEL_LABELS[level]} combination; bubble area ∝ discrepancy in the active direction, colour = signal class. Quadrant guides mirror the classification thresholds (E 60, A 55); the dashed curve joins points of constant risk score R = √(55 × 60) ≈ 57.`} />}
         />
         <RiskMatrix channels={channels} filter={filter} />
       </section>
@@ -370,7 +417,7 @@ function ReverseTab({
           <EmptyState />
         ) : (
           <div className="card overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse">
+            <table className="w-full min-w-[920px] border-collapse">
               <thead className="border-b border-[var(--color-border)]">
                 <tr>
                   <th className={TH}>{t("common.partner")}</th>
@@ -378,6 +425,7 @@ function ReverseTab({
                   <th className={TH_NUM} title="Uzbekistan-recorded imports, CIF.">UZB imports</th>
                   <th className={TH_NUM} title={`Partner exports × (1 + ${Math.round(revFilter.cif * 100)}% freight) — the expected CIF import value.`}>Expected CIF</th>
                   <th className={TH_NUM} title="Σ max(UZB imports − expected CIF, 0) over comparable years."><HeadDot color={COLORS.reverse} />Reverse value</th>
+                  <th className={TH} title="Composite risk score R = √(A × E). The direction-dependent terms of A — magnitude, persistence, dynamics, unit values — are measured on the reverse discrepancy here; the relative-size term uses the direction-neutral bounded asymmetry.">Risk</th>
                   <th className={TH}>{t("common.evidence")}</th>
                   <th className={TH_NUM} title="Years with a reverse discrepancy above the ±$100K noise floor, out of comparable years in the selected period.">Rev / comp. yrs</th>
                   <th className={TH}>{t("common.flags")}</th>
@@ -396,6 +444,7 @@ function ReverseTab({
                     <td className={TD_NUM} title={fmtUSDFull(c.uiT)}>{fmtUSD(c.uiT)}</td>
                     <td className={TD_NUM} title={fmtUSDFull(c.expectedT)}>{fmtUSD(c.expectedT)}</td>
                     <td className={`${TD_NUM} font-semibold`} title={fmtUSDFull(c.revT)}>{fmtUSD(c.revT)}</td>
+                    <td className={TD}><RiskScore score={c.risk} cls={c.cls} /></td>
                     <td className={TD}><EvidenceBadge score={c.evidence} /></td>
                     <td className={TD_NUM}>{c.revYears}/{c.comparableYears} yr</td>
                     <td className={TD}><FlagChips c={c} /></td>

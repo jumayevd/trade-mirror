@@ -100,6 +100,23 @@ export const REFERENCES: Ref[] = [
     note: "Cross-country evidence that mirror gaps correlate with institutions and audit standards — screening, not proof, at the country level.",
   },
   {
+    id: "oecdjrc2008",
+    authors: "OECD & European Commission Joint Research Centre",
+    year: "2008",
+    title: "Handbook on Constructing Composite Indicators: Methodology and User Guide",
+    source: "OECD Publishing, Paris",
+    url: "https://doi.org/10.1787/9789264043466-en",
+    note: "The aggregation theory behind the risk score: geometric means limit compensability, so a weak evidence base caps the composite instead of being averaged away.",
+  },
+  {
+    id: "wco2011",
+    authors: "World Customs Organization",
+    year: "2011",
+    title: "Customs Risk Management Compendium",
+    source: "WCO, Brussels",
+    note: "Customs risk-selectivity practice: composite scores rank targets for review — a score triggers scrutiny, never a conclusion. The operational frame for R.",
+  },
+  {
     id: "unsd2019",
     authors: "United Nations Statistics Division",
     year: "2019",

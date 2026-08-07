@@ -178,7 +178,7 @@ export interface Channel {
   flipsAcrossFreight: boolean;
   uvYears: number; uvRatio: number | null;
   stage: Stage; robustness: Robustness; flags: string[];
-  anomaly: number; evidence: number; cls: SignalClass;
+  anomaly: number; evidence: number; risk: number; cls: SignalClass;
   /** ranking value for the active direction */
   primary: number;
   trend: number;
@@ -210,7 +210,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
 
     const years: YearRow[] = [];
     let peT = 0, uiT = 0, posT = 0, revT = 0, posLo = 0, posHi = 0, revLo = 0, revHi = 0;
-    let posYears = 0, revYears = 0, streak = 0, longest = 0;
+    let posYears = 0, revYears = 0, streak = 0, longest = 0, revStreak = 0, longestRev = 0;
     let uvYears = 0, uw = 0, pw = 0, uwv = 0, pwv = 0;
     for (const r of rs) {
       const signed = r.pe * K - r.ui;
@@ -220,7 +220,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
       posLo += pos(r.pe * Klo - r.ui); posHi += pos(r.pe * Khi - r.ui);
       revLo += pos(r.ui - r.pe * Klo); revHi += pos(r.ui - r.pe * Khi);
       if (signed > NOISE) { posYears++; streak++; longest = Math.max(longest, streak); } else streak = 0;
-      if (signed < -NOISE) revYears++;
+      if (signed < -NOISE) { revYears++; revStreak++; longestRev = Math.max(longestRev, revStreak); } else revStreak = 0;
       if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
     }
     if (peT <= NOISE && uiT <= NOISE) continue;
@@ -273,7 +273,8 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
     const meanYearly = dirSeries.reduce((s, x) => s + x.v, 0) / Math.max(dirSeries.length, 1);
     const mag = clamp((Math.log10(1 + Math.abs(primary)) - 6) / 4);
     const rel = boundedAsymmetry;
-    const pers = 0.7 * (dirYears / Math.max(n, 3)) + 0.3 * (longest / Math.max(n, 3));
+    const dirStreak = f.direction === "reverse" ? longestRev : longest;
+    const pers = 0.7 * (dirYears / Math.max(n, 3)) + 0.3 * (dirStreak / Math.max(n, 3));
     const dyn = trend > 0 && meanYearly > 0 ? clamp(trend / meanYearly) : 0;
     const uvA = uvRatio == null ? null
       : f.direction === "reverse" ? clamp((uvRatio - 1) / 0.5) : clamp((1 - uvRatio) / 0.5);
@@ -298,6 +299,10 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
           : evidence >= 60 ? "monitor"
             : "low";
 
+    // ---- composite risk score R = √(A·E) — geometric aggregation limits compensability:
+    // R ≤ 10·√E, so weak evidence bounds the score (OECD/JRC 2008) ----
+    const risk = Math.round(10 * Math.sqrt(anomaly * evidence)) / 10;
+
     out.push({
       partner: pm.name, partnerIso: pm.iso3, region: pm.region, transit: pm.transit, tier: pm.tier,
       chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
@@ -306,7 +311,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
-      stage, robustness, flags, anomaly, evidence, cls, primary, trend,
+      stage, robustness, flags, anomaly, evidence, risk, cls, primary, trend,
     });
   }
   return out;

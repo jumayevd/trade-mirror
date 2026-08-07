@@ -19,6 +19,20 @@ import { baseTooltip } from "@/lib/echartBase";
 
 const A_THRESHOLD = 55;
 const E_THRESHOLD = 60;
+// iso-risk reference: all (E, A) points with R = √(A·E) equal to √(55·60) ≈ 57
+const R_ISO = Math.sqrt(A_THRESHOLD * E_THRESHOLD);
+const ISO_MIN_E = Math.ceil((R_ISO * R_ISO) / 100); // where the curve enters the plot at A = 100
+const ISO_SERIES = {
+  name: "iso-risk",
+  type: "line" as const,
+  data: Array.from({ length: 101 - ISO_MIN_E }, (_, i) => [ISO_MIN_E + i, (R_ISO * R_ISO) / (ISO_MIN_E + i)]) as never,
+  silent: true,
+  z: 1,
+  showSymbol: false,
+  lineStyle: { type: "dashed" as const, color: COLORS.baseline, width: 1 },
+  endLabel: { show: true, formatter: `R ${Math.round(R_ISO)}`, color: COLORS.axis, fontSize: 10 },
+  tooltip: { show: false },
+};
 const CLS_ORDER: SignalClass[] = ["investigate", "verify", "monitor", "low", "transit"];
 
 interface MatrixPoint {
@@ -149,14 +163,14 @@ export default function RiskMatrix({ channels, filter }: { channels: Channel[]; 
             `<b>${c.partner}</b> · ${c.cmdLabel}`,
             `<span style="${mono};font-size:11px;color:${COLORS.text}">HS ${c.cmd}</span> · <span style="font-size:11px;color:${COLORS.text}">${period}</span>`,
             `Positive: <b style="color:${COLORS.positive}">${fmtUSDFull(c.posT)}</b> · Reverse: <b style="color:${COLORS.reverse}">${fmtUSDFull(c.revT)}</b>`,
-            `Anomaly <b>${c.anomaly.toFixed(0)}</b> · Evidence <b>${c.evidence.toFixed(0)}</b> · ${CLASS_LABELS[c.cls].label}`,
+            `Anomaly <b>${c.anomaly.toFixed(0)}</b> · Evidence <b>${c.evidence.toFixed(0)}</b> · Risk <b>${c.risk.toFixed(0)}</b> · ${CLASS_LABELS[c.cls].label}`,
             `<span style="font-size:11px;color:${COLORS.text}">Persistence: ${dirYears}/${c.comparableYears} comparable years ${dirWord}; longest streak ${c.longestPosStreak}</span>`,
             `<span style="font-size:11px;color:${COLORS.text}">Flags: ${flags}</span>`,
             `<span style="font-size:11px;color:${COLORS.text}">Click to open the channel profile. A screening signal, not evidence of wrongdoing.</span>`,
           ].join("<br/>");
         },
       },
-      series: [guideSeries, ...clsSeries],
+      series: [guideSeries, ISO_SERIES, ...clsSeries],
     };
   }, [byClass, filter.direction, period]);
 
