@@ -64,7 +64,8 @@ export default function Sidebar() {
     <aside className="no-print hidden w-[236px] shrink-0 bg-[var(--color-navy)] lg:block">
       <div className="sticky top-0 flex h-screen flex-col overflow-y-auto px-2.5 py-5 text-white">
         <Link href="/" className="mb-7 flex items-center gap-2.5 px-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-gold)] text-[15px] font-extrabold text-[var(--color-navy)]">⇄</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/cbu-logo.png" alt="Central Bank of the Republic of Uzbekistan" className="h-10 w-10 shrink-0 object-contain" />
           <span className="leading-tight">
             <span className="block text-[15px] font-semibold tracking-tight text-white">Trade Mirror</span>
             <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">Evidence &amp; Risk Screening</span>

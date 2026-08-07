@@ -28,9 +28,9 @@ import { BAR_SPEC, LINE_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echar
 
 type TabKey = "ranked" | "reverse" | "profile";
 const TABS: { key: TabKey; label: string; tip: string }[] = [
-  { key: "ranked", label: "Ranked components", tip: "Risk matrix and the ranked table of all partner × code combinations under the current filters." },
-  { key: "reverse", label: "Reverse focus", tip: "Reverse discrepancies (UZB records > partner) analysed separately — never netted against positive ones." },
   { key: "profile", label: "Statistical profile", tip: "Distribution, materiality thresholds, concentration and robustness of the discrepancy across base channels." },
+  { key: "reverse", label: "Reverse focus", tip: "Reverse discrepancies (UZB records > partner) analysed separately — never netted against positive ones." },
+  { key: "ranked", label: "Ranked components", tip: "Risk matrix and the ranked table of all partner × code combinations under the current filters." },
 ];
 
 /* ---------- quiet chart axis helpers (fontSize 10, palette-only) ---------- */
@@ -104,7 +104,7 @@ export default function QueueView() {
   const { data, series, filter } = useFilter();
   const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(2);
-  const [tab, setTab] = useState<TabKey>("ranked");
+  const [tab, setTab] = useState<TabKey>("profile");
 
   const channels = levelChannels(data, level);
 

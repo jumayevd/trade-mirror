@@ -60,15 +60,6 @@ const CARDS: FormulaCard[] = [
     refs: ["buehn2011"],
   },
   {
-    name: "bounded asymmetry %",
-    formula: "|D| ÷ max(X_cif_exp, M_cif)",
-    usedIn: "Queue “Asym” column; anomaly-score input",
-    population: "Matched pairs",
-    denominator: "The larger of the two reported sides",
-    interpretation: "0–100% scale of disagreement between the two mirrors.",
-    refs: ["unsd2019"],
-  },
-  {
     name: "gap rate / positive share",
     formula: "Σ max(D,0) ÷ Σ X_cif_exp",
     usedIn: "Country and sector tables (“Gap rate”)",
@@ -76,15 +67,6 @@ const CARDS: FormulaCard[] = [
     denominator: "Expected CIF imports",
     interpretation: "Share of expected imports that is potentially unrecorded.",
     refs: ["gfi2021"],
-  },
-  {
-    name: "partner-year coverage",
-    formula: "reported partner-years ÷ window partner-years",
-    usedIn: "Comparable-trade tile; Data Quality coverage grid",
-    population: "All partners in scope",
-    denominator: "Partners × years in the selected window",
-    interpretation: "Reporting completeness — a missing year is never treated as a zero flow.",
-    refs: ["yeats1990", "wits"],
   },
   {
     name: "anomaly strength (A)",
@@ -113,33 +95,15 @@ const CARDS: FormulaCard[] = [
     interpretation: "Screening priority (Investigate / Verify data first / Monitor / Low) — not a finding.",
     refs: ["imf2023", "kellenberg2019"],
   },
-  {
-    name: "robustness",
-    formula: "sign(D) stable at f = 6%, 10%, 15% ∧ ≥2 comparable years",
-    usedIn: "Robustness labels; “robust residual signals” tile",
-    population: "Per channel across freight scenarios",
-    denominator: "Three scenarios; full-window history",
-    interpretation: "Whether the finding survives the assumption — freight-, coverage-sensitive or insufficient otherwise.",
-    refs: ["hummels2006"],
-  },
-  {
-    name: "residual stage",
-    formula: "comparable ∧ ¬transit ∧ ¬HS98–99 ∧ ≥2 years ∧ sign-stable",
-    usedIn: "Default evidence-stage filter; reconciliation funnel",
-    population: "Comparable channels",
-    denominator: "Not applicable",
-    interpretation: "Survives the basic checks and remains unexplained — still a screening signal, not proof.",
-    refs: ["carrere2015", "unsd2019", "ferrantino2008"],
-  },
-  {
-    name: "concentration / HHI",
-    formula: "Σ sᵢ² × 10 000,  sᵢ = channel share of direction total",
-    usedIn: "Overview concentration caption; Statistical profile tab",
-    population: "Channels with a positive value in the active direction",
-    denominator: "Direction total",
-    interpretation: "How much of the gap a few channels carry — not, by itself, evidence of misreporting.",
-    refs: ["imf2023"],
-  },
+];
+
+/** Supporting measures — used in the interface, documented compactly. */
+const SUPPORTING: { name: string; formula: string; usedIn: string; refs: string[] }[] = [
+  { name: "bounded asymmetry %", formula: "|D| ÷ max(X_cif_exp, M_cif)", usedIn: "Queue “Asym” column; anomaly input", refs: ["unsd2019"] },
+  { name: "partner-year coverage", formula: "reported ÷ window partner-years", usedIn: "Comparable-trade tile; Data Quality grid", refs: ["yeats1990"] },
+  { name: "robustness", formula: "sign(D) stable at 6/10/15% ∧ ≥2 years", usedIn: "Robustness labels; robust-signals tile", refs: ["hummels2006"] },
+  { name: "residual stage", formula: "comparable ∧ ¬transit ∧ ¬HS98–99 ∧ ≥2 yrs ∧ sign-stable", usedIn: "Default evidence-stage filter", refs: ["carrere2015", "unsd2019"] },
+  { name: "concentration / HHI", formula: "Σ sᵢ² × 10 000 over direction shares", usedIn: "Overview caption; Statistical profile", refs: ["imf2023"] },
 ];
 
 const FORBIDDEN: [string, string][] = [
@@ -216,9 +180,41 @@ export default function MethodologyPage() {
         </p>
       </section>
 
-      {/* formula cards */}
+      {/* formula cards — only the figures shown as headline numbers and scores */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {CARDS.map((c) => <Card key={c.name} c={c} />)}
+      </section>
+
+      {/* supporting measures — compact, one line each */}
+      <section className="max-w-4xl">
+        <h2 className="mb-2 text-[15px] font-semibold tracking-tight">Supporting measures</h2>
+        <div className="card overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-faint">
+                <th className="px-4 py-2">Measure</th>
+                <th className="px-4 py-2">Formula</th>
+                <th className="px-4 py-2">Used in</th>
+                <th className="px-4 py-2">Basis</th>
+              </tr>
+            </thead>
+            <tbody className="zebra">
+              {SUPPORTING.map((s) => {
+                const refs = s.refs.map((id) => refById.get(id)).filter((r): r is Ref => !!r);
+                return (
+                  <tr key={s.name} className="border-b border-[var(--color-border-soft)] align-top last:border-0">
+                    <td className="px-4 py-2 font-medium">{s.name}</td>
+                    <td className="tabular px-4 py-2 text-muted">{s.formula}</td>
+                    <td className="px-4 py-2 text-muted">{s.usedIn}</td>
+                    <td className="px-4 py-2 text-muted" title={refs.map((r) => `${r.authors} (${r.year}). ${r.title}. ${r.source}.`).join("\n")}>
+                      {refs.map((r) => `${r.authors.split(",")[0].split("&")[0].trim()} ${r.year}`).join("; ")}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* what may / may not be said */}
