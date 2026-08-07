@@ -348,7 +348,7 @@ export default function PartnersView() {
       </section>
 
       {/* 2. filters + context */}
-      <FilterBar showMateriality />
+      <FilterBar />
       <ContextLine filter={filter} />
 
       {/* 3. map hero */}
@@ -366,10 +366,7 @@ export default function PartnersView() {
                 options={(Object.keys(MAP_METRIC_KEYS) as MapMetric[]).map((k) => ({
                   key: k,
                   label: t(MAP_METRIC_KEYS[k] as never),
-                  tip:
-                    k === "total" ? t("ctry.map.tipTotal")
-                      : k === "intensity" ? t("ctry.map.tipIntensity")
-                        : t("ctry.map.tipChannels"),
+                  tip: k === "total" ? t("ctry.map.tipTotal") : t("ctry.map.tipChannels"),
                 }))}
               />
               <Segmented<HeroMode>

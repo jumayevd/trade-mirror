@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import SearchSelect, { type SearchOption } from "@/components/SearchSelect";
 import { useFilter } from "@/lib/filter-context";
 import { meta, DEFAULT_FILTER } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
@@ -55,22 +56,47 @@ function YearTicks() {
   );
 }
 
-export default function FilterBar({ showMateriality = false }: { showMateriality?: boolean }) {
+/**
+ * Every freight scenario the methodology admits: whole percentages across the
+ * documented 6–15% CIF/FOB band, not just the low/central/high anchors.
+ */
+const FREIGHT_SCENARIOS = (() => {
+  const lo = Math.round(meta.cif.low * 100);
+  const hi = Math.round(meta.cif.high * 100);
+  return Array.from({ length: hi - lo + 1 }, (_, i) => (lo + i) / 100);
+})();
+
+export default function FilterBar() {
   const { filter, patch, reset } = useFilter();
   const { t } = useI18n();
   const isDefault = JSON.stringify(filter) === JSON.stringify(DEFAULT_FILTER);
 
+  const countryOptions = useMemo<SearchOption[]>(
+    () => [...meta.partners]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({ value: p.iso3, code: p.iso3, label: p.name })),
+    [],
+  );
+
   // HS pickers cascade: HS4 options follow the chosen chapter, HS6 follows HS4.
-  const hs4Options = useMemo(() => {
-    const codes = Object.keys(meta.hs4labels).filter((c) => filter.hs2 === "all" || c.startsWith(filter.hs2));
-    return codes.sort();
-  }, [filter.hs2]);
-  const hs6Options = useMemo(() => {
-    const codes = Object.keys(meta.hs6labels).filter(
-      (c) => (filter.hs4 !== "all" ? c.startsWith(filter.hs4) : filter.hs2 === "all" || c.startsWith(filter.hs2)),
-    );
-    return codes.sort();
-  }, [filter.hs2, filter.hs4]);
+  const hs2Options = useMemo<SearchOption[]>(
+    () => meta.chapters.map((c) => ({ value: c.chapter, code: c.chapter, label: c.label })),
+    [],
+  );
+  const hs4Options = useMemo<SearchOption[]>(
+    () => Object.keys(meta.hs4labels)
+      .filter((c) => filter.hs2 === "all" || c.startsWith(filter.hs2))
+      .sort()
+      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] })),
+    [filter.hs2],
+  );
+  const hs6Options = useMemo<SearchOption[]>(
+    () => Object.keys(meta.hs6labels)
+      .filter((c) => (filter.hs4 !== "all" ? c.startsWith(filter.hs4) : filter.hs2 === "all" || c.startsWith(filter.hs2)))
+      .sort()
+      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] })),
+    [filter.hs2, filter.hs4],
+  );
 
   return (
     <div className="no-print sticky top-[52px] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
@@ -80,67 +106,58 @@ export default function FilterBar({ showMateriality = false }: { showMateriality
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
           <span className={lbl}>{t("filter.freight")}</span>
           <select className={sel} value={filter.cif} onChange={(e) => patch({ cif: +e.target.value })}>
-            <option value={meta.cif.low}>{Math.round(meta.cif.low * 100)}%</option>
-            <option value={meta.cif.central}>{Math.round(meta.cif.central * 100)}% ({t("filter.central")})</option>
-            <option value={meta.cif.high}>{Math.round(meta.cif.high * 100)}%</option>
+            {FREIGHT_SCENARIOS.map((f) => (
+              <option key={f} value={f}>
+                {Math.round(f * 100)}%
+                {f === meta.cif.central ? ` (${t("filter.central")})` : ""}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.country")}</span>
-          <select className={sel} value={filter.country} onChange={(e) => patch({ country: e.target.value })}>
-            <option value="all">{t("filter.all")}</option>
-            {[...meta.partners].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
-              <option key={p.iso3} value={p.iso3}>{p.name}</option>
-            ))}
-          </select>
+          <SearchSelect
+            value={filter.country}
+            onChange={(v) => patch({ country: v })}
+            options={countryOptions}
+            allLabel={t("filter.all")}
+            ariaLabel={t("filter.country")}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.hs2")}</span>
-          <select
-            className={sel}
+          <SearchSelect
             value={filter.hs2}
-            onChange={(e) => patch({ hs2: e.target.value, hs4: "all", hs6: "all", category: "all" })}
-          >
-            <option value="all">{t("filter.all")}</option>
-            {meta.chapters.map((c) => <option key={c.chapter} value={c.chapter}>{c.chapter} · {c.label}</option>)}
-          </select>
+            onChange={(v) => patch({ hs2: v, hs4: "all", hs6: "all", category: "all" })}
+            options={hs2Options}
+            allLabel={t("filter.all")}
+            ariaLabel={t("filter.hs2")}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.hs4")}</span>
-          <select className={sel} value={filter.hs4} onChange={(e) => patch({ hs4: e.target.value, hs6: "all" })}>
-            <option value="all">{t("filter.all")}</option>
-            {hs4Options.map((c) => (
-              <option key={c} value={c}>{c} · {meta.hs4labels[c]}</option>
-            ))}
-          </select>
+          <SearchSelect
+            value={filter.hs4}
+            onChange={(v) => patch({ hs4: v, hs6: "all" })}
+            options={hs4Options}
+            allLabel={t("filter.all")}
+            ariaLabel={t("filter.hs4")}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.hs6")}</span>
-          <select className={sel} value={filter.hs6} onChange={(e) => patch({ hs6: e.target.value })}>
-            <option value="all">{t("filter.all")}</option>
-            {hs6Options.map((c) => (
-              <option key={c} value={c}>{c} · {meta.hs6labels[c]}</option>
-            ))}
-          </select>
+          <SearchSelect
+            value={filter.hs6}
+            onChange={(v) => patch({ hs6: v })}
+            options={hs6Options}
+            allLabel={t("filter.all")}
+            ariaLabel={t("filter.hs6")}
+          />
         </div>
-
-        {showMateriality && (
-          <div className="flex flex-col gap-1" title={t("filter.materiality.tip")}>
-            <span className={lbl}>{t("filter.materiality")}</span>
-            <select className={sel} value={filter.minGap} onChange={(e) => patch({ minGap: +e.target.value })}>
-              <option value={0}>0</option>
-              <option value={100_000}>$100K</option>
-              <option value={1_000_000}>$1M</option>
-              <option value={5_000_000}>$5M</option>
-              <option value={10_000_000}>$10M</option>
-              <option value={50_000_000}>$50M</option>
-            </select>
-          </div>
-        )}
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>

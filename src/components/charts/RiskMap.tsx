@@ -18,12 +18,11 @@ import { useI18n } from "@/lib/i18n";
  * the analyzed partner set are inert — no tooltip, no hover, no pointer.
  */
 
-export type MapMetric = "total" | "intensity" | "channels";
+export type MapMetric = "total" | "channels";
 
-/** Locale keys for the three map metrics — resolved through `t` at render time. */
+/** Locale keys for the map metrics — resolved through `t` at render time. */
 export const MAP_METRIC_KEYS: Record<MapMetric, string> = {
   total: "ctry.map.metric.total",
-  intensity: "ctry.map.metric.intensity",
   channels: "ctry.map.metric.channels",
 };
 
@@ -90,7 +89,6 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
 
   const metricOf = useMemo(() => (p: PartnerAgg): number | null => {
     if (metric === "channels") return p.channels;
-    if (metric === "intensity") return p.peT > 0 ? (p.posT / p.peT) * 1e8 : null;
     return p.posT;
   }, [metric]);
 

@@ -370,9 +370,16 @@ export function aggregate(f: Filter): Aggregate {
 
   const dirVal = (c: Channel) => c.posT;
 
-  // ---- partner rollups (from filtered HS2 channels) ----
+  // Roll up at the most specific HS level the user picked: selecting a product
+  // must report that product, not its whole chapter. With no HS filter the
+  // rollup stays at HS2, which is the stable chapter-level view.
+  const rollupLevel = f.hs6 !== "all" ? 6 : f.hs4 !== "all" ? 4 : 2;
+  const rollup = rollupLevel === 6 ? channels6 : rollupLevel === 4 ? channels4 : channels;
+  const rollupBase = rollupLevel === 6 ? baseChannels6 : rollupLevel === 4 ? baseChannels4 : baseChannels;
+
+  // ---- partner rollups ----
   const pMap = new Map<string, Channel[]>();
-  for (const c of channels) (pMap.get(c.partnerIso) ?? pMap.set(c.partnerIso, []).get(c.partnerIso)!).push(c);
+  for (const c of rollup) (pMap.get(c.partnerIso) ?? pMap.set(c.partnerIso, []).get(c.partnerIso)!).push(c);
   const partners: PartnerAgg[] = [];
   for (const [iso, cs] of pMap) {
     const pm = pMeta.get(iso)!;
@@ -407,7 +414,7 @@ export function aggregate(f: Filter): Aggregate {
 
   // ---- chapter rollups ----
   const cMap = new Map<string, Channel[]>();
-  for (const c of channels) (cMap.get(c.chapter) ?? cMap.set(c.chapter, []).get(c.chapter)!).push(c);
+  for (const c of rollup) (cMap.get(c.chapter) ?? cMap.set(c.chapter, []).get(c.chapter)!).push(c);
   const chapters: ChapterAgg[] = [];
   for (const [chapter, cs] of cMap) {
     const byYear = new Map<number, number>();
@@ -431,14 +438,14 @@ export function aggregate(f: Filter): Aggregate {
 
   // ---- categories ----
   const catTotals = new Map<string, number>();
-  for (const c of channels) catTotals.set(c.category, (catTotals.get(c.category) ?? 0) + c.posT);
+  for (const c of rollup) catTotals.set(c.category, (catTotals.get(c.category) ?? 0) + c.posT);
   const catSum = [...catTotals.values()].reduce((a, b) => a + b, 0) || 1;
   const categories = [...catTotals.entries()].map(([key, v]) => ({ key, label: catLabel.get(key) ?? key, value: v, share: v / catSum }))
     .filter((c) => c.value > 0).sort((a, b) => b.value - a.value);
 
   // ---- annual (positive discrepancy, plus comparable partner count) ----
   const yAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
-  for (const c of baseChannels) for (const yr of c.years) {
+  for (const c of rollupBase) for (const yr of c.years) {
     const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
     e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.partners.add(c.partnerIso);
     yAgg.set(yr.y, e);
@@ -449,7 +456,7 @@ export function aggregate(f: Filter): Aggregate {
   });
 
   // ---- concentration (positive discrepancy over filtered channels) ----
-  const sorted = [...channels].filter((c) => dirVal(c) > NOISE).sort((a, b) => dirVal(b) - dirVal(a));
+  const sorted = [...rollup].filter((c) => dirVal(c) > NOISE).sort((a, b) => dirVal(b) - dirVal(a));
   const dirTotal = sorted.reduce((s, c) => s + dirVal(c), 0) || 1;
   let cum = 0;
   const concentration = sorted.slice(0, 20).map((c) => {
@@ -479,21 +486,21 @@ export function aggregate(f: Filter): Aggregate {
 
   // ---- funnel & KPIs (from base = pre-signal/materiality channels) ----
   const funnel = {
-    observedChannels: baseChannels.length,
-    comparableChannels: baseChannels.length,
-    comparableValue: baseChannels.reduce((s, c) => s + c.peT, 0),
+    observedChannels: rollupBase.length,
+    comparableChannels: rollupBase.length,
+    comparableValue: rollupBase.reduce((s, c) => s + c.peT, 0),
   };
   const Klo = 1 + meta.cif.low;
   const Khi = 1 + meta.cif.high;
   const posAt = (mult: number) =>
-    baseChannels.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe * mult - yr.ui), 0), 0);
+    rollupBase.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe * mult - yr.ui), 0), 0);
   const activePartners = meta.partners.filter((p) => allowPartner(p.iso3));
   const possiblePY = activePartners.length * yearsInRange || 1;
   const comparablePY = activePartners.reduce((s, p) => s + p.reportedYears.filter((y) => picked.has(y)).length, 0);
 
   const kpis = {
-    comparableTrade: baseChannels.reduce((s, c) => s + c.peT, 0),
-    positive: { low: posAt(Klo), central: baseChannels.reduce((s, c) => s + c.posT, 0), high: posAt(Khi) },
+    comparableTrade: rollupBase.reduce((s, c) => s + c.peT, 0),
+    positive: { low: posAt(Klo), central: rollupBase.reduce((s, c) => s + c.posT, 0), high: posAt(Khi) },
     coveragePct: comparablePY / possiblePY,
     channelCount: channels.length, partnerCount: partners.length,
     top5Share: sorted.slice(0, 5).reduce((s, c) => s + dirVal(c), 0) / dirTotal,
