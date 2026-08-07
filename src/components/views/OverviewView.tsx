@@ -8,32 +8,15 @@ import FilterBar from "@/components/FilterBar";
 import EChart from "@/components/EChart";
 import TrendChart from "@/components/charts/TrendChart";
 import {
-  Stat, SectionTitle, ContextLine, EvidenceLadder, AnomalyBadge, EvidenceBadge,
+  Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge,
   ClassBadge, RobustnessBadge, TransitTag, EmptyState, InfoTip,
 } from "@/components/ui";
-import { Cite } from "@/lib/references";
 import { useFilter } from "@/lib/filter-context";
 import { meta, DATA_VERSION, METHODOLOGY_VERSION, DIRECTION_LABELS, type PartnerAgg } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip } from "@/lib/echartBase";
-
-const CAN: React.ReactNode[] = [
-  "Locate where partner-reported exports and Uzbekistan's import records diverge, and by how much under stated freight scenarios.",
-  "Separate complete, comparable discrepancies from cases driven by missing reporting, transit routing or residual codes.",
-  "Rank country × HS6 channels by anomaly strength and evidence quality as priorities for statistical or customs review.",
-  "Show whether a discrepancy persists across years and survives the freight assumption.",
-];
-const CANNOT: React.ReactNode[] = [
-  "Prove smuggling, fraud, illegal imports or any specific violation — that requires declarations, audit or inspection (evidence level 5).",
-  <>
-    Measure the shadow economy or budget losses — mirror gaps are one input signal to that research, never the measure itself
-    <Cite ids={["medina2018"]} />.
-  </>,
-  "Attribute a discrepancy to a single cause: valuation, timing, classification, re-export and reporting differences all contribute.",
-  "Establish that any named country or company acted improperly.",
-];
 
 export default function OverviewView() {
   const { data, series, filter } = useFilter();
@@ -46,17 +29,20 @@ export default function OverviewView() {
 
   return (
     <div className="space-y-6">
-      {/* 1. hero: eyebrow · H1 · subtitle · disclaimer · research grounding · ladder */}
-      <section className="space-y-2.5">
+      {/* 1. hero: eyebrow · H1 · one compact line */}
+      <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <p className="text-[11px] text-faint">
-              UN Comtrade · {meta.window.start}–{meta.window.end} · statistical reconciliation &amp; risk screening
+              UN Comtrade · {meta.window.start}–{meta.window.end} · mirror-statistics risk screening
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
               {t("nav.overview")}
             </h1>
-            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">{t("ov.question")}</p>
+            <p className="text-[13px] text-muted">
+              Screening signals — not proof of wrongdoing ·{" "}
+              <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">Methodology →</Link>
+            </p>
           </div>
           <button
             onClick={exportCsv}
@@ -66,15 +52,6 @@ export default function OverviewView() {
             {t("common.exportCsv")} ↓
           </button>
         </div>
-        <p className="max-w-3xl border-l-2 border-l-[var(--color-border)] pl-3 text-[13px] leading-relaxed text-muted">
-          {t("ov.disclaimer")}
-        </p>
-        <p className="max-w-3xl text-[12px] leading-relaxed text-faint">
-          Built in the mirror-statistics tradition of partner-country comparison, from Bhagwati onward — a
-          window onto unrecorded trade and one input to shadow-economy research, never its measure
-          <Cite ids={["bhagwati1964", "carrere2015", "medina2018"]} />.
-        </p>
-        <EvidenceLadder compact />
       </section>
 
       {/* 2. filters + calculation context */}
@@ -85,7 +62,7 @@ export default function OverviewView() {
       <section>
         <SectionTitle
           title="National snapshot"
-          desc="Headline reconciliation figures for the selected period and filters. All values are residual unexplained discrepancies unless stated otherwise — screening signals, not findings."
+          desc="Residual unexplained discrepancies under the active filters."
         />
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Stat label={t("kpi.comparableTrade")} value={fmtUSD(k.comparableTrade)}
@@ -105,7 +82,8 @@ export default function OverviewView() {
       <section>
         <SectionTitle
           title="Trade development"
-          desc={`${t("ov.trend")} — full ${meta.window.start}–${meta.window.end} window under the current filters. Amber: positive discrepancy. Blue: reverse. Line: comparable partners per year.`}
+          desc="Amber: positive · blue: reverse · line: comparable partners."
+          right={<InfoTip text={`${t("ov.trend")} — full ${meta.window.start}–${meta.window.end} window under the current filters.`} />}
         />
         <TrendChart annual={series.annual} />
       </section>
@@ -116,7 +94,7 @@ export default function OverviewView() {
       {/* 6. top screening signals */}
       <section>
         <SectionTitle title={t("ov.topSignals")}
-          desc="Country × HS6 channels ranked by class, anomaly strength and evidence quality under the current filters."
+          desc="Ranked by class, anomaly strength and evidence quality."
           right={<Link href="/risk" className="text-sm font-medium text-[var(--color-primary)] hover:underline">{t("nav.queue")} →</Link>} />
         {top.length === 0 ? <EmptyState /> : (
           <div className="card zebra divide-y divide-[var(--color-border-soft)]">
@@ -141,49 +119,17 @@ export default function OverviewView() {
         )}
       </section>
 
-      {/* 7. dataset & grounding — one compact card */}
-      <section className="card p-4">
-        <SectionTitle
-          title="Dataset & grounding"
-          desc="What every figure on this site is computed from, and the literature the method follows. These facts describe the whole snapshot and do not change with the filters above."
-        />
-        <dl className="flex flex-wrap gap-x-8 gap-y-3">
-          <DatasetFact label="Source records" value={fmtNum(meta.datasetRows)}
-            tip="Annual UN Comtrade rows (HS2 + HS6, both reporting sides) pulled into this snapshot." />
-          <DatasetFact label="Window" value={`${meta.window.start}–${meta.window.end}`}
-            tip={`${meta.years.length} years of annual data. Comtrade revises past years, so totals can change between data versions.`} />
-          <DatasetFact label="Partners" value={fmtNum(meta.partners.length)}
-            tip="Partner countries whose exports to Uzbekistan are mirrored against Uzbekistan's import records. Turkmenistan does not report to UN Comtrade and cannot be mirrored." />
-          <DatasetFact label="Orphan imports" value={fmtUSD(meta.orphans.importValue)}
-            tip={`${fmtNum(meta.orphans.importCells)} country-chapter-year observations of Uzbekistan-recorded imports lack a partner mirror. Treating the missing side as a zero export would fabricate a reverse discrepancy, so they are excluded from all discrepancy metrics and lower the coverage share instead.`} />
-        </dl>
-        <p className="mt-3 border-t border-[var(--color-border-soft)] pt-3 text-[12.5px] leading-relaxed text-muted">
-          UN Comtrade annual trade data (HS2 + HS6) · data version{" "}
-          <span className="tabular font-medium text-foreground">{DATA_VERSION}</span> · methodology{" "}
-          <span className="tabular font-medium text-foreground">v{METHODOLOGY_VERSION}</span> ·{" "}
+      {/* 7. dataset & grounding — one mono line */}
+      <section className="card p-3">
+        <p
+          className="tabular text-[12px] leading-relaxed text-muted"
+          title={`${fmtNum(meta.orphans.importCells)} orphan import observations (${fmtUSD(meta.orphans.importValue)}) lack a partner mirror — excluded from discrepancy metrics, never treated as zero exports. Turkmenistan does not report to UN Comtrade. Comtrade revises past years between data versions.`}
+        >
+          {fmtNum(meta.datasetRows)} records · {meta.window.start}–{meta.window.end} · {fmtNum(meta.partners.length)} partners ·
+          UN Comtrade (HS2 + HS6) · data {DATA_VERSION} · methodology v{METHODOLOGY_VERSION} ·{" "}
           <Link href="/quality" className="font-medium text-[var(--color-primary)] hover:underline">{t("nav.quality")}</Link> ·{" "}
           <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">{t("nav.methodology")}</Link>
         </p>
-        <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
-          Expected-CIF mirror comparison<Cite ids={["gaulier2010", "hummels2006"]} /> · gross positive/reverse
-          aggregation<Cite ids={["buehn2011", "gfi2021"]} /> · screening practice<Cite ids={["imf2023", "unsd2019"]} />
-        </p>
-      </section>
-
-      {/* 8. what can / cannot be concluded */}
-      <section className="grid gap-3 md:grid-cols-2">
-        <div className="card border-l-2 border-l-[var(--color-ok)] p-4">
-          <h3 className="mb-2 text-sm font-semibold">{t("ov.can")}</h3>
-          <ul className="space-y-2 text-[13px] text-muted">
-            {CAN.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px]" style={{ color: "var(--color-ok)" }}>✓</span><span>{x}</span></li>)}
-          </ul>
-        </div>
-        <div className="card border-l-2 border-l-[var(--color-investigate)] p-4">
-          <h3 className="mb-2 text-sm font-semibold">{t("ov.cannot")}</h3>
-          <ul className="space-y-2 text-[13px] text-muted">
-            {CANNOT.map((x, i) => <li key={i} className="flex gap-2"><span className="text-[12px] text-[var(--color-investigate)]">✕</span><span>{x}</span></li>)}
-          </ul>
-        </div>
       </section>
     </div>
   );
@@ -204,22 +150,6 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
         <span className="text-[26px] font-semibold leading-none tracking-tight">{value}</span>
       </div>
       {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Dataset fact: one quiet label–value pair in the grounding card      */
-/* ------------------------------------------------------------------ */
-
-function DatasetFact({ label, value, tip }: { label: string; value: string; tip: string }) {
-  return (
-    <div className="flex items-start gap-1.5">
-      <div>
-        <dt className="text-[11px] text-faint">{label}</dt>
-        <dd className="tabular text-[15px] font-semibold leading-tight">{value}</dd>
-      </div>
-      <InfoTip text={tip} />
     </div>
   );
 }
@@ -324,9 +254,10 @@ function TopCounterparts() {
     <section>
       <SectionTitle
         title="Where it concentrates"
-        desc={`Top-10 partner countries under the current filters, ranked ${mode === "trade" ? "by comparable trade (partner-reported exports, FOB)" : `by ${DIRECTION_LABELS[filter.direction].toLowerCase()} discrepancy`}. The top-5 channels carry ${fmtPct(k.top5Share, 0)} of the total across ${fmtNum(k.channelCount)} country × HS2 channels (HHI ${fmtNum(k.hhi)}) — review can be targeted. A large discrepancy is a screening signal, not a finding; click a bar for the country page. ⇄ marks transit-sensitive partners.`}
+        desc={`Top-10 partners by ${mode === "trade" ? "comparable trade (FOB)" : `${DIRECTION_LABELS[filter.direction].toLowerCase()} discrepancy`}.`}
         right={
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <InfoTip text={`Top-5 channels carry ${fmtPct(k.top5Share, 0)} of the total across ${fmtNum(k.channelCount)} country × HS2 channels (HHI ${fmtNum(k.hhi)}) — review can be targeted. Click a bar for the country page. ⇄ marks transit-sensitive partners. Values follow the active filters and freight scenario.`} />
             {modeBtn("gap", "by discrepancy", "Rank partners by the active direction's residual unexplained discrepancy.")}
             {modeBtn("trade", "by comparable trade", "Rank partners by partner-reported export value where both sides reported.")}
           </div>
@@ -335,7 +266,6 @@ function TopCounterparts() {
       {rows.length === 0 ? <EmptyState /> : (
         <div className="card p-4">
           <EChart option={option} onEvents={onEvents} style={{ height: Math.max(240, rows.length * 32 + 40) }} />
-          <p className="mt-1.5 text-xs text-faint">{t("common.source")} · values under the active filters and freight scenario.</p>
         </div>
       )}
     </section>

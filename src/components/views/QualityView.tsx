@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import FilterBar from "@/components/FilterBar";
 import EChart from "@/components/EChart";
-import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, Pill, EmptyState } from "@/components/ui";
+import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, DATA_VERSION, METHODOLOGY_VERSION, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
@@ -247,7 +247,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Product-level (HS6) coverage by year"
-          desc="Count of country × HS6 channels with at least one side reported in each year. Hover a bar for the total partner-reported export value in those channels. Full window under the current partner/sector filters. Source: UN Comtrade."
+          desc="HS6 channels with data, per year." right={<InfoTip text="Hover a bar for the total partner-reported export value. Full window under the current partner/sector filters. Source: UN Comtrade." />}
         />
         {hs6.length === 0 ? (
           <EmptyState />
@@ -269,7 +269,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Weight &amp; quantity availability"
-          desc="Unit-value cross-checks (price-per-kg comparison between the two sides) require net weight reported by BOTH sides in the same channel-year. This section sizes that sample across the full window under the current filters. Source: UN Comtrade weight fields."
+          desc="Where price-per-kg checks are possible." right={<InfoTip text="Unit-value cross-checks require net weight reported by BOTH sides in the same channel-year. Source: UN Comtrade weight fields." />}
         />
         {hs6.length === 0 ? (
           <EmptyState />
@@ -309,7 +309,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Transit &amp; re-export partner metadata"
-          desc="Partners flagged transit-sensitive and the basis for the flag. Classification basis: known re-export/consignment hubs on Uzbekistan import routes."
+          desc="Flagged hubs and why." right={<InfoTip text="Classification basis: known re-export/consignment hubs on Uzbekistan import routes." />}
         />
         <p className="mb-3 max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-2.5 text-sm text-muted">
           <strong className="text-foreground">Why transit is assessed separately.</strong> Uzbekistan
@@ -368,7 +368,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Excluded observations &amp; floors"
-          desc="What is filtered out before ranking, and why. Exclusions limit false positives; they are documented here so the funnel from observed to residual channels stays auditable."
+          desc="What is filtered out before ranking." right={<InfoTip text="Exclusions limit false positives and keep the funnel from observed to residual channels auditable." />}
         />
         <div className="grid gap-3 md:grid-cols-2">
           <div className="card p-4">
@@ -416,7 +416,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title="Data refresh &amp; versioning"
-          desc="Every figure on this site is computed from a single versioned snapshot; the version identifier appears in the context line above every analytical block and in every CSV export."
+          desc="One versioned snapshot behind every figure." right={<InfoTip text="The version identifier appears in the context line above every analytical block and in every CSV export." />}
         />
         <div className="card divide-y divide-[var(--color-border-soft)]">
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">

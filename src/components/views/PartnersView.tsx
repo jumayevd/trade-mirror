@@ -329,12 +329,9 @@ export default function PartnersView() {
               Explore · country screening · UN Comtrade · {meta.window.start}–{meta.window.end}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-              Where the residual unexplained discrepancies sit geographically, and how each partner
-              country ranks under the active filters. Positive (orange) means the partner reported more
-              exports than Uzbekistan recorded as imports; reverse (blue) means Uzbekistan recorded
-              more. Both are statistical screening signals, never evidence of wrongdoing. Click a
-              country on the map or in the table to open its full profile.
+            <p className="text-[12px] text-muted">
+              Screening signals — not proof of wrongdoing ·{" "}
+              <Link href="/methodology" className="hover:underline">Methodology →</Link>
             </p>
           </div>
           <button
@@ -356,9 +353,10 @@ export default function PartnersView() {
       <section className="space-y-3">
         <SectionTitle
           title="Geographic view"
-          desc="Countries shaded by the discrepancy metric in the active direction. Grey never means a zero gap — it marks partners with no comparable data or low reporting quality. Click a country to open its profile."
+          desc="Click a country to open its profile."
           right={
             <div className="flex flex-wrap items-center justify-end gap-2">
+              <InfoTip text="Countries shaded by the discrepancy metric in the active direction. Grey never means a zero gap — it marks partners with no comparable data or low reporting quality." />
               <Segmented<MapMetric>
                 ariaLabel="Map metric"
                 value={mapMetric}
@@ -385,11 +383,9 @@ export default function PartnersView() {
           }
         />
         <p className="max-w-3xl text-[12px] text-muted">
-          <span className="tabular font-medium text-foreground">{data.partners.length}</span> partners in
-          view under the active filters · <span className="tabular font-medium text-foreground">{highTier}</span> with
-          High-tier reporting quality (gaps least likely to be reporting artifacts)
-          · <span className="tabular font-medium text-foreground">{transitCount}</span> transit/re-export
-          hubs, assessed in a separate track.
+          <span className="tabular font-medium text-foreground">{data.partners.length}</span> partners
+          · <span className="tabular font-medium text-foreground" title="High-tier reporting quality — gaps least likely to be reporting artifacts.">{highTier}</span> high-tier
+          · <span className="tabular font-medium text-foreground" title="Transit/re-export hubs, assessed in a separate track.">{transitCount}</span> transit hubs
         </p>
         {heroMode === "map" ? (
           data.partners.length === 0 ? (
@@ -407,14 +403,17 @@ export default function PartnersView() {
         <section className="card p-4">
           <SectionTitle
             title={`Compare partners (${compare.length}/${MAX_COMPARE})`}
-            desc={`Key figures for the selected period side by side. Mini trend: positive discrepancy by year over the full ${meta.window.start}–${meta.window.end} window (reported years only — missing partner-years are skipped, never drawn as zero).`}
+            desc="Selected-period figures side by side."
             right={
-              <button
-                onClick={() => setSel([])}
-                className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground"
-              >
-                Clear ✕
-              </button>
+              <span className="flex items-center gap-2">
+                <InfoTip text={`Mini trend: positive discrepancy by year over the full ${meta.window.start}–${meta.window.end} window (reported years only — missing partner-years are skipped, never drawn as zero).`} />
+                <button
+                  onClick={() => setSel([])}
+                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground"
+                >
+                  Clear ✕
+                </button>
+              </span>
             }
           />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -477,17 +476,10 @@ export default function PartnersView() {
         <section className="space-y-3">
           <SectionTitle
             title="Country ranking"
-            desc="Country × HS2 channels rolled up per partner under the active filters. Tick up to four partners to compare them side by side. Source: UN Comtrade mirror statistics."
+            desc="HS2 channels rolled up per partner."
+            right={<InfoTip text="Nominal USD over the selected period, UN Comtrade. Positive = partner reported more; reverse = Uzbekistan recorded more — never netted. Missing partner-years are excluded, never zero. Totals row = headline KPIs (comparable-stage), reconciling with the Executive Overview." />}
           />
           {rankingTable}
-          <p className="max-w-3xl text-xs text-faint">
-            Values in nominal USD, accumulated over the selected period. Positive = partner reported
-            more than Uzbekistan recorded; reverse = Uzbekistan recorded more — the two are shown
-            separately and never netted into a single headline. Missing partner-years are excluded
-            from the comparison, never treated as zero. The totals row shows the headline KPI figures
-            on the comparable-stage basis, so it reconciles exactly with the Executive Overview.
-            Source: UN Comtrade.
-          </p>
         </section>
       )}
 
@@ -495,7 +487,8 @@ export default function PartnersView() {
       <section className="space-y-3">
         <SectionTitle
           title="Dynamics"
-          desc={`Partners where the ${dirLabel} discrepancy is building up or easing off — top 6 each way by trend over the full ${meta.window.start}–${meta.window.end} window.`}
+          desc={`Top 6 rising and easing partners (${dirLabel} direction).`}
+          right={<InfoTip text={`Trend = mean of the most recent reported years minus the earliest, over the full ${meta.window.start}–${meta.window.end} window (independent of the selected period). Lapsed reporters excluded — their apparent declines are reporting artifacts. Source: UN Comtrade.`} />}
         />
         {risers.length === 0 && easers.length === 0 ? (
           <EmptyState />
@@ -505,25 +498,15 @@ export default function PartnersView() {
             <MoverColumn title="Easing" rows={easers} color={COLORS.axis} deltaColor="var(--color-ok)" dirLabel={dirLabel} />
           </div>
         )}
-        <p className="max-w-3xl text-xs text-faint">
-          Trend compares the mean of the most recent reported years with the earliest reported years
-          over the full {meta.window.start}–{meta.window.end} window (independent of the selected
-          period); partners that stopped reporting to Comtrade are excluded, since their apparent
-          declines would be reporting artifacts, not real easing. Source: UN Comtrade.
-        </p>
       </section>
 
       {/* 7. summary statistics by year */}
       <section className="space-y-3">
         <SectionTitle
           title="Summary statistics by year"
-          desc="Annual totals across all comparable channels under the active filters — how the two sides' reported values and the resulting discrepancies evolve over the selected period."
+          desc="Annual totals across comparable channels."
+          right={<InfoTip text="Computed from all comparable channels before stage/signal filters — the same basis as the headline KPIs. Years with no reporting partner are shown as missing, never zero. Follows the selected year range in the filter bar. Source: UN Comtrade." />}
         />
-        <p className="max-w-3xl text-xs text-muted">
-          Tip: this table follows the selected year range — use the quick range buttons in the filter
-          bar ({t("filter.lastYear")} / 2y / 4y / {t("filter.fullPeriod")}) or the start–end year
-          selectors to widen it.
-        </p>
         {data.annual.length === 0 ? (
           <EmptyState />
         ) : (
@@ -566,11 +549,6 @@ export default function PartnersView() {
             </table>
           </div>
         )}
-        <p className="max-w-3xl text-xs text-faint">
-          Computed from all comparable channels before stage/signal filters — the same basis as the
-          headline KPIs. Years in which no partner in view reported are shown as missing, never as
-          zero flows. Source: UN Comtrade.
-        </p>
       </section>
 
     </div>

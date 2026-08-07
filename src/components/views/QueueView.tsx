@@ -10,7 +10,6 @@ import RiskMatrix from "@/components/charts/RiskMatrix";
 import { ContextLine, EmptyState, EvidenceBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { useI18n } from "@/lib/i18n";
-import { Cite } from "@/lib/references";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import {
@@ -140,10 +139,9 @@ export default function QueueView() {
               UN Comtrade · {meta.window.start}–{meta.window.end} · mirror-statistics screening
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
-            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-              Ranked residual unexplained discrepancies with the components behind their ranking —
-              anomaly strength, evidence quality, persistence and robustness. Screening signals for
-              statistical or customs review, not proof of smuggling, fraud or under-declaration.
+            <p className="text-[13px] text-muted">
+              Screening signals — not proof of wrongdoing ·{" "}
+              <Link href="/methodology" className="hover:underline">Methodology →</Link>
             </p>
           </div>
           <button
@@ -211,7 +209,8 @@ function RankedTab({
       <section>
         <SectionTitle
           title="Analytical significance"
-          desc={`Every ${LEVEL_LABELS[level]} combination positioned by evidence quality (x) and anomaly strength (y); bubble area ∝ discrepancy in the active direction, colour is the signal class. Quadrant guides mirror the classification thresholds (E 60, A 55).`}
+          desc="Evidence quality (x) × anomaly strength (y)."
+          right={<InfoTip text={`Every ${LEVEL_LABELS[level]} combination; bubble area ∝ discrepancy in the active direction, colour = signal class. Quadrant guides mirror the classification thresholds (E 60, A 55).`} />}
         />
         <RiskMatrix channels={channels} filter={filter} />
       </section>
@@ -219,33 +218,20 @@ function RankedTab({
       <section className="space-y-3">
         <SectionTitle
           title="Ranked analytical components"
-          desc="All partner × code combinations at the selected HS level, ranked by signal class, anomaly strength and evidence quality. HS4 is derived from HS6 by code truncation. Click a row to expand per-year detail."
+          desc="Click a row for per-year detail."
+          right={<InfoTip text="Partner × code combinations at the selected HS level, ranked by signal class, anomaly strength and evidence quality. HS4 is derived from HS6 by code truncation." />}
         />
 
         <p className="max-w-3xl text-[12px] text-muted">
           <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
-          {LEVEL_LABELS[level]} combinations under the current filters
-          · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span> Investigate-class
-          (anomaly ≥ 55 and evidence ≥ 60 — a review priority, not a finding of wrongdoing)
-          · top 5 = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> of
-          the {fmtUSD(Math.abs(stats.dirTotal))} active-direction total.
+          {LEVEL_LABELS[level]} combinations
+          · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span>{" "}
+          <span className="cursor-help" title="Investigate class: anomaly ≥ 55 and evidence ≥ 60 — a review priority, not a finding of wrongdoing.">Investigate-class</span>
+          · top 5 = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> of {fmtUSD(Math.abs(stats.dirTotal))}
         </p>
 
         <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={filter} years={years} />
       </section>
-
-      <p className="flex max-w-3xl items-start gap-2 text-xs text-faint">
-        <InfoTip text="Ranking order: signal class, then anomaly strength, then evidence quality, then discrepancy size." />
-        <span>
-          The composite ranking is a screening heuristic for ordering additional review — not a measure
-          of likelihood or wrongdoing. Score definitions, weights and thresholds are documented in the{" "}
-          <Link href="/methodology" className="hover:underline">Methodology</Link>.
-        </span>
-      </p>
-      <p className="max-w-3xl text-xs text-faint">
-        Screening ranks blend anomaly and evidence components <Cite ids={["imf2023", "kellenberg2019"]} /> —
-        see <Link href="/methodology" className="hover:underline">Methodology</Link>.
-      </p>
     </div>
   );
 }
@@ -331,15 +317,6 @@ function ReverseTab({
 
   return (
     <div className="space-y-6">
-      <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-        A reverse discrepancy means Uzbekistan&apos;s import record exceeds the partner&apos;s expected
-        export (partner exports × (1 + freight)). It is analysed separately from positive discrepancies
-        and never netted against them.{" "}
-        <strong className="text-foreground">This site never automatically concludes that Uzbekistan
-        over-reports imports</strong> — a reverse discrepancy is a statistical asymmetry between two
-        record-keeping systems, not evidence of misreporting by either side.
-      </p>
-
       <ContextLine filter={revFilter} />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -367,7 +344,8 @@ function ReverseTab({
       <section>
         <SectionTitle
           title="Reverse discrepancy over time"
-          desc={`Full ${meta.window.start}–${meta.window.end} window under the current filters. Blue bars: reverse discrepancy (UZB records > partner). Orange line: positive discrepancy, for scale contrast only — the two are never netted. Source: UN Comtrade.`}
+          desc="Blue: reverse · orange: positive, contrast only."
+          right={<InfoTip text={`Full ${meta.window.start}–${meta.window.end} window under the current filters. A reverse discrepancy (UZB records > expected CIF) is a statistical asymmetry between two record-keeping systems, never netted against positive discrepancies and never read as over-reporting by either side. Source: UN Comtrade.`} />}
         />
         {revFull.annual.length === 0 ? (
           <EmptyState />
@@ -381,8 +359,12 @@ function ReverseTab({
       <section>
         <SectionTitle
           title={`Largest reverse channels (${LEVEL_LABELS[level]})`}
-          desc="Partner × code combinations ranked by total reverse discrepancy in the selected period. Evidence quality and flags show how comparable the underlying records are before any interpretation is attempted."
-          right={<LevelToggle level={level} onChange={onLevelChange} />}
+          desc="Ranked by total reverse discrepancy."
+          right={
+            <span className="flex items-center gap-2" title="Evidence quality and flags show how comparable the underlying records are before any interpretation is attempted.">
+              <LevelToggle level={level} onChange={onLevelChange} />
+            </span>
+          }
         />
         {top15.length === 0 ? (
           <EmptyState />
@@ -433,7 +415,7 @@ function ReverseTab({
       <section className="card p-4">
         <SectionTitle
           title="How to read a reverse discrepancy"
-          desc="Neutral explanations to rule out before any substantive interpretation. Several typically act at once, and open trade data alone cannot separate their contributions."
+          desc="Rule these out first." right={<InfoTip text="Several typically act at once; open trade data alone cannot separate their contributions." />}
         />
         <ul className="max-w-3xl space-y-1.5 text-[13px] leading-relaxed text-muted">
           {REVERSE_EXPLANATIONS.map((e) => (
@@ -735,7 +717,7 @@ function ProfileTab({
       <section className="space-y-3">
         <SectionTitle
           title="Materiality thresholds"
-          desc="How many channels survive a given materiality floor on the positive direction, and how much of the positive total they carry. Reverse discrepancies are screened separately and never netted against these figures."
+          desc="Channels surviving each materiality floor." right={<InfoTip text="Positive direction only — reverse discrepancies are screened separately and never netted against these figures." />}
         />
         <div className="card overflow-x-auto">
           <table className="w-full border-collapse">
@@ -772,7 +754,7 @@ function ProfileTab({
       <section className="space-y-3">
         <SectionTitle
           title="Concentration"
-          desc="A small number of large channels carries most of the positive total — review effort can focus there. Concentration is not, by itself, evidence of misreporting."
+          desc="A few large channels carry most of the total." right={<InfoTip text="Concentration is not, by itself, evidence of misreporting." />}
         />
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat
@@ -814,7 +796,7 @@ function ProfileTab({
       <section className="space-y-3">
         <SectionTitle
           title="Robustness split"
-          desc="All base channels by scenario robustness. Sensitive channels are not discarded — they are screened at the comparable stage with lower evidence scores."
+          desc="Base channels by scenario robustness." right={<InfoTip text="Sensitive channels are not discarded — they are screened at the comparable stage with lower evidence scores." />}
         />
         <div className="card p-4">
           <div className="flex h-4 w-full gap-[2px] overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-panel)]">
