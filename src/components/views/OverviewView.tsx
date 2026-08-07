@@ -32,10 +32,7 @@ export default function OverviewView() {
       {/* 1. hero: eyebrow · H1 · one compact line */}
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <p className="text-[11px] text-faint">
-              UN Comtrade · {meta.window.start}–{meta.window.end} · mirror-statistics risk screening
-            </p>
+          <div className="space-y-1">
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
               {t("nav.overview")}
             </h1>
@@ -60,10 +57,7 @@ export default function OverviewView() {
 
       {/* 3. national snapshot — four non-overlapping tiles */}
       <section>
-        <SectionTitle
-          title="National snapshot"
-          desc="Residual unexplained discrepancies under the active filters."
-        />
+        <SectionTitle title="National snapshot" />
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <Stat label={t("kpi.comparableTrade")} value={fmtUSD(k.comparableTrade)}
             sub={`${t("kpi.comparableTrade.sub")} · ${fmtPct(k.coveragePct, 0)} of partner-years covered`}
@@ -82,8 +76,7 @@ export default function OverviewView() {
       <section>
         <SectionTitle
           title="Trade development"
-          desc="Amber: positive · blue: reverse · line: comparable partners."
-          right={<InfoTip text={`${t("ov.trend")} — full ${meta.window.start}–${meta.window.end} window under the current filters.`} />}
+          right={<InfoTip text={`${t("ov.trend")} — full ${meta.window.start}–${meta.window.end} window under the current filters. Amber: positive · blue: reverse.`} />}
         />
         <TrendChart annual={series.annual} />
       </section>

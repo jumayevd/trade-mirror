@@ -560,5 +560,8 @@ export function aggregate(f: Filter): Aggregate {
 /** Context line per spec §5.3 — shown above every analytical block. */
 export function contextLine(f: Filter): string {
   const period = f.from === f.to ? String(f.from) : `${f.from}–${f.to}`;
-  return `${period} | ${DIRECTION_LABELS[f.direction]} | ${STAGE_LABELS[f.stage]} | ${VIEW_LABELS[f.view]} | Freight ${Math.round(f.cif * 100)}% | Data version ${DATA_VERSION} | Methodology v${METHODOLOGY_VERSION}`;
+  const parts = [period, DIRECTION_LABELS[f.direction], STAGE_LABELS[f.stage]];
+  if (f.view !== "all") parts.push(VIEW_LABELS[f.view]);
+  parts.push(`freight ${Math.round(f.cif * 100)}%`);
+  return parts.join(" · ");
 }

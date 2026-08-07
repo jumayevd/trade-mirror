@@ -1,70 +1,145 @@
-import { EvidenceLadder } from "@/components/ui";
-import { aggregate, DEFAULT_FILTER, meta, DATA_VERSION, METHODOLOGY_VERSION } from "@/lib/dataset";
+import { aggregate, DEFAULT_FILTER, meta } from "@/lib/dataset";
 import { fmtUSD, fmtPct } from "@/lib/format";
-import { Cite, REFERENCES } from "@/lib/references";
+import { REFERENCES, type Ref } from "@/lib/references";
 
 export const metadata = { title: "Methodology — Trade Mirror" };
 
 const FULL = aggregate({ ...DEFAULT_FILTER, from: meta.window.start, to: meta.window.end, stage: "comparable", minGap: 0 });
+const refById = new Map(REFERENCES.map((r) => [r.id, r]));
 
-function Formula({ children }: { children: React.ReactNode }) {
-  return <div className="card my-3 px-4 py-3 font-mono text-[13px] text-foreground/90">{children}</div>;
+/* ------------------------------------------------------------------ */
+/* Formula cards — name · formula · usage · population · denominator · */
+/* interpretation · research basis (numbered citations)                */
+/* ------------------------------------------------------------------ */
+
+interface FormulaCard {
+  name: string;
+  formula: string;
+  usedIn: string;
+  population: string;
+  denominator: string;
+  interpretation: string;
+  refs: string[];
 }
-function H({ children }: { children: React.ReactNode }) {
-  // Headings stay in ink; the brand color appears only as a quiet 3px left bar.
-  return (
-    <h3 className="border-l-[3px] border-l-[var(--color-primary)] pl-2.5 text-base font-semibold text-foreground">
-      {children}
-    </h3>
-  );
-}
 
-const DEFINITIONS: [string, string][] = [
-  ["Reported flow", "A value one side actually submitted to UN Comtrade for a country-year-product."],
-  ["Expected import CIF", "Partner export FOB × (1 + freight rate) — the partner's figure brought to an approximate import valuation basis."],
-  ["Signed discrepancy", "Expected import CIF − Uzbekistan's recorded import CIF."],
-  ["Positive discrepancy", "max(signed, 0): the partner reports more than Uzbekistan records."],
-  ["Reverse discrepancy", "max(−signed, 0): Uzbekistan records more than the partner reports."],
-  ["Absolute discrepancy", "Positive + reverse — the total two-sided asymmetry."],
-  ["Bounded asymmetry %", "Absolute discrepancy ÷ max(expected CIF, UZB imports); bounded 0–100% for non-negative flows."],
-  ["Residual unexplained discrepancy", "A comparable discrepancy that survives the basic checks: not transit-dominated, not a residual HS code, at least two comparable years, and sign-stable across the 6–15% freight band."],
-  ["Robustness", "Whether the finding survives changes in assumptions (freight rate, coverage, data availability)."],
-];
-
-const CAUSES: [string, React.ReactNode][] = [
-  ["CIF/FOB valuation", "Imports include freight and insurance; exports don't. Adjusted by the freight scenario — the one methodological assumption, shown as a 6–15% band."],
-  ["Time lag", "Goods shipped in December may clear customs in January; annual data cuts across this."],
-  ["Origin vs consignment", "Uzbekistan attributes imports to country of origin; hubs report re-exports by consignment — routed goods legitimately diverge."],
-  ["Re-export & transit", <>Goods passing through third countries can appear in one mirror and not the other.<Cite ids={["ferrantino2008"]} /></>],
-  ["Trade system differences", "General vs special trade system boundaries differ between reporters."],
-  ["HS classification", "The two sides can classify the same good under different codes, especially near similar headings."],
-  ["Confidentiality & residual codes", "Some exporters report sensitive trade under residual codes (HS 98–99) that can never be matched product-by-product."],
-  ["Coverage & reporting quality", <>A partner that reports late, partially or not at all creates gaps that are data artifacts, not trade.<Cite ids={["yeats1990"]} /></>],
-];
-
-const SCORE_A: [string, string, React.ReactNode][] = [
-  ["Magnitude", "35%", "log₁₀-scaled residual discrepancy with fixed anchors ($1M → 0, $10B → 1)."],
-  ["Relative size", "25%", "Bounded asymmetry — a 90%-missing flow outranks a 10%-missing one of equal size."],
-  ["Persistence", "20%", "Share of comparable years in the same direction plus longest streak, shrunk when fewer than 3 years exist."],
-  ["Dynamics", "10%", <>Sustained growth of the discrepancy (recent vs early mean), not a single spike.<Cite ids={["fisman2004"]} /></>],
-  ["Value/quantity anomaly", "10%", <>Unit-value divergence where both sides report weight; when weight is missing the remaining weights are renormalized.<Cite ids={["javorcik2008"]} /></>],
-];
-const SCORE_E: [string, string, React.ReactNode][] = [
-  ["Both-side coverage", "25%", "Comparable years ÷ years in the selected period; missing-as-zero is never allowed."],
-  ["Reporter reliability", "20%", "Partner's reporting coverage across the window, halved after a reporting stop."],
-  ["HS comparability", "15%", "Residual codes score 0; regular codes 0.8 pending the HS-concordance dataset (single-revision extract)."],
-  ["Weight/quantity evidence", "15%", "Share of years with comparable physical measures on both sides."],
-  ["Freight robustness", "10%", "Sign stable across the 6–15% band."],
-  ["Transit exposure", "10%", "Direct partners score above transit-sensitive hubs."],
-  ["Residual/noise penalty", "5%", "Residual chapters and sub-$1M channels are down-weighted."],
-];
-
-const MATRIX = [
-  ["High anomaly", "High evidence", "Investigate", "Strongest open-data signal; priority for further statistical or customs review."],
-  ["High anomaly", "Low evidence", "Verify data first", "Check statistical comparability before interpreting."],
-  ["Low anomaly", "High evidence", "Monitor", "Good data, anomaly not yet strong."],
-  ["Low anomaly", "Low evidence", "Low priority", "Not usable for substantive conclusions."],
-  ["Any", "Transit-sensitive", "Transit-sensitive", "Shown separately; never mixed into core results."],
+const CARDS: FormulaCard[] = [
+  {
+    name: "expected import CIF",
+    formula: "X_fob × (1 + f),  f ∈ {6%, 10%, 15%}",
+    usedIn: "Basis of every discrepancy figure; freight selector in the filter bar",
+    population: "Matched partner × product × year pairs",
+    denominator: "Not applicable",
+    interpretation: "Valuation-basis alignment only — the one methodological assumption, always shown as a band.",
+    refs: ["hummels2006", "gaulier2010"],
+  },
+  {
+    name: "signed discrepancy",
+    formula: "D = X_fob × (1 + f) − M_cif",
+    usedIn: "Queue “Signed” column; sector × partner heatmap; per-year detail panels",
+    population: "Matched pairs where both sides reported",
+    denominator: "Not applicable",
+    interpretation: "Interpret as a statistical discrepancy only.",
+    refs: ["bhagwati1964", "unsd2019"],
+  },
+  {
+    name: "positive discrepancy",
+    formula: "Σ max(D, 0)  per channel-year",
+    usedIn: "Headline tile; amber series everywhere; country/product rankings",
+    population: "Matched pairs, accumulated year by year",
+    denominator: "Not applicable",
+    interpretation: "A potential under-recording signal — never netted against reverse, never proof.",
+    refs: ["buehn2011", "gfi2021"],
+  },
+  {
+    name: "reverse discrepancy",
+    formula: "Σ max(−D, 0)  per channel-year",
+    usedIn: "Reverse tile; blue series; Reverse focus tab",
+    population: "Matched pairs, accumulated year by year",
+    denominator: "Not applicable",
+    interpretation: "UZB records exceed the partner’s — shown separately; never read as over-reporting by default.",
+    refs: ["buehn2011"],
+  },
+  {
+    name: "bounded asymmetry %",
+    formula: "|D| ÷ max(X_cif_exp, M_cif)",
+    usedIn: "Queue “Asym” column; anomaly-score input",
+    population: "Matched pairs",
+    denominator: "The larger of the two reported sides",
+    interpretation: "0–100% scale of disagreement between the two mirrors.",
+    refs: ["unsd2019"],
+  },
+  {
+    name: "gap rate / positive share",
+    formula: "Σ max(D,0) ÷ Σ X_cif_exp",
+    usedIn: "Country and sector tables (“Gap rate”)",
+    population: "Positive direction, matched pairs",
+    denominator: "Expected CIF imports",
+    interpretation: "Share of expected imports that is potentially unrecorded.",
+    refs: ["gfi2021"],
+  },
+  {
+    name: "partner-year coverage",
+    formula: "reported partner-years ÷ window partner-years",
+    usedIn: "Comparable-trade tile; Data Quality coverage grid",
+    population: "All partners in scope",
+    denominator: "Partners × years in the selected window",
+    interpretation: "Reporting completeness — a missing year is never treated as a zero flow.",
+    refs: ["yeats1990", "wits"],
+  },
+  {
+    name: "anomaly strength (A)",
+    formula: "100 × (0.35·mag + 0.25·rel + 0.20·pers + 0.10·dyn + 0.10·uv)",
+    usedIn: "“A” score on every channel; risk-matrix vertical axis",
+    population: "Per channel (partner × code), weights sum to 1",
+    denominator: "Fixed anchors: $1M → 0, $10B → 1 on the magnitude term",
+    interpretation: "How unusual the discrepancy is. Contains no data-quality information.",
+    refs: ["fisman2004", "javorcik2008"],
+  },
+  {
+    name: "evidence quality (E)",
+    formula: "100 × (0.25·cov + 0.20·rel + 0.15·hs + 0.15·wq + 0.10·fr + 0.10·tr + 0.05·res)",
+    usedIn: "“E” score on every channel; risk-matrix horizontal axis",
+    population: "Per channel, weights sum to 1",
+    denominator: "Component shares each bounded 0–1",
+    interpretation: "How reliable and comparable the underlying records are — scored separately from A.",
+    refs: ["yeats1990", "unsd2019"],
+  },
+  {
+    name: "signal class",
+    formula: "matrix(A ≥ 55, E ≥ 60); transit overrides",
+    usedIn: "Class labels across the site; queue default ordering",
+    population: "Per channel",
+    denominator: "Fixed thresholds, versioned with the methodology",
+    interpretation: "Screening priority (Investigate / Verify data first / Monitor / Low) — not a finding.",
+    refs: ["imf2023", "kellenberg2019"],
+  },
+  {
+    name: "robustness",
+    formula: "sign(D) stable at f = 6%, 10%, 15% ∧ ≥2 comparable years",
+    usedIn: "Robustness labels; “robust residual signals” tile",
+    population: "Per channel across freight scenarios",
+    denominator: "Three scenarios; full-window history",
+    interpretation: "Whether the finding survives the assumption — freight-, coverage-sensitive or insufficient otherwise.",
+    refs: ["hummels2006"],
+  },
+  {
+    name: "residual stage",
+    formula: "comparable ∧ ¬transit ∧ ¬HS98–99 ∧ ≥2 years ∧ sign-stable",
+    usedIn: "Default evidence-stage filter; reconciliation funnel",
+    population: "Comparable channels",
+    denominator: "Not applicable",
+    interpretation: "Survives the basic checks and remains unexplained — still a screening signal, not proof.",
+    refs: ["carrere2015", "unsd2019", "ferrantino2008"],
+  },
+  {
+    name: "concentration / HHI",
+    formula: "Σ sᵢ² × 10 000,  sᵢ = channel share of direction total",
+    usedIn: "Overview concentration caption; Statistical profile tab",
+    population: "Channels with a positive value in the active direction",
+    denominator: "Direction total",
+    interpretation: "How much of the gap a few channels carry — not, by itself, evidence of misreporting.",
+    refs: ["imf2023"],
+  },
 ];
 
 const FORBIDDEN: [string, string][] = [
@@ -75,223 +150,86 @@ const FORBIDDEN: [string, string][] = [
   ["“Budget losses equal gap × tax rate”", "“A fiscal estimate is impossible without rates, exemptions, tax bases and verified declarations.”"],
 ];
 
+function Label({ children }: { children: React.ReactNode }) {
+  return <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-faint">{children}</div>;
+}
+
+function Card({ c }: { c: FormulaCard }) {
+  const refs = c.refs.map((id) => refById.get(id)).filter((r): r is Ref => !!r);
+  return (
+    <div className="card flex flex-col p-4">
+      <h3 className="text-[15px] font-semibold tracking-tight">{c.name}</h3>
+      <div className="tabular mt-2 rounded-md bg-[var(--color-panel-2)] px-3 py-2 text-[12.5px] leading-relaxed">
+        {c.formula}
+      </div>
+      <div className="mt-3 space-y-2.5 text-[13px] leading-snug">
+        <div>
+          <Label>Used in</Label>
+          <div className="mt-0.5">{c.usedIn}</div>
+        </div>
+        <div>
+          <Label>Population</Label>
+          <div className="mt-0.5">{c.population}</div>
+        </div>
+        <div>
+          <Label>Denominator</Label>
+          <div className="mt-0.5">{c.denominator}</div>
+        </div>
+        <div>
+          <Label>Interpretation</Label>
+          <div className="mt-0.5">{c.interpretation}</div>
+        </div>
+      </div>
+      <div className="mt-3 border-t border-dashed border-[var(--color-border)] pt-2.5">
+        <Label>Research basis</Label>
+        <ol className="mt-1 list-decimal space-y-1 pl-4 text-[12px] leading-snug text-muted">
+          {refs.map((r) => (
+            <li key={r.id}>
+              {r.authors} ({r.year}). {r.url ? (
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{r.title}</a>
+              ) : r.title}. {r.source}.
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 export default function MethodologyPage() {
   const k = FULL.kpis;
-  const funnelRows: { label: string; count: number; value: number | null; note: string }[] = [
-    {
-      label: "Comparable channels",
-      count: FULL.funnel.comparableChannels,
-      value: FULL.funnel.comparableValue,
-      note: "partner × HS2 channels where both sides reported (value = partner exports)",
-    },
-    {
-      label: "Residual unexplained",
-      count: FULL.funnel.residualChannels,
-      value: FULL.funnel.residualValue,
-      note: "pass the transit, residual-code, coverage and freight checks (value = positive discrepancy)",
-    },
-    {
-      label: "Robust residual signals",
-      count: k.robustSignals,
-      value: null,
-      note: "HS6 channels classified Investigate whose sign holds across the whole freight band",
-    },
-  ];
-  const funnelMax = Math.max(...funnelRows.map((r) => r.value ?? 0), 1);
-
   return (
-    <div className="max-w-3xl space-y-10">
-      {/* short "how to read" on top (spec 6.13) */}
-      <section className="card space-y-2 border-l-2 border-l-[var(--color-primary)] p-5">
-        <h2 className="text-lg font-semibold tracking-tight">How to read this dashboard</h2>
-        <p className="text-sm leading-relaxed text-muted">
-          Every trade flow is recorded at least twice — as a partner&apos;s export and as Uzbekistan&apos;s
-          import. After a freight adjustment the two should roughly agree; where they don&apos;t, a{" "}
-          <strong className="text-foreground">mirror discrepancy</strong> appears. This site measures those
-          discrepancies, tests their robustness and data quality, and ranks channels for further review
-          <Cite ids={["bhagwati1964", "imf2023"]} />.
-          A discrepancy — however large — is a <strong className="text-foreground">screening signal</strong>:
-          it shows where to look, never what happened. Positive (partner &gt; UZB) and reverse
-          (UZB &gt; partner) discrepancies are always shown separately; anomaly strength and evidence quality
-          are always scored separately; and missing data is never treated as a zero flow.
+    <div className="space-y-8">
+      <section className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Methodology</h1>
+        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
+          Every trade flow is recorded twice — as a partner&apos;s export (X) and as Uzbekistan&apos;s import (M).
+          After a freight adjustment the two should roughly agree; each card below defines one figure the
+          dashboard shows, where it is used, and the literature it rests on. Every number is a{" "}
+          <strong className="text-foreground">statistical screening signal</strong> — mirror gaps inform
+          shadow-economy research but never measure it, and never prove misconduct.
+        </p>
+        <p className="tabular text-[11.5px] text-faint">
+          {meta.window.start}–{meta.window.end} cumulative at central freight: comparable trade {fmtUSD(k.comparableTrade)} ·
+          positive {fmtUSD(k.positive.central)} ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) ·
+          reverse {fmtUSD(k.reverse)} · flip share {fmtPct(k.flipShare, 0)}
         </p>
       </section>
 
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>1. Relation to shadow-economy research</H>
-        <p>
-          Mirror discrepancies are one open-data input into research on unrecorded trade and the shadow
-          economy in Uzbekistan — they can flag where recorded trade diverges from partner records, and
-          under which assumptions that divergence is robust. Structural estimates of the shadow economy
-          itself require different methods (MIMIC and related latent-variable models), and a mirror gap
-          must never be read as a measure of the shadow economy&apos;s size
-          <Cite ids={["medina2018", "carrere2015"]} />. This platform therefore deliberately reports
-          discrepancies, their robustness and the quality of the underlying data — not a shadow-economy
-          estimate.
-        </p>
+      {/* formula cards */}
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {CARDS.map((c) => <Card key={c.name} c={c} />)}
       </section>
 
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>2. Evidence ladder</H>
-        <EvidenceLadder />
-        <p>
-          Open trade data supports levels 1–3: observed values, comparable pairs and residual unexplained
-          discrepancies. Level 4 (behavioural evidence — tariff-incentive and misclassification tests) is
-          planned once a reliable HS6 tariff dataset is added
-          <Cite ids={["fisman2004", "javorcik2008"]} />. Level 5 (verified non-compliance) requires
-          declarations, audits or administrative decisions and is <em>never</em> claimed on this site.
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>3. Definitions</H>
-        <Formula>expected_import_cif = partner_export_fob × (1 + freight_rate)</Formula>
-        <Formula>signed = expected_import_cif − uzb_import_cif · positive = max(signed, 0) · reverse = max(−signed, 0) · absolute = |signed|</Formula>
-        <p>
-          The freight rate is the one methodological assumption. Because the CIF/FOB wedge between matched
-          mirrors is noisy and commodity-dependent, no single rate is defensible — every headline is
-          therefore computed across a 6–15% scenario band rather than at one point
-          <Cite ids={["hummels2006", "gaulier2010"]} />.
-        </p>
+      {/* what may / may not be said */}
+      <section className="max-w-4xl">
+        <h2 className="mb-2 text-[15px] font-semibold tracking-tight">Wording rules</h2>
         <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <tbody className="zebra">
-              {DEFINITIONS.map(([term, def]) => (
-                <tr key={term} className="border-b border-[var(--color-border-soft)] align-top last:border-0">
-                  <td className="w-56 px-4 py-2 font-medium text-foreground">{term}</td>
-                  <td className="px-4 py-2 text-muted">{def}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p>
-          Aggregation rules: positive and reverse totals are sums of per-channel-year maxima and are never
-          netted against each other; a signed/net figure is never the only headline
-          <Cite ids={["buehn2011", "gfi2021"]} />. Observations enter the mirror comparison only for
-          country-years where the respective side actually reported.
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>4. Legitimate statistical causes of asymmetry</H>
-        <p>
-          Most bilateral asymmetry has documented statistical explanations that must be exhausted before
-          any behavioural reading
-          <Cite ids={["unsd2019", "ferrantino2008", "yeats1990"]} />.
-        </p>
-        <ul className="ml-5 list-disc space-y-2">
-          {CAUSES.map(([c, d]) => <li key={c}><strong className="text-foreground">{c}</strong> — {d}</li>)}
-        </ul>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>5. Anomaly strength (0–100)</H>
-        <p>Ranks how unusual a discrepancy is. It deliberately contains <em>no</em> data-quality information.</p>
-        <ScoreTable rows={SCORE_A} />
-        <H>6. Evidence quality (0–100)</H>
-        <p>
-          Ranks how reliable and comparable the underlying data is — displayed next to every anomaly,
-          never hidden. Reporting quality must be assessed before a gap is interpreted at all
-          <Cite ids={["yeats1990", "unsd2019"]} />.
-        </p>
-        <ScoreTable rows={SCORE_E} />
-        <p className="text-sm text-faint">
-          Weights are configuration, versioned with the methodology (v{METHODOLOGY_VERSION}). Class thresholds:
-          anomaly ≥ 55 counts as high, evidence ≥ 60 as high.
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>7. Classification matrix</H>
-        <p>
-          Crossing anomaly strength with evidence quality yields a review queue, following the practice of
-          customs administrations that use mirror data for risk screening — a prioritization device, never
-          a verdict
-          <Cite ids={["imf2023", "kellenberg2019"]} />.
-        </p>
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
-                <th className="px-4 py-2 font-medium">Anomaly</th><th className="px-4 py-2 font-medium">Evidence</th><th className="px-4 py-2 font-medium">Class</th><th className="px-4 py-2 font-medium">Meaning</th>
-              </tr>
-            </thead>
-            <tbody className="zebra">
-              {MATRIX.map((r) => (
-                <tr key={r[2]} className="border-b border-[var(--color-border-soft)] align-top last:border-0">
-                  <td className="px-4 py-2">{r[0]}</td><td className="px-4 py-2">{r[1]}</td>
-                  <td className="px-4 py-2 font-medium text-foreground">{r[2]}</td><td className="px-4 py-2 text-muted">{r[3]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p>
-          Robustness labels: <strong className="text-foreground">Robust</strong> (sign holds at 6/10/15%,
-          enough comparable years, no major flags), <strong className="text-foreground">Freight-sensitive</strong>{" "}
-          (sign or class changes across scenarios), <strong className="text-foreground">Coverage-sensitive</strong>{" "}
-          (depends on a reporting stop or sparse reporting), <strong className="text-foreground">Insufficient data</strong>{" "}
-          (fewer than two comparable years).
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>8. How the headline is built</H>
-        <p>
-          Every headline figure is the end of a reconciliation funnel over the full {meta.window.start}–{meta.window.end} window:
-          all comparable channels are measured, the checks above strip away channels with a legitimate
-          statistical explanation, and only what survives every assumption change is called a robust signal.
-        </p>
-        <div className="card space-y-3 p-4">
-          {funnelRows.map((r) => (
-            <div key={r.label} className="space-y-1">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
-                <span className="font-medium text-foreground">{r.label}</span>
-                <span className="text-muted">
-                  {r.count.toLocaleString("en-US")} channels{r.value != null ? ` · ${fmtUSD(r.value)}` : ""}
-                </span>
-              </div>
-              {r.value != null && (
-                <div className="h-1.5 w-full rounded-full" style={{ background: "var(--color-panel-2)" }}>
-                  <div
-                    className="h-1.5 rounded-full"
-                    style={{ width: `${Math.max((r.value / funnelMax) * 100, 1.5)}%`, background: "#c3c2b7" }}
-                  />
-                </div>
-              )}
-              <p className="text-xs text-faint">{r.note}</p>
-            </div>
-          ))}
-        </div>
-        <p>
-          Uncertainty is reported, not hidden: the cumulative positive discrepancy is{" "}
-          {fmtUSD(k.positive.low)} at a 6% freight rate, {fmtUSD(k.positive.central)} at 10% and{" "}
-          {fmtUSD(k.positive.high)} at 15%, and {fmtPct(k.flipShare, 0)} of comparable channels change the
-          sign of their net discrepancy somewhere inside that band — a headline is only quoted together
-          with its scenario
-          <Cite ids={["hummels2006"]} />.
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>9. Missing data, zeros, residual codes, transit</H>
-        <ul className="ml-5 list-disc space-y-2">
-          <li><strong className="text-foreground">Missing is never zero.</strong> If a partner did not report a year, no gap is computed for it; coverage warnings appear instead.</li>
-          <li><strong className="text-foreground">Residual codes (HS 98–99)</strong> are shown for transparency but excluded from audit-priority framing: they cannot be mirror-matched by construction.</li>
-          <li><strong className="text-foreground">Transit hubs</strong> ({meta.partners.filter((p) => p.transit).map((p) => p.name).join(", ")}) are classified separately — origin-vs-consignment recording can create legitimate discrepancies.</li>
-          <li><strong className="text-foreground">Noise floor:</strong> channel-years below ≈$0.1M are ignored; HS6 channels below ≈$8M partner value / ≈$4M discrepancy over the window are excluded from the shipped channel tables (product profiles disclose when their totals include sub-floor channels).</li>
-          <li><strong className="text-foreground">Reporting stops</strong> (e.g. Russia after {meta.partners.find((p) => p.iso3 === "RUS")?.lastReportedYear ?? 2021}) down-weight evidence quality and exclude the partner from trend comparisons — a stop is not an improvement.</li>
-        </ul>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>10. What may and may not be said</H>
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
-                <th className="px-4 py-2 font-medium">Not allowed</th><th className="px-4 py-2 font-medium">Allowed</th>
+              <tr className="border-b border-[var(--color-border)] text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-faint">
+                <th className="px-4 py-2">Not allowed</th>
+                <th className="px-4 py-2">Allowed</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -306,63 +244,23 @@ export default function MethodologyPage() {
         </div>
       </section>
 
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>11. Versioning & reproducibility</H>
-        <p>
-          Data version <strong className="text-foreground">{DATA_VERSION}</strong> · methodology{" "}
-          <strong className="text-foreground">v{METHODOLOGY_VERSION}</strong> · generated {new Date(meta.generatedAt).toISOString().slice(0, 10)}.
-          All pages and exports read one calculation source; filters are reflected in shareable URLs; CSV
-          exports embed the data version, methodology version and active filter context. Cumulative
-          {" "}{meta.window.start}–{meta.window.end} reference figures at the central scenario: comparable trade{" "}
-          {fmtUSD(FULL.kpis.comparableTrade)}, positive discrepancy {fmtUSD(FULL.kpis.positive.central)}{" "}
-          ({fmtUSD(FULL.kpis.positive.low)}–{fmtUSD(FULL.kpis.positive.high)} across the freight band), reverse{" "}
-          {fmtUSD(FULL.kpis.reverse)}.
-        </p>
-      </section>
-
-      <section className="space-y-3 text-[15px] leading-relaxed text-muted">
-        <H>12. References</H>
-        <ul className="space-y-3 text-sm">
+      {/* full reference list */}
+      <section className="max-w-4xl">
+        <h2 className="mb-2 text-[15px] font-semibold tracking-tight">References</h2>
+        <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-muted">
           {REFERENCES.map((r) => (
-            <li key={r.id} className="border-b border-[var(--color-border-soft)] pb-3 last:border-0 last:pb-0">
-              <p className="text-foreground">
-                {r.authors} ({r.year}). <em>{r.title}</em>. {r.source}.
-                {r.url && (
-                  <>
-                    {" "}
-                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Link</a>
-                  </>
-                )}
-              </p>
-              <p className="mt-0.5 text-xs text-faint">{r.note}</p>
+            <li key={r.id}>
+              {r.authors} ({r.year}). {r.url ? (
+                <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{r.title}</a>
+              ) : <em>{r.title}</em>}. {r.source}. <span className="text-faint">{r.note}</span>
             </li>
           ))}
-        </ul>
-        <p className="text-xs text-faint">Architecture note: this version computes all figures from a versioned static snapshot in one client-side engine (one calculation source). The FastAPI + DuckDB service layer described in the technical specification is the planned next infrastructure step and does not change any formula on this page.</p>
+        </ol>
+        <p className="mt-3 text-[11.5px] text-faint">
+          Missing partner-years are never treated as zero flows. Residual codes (HS 98–99) are shown for
+          transparency and excluded from screening priority. Source: UN Comtrade, single versioned snapshot.
+        </p>
       </section>
-    </div>
-  );
-}
-
-function ScoreTable({ rows }: { rows: [string, string, React.ReactNode][] }) {
-  return (
-    <div className="card overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
-            <th className="px-4 py-2 font-medium">Component</th><th className="px-4 py-2 font-medium">Weight</th><th className="px-4 py-2 font-medium">Computation</th>
-          </tr>
-        </thead>
-        <tbody className="zebra">
-          {rows.map((r) => (
-            <tr key={r[0]} className="border-b border-[var(--color-border-soft)] align-top last:border-0">
-              <td className="px-4 py-2 font-medium text-foreground">{r[0]}</td>
-              <td className="px-4 py-2 text-faint">{r[1]}</td>
-              <td className="px-4 py-2 text-muted">{r[2]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

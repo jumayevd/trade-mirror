@@ -28,9 +28,11 @@
   --color-muted: #52514e;
   --color-faint: #898781;
 
-  /* brand ink — used sparingly */
-  --color-primary: #17603a;
-  --color-primary-soft: #1d6b40;
+  /* brand: deep navy chrome + gold highlight (sidebar/emphasis) */
+  --color-primary: #1e3a6e;
+  --color-primary-soft: #2b4c8c;
+  --color-navy: #16233b;
+  --color-gold: #d99a2b;
 
   /* data semantics (the only two series colors) */
   --color-positive: #eb6834;
@@ -67,6 +69,8 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-size: 14px;
+  /* comfortable reading scale without manual browser zoom */
+  zoom: 1.1;
 }
 
 .tabular {
