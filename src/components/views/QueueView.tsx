@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { EChartsOption, YAXisComponentOption } from "echarts";
 import EChart from "@/components/EChart";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
+import YearTicks from "@/components/YearTicks";
 import { EmptyState, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { Cite } from "@/lib/references";
 import { useI18n } from "@/lib/i18n";
@@ -12,7 +13,7 @@ import type { LocaleKey } from "@/lib/locales";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import {
-  aggregate, DEFAULT_FILTER, meta,
+  aggregate, DEFAULT_FILTER, meta, yearsLabel,
   type Aggregate, type Channel, type Filter,
 } from "@/lib/dataset";
 import { BAR_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
@@ -21,8 +22,9 @@ import { BAR_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
  * Discrepancy & Risk — the analytical hub. Two quiet tabs share one HS-level state:
  *  1. Ranked components   — risk scores + the ranked table (the screening queue)
  *  2. Statistical profile — distribution, thresholds, concentration, persistence
- * The page is filter-free by design: it always screens the whole 2017–2024 window,
- * so the numbers here are a single stable reference for the rest of the site.
+ * Period is the page's only filter: ticking years rebuilds both tabs from the same
+ * aggregate. It deliberately does not read the shared filter context, so partner
+ * and HS selections made elsewhere never silently narrow the screening queue.
  */
 
 type TabKey = "ranked" | "profile";
@@ -98,21 +100,22 @@ function LevelToggle({ level, onChange }: { level: HsLevel; onChange: (l: HsLeve
   );
 }
 
-/** Filter-free: this page always screens the whole window. */
-const FULL_FILTER: Filter = { ...DEFAULT_FILTER, years: [...meta.years] };
-
 export default function QueueView() {
   const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(2);
   const [tab, setTab] = useState<TabKey>("ranked");
+  /** The one control on this page: which years the screening covers. */
+  const [years, setYears] = useState<number[]>(() => [...meta.years]);
 
-  const data = useMemo(() => aggregate(FULL_FILTER), []);
+  const filter = useMemo<Filter>(() => ({ ...DEFAULT_FILTER, years }), [years]);
+  const data = useMemo(() => aggregate(filter), [filter]);
   const channels = levelChannels(data, level);
   const statsBase = levelBase(data, level);
 
+  const suffix = years.length === meta.years.length ? "" : `-${years.join("_")}`;
   const exportCsv = () => {
-    if (tab === "profile") downloadCsv(`statistical-profile-base-hs${level}.csv`, channelsToCsv(statsBase, FULL_FILTER));
-    else downloadCsv(`discrepancy-risk-hs${level}.csv`, channelsToCsv(channels, FULL_FILTER));
+    if (tab === "profile") downloadCsv(`statistical-profile-base-hs${level}${suffix}.csv`, channelsToCsv(statsBase, filter));
+    else downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
   };
   const exportEmpty = tab === "profile" ? statsBase.length === 0 : channels.length === 0;
 
@@ -123,7 +126,7 @@ export default function QueueView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <p className="text-[10.5px] font-medium text-faint">
-              UN Comtrade · {meta.window.start}–{meta.window.end} · {t("risk.header.screening")}
+              UN Comtrade · {yearsLabel(years)} · {t("risk.header.screening")}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
             <p className="text-[13px] text-muted">
@@ -139,6 +142,11 @@ export default function QueueView() {
             {t("common.exportCsv")} ↓
           </button>
         </div>
+      </section>
+
+      {/* period selection — the whole page follows these ticks */}
+      <section className="no-print">
+        <YearTicks years={years} onChange={setYears} />
       </section>
 
       {/* segmented tab control */}
@@ -158,10 +166,10 @@ export default function QueueView() {
       </div>
 
       {tab === "ranked" && (
-        <RankedTab channels={channels} level={level} onLevelChange={setLevel} years={data.years} />
+        <RankedTab channels={channels} level={level} onLevelChange={setLevel} years={data.years} filter={filter} />
       )}
       {tab === "profile" && (
-        <ProfileTab base={statsBase} agg={data} level={level} onLevelChange={setLevel} />
+        <ProfileTab base={statsBase} agg={data} level={level} onLevelChange={setLevel} filter={filter} />
       )}
     </div>
   );
@@ -170,9 +178,9 @@ export default function QueueView() {
 /* ================================ TAB 1 — ranked ================================ */
 
 function RankedTab({
-  channels, level, onLevelChange, years,
+  channels, level, onLevelChange, years, filter,
 }: {
-  channels: Channel[]; level: HsLevel; onLevelChange: (l: HsLevel) => void; years: number[];
+  channels: Channel[]; level: HsLevel; onLevelChange: (l: HsLevel) => void; years: number[]; filter: Filter;
 }) {
   const { t } = useI18n();
   const stats = useMemo(() => {
@@ -246,7 +254,7 @@ function RankedTab({
           · {t("risk.top5")} = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> ({fmtUSD(stats.total)})
         </p>
 
-        <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={FULL_FILTER} years={years} />
+        <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={filter} years={years} />
       </section>
     </div>
   );
@@ -267,10 +275,10 @@ const HIST_EDGES = [100_000, 1_000_000, 10_000_000, 100_000_000, 1_000_000_000];
 const HIST_LABELS = ["< $100K", "$100K–1M", "$1M–10M", "$10M–100M", "$100M–1B", "≥ $1B"];
 
 function ProfileTab({
-  base, agg, level, onLevelChange,
+  base, agg, level, onLevelChange, filter,
 }: {
   base: Channel[]; agg: Aggregate;
-  level: HsLevel; onLevelChange: (l: HsLevel) => void;
+  level: HsLevel; onLevelChange: (l: HsLevel) => void; filter: Filter;
 }) {
   const { t } = useI18n();
   const n = base.length;
@@ -457,7 +465,7 @@ function ProfileTab({
         <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
           {t("risk.profile.introA")} <strong className="text-foreground">{t("risk.profile.baseWord")}</strong>{" "}
           {t("risk.profile.introB")} {t("risk.profile.channelDef")} {t(LEVEL_LABEL_KEYS[level])} ·{" "}
-          {meta.window.start}–{meta.window.end}.
+          {yearsLabel(filter.years)}.
         </p>
         <LevelToggle level={level} onChange={onLevelChange} />
       </div>
@@ -466,7 +474,7 @@ function ProfileTab({
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.dist.title")}
-          desc={`${t("risk.dist.desc")} ${Math.round(FULL_FILTER.cif * 100)}%. ${t("risk.dist.descTail")}`}
+          desc={`${t("risk.dist.desc")} ${Math.round(filter.cif * 100)}%. ${t("risk.dist.descTail")}`}
         />
         {dist && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
