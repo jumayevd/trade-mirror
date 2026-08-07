@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { DICT, type Lang, type LocaleKey } from "@/lib/locales";
 
 interface I18n {
@@ -11,19 +11,34 @@ interface I18n {
 
 const Ctx = createContext<I18n | null>(null);
 
+/* The language lives in localStorage, exposed to React as a tiny external
+   store: the server snapshot is "en" and the client corrects on hydration.
+   `override` keeps the UI switchable even where localStorage writes fail. */
+let override: Lang | null = null;
+let listeners: Array<() => void> = [];
+const readLang = (): Lang => {
+  if (override) return override;
+  let saved: string | null = null;
+  try { saved = localStorage.getItem("tm-lang"); } catch { /* ignore */ }
+  return saved === "en" || saved === "ru" ? (saved as Lang) : "en";
+};
+const writeLang = (l: Lang) => {
+  override = l;
+  try { localStorage.setItem("tm-lang", l); } catch { /* ignore */ }
+  for (const fn of listeners) fn();
+};
+const subscribeLang = (fn: () => void) => {
+  listeners.push(fn);
+  return () => { listeners = listeners.filter((x) => x !== fn); };
+};
+const serverLang = (): Lang => "en";
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => {
-    const saved = typeof window !== "undefined" ? (localStorage.getItem("tm-lang") as Lang | null) : null;
-    if (saved === "en" || saved === "ru") setLang(saved);
-  }, []);
+  const lang = useSyncExternalStore(subscribeLang, readLang, serverLang);
   const value = useMemo<I18n>(
     () => ({
       lang,
-      setLang: (l) => {
-        setLang(l);
-        try { localStorage.setItem("tm-lang", l); } catch { /* ignore */ }
-      },
+      setLang: writeLang,
       t: (key) => DICT[lang][key] ?? DICT.en[key] ?? key,
     }),
     [lang],

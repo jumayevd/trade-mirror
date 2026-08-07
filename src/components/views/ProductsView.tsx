@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
@@ -217,31 +217,42 @@ export default function ProductsView() {
   const { t } = useI18n();
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
+  const dirKey = filter.direction === "reverse" ? "revT" : "posT";
   const [level, setLevel] = useState<HsLevel>(2);
   const [chapter, setChapter] = useState<string | null>(null); // drilled HS2 chapter
   const [hs4, setHs4] = useState<string | null>(null); // drilled HS4 code
-  const [sort, setSort] = useState<{ key: string; desc: boolean }>({ key: "posT", desc: true });
+  const [sort, setSort] = useState<{ key: string; desc: boolean }>(() => ({ key: dirKey, desc: true }));
   const [page, setPage] = useState(0);
 
   // respect the global HS2 filter: it overrides (and disables) the local chapter drill
   const effChapter = filter.hs2 !== "all" ? filter.hs2 : chapter;
 
-  // keep drill state coherent when the global HS2 filter changes
-  useEffect(() => {
+  // Resets below are adjusted during render (react.dev: "Adjusting some state
+  // when a prop changes") rather than in effects — the drill clearing must be
+  // sticky (survive the filter being reverted), so it cannot be derived.
+  const [prevHs2, setPrevHs2] = useState(filter.hs2);
+  if (prevHs2 !== filter.hs2) {
+    setPrevHs2(filter.hs2);
     if (filter.hs2 !== "all") {
       setChapter(null);
       setHs4((h) => (h && h.startsWith(filter.hs2) ? h : null));
     }
-  }, [filter.hs2]);
+  }
 
-  const dirKey = filter.direction === "reverse" ? "revT" : "posT";
-  useEffect(() => {
+  // new drill target or direction → default sort, first page
+  const [prevView, setPrevView] = useState({ level, effChapter, hs4, dirKey });
+  if (prevView.level !== level || prevView.effChapter !== effChapter || prevView.hs4 !== hs4 || prevView.dirKey !== dirKey) {
+    setPrevView({ level, effChapter, hs4, dirKey });
     setSort({ key: dirKey, desc: true });
     setPage(0);
-  }, [level, effChapter, hs4, dirKey]);
-  useEffect(() => {
+  }
+
+  // any other filter or sort change → first page
+  const [prevPage, setPrevPage] = useState({ f: filter, s: sort });
+  if (prevPage.f !== filter || prevPage.s !== sort) {
+    setPrevPage({ f: filter, s: sort });
     setPage(0);
-  }, [filter, sort]);
+  }
 
   const onSort = (k: string) =>
     setSort((s) => (s.key === k ? { key: k, desc: !s.desc } : { key: k, desc: true }));

@@ -1,3 +1,4 @@
+import MethodologyCards from "@/components/MethodologyCards";
 import { aggregate, DEFAULT_FILTER, meta } from "@/lib/dataset";
 import { fmtUSD, fmtPct } from "@/lib/format";
 import { REFERENCES, type Ref } from "@/lib/references";
@@ -123,51 +124,11 @@ const FORBIDDEN: [string, string][] = [
   ["“Budget losses equal gap × tax rate”", "“A fiscal estimate is impossible without rates, exemptions, tax bases and verified declarations.”"],
 ];
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-faint">{children}</div>;
-}
-
-function Card({ c }: { c: FormulaCard }) {
-  const refs = c.refs.map((id) => refById.get(id)).filter((r): r is Ref => !!r);
-  return (
-    <div className="card flex flex-col p-4">
-      <h3 className="text-[15px] font-semibold tracking-tight">{c.name}</h3>
-      <div className="tabular mt-2 rounded-md bg-[var(--color-panel-2)] px-3 py-2 text-[12.5px] leading-relaxed">
-        {c.formula}
-      </div>
-      <div className="mt-3 space-y-2.5 text-[13px] leading-snug">
-        <div>
-          <Label>Used in</Label>
-          <div className="mt-0.5">{c.usedIn}</div>
-        </div>
-        <div>
-          <Label>Population</Label>
-          <div className="mt-0.5">{c.population}</div>
-        </div>
-        <div>
-          <Label>Denominator</Label>
-          <div className="mt-0.5">{c.denominator}</div>
-        </div>
-        <div>
-          <Label>Interpretation</Label>
-          <div className="mt-0.5">{c.interpretation}</div>
-        </div>
-      </div>
-      <div className="mt-3 border-t border-dashed border-[var(--color-border)] pt-2.5">
-        <Label>Research basis</Label>
-        <ol className="mt-1 list-decimal space-y-1 pl-4 text-[12px] leading-snug text-muted">
-          {refs.map((r) => (
-            <li key={r.id}>
-              {r.authors} ({r.year}). {r.url ? (
-                <a href={r.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{r.title}</a>
-              ) : r.title}. {r.source}.
-            </li>
-          ))}
-        </ol>
-      </div>
-    </div>
-  );
-}
+/** Resolve citation ids to full references once, on the server. */
+const RESOLVED = CARDS.map((c) => ({
+  ...c,
+  refs: c.refs.map((id) => refById.get(id)).filter((r): r is Ref => !!r),
+}));
 
 export default function MethodologyPage() {
   const k = FULL.kpis;
@@ -189,9 +150,12 @@ export default function MethodologyPage() {
         </p>
       </section>
 
-      {/* formula cards — only the figures shown as headline numbers and scores */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {CARDS.map((c) => <Card key={c.name} c={c} />)}
+      {/* formula list — names only; click a row for formula, usage and sources */}
+      <section className="space-y-2">
+        <h2 className="text-[15px] font-semibold tracking-tight">
+          Formulas <span className="text-[12px] font-normal text-faint">· click a measure to open it</span>
+        </h2>
+        <MethodologyCards cards={RESOLVED} />
       </section>
 
       {/* supporting measures — compact, one line each */}

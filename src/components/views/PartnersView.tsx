@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
@@ -147,7 +147,7 @@ export default function PartnersView() {
   const [sel, setSel] = useState<string[]>([]);
   const [heroMode, setHeroMode] = useState<HeroMode>("map");
   const [mapMetric, setMapMetric] = useState<MapMetric>("total");
-  const [rankPage, setRankPage] = useState(0);
+  const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
 
   /* ------------------------------------------------------------------ */
   /* Ranking rows (filtered partner rollups)                             */
@@ -162,8 +162,9 @@ export default function PartnersView() {
     return [...data.partners].sort(by[sort]);
   }, [data.partners, sort]);
 
-  // keep pagination in range when filters shrink the list
-  useEffect(() => { setRankPage(0); }, [rows.length, sort]);
+  // pagination is derived: it falls back to page 0 whenever the list length or
+  // sort has changed since the user last paged — no reset effect needed
+  const rankPage = pageSel && pageSel.len === rows.length && pageSel.sort === sort ? pageSel.page : 0;
   const pagedRows = rows.slice(rankPage * PAGE_SIZE, (rankPage + 1) * PAGE_SIZE);
 
   /* ------------------------------------------------------------------ */
@@ -315,7 +316,7 @@ export default function PartnersView() {
             </tr>
           </tfoot>
         </table>
-        <Pager page={rankPage} total={rows.length} onPage={setRankPage} />
+        <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>
     );
 
