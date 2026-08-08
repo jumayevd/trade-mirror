@@ -439,10 +439,6 @@ export default function PartnersView() {
                   )}
                   <dl className="mt-2 space-y-1 text-[12px]">
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("kpi.comparableTrade")}</dt>
-                      <dd className="tabular" title={fmtUSDFull(p.peT)}>{fmtUSD(p.peT)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
                       <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
                       <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>
                     </div>

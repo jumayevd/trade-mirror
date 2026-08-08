@@ -12,7 +12,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Trade Mirror — Uzbekistan Mirror Trade Evidence & Risk Screening",
+  title: "Mirror Trade Analytics — Bilateral Trade Asymmetry Monitoring",
   description:
     "Statistical reconciliation and risk-screening platform comparing Uzbekistan's import records with partner-reported exports (UN Comtrade).",
 };

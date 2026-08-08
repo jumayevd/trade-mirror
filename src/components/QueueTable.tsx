@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClassBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
+import MultiSelect from "@/components/MultiSelect";
+import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
@@ -108,20 +110,43 @@ export default function QueueTable({
   const [pageSize, setPageSize] = useState(25);
   const [pageRaw, setPageRaw] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
+  /** Cross-cutting selections: many partners and many products at once. */
+  const [partnerSel, setPartnerSel] = useState<string[]>([]);
+  const [productSel, setProductSel] = useState<string[]>([]);
+
+  // options come from the channels actually on screen, so the pickers never
+  // offer a partner or code that would yield an empty table
+  const partnerOptions = useMemo<SearchOption[]>(() => {
+    const m = new Map<string, string>();
+    for (const c of channels) m.set(c.partnerIso, c.partner);
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([iso, name]) => ({ value: iso, code: iso, label: name }));
+  }, [channels]);
+
+  const productOptions = useMemo<SearchOption[]>(() => {
+    const m = new Map<string, string>();
+    for (const c of channels) m.set(c.cmd, c.cmdLabel);
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([cmd, label]) => ({ value: cmd, code: cmd, label }));
+  }, [channels]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const searched = q
-      ? channels.filter(
-          (c) =>
-            c.partner.toLowerCase().includes(q) ||
-            c.partnerIso.toLowerCase().includes(q) ||
-            c.cmd.includes(q) ||
-            c.cmdLabel.toLowerCase().includes(q),
-        )
-      : channels;
-    return sortChannels(searched, sort);
-  }, [channels, query, sort]);
+    const partners = new Set(partnerSel);
+    const products = new Set(productSel);
+    const filtered = channels.filter((c) => {
+      if (partners.size && !partners.has(c.partnerIso)) return false;
+      if (products.size && !products.has(c.cmd)) return false;
+      if (!q) return true;
+      return (
+        c.partner.toLowerCase().includes(q) ||
+        c.partnerIso.toLowerCase().includes(q) ||
+        c.cmd.includes(q) ||
+        c.cmdLabel.toLowerCase().includes(q)
+      );
+    });
+    return sortChannels(filtered, sort);
+  }, [channels, query, sort, partnerSel, productSel]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -168,6 +193,22 @@ export default function QueueTable({
           className="w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 py-1 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
+        <MultiSelect
+          values={partnerSel}
+          onChange={(v) => controls(() => setPartnerSel(v))}
+          options={partnerOptions}
+          label={t("common.partner")}
+          allLabel={t("filter.all")}
+        />
+
+        <MultiSelect
+          values={productSel}
+          onChange={(v) => controls(() => setProductSel(v))}
+          options={productOptions}
+          label={t("filter.products")}
+          allLabel={t("filter.all")}
+        />
+
         <label className="flex items-center gap-1.5 text-[12px] text-muted">
           {t("risk.sortLabel")}
           <select
@@ -200,12 +241,12 @@ export default function QueueTable({
                 <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("risk.th.hsCode")}</th>
                 <th className={th}>{t("common.product")}</th>
                 <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
-                <th className={th} title={t("risk.tip.class")}>{t("risk.th.class")}</th>
                 <th className={thNum} title={t("risk.tip.uzbImport")}>{t("risk.th.uzbImport")}</th>
                 <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
                 <th className={thNum} title={t("risk.tip.gapPct")}>{t("risk.th.gapPct")}</th>
                 <th className={th} title={t("risk.tip.persistence")}>{t("common.persistence")}</th>
+                <th className={th} title={t("risk.tip.class")}>{t("risk.th.class")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -249,7 +290,6 @@ export default function QueueTable({
                       )}
                     </td>
                     <td className={td}><RiskScore score={c.risk} cls={c.cls} /></td>
-                    <td className={td}><ClassBadge cls={c.cls} /></td>
                     <td className={tdNum} title={c.uiT > 0 ? fmtUSDFull(c.uiT) : undefined}>
                       {/* no UZB record for this code — a gap in the mirror, never a measured zero */}
                       {c.uiT > 0 ? fmtUSD(c.uiT) : <MissingValue />}
@@ -262,6 +302,7 @@ export default function QueueTable({
                     <td className={`${td} tabular whitespace-nowrap`} title={`${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`}>
                       {c.posYears}/{c.comparableYears} {t("risk.unit.yr")} · {t("risk.streak")} {c.longestPosStreak}
                     </td>
+                    <td className={td}><ClassBadge cls={c.cls} /></td>
                   </tr>,
                   open ? (
                     <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">

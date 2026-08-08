@@ -40,7 +40,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ iso: string }> }) {
   const { iso } = await params;
   const p = FULL.partners.find((x) => x.iso3 === iso.toUpperCase());
-  return { title: p ? `${p.name} — partner profile — Trade Mirror` : "Partner — Trade Mirror" };
+  return { title: p ? `${p.name} — partner profile — Mirror Trade Analytics` : "Partner — Mirror Trade Analytics" };
 }
 
 export default async function PartnerPage({ params }: { params: Promise<{ iso: string }> }) {

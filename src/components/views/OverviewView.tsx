@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { Stat, SectionTitle, InfoTip, EmptyState } from "@/components/ui";
+import MultiSelect from "@/components/MultiSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, type Channel,
+  aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsLabel, type Channel,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
@@ -14,9 +15,9 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
 /**
- * Executive Overview — a filter-free summary of the whole window.
- * It builds its own aggregate over every year and every partner, so the numbers
- * here never move with the user's filter state on the analytical pages.
+ * Executive Overview — a standalone summary across every partner. Period is its
+ * only control; it builds its own aggregate rather than reading the shared filter
+ * context, so partner and HS selections made elsewhere never reshape this page.
  */
 const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...meta.years] };
 const TOP_N = 10;
@@ -59,8 +60,11 @@ function topByCode(chs: Channel[], link: boolean, t: Translate): { rows: RankRow
 
 export default function OverviewView() {
   const { t } = useI18n();
-  const data = useMemo(() => aggregate(FULL_WINDOW), []);
+  /** Overview's only control: which years the summary covers. */
+  const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const data = useMemo(() => aggregate({ ...FULL_WINDOW, years }), [years]);
   const k = data.kpis;
+  const periodLabel = yearsLabel(years);
 
   const partners = useMemo(() => {
     const all = data.partners.filter((p) => p.posT > 0);
@@ -123,7 +127,6 @@ export default function OverviewView() {
     };
   }, [data, t]);
 
-  const windowLabel = `${meta.window.start}–${meta.window.end}`;
 
   return (
     <div className="space-y-6">
@@ -131,7 +134,7 @@ export default function OverviewView() {
       <section className="space-y-1.5">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.overview")}</h1>
         <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-          {t("ov.question")} {t("ovw.intro.whole")} {windowLabel} {t("ovw.intro.windowAll")}{" "}
+          {t("ov.question")} {t("ovw.intro.whole")} {periodLabel} {t("ovw.intro.windowAll")}{" "}
           {fmtNum(meta.partners.length)} {t("ovw.intro.reportingPartners")}{" "}
           <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">
             {t("nav.methodology")} →
@@ -139,15 +142,21 @@ export default function OverviewView() {
         </p>
       </section>
 
-      {/* 2. headline tiles */}
+      {/* 2. period — a dropdown of ticks, so any set of years can be summarised */}
+      <section className="no-print">
+        <MultiSelect
+          values={years.length === meta.years.length ? [] : years.map(String)}
+          onChange={(v) => setYears(v.length === 0 ? [...meta.years] : v.map(Number).sort((a, b) => a - b))}
+          options={meta.years.map((y) => ({ value: String(y), label: String(y) }))}
+          label={t("ovw.period")}
+          allLabel={t("ovw.allYears")}
+          searchable={false}
+        />
+      </section>
+
+      {/* 3. headline tiles */}
       <section>
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          <Stat
-            label={t("kpi.comparableTrade")}
-            value={fmtUSD(k.comparableTrade)}
-            sub={`${t("kpi.comparableTrade.sub")} · ${fmtPct(k.coveragePct, 0)} ${t("ovw.stat.coverageSub")}`}
-            info={t("ovw.stat.comparable.info")}
-          />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <HeroStat
             label={t("kpi.positive")}
             value={fmtUSD(k.positive.central)}
@@ -159,12 +168,14 @@ export default function OverviewView() {
             value={fmtNum(k.partnerCount)}
             sub={`${t("ovw.stat.partnersOf")} ${fmtNum(meta.partners.length)} ${t("ovw.stat.partnersInDataset")}`}
             info={t("ovw.stat.partnersCovered.info")}
+            accent={COLORS.navy2}
           />
           <Stat
             label={t("ovw.stat.yearsCovered")}
-            value={windowLabel}
-            sub={`${fmtNum(meta.years.length)} ${t("ovw.stat.unit.years")} · ${fmtNum(meta.datasetRows)} ${t("ovw.stat.unit.records")}`}
+            value={periodLabel}
+            sub={`${fmtNum(years.length)} ${t("ovw.stat.unit.years")} · ${fmtPct(k.coveragePct, 0)} ${t("ovw.stat.coverageSub")}`}
             info={t("ovw.stat.yearsCovered.info")}
+            accent={COLORS.navy2}
           />
         </div>
       </section>
@@ -173,7 +184,7 @@ export default function OverviewView() {
       <section>
         <SectionTitle
           title={t("ovw.dynamics.title")}
-          desc={`${t("ovw.dynamics.descA")} ${windowLabel} ${t("ovw.dynamics.descB")}`}
+          desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
           right={<InfoTip text={t("ovw.dynamics.info")} />}
         />
         <div className="card p-4">
@@ -233,15 +244,17 @@ export default function OverviewView() {
 
 function HeroStat({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: string }) {
   return (
-    <div className="card p-3.5">
+    <div className="stat-card stat-card-hero" style={{ ["--stat-rail" as string]: COLORS.positive }}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[12px] leading-snug text-muted">{label}</div>
+        <div className="text-[10.5px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-[26px] font-semibold leading-none tracking-tight">{value}</span>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-[30px] font-semibold leading-none tracking-tight" style={{ color: COLORS.positive }}>
+          {value}
+        </span>
       </div>
-      {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 text-[11.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }

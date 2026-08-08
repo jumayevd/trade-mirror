@@ -35,7 +35,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ cmd: string }> }) {
   const { cmd } = await params;
   const p = products.find((x) => x.cmd === cmd);
-  return { title: p ? `HS ${p.cmd} · ${p.label} — Trade Mirror` : "Product — Trade Mirror" };
+  return { title: p ? `HS ${p.cmd} · ${p.label} — Mirror Trade Analytics` : "Product — Mirror Trade Analytics" };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ cmd: string }> }) {

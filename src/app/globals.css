@@ -121,6 +121,44 @@ body {
   border-color: rgba(30, 58, 110, 0.28);
 }
 
+/*
+ * KPI tile. A tinted rail on the leading edge carries the metric's identity
+ * colour, so a row of tiles reads as one family instead of four loose boxes.
+ * `--stat-rail` is set per tile; it defaults to CBU navy.
+ */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 0.875rem 0.875rem 0.875rem 1.125rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--stat-rail, var(--color-primary));
+}
+.stat-card:hover {
+  border-color: color-mix(in srgb, var(--stat-rail, var(--color-primary)) 32%, transparent);
+  box-shadow: 0 1px 3px rgba(11, 11, 11, 0.06);
+}
+
+/* The headline metric on a page: same shape, more presence. */
+.stat-card-hero {
+  background: linear-gradient(
+    to bottom right,
+    color-mix(in srgb, var(--stat-rail, var(--color-primary)) 6%, var(--color-panel)),
+    var(--color-panel) 62%
+  );
+}
+.stat-card-hero::before {
+  width: 4px;
+}
+
 /* quiet zebra */
 .zebra > *:nth-child(even) {
   background: #f7f7f5;

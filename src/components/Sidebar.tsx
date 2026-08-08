@@ -16,12 +16,14 @@ const REFERENCE: { href: string; label: LocaleKey }[] = [
   { href: "/methodology", label: "nav.methodology" },
 ];
 
-function Section({ title, links, path }: { title: string; links: { href: string; label: LocaleKey }[]; path: string }) {
+function Section({ title, links, path }: { title?: string; links: { href: string; label: LocaleKey }[]; path: string }) {
   const { t } = useI18n();
   const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
     <div className="mb-6">
-      <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgba(255,255,255,0.45)]">{title}</div>
+      {title && (
+        <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgba(255,255,255,0.45)]">{title}</div>
+      )}
       <nav className="space-y-0.5">
         {links.map((l) => {
           const active = isActive(l.href);
@@ -67,12 +69,13 @@ export default function Sidebar() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/cbu-logo.png" alt="Central Bank of the Republic of Uzbekistan" className="h-10 w-10 shrink-0 object-contain" />
           <span className="leading-tight">
-            <span className="block text-[15px] font-semibold tracking-tight text-white">Trade Mirror</span>
-            <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">Evidence &amp; Risk Screening</span>
+            <span className="block text-[15px] font-semibold tracking-tight text-white">{t("brand.title")}</span>
+            <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
           </span>
         </Link>
         <Section title={t("nav.analysisGroup")} links={ANALYSIS} path={path} />
-        <Section title={t("nav.reference")} links={REFERENCE} path={path} />
+        {/* Methodology sits on its own — the group heading added noise, not structure. */}
+        <Section links={REFERENCE} path={path} />
         <div className="mt-auto space-y-1.5 border-t border-[rgba(255,255,255,0.12)] px-3 pt-4 text-[10px] leading-relaxed text-[rgba(255,255,255,0.45)]">
           <div className="text-[13px] font-bold text-[var(--color-gold)]">M − X <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.45)]">{t("nav.signConvention")}</span></div>
           <div>{t("nav.attribution")}</div>

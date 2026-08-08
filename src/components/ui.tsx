@@ -19,16 +19,22 @@ export function Stat({
   label: string; value: string; sub?: string; accent?: string; info?: string;
   delta?: string; deltaGood?: boolean; onClick?: () => void;
 }) {
+  const rail = accent ?? "var(--color-primary)";
   return (
-    <div className={`card p-3.5 ${onClick ? "card-hover cursor-pointer" : ""}`} onClick={onClick}
-      role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}>
+    <div
+      className={`stat-card ${onClick ? "card-hover cursor-pointer" : ""}`}
+      style={{ ["--stat-rail" as string]: rail }}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+    >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[12px] leading-snug text-muted">{label}</div>
+        <div className="text-[10.5px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className="text-[22px] font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-[24px] font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
           {value}
         </span>
         {delta && (
@@ -37,7 +43,7 @@ export function Stat({
           </span>
         )}
       </div>
-      {sub && <div className="mt-1 text-[11.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 text-[11.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }

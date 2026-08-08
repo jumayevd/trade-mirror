@@ -3,7 +3,7 @@ import { aggregate, DEFAULT_FILTER, meta } from "@/lib/dataset";
 import { fmtUSD, fmtPct } from "@/lib/format";
 import { REFERENCES, type Ref } from "@/lib/references";
 
-export const metadata = { title: "Methodology — Trade Mirror" };
+export const metadata = { title: "Methodology — Mirror Trade Analytics" };
 
 const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
 const refById = new Map(REFERENCES.map((r) => [r.id, r]));
@@ -134,7 +134,7 @@ export default function MethodologyPage() {
         </p>
         <p className="tabular text-[11.5px] text-faint">
           {meta.window.start}–{meta.window.end} cumulative at central freight, across all {meta.partners.length} reporting
-          partners: comparable trade {fmtUSD(k.comparableTrade)} · positive discrepancy {fmtUSD(k.positive.central)}{" "}
+          partners: positive discrepancy {fmtUSD(k.positive.central)}{" "}
           ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · partner-year coverage {fmtPct(k.coveragePct, 0)}
         </p>
       </section>

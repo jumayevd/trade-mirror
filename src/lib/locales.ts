@@ -8,8 +8,8 @@ export type Lang = (typeof LANGS)[number];
 
 const en = {
   // brand & nav
-  "brand.title": "Trade Mirror",
-  "brand.subtitle": "Uzbekistan Mirror Trade Evidence & Risk Screening",
+  "brand.title": "Mirror Trade Analytics",
+  "brand.subtitle": "Bilateral Trade Asymmetry Monitoring · Republic of Uzbekistan",
   "nav.monitor": "Monitor",
   "nav.explore": "Explore",
   "nav.investigate": "Investigate",
@@ -583,13 +583,19 @@ const en = {
   "chrome.mirrorStatistics": "mirror statistics",
   "filter.search": "Search…",
   "filter.noMatches": "No matches",
+  "filter.selected": "selected",
+  "filter.clearSelection": "Clear selection",
+  "filter.products": "Product",
+  "ovw.period": "Period",
+  "ovw.allYears": "All years",
+  "brand.tagline": "Trade asymmetry & risk screening",
 } as const;
 
 export type LocaleKey = keyof typeof en;
 
 const ru: Record<LocaleKey, string> = {
-  "brand.title": "Trade Mirror",
-  "brand.subtitle": "Скрининг зеркальной торговли Узбекистана",
+  "brand.title": "Аналитика зеркальной торговли",
+  "brand.subtitle": "Мониторинг асимметрии двусторонней торговли · Республика Узбекистан",
   "nav.monitor": "Мониторинг",
   "nav.explore": "Структура",
   "nav.investigate": "Проверка",
@@ -1157,11 +1163,17 @@ const ru: Record<LocaleKey, string> = {
   "chrome.mirrorStatistics": "зеркальная статистика",
   "filter.search": "Поиск…",
   "filter.noMatches": "Ничего не найдено",
+  "filter.selected": "выбрано",
+  "filter.clearSelection": "Очистить выбор",
+  "filter.products": "Товар",
+  "ovw.period": "Период",
+  "ovw.allYears": "Все годы",
+  "brand.tagline": "Асимметрия торговли и оценка рисков",
 };
 
 const uz: Record<LocaleKey, string> = {
-  "brand.title": "Trade Mirror",
-  "brand.subtitle": "Oʻzbekiston oyna savdo dalillari va xavf skriningi",
+  "brand.title": "Oyna savdo tahlili",
+  "brand.subtitle": "Ikki tomonlama savdo assimetriyasi monitoringi · Oʻzbekiston Respublikasi",
   "nav.monitor": "Monitoring",
   "nav.explore": "Tuzilma",
   "nav.investigate": "Tekshiruv",
@@ -1729,6 +1741,12 @@ const uz: Record<LocaleKey, string> = {
   "chrome.mirrorStatistics": "oyna statistikasi",
   "filter.search": "Qidirish…",
   "filter.noMatches": "Hech narsa topilmadi",
+  "filter.selected": "tanlandi",
+  "filter.clearSelection": "Tanlovni tozalash",
+  "filter.products": "Tovar",
+  "ovw.period": "Davr",
+  "ovw.allYears": "Barcha yillar",
+  "brand.tagline": "Savdo assimetriyasi va xavf baholash",
 };
 
 export const DICT: Record<Lang, Record<LocaleKey, string>> = { en, ru, uz };

@@ -11,13 +11,13 @@ const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-pane
 const lbl = "text-[10px] font-semibold uppercase tracking-wider text-faint";
 
 /**
- * Every freight scenario the methodology admits: whole percentages across the
- * documented 6–15% CIF/FOB band, not just the low/central/high anchors.
+ * Freight scenarios: every whole percentage from 0 up to the top of the
+ * documented band. 0% compares the two books as reported, with no CIF/FOB
+ * adjustment at all — the floor case for any discrepancy.
  */
 const FREIGHT_SCENARIOS = (() => {
-  const lo = Math.round(meta.cif.low * 100);
   const hi = Math.round(meta.cif.high * 100);
-  return Array.from({ length: hi - lo + 1 }, (_, i) => (lo + i) / 100);
+  return Array.from({ length: hi + 1 }, (_, i) => i / 100);
 })();
 
 export default function FilterBar() {

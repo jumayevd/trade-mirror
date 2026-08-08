@@ -189,6 +189,11 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
     let posYears = 0, revYears = 0, streak = 0, longest = 0;
     let uvYears = 0, uw = 0, pw = 0, uwv = 0, pwv = 0;
     for (const r of rs) {
+      // A mirror comparison needs BOTH books. A channel-year where only one side
+      // reported cannot be a discrepancy — the whole of the reported side would be
+      // booked as a gap, which is a false positive, not a signal. Such years are
+      // dropped here and surface instead as one-sided flows on Data Quality.
+      if (r.pe <= NOISE || r.ui <= NOISE) continue;
       const signed = r.pe * K - r.ui;
       years.push({ y: r.y, pe: r.pe, ui: r.ui, signed, uvOk: !!(r.uw && r.pw) });
       peT += r.pe; uiT += r.ui;
@@ -197,7 +202,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
       if (signed < -NOISE) revYears++;
       if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
     }
-    if (peT <= NOISE && uiT <= NOISE) continue;
+    if (years.length === 0) continue; // no year with both books reporting
     const expectedT = peT * K;
     const signedT = expectedT - uiT;
     const absT = posT + revT;

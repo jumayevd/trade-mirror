@@ -7,7 +7,9 @@ import { useI18n } from "@/lib/i18n";
  * Filter picker with type-ahead search. The country and HS pickers carry up to
  * ~1,500 options, which is far past what a native <select> can be scanned in, so
  * the list is searchable by code or label. Matching is case-insensitive over both
- * the option value (e.g. an HS code) and its label.
+ * the option value (e.g. an HS code) and its label. Every match is rendered — the
+ * list scrolls rather than truncating, so scrolling to the end reaches the last
+ * code rather than an arbitrary cut-off.
  */
 
 export interface SearchOption {
@@ -16,8 +18,6 @@ export interface SearchOption {
   code?: string;
   label: string;
 }
-
-const MAX_RENDERED = 300;
 
 export default function SearchSelect({
   value,
@@ -98,8 +98,6 @@ export default function SearchSelect({
     }
   };
 
-  const shown = matches.slice(0, MAX_RENDERED);
-
   return (
     <div ref={wrap} className="relative">
       <button
@@ -130,10 +128,10 @@ export default function SearchSelect({
             className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint"
           />
           <ul role="listbox" aria-label={ariaLabel} className="max-h-64 overflow-y-auto py-1">
-            {shown.length === 0 && (
+            {matches.length === 0 && (
               <li className="px-2.5 py-2 text-[12px] text-faint">{t("filter.noMatches")}</li>
             )}
-            {shown.map((o, i) => (
+            {matches.map((o, i) => (
               <li key={o.value}>
                 <button
                   type="button"
@@ -151,11 +149,6 @@ export default function SearchSelect({
               </li>
             ))}
           </ul>
-          {matches.length > shown.length && (
-            <p className="border-t border-[var(--color-border-soft)] px-2.5 py-1 text-[11px] text-faint">
-              {shown.length} / {matches.length}
-            </p>
-          )}
         </div>
       )}
     </div>

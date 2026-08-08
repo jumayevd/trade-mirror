@@ -58,7 +58,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ iso: string; cmd: string }> }) {
   const { iso, cmd } = await params;
-  return { title: `Channel ${iso.toUpperCase()} x ${cmd} — Trade Mirror` };
+  return { title: `Channel ${iso.toUpperCase()} x ${cmd} — Mirror Trade Analytics` };
 }
 
 export default async function ChannelPage({ params }: { params: Promise<{ iso: string; cmd: string }> }) {
