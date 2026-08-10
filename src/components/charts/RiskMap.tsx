@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 /**
  * Geographic view (spec §6.3, secondary to the analytic matrix).
  * Countries are shaded by the positive discrepancy on the amber ramp (red stays
- * reserved for the Investigate class and is never used here). Low-quality
+ * reserved for the Critical risk band and is never used here). Low-quality
  * reporters and countries without comparable data stay grey with an explanatory
  * tooltip; missing partner data is never treated as a zero gap. Regions outside
  * the analyzed partner set are inert — no tooltip, no hover, no pointer.

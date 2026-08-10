@@ -168,10 +168,10 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
         <ProductChart product={p} />
       </section>
 
-      {/* 4. signal classification summary */}
+      {/* 4. risk band summary */}
       <section className="card p-5">
         <SectionTitle
-          title="Signal classification across country channels"
+          title="Risk bands across country channels"
           desc="Each country × HS6 channel carries its own risk score, built from the abnormal part of its gap and how persistent that gap is, then placed in a band. Counts below cover all comparable channels for this product over the full window."
         />
         {channels.length === 0 ? (

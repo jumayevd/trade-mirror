@@ -305,7 +305,7 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
               <span className="shrink-0 text-faint">Transit exposure</span>
               <span>
                 {channel.transit
-                  ? `${channel.partner} is a transit/re-export hub — origin-vs-consignment recording can create legitimate discrepancies; this channel is assessed in the transit-sensitive track.`
+                  ? `${channel.partner} is a transit/re-export hub — origin-vs-consignment recording can create legitimate discrepancies. The risk score does not correct for this, so routing should be clarified before reading the signal.`
                   : `${channel.partner} is not flagged as a transit/re-export hub.`}
               </span>
             </li>

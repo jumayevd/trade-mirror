@@ -105,7 +105,7 @@ export const REFERENCES: Ref[] = [
     year: "1990",
     title: "On the Accuracy of Economic Observations: Do Sub-Saharan Trade Statistics Mean Anything?",
     source: "World Bank Economic Review, 4(2)",
-    note: "Why raw mirror gaps overstate irregularities — reporting quality must be assessed before interpretation (our evidence-quality score).",
+    note: "Why raw mirror gaps overstate irregularities — reporting quality must be assessed before interpretation, which is what the Data Quality page is for.",
   },
   {
     id: "hummels2006",
@@ -138,7 +138,7 @@ export const REFERENCES: Ref[] = [
     year: "2008",
     title: "Differentiated Products and Evasion of Import Tariffs",
     source: "Journal of International Economics, 76(2)",
-    note: "Under-valuation concentrates in differentiated goods where prices are hard to verify — why unit-value checks matter (our value/quantity component).",
+    note: "Under-valuation concentrates in differentiated goods where prices are hard to verify — the check this dataset cannot run, since it carries no quantity or weight.",
   },
   {
     id: "ferrantino2008",
@@ -146,7 +146,7 @@ export const REFERENCES: Ref[] = [
     year: "2008",
     title: "Accounting for Discrepancies in Bilateral Trade: The Case of China, Hong Kong, and the United States",
     source: "China Economic Review, 19(3)",
-    note: "Re-export and transit routing create large legitimate mirror gaps — the basis for our transit-sensitive classification.",
+    note: "Re-export and transit routing create large legitimate mirror gaps — the reason transit hubs are tagged throughout and read separately.",
   },
   {
     id: "buehn2011",

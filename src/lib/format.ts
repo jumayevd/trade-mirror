@@ -29,7 +29,7 @@ export function fmtNum(v: number): string {
  *  gold     #d99a2b  accent / highlight (rails, borders, selection)
  *  gold-2   #b07d1e  gold used as a data FILL (partner-reported series)
  *  gold-ink #8f6212  gold used as TEXT (stays legible at 11px)
- *  red      #b3261e  the single reserved alert — Investigate class only
+ *  red      #b3261e  the single reserved alert — Critical risk band only
  *
  * All fills are solid: no alpha suffixes, so bars and markers stay crisp on
  * the #fcfcfb card surface. Chrome (grid, axis, baseline) stays neutral grey

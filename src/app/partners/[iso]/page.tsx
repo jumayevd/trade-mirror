@@ -253,10 +253,9 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
             country of <em>origin</em>, while hubs report re-exports by <em>consignment</em>:
             goods that merely pass through {p.name} can therefore appear as a discrepancy in
             this pair — and as a matching one in the origin country&apos;s pair — without any
-            misreporting by either side. For this reason {p.name}&apos;s channels are classified
-            in the transit-sensitive track and excluded from the core residual totals. A
-            substantive reading of any signal here requires clarifying routing and origin
-            attribution first.
+            misreporting by either side. For this reason {p.name}&apos;s channels carry a transit tag; the risk score does
+            not correct for routing, so a substantive reading of any signal here requires
+            clarifying routing and origin attribution first.
           </p>
         </section>
       )}
