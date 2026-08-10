@@ -263,7 +263,16 @@ export default function QueueTable({
                     title={t("risk.tip.rowExpand")}
                   >
                     <td className={`${td} whitespace-nowrap`}>
-                      <span aria-hidden className="mr-1.5 text-faint">{open ? "▾" : "▸"}</span>
+                      {/* keyboard path to the same toggle the row click performs */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setExpanded(open ? null : key); }}
+                        aria-expanded={open}
+                        aria-label={t("risk.tip.rowExpand")}
+                        className="mr-1.5 text-faint hover:text-foreground focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                      >
+                        {open ? "▾" : "▸"}
+                      </button>
                       <Link
                         href={`/partners/${c.partnerIso.toLowerCase()}`}
                         onClick={(e) => e.stopPropagation()}

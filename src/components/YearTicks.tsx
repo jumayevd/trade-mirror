@@ -26,10 +26,10 @@ export default function YearTicks({
     onChange(picked.has(y) ? years.filter((x) => x !== y) : [...years, y].sort((a, b) => a - b));
 
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+    <fieldset className="flex flex-col gap-1 border-0 p-0 m-0">
+      <legend className="text-[10px] font-semibold uppercase tracking-wider text-faint">
         {label ?? t("filter.period")}
-      </span>
+      </legend>
       <div className="flex flex-wrap items-center gap-1">
         {meta.years.map((y) => {
           const on = picked.has(y);
@@ -60,6 +60,6 @@ export default function YearTicks({
           {allOn ? t("filter.latestOnly") : t("filter.allYears")}
         </button>
       </div>
-    </div>
+    </fieldset>
   );
 }

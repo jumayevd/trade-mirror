@@ -28,9 +28,11 @@ export default function MultiSelect({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const [query, setQuery] = useState("");
   const wrap = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
 
   const picked = useMemo(() => new Set(values), [values]);
 
@@ -47,7 +49,7 @@ export default function MultiSelect({
     const onDown = (e: MouseEvent) => {
       if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -77,9 +79,14 @@ export default function MultiSelect({
       <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{label}</span>
       <div ref={wrap} className="relative">
         <button
+          ref={trigger}
           type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-haspopup="listbox"
+          onClick={(e) => {
+          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setAlignRight(r.left > window.innerWidth / 2);
+          setOpen((o) => !o);
+        }}
+          aria-haspopup="true"
           aria-expanded={open}
           aria-label={label}
           className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left text-[13px] outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
@@ -91,7 +98,7 @@ export default function MultiSelect({
         </button>
 
         {open && (
-          <div className="absolute left-0 z-40 mt-1 w-[min(24rem,85vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg">
+          <div className={`absolute z-40 mt-1 w-[min(24rem,85vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
             {searchable && (
               <input
                 ref={input}
@@ -100,10 +107,10 @@ export default function MultiSelect({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("filter.search")}
                 aria-label={t("filter.search")}
-                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint"
+                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
               />
             )}
-            <ul role="listbox" aria-multiselectable aria-label={label} className="max-h-64 overflow-y-auto py-1">
+            <ul role="group" aria-label={label} className="max-h-64 overflow-y-auto py-1">
               {matches.length === 0 && (
                 <li className="px-2.5 py-2 text-[12px] text-faint">{t("filter.noMatches")}</li>
               )}

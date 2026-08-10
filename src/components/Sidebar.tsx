@@ -51,7 +51,8 @@ export function MobileNav() {
     <nav className="flex max-w-full items-center gap-1 overflow-x-auto lg:hidden" aria-label="Main navigation">
       {links.map((l) => (
         <Link key={l.href} href={l.href}
-          className={`shrink-0 rounded-md px-2 py-1 text-[12px] font-medium ${isActive(l.href) ? "bg-[var(--color-panel-2)] text-foreground" : "text-muted"}`}>
+          aria-current={isActive(l.href) ? "page" : undefined}
+          className={`shrink-0 rounded-md px-2 py-1 text-[12px] ${isActive(l.href) ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "font-medium text-muted"}`}>
           {t(l.label)}
         </Link>
       ))}
@@ -73,9 +74,8 @@ export default function Sidebar() {
             <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
           </span>
         </Link>
-        <Section title={t("nav.analysisGroup")} links={ANALYSIS} path={path} />
-        {/* Methodology sits on its own — the group heading added noise, not structure. */}
-        <Section links={REFERENCE} path={path} />
+        {/* One list: Methodology reads as the last entry rather than a stranded group. */}
+        <Section title={t("nav.analysisGroup")} links={[...ANALYSIS, ...REFERENCE]} path={path} />
         <div className="mt-auto space-y-1.5 border-t border-[rgba(255,255,255,0.12)] px-3 pt-4 text-[10px] leading-relaxed text-[rgba(255,255,255,0.45)]">
           <div className="text-[13px] font-bold text-[var(--color-gold)]">M − X <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.45)]">{t("nav.signConvention")}</span></div>
           <div>{t("nav.attribution")}</div>

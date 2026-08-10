@@ -7,10 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "data:fetch": "tsx scripts/fetch-comtrade.ts",
-    "data:build": "tsx scripts/build-analytics.ts",
-    "data:excel": "python scripts/extract-excel.py && tsx scripts/build-from-excel.ts",
-    "data:all": "tsx scripts/fetch-comtrade.ts && tsx scripts/build-analytics.ts"
+    "data:excel": "python scripts/extract-excel.py && tsx scripts/build-from-excel.ts"
   },
   "dependencies": {
     "echarts": "^5.6.0",

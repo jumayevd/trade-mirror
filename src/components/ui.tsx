@@ -58,8 +58,8 @@ export function InfoTip({ text }: { text: string }) {
 
 export function SectionTitle({ title, desc, right }: { title: string; desc?: string; right?: React.ReactNode }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-4">
-      <div>
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
         <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
         {desc && <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-muted">{desc}</p>}
       </div>

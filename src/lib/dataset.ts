@@ -51,6 +51,9 @@ export interface Product {
   uv: { uvUzb: number; uvPtn: number; uvRatio: number; years: number } | null;
 }
 
+/** Values at or below this are treated as noise, not as a reported flow. */
+const NOISE = 100_000;
+
 const cells = cellsRaw as unknown as Cell[];
 export const meta = metaRaw as unknown as Meta;
 export const monthly = monthlyRaw as unknown as MonthlyPoint[];
@@ -71,13 +74,15 @@ export const hsLabel = (cmd: string) =>
 export const productByCmd = (cmd: string) => products.find((p) => p.cmd === cmd);
 export const isResidualChapter = (c: string) => c === "98" || c === "99";
 
-// full-window channel history: how many comparable years each (partner × code) has
-// across 2017–2024 REGARDLESS of the selected period. Stage and data-sufficiency are
-// judged against history — zooming into a single year must not make every channel
-// "insufficient" or empty the default Residual view.
+// Full-window channel history: how many COMPARABLE years each (partner × code) has
+// across 2017–2024 regardless of the selected period, so zooming into a single year
+// does not mark every channel "insufficient". A year only counts when both books
+// reported — the same test buildChannels applies — otherwise a channel seen once
+// from one side alone would look like it had history.
 const histYears = (() => {
   const m = new Map<string, number>();
   for (const r of cells) {
+    if (r.pe <= NOISE || r.ui <= NOISE) continue;
     const key = `${r.l}|${r.p}|${r.k}`;
     m.set(key, (m.get(key) ?? 0) + 1);
   }
@@ -138,7 +143,6 @@ export const DEFAULT_FILTER: Filter = {
 };
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
-const NOISE = 100_000;
 const pos = (x: number) => Math.max(0, x);
 const sgn = (x: number) => (x > NOISE ? 1 : x < -NOISE ? -1 : 0);
 
@@ -472,7 +476,9 @@ export function aggregate(f: Filter): Aggregate {
   // ---- movers ----
   const goods = chapters.map((c) => {
     const byYear = new Map<number, number>();
-    for (const ch of channels) if (ch.chapter === c.chapter) for (const yr of ch.years) {
+    // read the same set the chapter rollup was built from, or the sector series
+    // would contradict the chapter totals shown beside it
+    for (const ch of rollup) if (ch.chapter === c.chapter) for (const yr of ch.years) {
       byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + pos(yr.signed));
     }
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));

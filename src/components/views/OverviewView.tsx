@@ -175,7 +175,7 @@ export default function OverviewView() {
             value={periodLabel}
             sub={`${fmtNum(years.length)} ${t("ovw.stat.unit.years")} · ${fmtPct(k.coveragePct, 0)} ${t("ovw.stat.coverageSub")}`}
             info={t("ovw.stat.yearsCovered.info")}
-            accent={COLORS.navy2}
+            accent={COLORS.navy3}
           />
         </div>
       </section>

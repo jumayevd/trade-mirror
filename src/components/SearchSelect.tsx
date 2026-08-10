@@ -35,10 +35,13 @@ export default function SearchSelect({
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const all: SearchOption[] = useMemo(
     () => [{ value: "all", label: allLabel }, ...options],
@@ -62,7 +65,7 @@ export default function SearchSelect({
       if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -77,11 +80,18 @@ export default function SearchSelect({
     if (open) input.current?.focus();
   }, [open]);
 
+  // keep the arrow-key highlight inside the scroll viewport
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
+
   const commit = (v: string) => {
     onChange(v);
     setOpen(false);
     setQuery("");
     setActive(0);
+    trigger.current?.focus();
   };
 
   const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -101,8 +111,13 @@ export default function SearchSelect({
   return (
     <div ref={wrap} className="relative">
       <button
+        ref={trigger}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={(e) => {
+          const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setAlignRight(r.left > window.innerWidth / 2);
+          setOpen((o) => !o);
+        }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
@@ -116,7 +131,7 @@ export default function SearchSelect({
       </button>
 
       {open && (
-        <div className="absolute left-0 z-40 mt-1 w-[min(22rem,80vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg">
+        <div className={`absolute z-40 mt-1 w-[min(22rem,80vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
           <input
             ref={input}
             type="search"
@@ -125,17 +140,18 @@ export default function SearchSelect({
             onKeyDown={onInputKey}
             placeholder={t("filter.search")}
             aria-label={t("filter.search")}
-            className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint"
+            className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
           />
-          <ul role="listbox" aria-label={ariaLabel} className="max-h-64 overflow-y-auto py-1">
+          <ul ref={listRef} role="listbox" aria-label={ariaLabel} className="max-h-64 overflow-y-auto py-1">
             {matches.length === 0 && (
               <li className="px-2.5 py-2 text-[12px] text-faint">{t("filter.noMatches")}</li>
             )}
             {matches.map((o, i) => (
-              <li key={o.value}>
+              <li key={o.value} role="presentation">
                 <button
                   type="button"
                   role="option"
+                  data-active={i === active}
                   aria-selected={o.value === value}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => commit(o.value)}

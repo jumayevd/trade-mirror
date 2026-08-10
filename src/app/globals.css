@@ -86,6 +86,8 @@ body {
  */
 :root {
   --shell-max: 1200px;
+  /* header: 0.5rem padding top+bottom around a 2rem control row, plus its border */
+  --header-h: 49px;
 }
 @media (min-width: 1600px) {
   :root {
@@ -122,41 +124,61 @@ body {
 }
 
 /*
- * KPI tile. A tinted rail on the leading edge carries the metric's identity
- * colour, so a row of tiles reads as one family instead of four loose boxes.
- * `--stat-rail` is set per tile; it defaults to CBU navy.
+ * KPI tile. Every tile carries its metric's identity colour twice — a rail on the
+ * leading edge and a soft wash of the same hue across the surface — so a row reads
+ * as one family rather than a set of loose boxes. `--stat-rail` is set per tile and
+ * defaults to CBU navy.
  */
 .stat-card {
+  --stat-tint: var(--stat-rail, var(--color-primary));
   position: relative;
   overflow: hidden;
   padding: 0.875rem 0.875rem 0.875rem 1.125rem;
-  background: var(--color-panel);
-  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stat-tint) 7%, var(--color-panel)) 0%,
+      color-mix(in srgb, var(--stat-tint) 2%, var(--color-panel)) 55%,
+      var(--color-panel) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--stat-tint) 16%, var(--color-border));
   border-radius: 10px;
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
 }
 .stat-card::before {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: var(--stat-rail, var(--color-primary));
+  background: var(--stat-tint);
 }
 .stat-card:hover {
-  border-color: color-mix(in srgb, var(--stat-rail, var(--color-primary)) 32%, transparent);
-  box-shadow: 0 1px 3px rgba(11, 11, 11, 0.06);
+  border-color: color-mix(in srgb, var(--stat-tint) 38%, transparent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--stat-tint) 12%, transparent);
 }
 
-/* The headline metric on a page: same shape, more presence. */
+/*
+ * The headline metric on a page: same shape, more presence — a deeper wash, a
+ * wider rail and a faint inner glow so it leads the row without shouting.
+ */
 .stat-card-hero {
-  background: linear-gradient(
-    to bottom right,
-    color-mix(in srgb, var(--stat-rail, var(--color-primary)) 6%, var(--color-panel)),
-    var(--color-panel) 62%
-  );
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--stat-tint) 15%, var(--color-panel)) 0%,
+      color-mix(in srgb, var(--stat-tint) 6%, var(--color-panel)) 52%,
+      var(--color-panel) 100%
+    );
+  border-color: color-mix(in srgb, var(--stat-tint) 30%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .stat-card-hero::before {
   width: 4px;
+}
+.stat-card-hero:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 10px color-mix(in srgb, var(--stat-tint) 18%, transparent);
 }
 
 /* quiet zebra */

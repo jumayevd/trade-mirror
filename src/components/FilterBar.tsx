@@ -53,13 +53,13 @@ export default function FilterBar() {
   );
 
   return (
-    <div className="no-print sticky top-[52px] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
+    <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         <YearTicks years={filter.years} onChange={(years) => patch({ years })} />
 
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
           <span className={lbl}>{t("filter.freight")}</span>
-          <select className={sel} value={filter.cif} onChange={(e) => patch({ cif: +e.target.value })}>
+          <select className={sel} aria-label={t("filter.freight")} value={filter.cif} onChange={(e) => patch({ cif: +e.target.value })}>
             {FREIGHT_SCENARIOS.map((f) => (
               <option key={f} value={f}>
                 {Math.round(f * 100)}%
