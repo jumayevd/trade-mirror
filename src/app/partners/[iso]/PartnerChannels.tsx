@@ -7,6 +7,7 @@ import {
 } from "@/components/ui";
 import { hs4Label, hsLabel, type RiskBand, type Robustness } from "@/lib/dataset";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 
 /**
  * Product-code narrowing for one partner profile (spec §6.6.5/§6.6.6). Three
@@ -38,6 +39,7 @@ export default function PartnerChannels({
 }: {
   iso: string; partner: string; totalPos: number; chapters: ChapterRow[]; rows: ChannelRow[];
 }) {
+  const { t } = useI18n();
   const [hs2, setHs2] = useState("all");
   const [hs4, setHs4] = useState("all");
   const [hs6, setHs6] = useState("all");
@@ -89,21 +91,21 @@ export default function PartnerChannels({
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS2</span>
-            <select className={sel} value={hs2} onChange={(e) => pick("hs2", e.target.value)} aria-label="HS2 chapter">
+            <select className={sel} value={hs2} onChange={(e) => pick("hs2", e.target.value)} aria-label={t("prof.aria.hs2")}>
               <option value="all">All</option>
               {hs2Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS4</span>
-            <select className={sel} value={hs4} onChange={(e) => pick("hs4", e.target.value)} aria-label="HS4 heading">
+            <select className={sel} value={hs4} onChange={(e) => pick("hs4", e.target.value)} aria-label={t("prof.aria.hs4")}>
               <option value="all">All</option>
               {hs4Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS6</span>
-            <select className={sel} value={hs6} onChange={(e) => pick("hs6", e.target.value)} aria-label="HS6 product code">
+            <select className={sel} value={hs6} onChange={(e) => pick("hs6", e.target.value)} aria-label={t("prof.aria.hs6")}>
               <option value="all">All</option>
               {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
@@ -125,8 +127,8 @@ export default function PartnerChannels({
       {/* HS2 structure */}
       <section className="card p-5">
         <SectionTitle
-          title="HS2 structure of the positive discrepancy"
-          desc={`Where ${partner}'s positive discrepancy concentrates, at chapter level. Shares are of the partner's total positive discrepancy (${fmtUSD(totalPos)}). Source: UN Comtrade.`}
+          title={t("prof.structure.title")}
+          desc={`${t("prof.structure.descPre")} ${partner} ${t("prof.structure.descPost")} (${fmtUSD(totalPos)}). ${t("common.source")}.`}
         />
         {structure.length === 0 ? (
           <p className="text-sm text-muted">
@@ -153,8 +155,8 @@ export default function PartnerChannels({
       {/* HS6 signals */}
       <section>
         <SectionTitle
-          title="HS6 screening signals"
-          desc="This partner's product channels ranked by risk band and score. Click a channel for its full profile."
+          title={t("prof.signals.title")}
+          desc={t("prof.signals.desc")}
         />
         {filtered.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
@@ -174,7 +176,7 @@ export default function PartnerChannels({
                     {c.label} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
                   </Link>
                   <RobustnessBadge r={c.robustness} />
-                  <span className="tabular w-24 whitespace-nowrap text-right text-sm" style={{ color: COLORS.positive }} title={`Positive discrepancy: ${fmtUSDFull(c.posT)}`}>
+                  <span className="tabular w-24 whitespace-nowrap text-right text-sm" style={{ color: COLORS.positive }} title={`${t("prof.tip.positiveDiscrepancy")}: ${fmtUSDFull(c.posT)}`}>
                     {fmtUSD(c.posT)}
                   </span>
                 </div>

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "data:excel": "python scripts/extract-excel.py && tsx scripts/build-from-excel.ts && npm run data:risk",
-    "data:risk": "tsx scripts/build-risk-index.ts"
+    "data:risk": "tsx scripts/build-risk-index.ts",
+    "data:verify": "tsx scripts/verify-against-source.ts"
   },
   "dependencies": {
     "echarts": "^5.6.0",

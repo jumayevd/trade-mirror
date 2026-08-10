@@ -40,14 +40,9 @@ const NOISE = 100_000;
  * Uzbekistan's recorded imports — small in aggregate, but up to a couple of
  * percent for a small partner, which is enough to fail a UN Comtrade check.
  */
-const EMIT_FLOOR = 1_000;
+const EMIT_FLOOR = 0;
 const WINDOW_YEARS = ANALYSIS_YEARS.length;
 const K = 1 + CIF_BAND.central;
-
-// HS6 materiality floor for the shipped dataset (unchanged from the API pipeline):
-// a partner × product channel must clear one of these across the window.
-const HS6_MIN_PTN = 8_000_000;
-const HS6_MIN_GAP = 4_000_000;
 
 /** Preferred short names; the workbook uses long UN designations. */
 const NAME_OVERRIDES: Record<string, string> = {
@@ -148,25 +143,20 @@ async function main() {
     if (r.ui > NOISE) uzbReportingYears.add(r.y);
   }
 
-  // ---- synthesize HS2 cells for residual chapters (98/99) reported only at HS6 ----
-  const synth = new Set<string>();
-  for (const cell of [...cells.values()]) {
-    if (cell.cmd.length !== 6) continue;
-    const chapter = cell.cmd.slice(0, 2);
-    if (chapter !== "98" && chapter !== "99") continue;
-    const key = `${cell.iso}|${chapter}`;
-    let h2 = cells.get(key);
-    if (!h2) { h2 = { iso: cell.iso, cmd: chapter, byYear: new Map() }; cells.set(key, h2); }
-    for (const [yr, y] of cell.byYear) {
-      const yKey = `${key}|${yr}`;
-      const existing = h2.byYear.get(yr);
-      if (existing && !synth.has(yKey) && (existing.ptnExp > 0 || existing.uzbImp > 0)) continue;
-      synth.add(yKey);
-      const t = existing ?? blankYear();
-      t.uzbImp += y.uzbImp; t.ptnExp += y.ptnExp; t.uzbWgt += y.uzbWgt; t.ptnWgt += y.ptnWgt;
-      h2.byYear.set(yr, t);
-    }
-  }
+  /*
+   * NO cross-level synthesis.
+   *
+   * The workbook's HS2 and HS6 sheets are two separate UN Comtrade aggregations
+   * of the same trade, and they do not agree cell by cell: 6,665 partner ×
+   * chapter × year cells differ, because a flow booked to a named chapter at HS2
+   * can sit under 999999 at HS6 (USA 2019 puts $330M in chapter 88 at HS2 and
+   * $365M in chapter 99 at HS6). The grand totals are identical either way.
+   *
+   * Rolling HS6 up into HS2 to "fill gaps" therefore mixes two bases and matches
+   * neither: it inflated residual chapters by $614M. Each level is emitted
+   * exactly as its own sheet reports it, so an HS2 view reconciles against a
+   * Comtrade HS2 query and an HS6 view against an HS6 query.
+   */
 
   // ---- per-partner reliability, measured from HS2 coverage ----
   type Tier = "High" | "Medium" | "Low";
@@ -214,16 +204,10 @@ async function main() {
     const chapter = lvl === 2 ? cell.cmd : cell.cmd.slice(0, 2);
     const cat = categoryFor(chapter).key;
 
-    if (lvl === 6) {
-      let pe = 0, gap = 0;
-      for (const yr of ANALYSIS_YEARS) {
-        const y = cell.byYear.get(yr);
-        if (!y || y.ptnExp <= NOISE) continue;
-        pe += y.ptnExp; gap += y.ptnExp * K - y.uzbImp;
-      }
-      if (pe < HS6_MIN_PTN && gap < HS6_MIN_GAP) continue;
-      keptHs6.add(cell.cmd);
-    }
+    // Every HS6 product ships. A materiality floor here left 25% of recorded
+    // imports out of the HS6 view, so a product below the floor showed nothing
+    // at all rather than its true figures.
+    if (lvl === 6) keptHs6.add(cell.cmd);
 
     for (const yr of ANALYSIS_YEARS) {
       const y = cell.byYear.get(yr);
@@ -256,17 +240,12 @@ async function main() {
     if (!top || r.pe > top.pe) hs4TopChild.set(h4, { cmd: r.k, pe: r.pe });
   }
   const hs4Codes = new Set<string>();
-  for (const [key, byY] of hs4Agg) {
-    const [iso, h4] = key.split("|");
-    hs4Codes.add(h4);
-    const chapter = h4.slice(0, 2);
-    const cat = categoryFor(chapter).key;
-    for (const [yr, e] of byY) {
-      const rec: Rec = { p: iso, k: h4, c: chapter, cat, l: 4, y: yr, pe: e.pe, ui: e.ui };
-      if (e.uw > 0 && e.pw > 0) { rec.uw = e.uw; rec.pw = e.pw; }
-      recs.push(rec);
-    }
-  }
+  /*
+   * HS4 is NOT shipped. It is an exact truncation of HS6, so storing it would
+   * repeat 161k rows — 28% of the payload — that src/lib/dataset.ts can rebuild
+   * in one pass at load. Only the labels are kept here.
+   */
+  for (const key of hs4Agg.keys()) hs4Codes.add(key.split("|")[1]);
   const hs4labels = Object.fromEntries(
     [...hs4Codes].sort().map((h4) => {
       const top = hs4TopChild.get(h4);
@@ -352,6 +331,11 @@ async function main() {
   const chapters = [...new Set(recs.filter((r) => r.l === 2).map((r) => r.c))].sort()
     .map((c) => ({ chapter: c, label: CHAPTER_LABELS[c] ?? cleanDesc(payload.hs2desc[c] ?? `HS ${c}`), category: categoryFor(c).key }));
 
+  // chapter -> category for EVERY chapter seen at any level, so the columnar
+  // decoder in src/lib/dataset.ts can rebuild `cat` without storing it per row
+  const catByChapter: Record<string, string> = {};
+  for (const r of recs) catByChapter[r.c] ??= r.cat;
+
   const activeIsos = new Set(recs.map((r) => r.p));
   const meta = {
     generatedAt: new Date().toISOString(),
@@ -363,6 +347,7 @@ async function main() {
     uzbReportingYears: [...uzbReportingYears].sort(),
     partners: partnerMeta.filter((p) => activeIsos.has(p.iso3)).sort((a, b) => a.name.localeCompare(b.name)),
     chapters,
+    catByChapter,
     hs4labels,
     hs6labels,
     categories: HS_SECTIONS.map((s) => ({ key: s.key, label: s.label })),
@@ -371,7 +356,30 @@ async function main() {
   };
 
   await write("meta.json", meta);
-  await write("cells.json", recs);
+
+  /*
+   * Columnar encoding. Dropping the HS6 materiality floor takes the record count
+   * from 67k to ~580k; as objects with repeated string keys that is ~50MB, which
+   * cannot ship. Partners and codes become dictionary indices and each row is a
+   * fixed-order tuple, which holds the complete dataset in a fraction of the size.
+   * `chapter` and `category` are derivable from the code, so they are not stored.
+   * Decoded back to objects in src/lib/dataset.ts.
+   */
+  const pIdx = new Map<string, number>();
+  const kIdx = new Map<string, number>();
+  const pList: string[] = [];
+  const kList: string[] = [];
+  const idOf = (v: string, m: Map<string, number>, list: string[]) => {
+    let i = m.get(v);
+    if (i === undefined) { i = list.length; m.set(v, i); list.push(v); }
+    return i;
+  };
+  const rows = recs.map((r) => {
+    const row: number[] = [idOf(r.p, pIdx, pList), idOf(r.k, kIdx, kList), r.y - ANALYSIS_START_YEAR, r.pe, r.ui];
+    if (r.uw !== undefined && r.pw !== undefined) row.push(r.uw, r.pw);
+    return row;
+  });
+  await write("cells.json", { v: 2, y0: ANALYSIS_START_YEAR, p: pList, k: kList, r: rows });
   await write("monthly.json", []);
   await write("products.json", topProducts);
 

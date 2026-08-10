@@ -40,6 +40,7 @@ export interface Meta {
   hs4labels: Record<string, string>;
   hs6labels: Record<string, string>;
   categories: { key: string; label: string }[];
+  catByChapter: Record<string, string>;
   orphans: { importValue: number; importCells: number };
   datasetRows: number;
 }
@@ -57,11 +58,68 @@ export interface Product {
 /** Values at or below this are treated as noise, not as a reported flow. */
 const NOISE = 100_000;
 
-const cells = cellsRaw as unknown as Cell[];
 export const meta = metaRaw as unknown as Meta;
 export const monthly = monthlyRaw as unknown as MonthlyPoint[];
 export const products = productsRaw as unknown as Product[];
 export const DATA_VERSION = meta.generatedAt.slice(0, 10).replace(/-/g, ".");
+
+const categoryOfChapter = (c: string) => meta.catByChapter[c] ?? "instruments";
+
+/**
+ * cells.json ships columnar (see scripts/build-from-excel.ts): a partner and a
+ * code dictionary plus fixed-order tuples [pIdx, kIdx, yearOffset, pe, ui, uw?, pw?].
+ * Chapter, category and HS level are derived here rather than stored, which is
+ * what lets the complete dataset — every reported partner × code × year, with no
+ * materiality floor — fit in the payload.
+ */
+interface PackedCells { v: number; y0: number; p: string[]; k: string[]; r: number[][] }
+
+const cells: Cell[] = (() => {
+  const packed = cellsRaw as unknown as PackedCells;
+  const out: Cell[] = new Array(packed.r.length);
+  for (let i = 0; i < packed.r.length; i++) {
+    const row = packed.r[i];
+    const k = packed.k[row[1]];
+    const c = k.slice(0, 2);
+    const cell: Cell = {
+      p: packed.p[row[0]],
+      k,
+      c,
+      cat: categoryOfChapter(c),
+      l: k.length,
+      y: packed.y0 + row[2],
+      pe: row[3],
+      ui: row[4],
+    };
+    if (row.length > 5) { cell.uw = row[5]; cell.pw = row[6]; }
+    out[i] = cell;
+  }
+
+  /*
+   * Derive the HS4 layer here rather than shipping it. HS4 is defined as the
+   * truncation of HS6, so rebuilding it in one pass is both smaller over the
+   * wire and impossible to drift out of step with its children.
+   */
+  const h4 = new Map<string, Cell>();
+  for (const r of out) {
+    if (r.l !== 6) continue;
+    const code = r.k.slice(0, 4);
+    const key = `${r.p}|${code}|${r.y}`;
+    let agg = h4.get(key);
+    if (!agg) {
+      agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
+      h4.set(key, agg);
+    }
+    agg.pe += r.pe;
+    agg.ui += r.ui;
+    if (r.uw !== undefined && r.pw !== undefined) {
+      agg.uw = (agg.uw ?? 0) + r.uw;
+      agg.pw = (agg.pw ?? 0) + r.pw;
+    }
+  }
+  for (const cell of h4.values()) out.push(cell);
+  return out;
+})();
 
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
 const chapLabel = new Map(meta.chapters.map((c) => [c.chapter, c.label]));

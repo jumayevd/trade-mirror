@@ -34,7 +34,30 @@ const ROOT = path.join(process.cwd(), "src", "data");
 interface Cell { p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number }
 interface MetaFile { generatedAt: string; years: number[]; chapters: { chapter: string; label: string }[] }
 
-const cells: Cell[] = JSON.parse(fs.readFileSync(path.join(ROOT, "cells.json"), "utf8"));
+/** cells.json ships columnar (see build-from-excel.ts); decode to flat records. */
+interface PackedCells { v: number; y0: number; p: string[]; k: string[]; r: number[][] }
+const cells: Cell[] = (() => {
+  const packed: PackedCells = JSON.parse(fs.readFileSync(path.join(ROOT, "cells.json"), "utf8"));
+  const catOf: Record<string, string> = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "meta.json"), "utf8"),
+  ).catByChapter ?? {};
+  const flat: Cell[] = packed.r.map((row) => {
+    const k = packed.k[row[1]];
+    const c = k.slice(0, 2);
+    return { p: packed.p[row[0]], k, c, cat: catOf[c] ?? "instruments", l: k.length, y: packed.y0 + row[2], pe: row[3], ui: row[4] };
+  });
+  // HS4 is derived from HS6 rather than shipped; rebuild it so this level is scored too
+  const h4 = new Map<string, Cell>();
+  for (const r of flat) {
+    if (r.l !== 6) continue;
+    const code = r.k.slice(0, 4);
+    const key = `${r.p}|${code}|${r.y}`;
+    const agg = h4.get(key) ?? { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
+    agg.pe += r.pe; agg.ui += r.ui;
+    h4.set(key, agg);
+  }
+  return [...flat, ...h4.values()];
+})();
 const meta: MetaFile = JSON.parse(fs.readFileSync(path.join(ROOT, "meta.json"), "utf8"));
 const chapterLabel = new Map(meta.chapters.map((c) => [c.chapter, c.label]));
 

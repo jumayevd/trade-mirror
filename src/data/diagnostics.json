@@ -1,21 +1,21 @@
 {
   "version": "3.0",
-  "generatedAt": "2026-08-10T07:14:38.694Z",
+  "generatedAt": "2026-08-10T17:00:33.260Z",
   "headlineLevel": 6,
   "rSquared": {
-    "2": 0.16,
-    "4": 0.305,
-    "6": 0.377
+    "2": 0.157,
+    "4": 0.156,
+    "6": 0.229
   },
   "corGP": {
-    "2": 0.682,
-    "4": 0.708,
-    "6": 0.696
+    "2": 0.683,
+    "4": 0.691,
+    "6": 0.697
   },
   "distanceCoef": {
     "2": -0.246,
-    "4": -0.143,
-    "6": -0.219
+    "4": -0.21,
+    "6": -0.174
   },
   "variance": {
     "2": {
@@ -24,14 +24,14 @@
       "product": 0
     },
     "4": {
-      "e": 10.1496,
-      "partner": 0.2562,
-      "product": 0.1838
+      "e": 9.9779,
+      "partner": 0.0799,
+      "product": 0.0702
     },
     "6": {
-      "e": 9.7929,
-      "partner": 0.3252,
-      "product": 0.3312
+      "e": 9.0145,
+      "partner": 0.0823,
+      "product": 0.1621
     }
   },
   "convergence": {
@@ -40,886 +40,1072 @@
       "converged": true
     },
     "4": {
-      "iterations": 1031,
+      "iterations": 680,
       "converged": true
     },
     "6": {
-      "iterations": 1934,
+      "iterations": 964,
       "converged": true
     }
   },
   "coverage": {
     "2": {
-      "matchedCellYears": 9748,
-      "matchedCells": 2014,
-      "orphanImportCellYears": 3211,
-      "lostExportCellYears": 2221,
-      "inScopeCells": 1411,
-      "inScopeCellYears": 3915,
-      "valueRetainedShare": 0.9014885956065747,
+      "matchedCellYears": 9747,
+      "matchedCells": 2013,
+      "orphanImportCellYears": 3206,
+      "lostExportCellYears": 2178,
+      "inScopeCells": 1410,
+      "inScopeCellYears": 3914,
+      "valueRetainedShare": 0.9029491003510226,
       "belowFloor": 0
     },
     "4": {
-      "matchedCellYears": 10315,
-      "matchedCells": 1751,
-      "orphanImportCellYears": 1189,
-      "lostExportCellYears": 2398,
-      "inScopeCells": 1439,
-      "inScopeCellYears": 4225,
-      "valueRetainedShare": 0.890222784679533,
+      "matchedCellYears": 28785,
+      "matchedCells": 7249,
+      "orphanImportCellYears": 12673,
+      "lostExportCellYears": 10276,
+      "inScopeCells": 4767,
+      "inScopeCellYears": 11729,
+      "valueRetainedShare": 0.8539058127597069,
       "belowFloor": 0
     },
     "6": {
-      "matchedCellYears": 17127,
-      "matchedCells": 2885,
-      "orphanImportCellYears": 1883,
-      "lostExportCellYears": 3870,
-      "inScopeCells": 2392,
-      "inScopeCellYears": 6990,
-      "valueRetainedShare": 0.8734369677030608,
+      "matchedCellYears": 44433,
+      "matchedCells": 12643,
+      "orphanImportCellYears": 24681,
+      "lostExportCellYears": 22201,
+      "inScopeCells": 7878,
+      "inScopeCellYears": 17972,
+      "valueRetainedShare": 0.7933976371141032,
       "belowFloor": 0
     }
   },
   "chapterEffects": [
     {
+      "chapter": "97",
+      "label": "Art & antiques",
+      "effect": -1.906,
+      "obs": 2
+    },
+    {
+      "chapter": "92",
+      "label": "Musical instruments",
+      "effect": -0.504,
+      "obs": 24
+    },
+    {
       "chapter": "26",
       "label": "Ores & ash",
-      "effect": -0.815,
-      "obs": 46
+      "effect": -0.409,
+      "obs": 62
     },
     {
-      "chapter": "05",
-      "label": "Animal products nes",
-      "effect": -0.783,
-      "obs": 8
-    },
-    {
-      "chapter": "16",
-      "label": "Prepared meat/fish",
-      "effect": -0.774,
-      "obs": 8
-    },
-    {
-      "chapter": "78",
-      "label": "Lead",
-      "effect": -0.49,
-      "obs": 4
-    },
-    {
-      "chapter": "23",
-      "label": "Animal feed",
-      "effect": -0.475,
-      "obs": 103
-    },
-    {
-      "chapter": "01",
-      "label": "Live animals",
-      "effect": -0.441,
-      "obs": 105
-    },
-    {
-      "chapter": "30",
-      "label": "Pharmaceuticals",
-      "effect": -0.425,
-      "obs": 615
-    },
-    {
-      "chapter": "27",
-      "label": "Mineral fuels & gas",
-      "effect": -0.412,
-      "obs": 220
-    },
-    {
-      "chapter": "17",
-      "label": "Sugar",
-      "effect": -0.385,
-      "obs": 73
-    },
-    {
-      "chapter": "28",
-      "label": "Inorganic chemicals",
-      "effect": -0.383,
-      "obs": 88
-    },
-    {
-      "chapter": "38",
-      "label": "Misc chemicals",
-      "effect": -0.38,
-      "obs": 300
-    },
-    {
-      "chapter": "47",
-      "label": "Wood pulp",
-      "effect": -0.371,
-      "obs": 28
-    },
-    {
-      "chapter": "11",
-      "label": "Milling products",
+      "chapter": "14",
+      "label": "Vegetable plaiting",
       "effect": -0.363,
-      "obs": 47
-    },
-    {
-      "chapter": "89",
-      "label": "Ships",
-      "effect": -0.351,
       "obs": 3
     },
     {
-      "chapter": "71",
-      "label": "Precious metals & stones",
-      "effect": -0.332,
-      "obs": 35
+      "chapter": "03",
+      "label": "Fish",
+      "effect": -0.356,
+      "obs": 57
     },
     {
       "chapter": "53",
       "label": "Other vegetable fibres",
-      "effect": -0.314,
-      "obs": 12
+      "effect": -0.33,
+      "obs": 31
     },
     {
-      "chapter": "44",
-      "label": "Wood",
-      "effect": -0.308,
-      "obs": 159
-    },
-    {
-      "chapter": "72",
-      "label": "Iron & steel",
-      "effect": -0.285,
-      "obs": 558
-    },
-    {
-      "chapter": "15",
-      "label": "Fats & oils",
-      "effect": -0.272,
-      "obs": 141
+      "chapter": "05",
+      "label": "Animal products nes",
+      "effect": -0.275,
+      "obs": 23
     },
     {
       "chapter": "25",
       "label": "Salt, earths & stone",
-      "effect": -0.238,
-      "obs": 58
+      "effect": -0.275,
+      "obs": 221
     },
     {
-      "chapter": "19",
-      "label": "Cereal preparations",
-      "effect": -0.234,
-      "obs": 100
-    },
-    {
-      "chapter": "86",
-      "label": "Railway",
-      "effect": -0.211,
-      "obs": 39
-    },
-    {
-      "chapter": "12",
-      "label": "Oil seeds",
-      "effect": -0.211,
-      "obs": 86
-    },
-    {
-      "chapter": "04",
-      "label": "Dairy & eggs",
-      "effect": -0.2,
-      "obs": 63
-    },
-    {
-      "chapter": "10",
-      "label": "Cereals",
-      "effect": -0.181,
-      "obs": 59
-    },
-    {
-      "chapter": "02",
-      "label": "Meat",
-      "effect": -0.175,
-      "obs": 109
-    },
-    {
-      "chapter": "29",
-      "label": "Organic chemicals",
-      "effect": -0.159,
-      "obs": 215
-    },
-    {
-      "chapter": "31",
-      "label": "Fertilizers",
-      "effect": -0.152,
-      "obs": 21
-    },
-    {
-      "chapter": "24",
-      "label": "Tobacco",
-      "effect": -0.146,
-      "obs": 35
-    },
-    {
-      "chapter": "84",
-      "label": "Machinery",
-      "effect": -0.119,
-      "obs": 4579
-    },
-    {
-      "chapter": "07",
-      "label": "Vegetables",
-      "effect": -0.117,
-      "obs": 51
-    },
-    {
-      "chapter": "32",
-      "label": "Dyes & pigments",
-      "effect": -0.106,
-      "obs": 278
-    },
-    {
-      "chapter": "34",
-      "label": "Soaps & waxes",
-      "effect": -0.089,
-      "obs": 179
-    },
-    {
-      "chapter": "36",
-      "label": "Explosives",
-      "effect": -0.068,
-      "obs": 6
-    },
-    {
-      "chapter": "20",
-      "label": "Prepared vegetables/fruit",
-      "effect": -0.062,
-      "obs": 48
-    },
-    {
-      "chapter": "48",
-      "label": "Paper & paperboard",
-      "effect": -0.037,
-      "obs": 268
-    },
-    {
-      "chapter": "40",
-      "label": "Rubber",
-      "effect": -0.023,
-      "obs": 224
-    },
-    {
-      "chapter": "90",
-      "label": "Precision instruments",
-      "effect": -0.017,
-      "obs": 647
-    },
-    {
-      "chapter": "09",
-      "label": "Coffee, tea & spices",
-      "effect": 0.005,
-      "obs": 54
-    },
-    {
-      "chapter": "85",
-      "label": "Electrical machinery",
-      "effect": 0.016,
-      "obs": 1607
-    },
-    {
-      "chapter": "21",
-      "label": "Misc edible preps",
-      "effect": 0.026,
-      "obs": 149
-    },
-    {
-      "chapter": "73",
-      "label": "Iron/steel articles",
-      "effect": 0.039,
-      "obs": 690
+      "chapter": "23",
+      "label": "Animal feed",
+      "effect": -0.266,
+      "obs": 220
     },
     {
       "chapter": "06",
       "label": "Live plants",
-      "effect": 0.041,
-      "obs": 41
+      "effect": -0.246,
+      "obs": 115
+    },
+    {
+      "chapter": "27",
+      "label": "Mineral fuels & gas",
+      "effect": -0.23,
+      "obs": 397
+    },
+    {
+      "chapter": "47",
+      "label": "Wood pulp",
+      "effect": -0.226,
+      "obs": 69
+    },
+    {
+      "chapter": "43",
+      "label": "Furskins",
+      "effect": -0.211,
+      "obs": 12
+    },
+    {
+      "chapter": "01",
+      "label": "Live animals",
+      "effect": -0.208,
+      "obs": 214
+    },
+    {
+      "chapter": "80",
+      "label": "Tin",
+      "effect": -0.191,
+      "obs": 14
+    },
+    {
+      "chapter": "72",
+      "label": "Iron & steel",
+      "effect": -0.183,
+      "obs": 1327
+    },
+    {
+      "chapter": "86",
+      "label": "Railway",
+      "effect": -0.183,
+      "obs": 128
+    },
+    {
+      "chapter": "28",
+      "label": "Inorganic chemicals",
+      "effect": -0.182,
+      "obs": 495
+    },
+    {
+      "chapter": "24",
+      "label": "Tobacco",
+      "effect": -0.175,
+      "obs": 100
+    },
+    {
+      "chapter": "17",
+      "label": "Sugar",
+      "effect": -0.159,
+      "obs": 155
+    },
+    {
+      "chapter": "78",
+      "label": "Lead",
+      "effect": -0.154,
+      "obs": 17
+    },
+    {
+      "chapter": "19",
+      "label": "Cereal preparations",
+      "effect": -0.149,
+      "obs": 282
+    },
+    {
+      "chapter": "30",
+      "label": "Pharmaceuticals",
+      "effect": -0.148,
+      "obs": 1304
+    },
+    {
+      "chapter": "38",
+      "label": "Misc chemicals",
+      "effect": -0.143,
+      "obs": 1106
+    },
+    {
+      "chapter": "29",
+      "label": "Organic chemicals",
+      "effect": -0.143,
+      "obs": 1101
+    },
+    {
+      "chapter": "44",
+      "label": "Wood",
+      "effect": -0.139,
+      "obs": 453
+    },
+    {
+      "chapter": "11",
+      "label": "Milling products",
+      "effect": -0.136,
+      "obs": 124
+    },
+    {
+      "chapter": "31",
+      "label": "Fertilizers",
+      "effect": -0.132,
+      "obs": 149
+    },
+    {
+      "chapter": "93",
+      "label": "Arms & ammunition",
+      "effect": -0.11,
+      "obs": 3
+    },
+    {
+      "chapter": "40",
+      "label": "Rubber",
+      "effect": -0.107,
+      "obs": 879
+    },
+    {
+      "chapter": "79",
+      "label": "Zinc",
+      "effect": -0.106,
+      "obs": 9
     },
     {
       "chapter": "68",
       "label": "Stone & cement articles",
-      "effect": 0.045,
-      "obs": 83
-    },
-    {
-      "chapter": "76",
-      "label": "Aluminium",
-      "effect": 0.047,
-      "obs": 240
-    },
-    {
-      "chapter": "18",
-      "label": "Cocoa",
-      "effect": 0.059,
-      "obs": 98
-    },
-    {
-      "chapter": "51",
-      "label": "Wool",
-      "effect": 0.116,
-      "obs": 4
-    },
-    {
-      "chapter": "42",
-      "label": "Leather articles",
-      "effect": 0.135,
-      "obs": 19
-    },
-    {
-      "chapter": "33",
-      "label": "Cosmetics & oils",
-      "effect": 0.138,
-      "obs": 241
-    },
-    {
-      "chapter": "94",
-      "label": "Furniture & bedding",
-      "effect": 0.181,
-      "obs": 293
-    },
-    {
-      "chapter": "37",
-      "label": "Photographic goods",
-      "effect": 0.198,
-      "obs": 10
-    },
-    {
-      "chapter": "70",
-      "label": "Glass",
-      "effect": 0.205,
-      "obs": 150
-    },
-    {
-      "chapter": "87",
-      "label": "Vehicles",
-      "effect": 0.218,
-      "obs": 1030
-    },
-    {
-      "chapter": "39",
-      "label": "Plastics",
-      "effect": 0.231,
-      "obs": 1006
+      "effect": -0.089,
+      "obs": 325
     },
     {
       "chapter": "52",
       "label": "Cotton",
-      "effect": 0.234,
-      "obs": 25
+      "effect": -0.08,
+      "obs": 113
     },
     {
-      "chapter": "88",
-      "label": "Aircraft",
-      "effect": 0.242,
-      "obs": 19
+      "chapter": "15",
+      "label": "Fats & oils",
+      "effect": -0.074,
+      "obs": 266
+    },
+    {
+      "chapter": "37",
+      "label": "Photographic goods",
+      "effect": -0.071,
+      "obs": 52
+    },
+    {
+      "chapter": "50",
+      "label": "Silk",
+      "effect": -0.063,
+      "obs": 3
+    },
+    {
+      "chapter": "51",
+      "label": "Wool",
+      "effect": -0.059,
+      "obs": 43
+    },
+    {
+      "chapter": "90",
+      "label": "Precision instruments",
+      "effect": -0.054,
+      "obs": 2244
+    },
+    {
+      "chapter": "89",
+      "label": "Ships",
+      "effect": -0.051,
+      "obs": 27
+    },
+    {
+      "chapter": "20",
+      "label": "Prepared vegetables/fruit",
+      "effect": -0.043,
+      "obs": 224
+    },
+    {
+      "chapter": "84",
+      "label": "Machinery",
+      "effect": -0.04,
+      "obs": 10779
+    },
+    {
+      "chapter": "04",
+      "label": "Dairy & eggs",
+      "effect": -0.025,
+      "obs": 297
+    },
+    {
+      "chapter": "32",
+      "label": "Dyes & pigments",
+      "effect": -0.02,
+      "obs": 1013
     },
     {
       "chapter": "69",
       "label": "Ceramics",
-      "effect": 0.256,
-      "obs": 128
+      "effect": -0.016,
+      "obs": 354
     },
     {
-      "chapter": "35",
-      "label": "Albuminoids & glues",
-      "effect": 0.259,
-      "obs": 81
-    },
-    {
-      "chapter": "59",
-      "label": "Coated textiles",
-      "effect": 0.273,
-      "obs": 52
-    },
-    {
-      "chapter": "95",
-      "label": "Toys & sports",
-      "effect": 0.327,
-      "obs": 68
-    },
-    {
-      "chapter": "56",
-      "label": "Wadding & nonwovens",
-      "effect": 0.343,
-      "obs": 105
-    },
-    {
-      "chapter": "65",
-      "label": "Headgear",
-      "effect": 0.366,
-      "obs": 6
-    },
-    {
-      "chapter": "49",
-      "label": "Printed books",
-      "effect": 0.399,
-      "obs": 32
-    },
-    {
-      "chapter": "08",
-      "label": "Fruit & nuts",
-      "effect": 0.455,
-      "obs": 70
-    },
-    {
-      "chapter": "55",
-      "label": "Man-made staple fibres",
-      "effect": 0.482,
-      "obs": 127
-    },
-    {
-      "chapter": "83",
-      "label": "Misc base metal articles",
-      "effect": 0.49,
-      "obs": 189
-    },
-    {
-      "chapter": "82",
-      "label": "Tools & cutlery",
-      "effect": 0.545,
-      "obs": 147
-    },
-    {
-      "chapter": "96",
-      "label": "Misc manufactured articles",
-      "effect": 0.578,
-      "obs": 111
-    },
-    {
-      "chapter": "66",
-      "label": "Umbrellas",
-      "effect": 0.625,
-      "obs": 1
-    },
-    {
-      "chapter": "64",
-      "label": "Footwear",
-      "effect": 0.632,
-      "obs": 88
-    },
-    {
-      "chapter": "22",
-      "label": "Beverages & spirits",
-      "effect": 0.662,
-      "obs": 46
-    },
-    {
-      "chapter": "62",
-      "label": "Woven apparel",
-      "effect": 0.677,
-      "obs": 39
-    },
-    {
-      "chapter": "81",
-      "label": "Other base metals",
-      "effect": 0.743,
-      "obs": 5
-    },
-    {
-      "chapter": "57",
-      "label": "Carpets",
-      "effect": 0.773,
-      "obs": 8
-    },
-    {
-      "chapter": "63",
-      "label": "Made-up textiles",
-      "effect": 0.889,
-      "obs": 43
-    },
-    {
-      "chapter": "54",
-      "label": "Man-made filaments",
-      "effect": 0.896,
-      "obs": 142
-    },
-    {
-      "chapter": "58",
-      "label": "Special woven fabrics",
-      "effect": 0.957,
-      "obs": 63
-    },
-    {
-      "chapter": "67",
-      "label": "Feathers & artificial flowers",
-      "effect": 0.984,
+      "chapter": "45",
+      "label": "Cork",
+      "effect": -0.014,
       "obs": 7
     },
     {
-      "chapter": "75",
-      "label": "Nickel",
-      "effect": 1.072,
-      "obs": 5
+      "chapter": "02",
+      "label": "Meat",
+      "effect": -0.011,
+      "obs": 265
     },
     {
-      "chapter": "61",
-      "label": "Knitted apparel",
-      "effect": 1.123,
-      "obs": 61
+      "chapter": "48",
+      "label": "Paper & paperboard",
+      "effect": -0.011,
+      "obs": 842
+    },
+    {
+      "chapter": "34",
+      "label": "Soaps & waxes",
+      "effect": -0.009,
+      "obs": 564
+    },
+    {
+      "chapter": "71",
+      "label": "Precious metals & stones",
+      "effect": -0.008,
+      "obs": 50
+    },
+    {
+      "chapter": "36",
+      "label": "Explosives",
+      "effect": -0.005,
+      "obs": 25
+    },
+    {
+      "chapter": "10",
+      "label": "Cereals",
+      "effect": 0.002,
+      "obs": 153
+    },
+    {
+      "chapter": "73",
+      "label": "Iron/steel articles",
+      "effect": 0.009,
+      "obs": 1705
+    },
+    {
+      "chapter": "12",
+      "label": "Oil seeds",
+      "effect": 0.021,
+      "obs": 204
+    },
+    {
+      "chapter": "07",
+      "label": "Vegetables",
+      "effect": 0.032,
+      "obs": 126
+    },
+    {
+      "chapter": "76",
+      "label": "Aluminium",
+      "effect": 0.04,
+      "obs": 489
+    },
+    {
+      "chapter": "85",
+      "label": "Electrical machinery",
+      "effect": 0.046,
+      "obs": 3567
     },
     {
       "chapter": "13",
       "label": "Gums & resins",
-      "effect": 1.203,
-      "obs": 8
+      "effect": 0.048,
+      "obs": 56
     },
     {
-      "chapter": "60",
-      "label": "Knitted fabrics",
-      "effect": 1.303,
-      "obs": 90
+      "chapter": "81",
+      "label": "Other base metals",
+      "effect": 0.053,
+      "obs": 27
     },
     {
-      "chapter": "91",
-      "label": "Clocks & watches",
-      "effect": 1.41,
-      "obs": 9
+      "chapter": "70",
+      "label": "Glass",
+      "effect": 0.056,
+      "obs": 425
     },
     {
       "chapter": "74",
       "label": "Copper",
-      "effect": 1.414,
-      "obs": 10
+      "effect": 0.058,
+      "obs": 93
+    },
+    {
+      "chapter": "16",
+      "label": "Prepared meat/fish",
+      "effect": 0.06,
+      "obs": 89
+    },
+    {
+      "chapter": "42",
+      "label": "Leather articles",
+      "effect": 0.062,
+      "obs": 51
+    },
+    {
+      "chapter": "21",
+      "label": "Misc edible preps",
+      "effect": 0.069,
+      "obs": 373
+    },
+    {
+      "chapter": "88",
+      "label": "Aircraft",
+      "effect": 0.079,
+      "obs": 32
+    },
+    {
+      "chapter": "18",
+      "label": "Cocoa",
+      "effect": 0.092,
+      "obs": 244
+    },
+    {
+      "chapter": "39",
+      "label": "Plastics",
+      "effect": 0.096,
+      "obs": 2604
+    },
+    {
+      "chapter": "35",
+      "label": "Albuminoids & glues",
+      "effect": 0.108,
+      "obs": 291
+    },
+    {
+      "chapter": "96",
+      "label": "Misc manufactured articles",
+      "effect": 0.11,
+      "obs": 290
+    },
+    {
+      "chapter": "08",
+      "label": "Fruit & nuts",
+      "effect": 0.115,
+      "obs": 262
+    },
+    {
+      "chapter": "59",
+      "label": "Coated textiles",
+      "effect": 0.142,
+      "obs": 191
+    },
+    {
+      "chapter": "87",
+      "label": "Vehicles",
+      "effect": 0.147,
+      "obs": 1806
+    },
+    {
+      "chapter": "54",
+      "label": "Man-made filaments",
+      "effect": 0.165,
+      "obs": 342
+    },
+    {
+      "chapter": "57",
+      "label": "Carpets",
+      "effect": 0.169,
+      "obs": 62
+    },
+    {
+      "chapter": "22",
+      "label": "Beverages & spirits",
+      "effect": 0.192,
+      "obs": 125
+    },
+    {
+      "chapter": "83",
+      "label": "Misc base metal articles",
+      "effect": 0.195,
+      "obs": 492
+    },
+    {
+      "chapter": "33",
+      "label": "Cosmetics & oils",
+      "effect": 0.195,
+      "obs": 554
+    },
+    {
+      "chapter": "41",
+      "label": "Raw hides & skins",
+      "effect": 0.199,
+      "obs": 3
+    },
+    {
+      "chapter": "49",
+      "label": "Printed books",
+      "effect": 0.203,
+      "obs": 99
+    },
+    {
+      "chapter": "94",
+      "label": "Furniture & bedding",
+      "effect": 0.204,
+      "obs": 675
+    },
+    {
+      "chapter": "55",
+      "label": "Man-made staple fibres",
+      "effect": 0.209,
+      "obs": 296
+    },
+    {
+      "chapter": "65",
+      "label": "Headgear",
+      "effect": 0.213,
+      "obs": 23
+    },
+    {
+      "chapter": "67",
+      "label": "Feathers & artificial flowers",
+      "effect": 0.228,
+      "obs": 12
+    },
+    {
+      "chapter": "75",
+      "label": "Nickel",
+      "effect": 0.228,
+      "obs": 20
+    },
+    {
+      "chapter": "56",
+      "label": "Wadding & nonwovens",
+      "effect": 0.244,
+      "obs": 239
+    },
+    {
+      "chapter": "66",
+      "label": "Umbrellas",
+      "effect": 0.251,
+      "obs": 14
+    },
+    {
+      "chapter": "09",
+      "label": "Coffee, tea & spices",
+      "effect": 0.268,
+      "obs": 172
+    },
+    {
+      "chapter": "82",
+      "label": "Tools & cutlery",
+      "effect": 0.269,
+      "obs": 485
+    },
+    {
+      "chapter": "64",
+      "label": "Footwear",
+      "effect": 0.288,
+      "obs": 157
+    },
+    {
+      "chapter": "61",
+      "label": "Knitted apparel",
+      "effect": 0.331,
+      "obs": 188
+    },
+    {
+      "chapter": "91",
+      "label": "Clocks & watches",
+      "effect": 0.355,
+      "obs": 35
+    },
+    {
+      "chapter": "95",
+      "label": "Toys & sports",
+      "effect": 0.371,
+      "obs": 168
+    },
+    {
+      "chapter": "63",
+      "label": "Made-up textiles",
+      "effect": 0.373,
+      "obs": 133
+    },
+    {
+      "chapter": "62",
+      "label": "Woven apparel",
+      "effect": 0.403,
+      "obs": 165
+    },
+    {
+      "chapter": "58",
+      "label": "Special woven fabrics",
+      "effect": 0.461,
+      "obs": 137
+    },
+    {
+      "chapter": "60",
+      "label": "Knitted fabrics",
+      "effect": 0.768,
+      "obs": 161
     },
     {
       "chapter": "99",
       "label": "Unspecified commodities",
-      "effect": 1.778,
+      "effect": 2.161,
       "obs": 9
     }
   ],
   "yearEffects": [
     {
       "year": 2017,
-      "effect": 0.046
+      "effect": 0.065
     },
     {
       "year": 2018,
-      "effect": 0.026
+      "effect": 0.036
     },
     {
       "year": 2019,
-      "effect": -0.066
+      "effect": -0.054
     },
     {
       "year": 2020,
-      "effect": -0.022
+      "effect": -0.001
     },
     {
       "year": 2021,
-      "effect": 0.009
+      "effect": 0.001
     },
     {
       "year": 2022,
-      "effect": 0.029
+      "effect": 0
     },
     {
       "year": 2023,
-      "effect": -0.002
+      "effect": -0.025
     },
     {
       "year": 2024,
-      "effect": -0.02
+      "effect": -0.022
     }
   ],
   "partnerEffects": [
     {
       "iso": "HKG",
-      "u": 1.6183,
-      "cells": 18
-    },
-    {
-      "iso": "LKA",
-      "u": 1.2595,
-      "cells": 1
-    },
-    {
-      "iso": "ARE",
-      "u": 1.0064,
-      "cells": 50
-    },
-    {
-      "iso": "MDA",
-      "u": 0.5519,
-      "cells": 1
-    },
-    {
-      "iso": "SGP",
-      "u": 0.4855,
-      "cells": 2
-    },
-    {
-      "iso": "ESP",
-      "u": 0.427,
-      "cells": 11
-    },
-    {
-      "iso": "ISR",
-      "u": 0.4014,
-      "cells": 4
-    },
-    {
-      "iso": "EST",
-      "u": 0.3865,
-      "cells": 15
-    },
-    {
-      "iso": "SVN",
-      "u": 0.3536,
-      "cells": 8
-    },
-    {
-      "iso": "NLD",
-      "u": 0.343,
-      "cells": 42
-    },
-    {
-      "iso": "GBR",
-      "u": 0.338,
-      "cells": 7
-    },
-    {
-      "iso": "FRA",
-      "u": 0.3129,
-      "cells": 33
-    },
-    {
-      "iso": "ROU",
-      "u": 0.3076,
-      "cells": 4
-    },
-    {
-      "iso": "HUN",
-      "u": 0.2726,
-      "cells": 11
-    },
-    {
-      "iso": "SWE",
-      "u": 0.2595,
-      "cells": 4
-    },
-    {
-      "iso": "LVA",
-      "u": 0.2384,
-      "cells": 13
-    },
-    {
-      "iso": "FIN",
-      "u": 0.2249,
-      "cells": 11
-    },
-    {
-      "iso": "BGR",
-      "u": 0.2093,
-      "cells": 3
-    },
-    {
-      "iso": "BGD",
-      "u": 0.2088,
-      "cells": 2
-    },
-    {
-      "iso": "BEL",
-      "u": 0.2033,
-      "cells": 7
-    },
-    {
-      "iso": "ITA",
-      "u": 0.1872,
-      "cells": 94
-    },
-    {
-      "iso": "USA",
-      "u": 0.186,
-      "cells": 29
-    },
-    {
-      "iso": "MEX",
-      "u": 0.136,
-      "cells": 2
-    },
-    {
-      "iso": "ARM",
-      "u": 0.1241,
-      "cells": 1
-    },
-    {
-      "iso": "DNK",
-      "u": 0.0898,
-      "cells": 3
-    },
-    {
-      "iso": "IRL",
-      "u": 0.0843,
-      "cells": 2
-    },
-    {
-      "iso": "DEU",
-      "u": 0.0742,
-      "cells": 175
-    },
-    {
-      "iso": "POL",
-      "u": 0.0575,
-      "cells": 49
-    },
-    {
-      "iso": "CAN",
-      "u": 0.0546,
-      "cells": 1
-    },
-    {
-      "iso": "LUX",
-      "u": 0.0495,
-      "cells": 3
-    },
-    {
-      "iso": "BRA",
-      "u": -0.0129,
-      "cells": 12
-    },
-    {
-      "iso": "JPN",
-      "u": -0.0392,
-      "cells": 27
-    },
-    {
-      "iso": "IRN",
-      "u": -0.0412,
-      "cells": 42
-    },
-    {
-      "iso": "LTU",
-      "u": -0.0485,
-      "cells": 47
-    },
-    {
-      "iso": "AUT",
-      "u": -0.0505,
-      "cells": 28
-    },
-    {
-      "iso": "PAK",
-      "u": -0.0618,
-      "cells": 7
-    },
-    {
-      "iso": "CHE",
-      "u": -0.1004,
-      "cells": 16
-    },
-    {
-      "iso": "MYS",
-      "u": -0.1014,
-      "cells": 12
-    },
-    {
-      "iso": "TUR",
-      "u": -0.114,
-      "cells": 329
-    },
-    {
-      "iso": "GRC",
-      "u": -0.1404,
-      "cells": 1
-    },
-    {
-      "iso": "GEO",
-      "u": -0.1469,
-      "cells": 16
-    },
-    {
-      "iso": "KEN",
-      "u": -0.1782,
-      "cells": 1
-    },
-    {
-      "iso": "CHN",
-      "u": -0.183,
-      "cells": 881
-    },
-    {
-      "iso": "UKR",
-      "u": -0.2415,
+      "u": 1.2145,
       "cells": 41
     },
     {
-      "iso": "RUS",
-      "u": -0.2418,
-      "cells": 337
+      "iso": "LKA",
+      "u": 0.5315,
+      "cells": 5
     },
     {
-      "iso": "PRT",
-      "u": -0.2566,
+      "iso": "ARE",
+      "u": 0.4766,
+      "cells": 199
+    },
+    {
+      "iso": "JOR",
+      "u": 0.3045,
+      "cells": 4
+    },
+    {
+      "iso": "LUX",
+      "u": 0.2727,
+      "cells": 8
+    },
+    {
+      "iso": "SGP",
+      "u": 0.2437,
+      "cells": 25
+    },
+    {
+      "iso": "EST",
+      "u": 0.2401,
+      "cells": 70
+    },
+    {
+      "iso": "MAR",
+      "u": 0.2316,
       "cells": 1
     },
     {
-      "iso": "KAZ",
-      "u": -0.2787,
-      "cells": 155
+      "iso": "SVN",
+      "u": 0.2257,
+      "cells": 31
     },
     {
-      "iso": "CZE",
-      "u": -0.3157,
-      "cells": 21
+      "iso": "POL",
+      "u": 0.2093,
+      "cells": 289
     },
     {
-      "iso": "BLR",
-      "u": -0.3309,
-      "cells": 20
+      "iso": "NOR",
+      "u": 0.2065,
+      "cells": 8
     },
     {
-      "iso": "AZE",
-      "u": -0.3522,
-      "cells": 5
+      "iso": "HUN",
+      "u": 0.2043,
+      "cells": 76
     },
     {
-      "iso": "KGZ",
-      "u": -0.3655,
-      "cells": 35
+      "iso": "BGD",
+      "u": 0.2033,
+      "cells": 3
     },
     {
-      "iso": "KOR",
-      "u": -0.391,
-      "cells": 177
+      "iso": "NLD",
+      "u": 0.1878,
+      "cells": 216
     },
     {
-      "iso": "TJK",
-      "u": -0.3996,
-      "cells": 10
+      "iso": "MNG",
+      "u": 0.1775,
+      "cells": 6
+    },
+    {
+      "iso": "AUS",
+      "u": 0.1637,
+      "cells": 4
+    },
+    {
+      "iso": "FRA",
+      "u": 0.1486,
+      "cells": 215
+    },
+    {
+      "iso": "ITA",
+      "u": 0.1467,
+      "cells": 537
+    },
+    {
+      "iso": "ROU",
+      "u": 0.1437,
+      "cells": 36
+    },
+    {
+      "iso": "DEU",
+      "u": 0.1361,
+      "cells": 753
+    },
+    {
+      "iso": "ZWE",
+      "u": 0.1316,
+      "cells": 1
+    },
+    {
+      "iso": "IRN",
+      "u": 0.0926,
+      "cells": 158
+    },
+    {
+      "iso": "AUT",
+      "u": 0.0861,
+      "cells": 134
+    },
+    {
+      "iso": "MLT",
+      "u": 0.082,
+      "cells": 2
+    },
+    {
+      "iso": "BGR",
+      "u": 0.0818,
+      "cells": 57
+    },
+    {
+      "iso": "PRT",
+      "u": 0.0783,
+      "cells": 11
+    },
+    {
+      "iso": "TUR",
+      "u": 0.078,
+      "cells": 1308
+    },
+    {
+      "iso": "SWE",
+      "u": 0.077,
+      "cells": 55
     },
     {
       "iso": "SVK",
-      "u": -0.4126,
+      "u": 0.0581,
+      "cells": 32
+    },
+    {
+      "iso": "FIN",
+      "u": 0.0539,
+      "cells": 93
+    },
+    {
+      "iso": "ESP",
+      "u": 0.0519,
+      "cells": 148
+    },
+    {
+      "iso": "HND",
+      "u": 0.0505,
+      "cells": 1
+    },
+    {
+      "iso": "MDA",
+      "u": 0.0497,
+      "cells": 21
+    },
+    {
+      "iso": "HRV",
+      "u": 0.0447,
+      "cells": 3
+    },
+    {
+      "iso": "CHN",
+      "u": 0.0418,
+      "cells": 2087
+    },
+    {
+      "iso": "MEX",
+      "u": 0.0386,
+      "cells": 5
+    },
+    {
+      "iso": "KHM",
+      "u": 0.038,
+      "cells": 1
+    },
+    {
+      "iso": "NZL",
+      "u": 0.0274,
+      "cells": 2
+    },
+    {
+      "iso": "IRL",
+      "u": 0.0118,
+      "cells": 14
+    },
+    {
+      "iso": "ARM",
+      "u": 0.0082,
+      "cells": 12
+    },
+    {
+      "iso": "GRC",
+      "u": 0.0024,
+      "cells": 18
+    },
+    {
+      "iso": "UGA",
+      "u": 0.0013,
+      "cells": 1
+    },
+    {
+      "iso": "RUS",
+      "u": -0.0002,
+      "cells": 1447
+    },
+    {
+      "iso": "CAN",
+      "u": -0.0033,
+      "cells": 24
+    },
+    {
+      "iso": "ISR",
+      "u": -0.0036,
+      "cells": 28
+    },
+    {
+      "iso": "KAZ",
+      "u": -0.0082,
+      "cells": 664
+    },
+    {
+      "iso": "GTM",
+      "u": -0.0107,
+      "cells": 1
+    },
+    {
+      "iso": "BIH",
+      "u": -0.0155,
+      "cells": 1
+    },
+    {
+      "iso": "MYS",
+      "u": -0.0186,
+      "cells": 54
+    },
+    {
+      "iso": "PHL",
+      "u": -0.0262,
       "cells": 4
     },
     {
-      "iso": "IND",
-      "u": -0.4766,
-      "cells": 39
+      "iso": "BEL",
+      "u": -0.0279,
+      "cells": 102
+    },
+    {
+      "iso": "GEO",
+      "u": -0.047,
+      "cells": 69
+    },
+    {
+      "iso": "TUN",
+      "u": -0.0501,
+      "cells": 1
+    },
+    {
+      "iso": "USA",
+      "u": -0.0739,
+      "cells": 219
+    },
+    {
+      "iso": "CZE",
+      "u": -0.0755,
+      "cells": 208
+    },
+    {
+      "iso": "PSE",
+      "u": -0.0805,
+      "cells": 1
+    },
+    {
+      "iso": "KEN",
+      "u": -0.094,
+      "cells": 3
+    },
+    {
+      "iso": "GBR",
+      "u": -0.1114,
+      "cells": 107
+    },
+    {
+      "iso": "BRA",
+      "u": -0.1182,
+      "cells": 64
+    },
+    {
+      "iso": "LBN",
+      "u": -0.1185,
+      "cells": 3
+    },
+    {
+      "iso": "AZE",
+      "u": -0.123,
+      "cells": 56
+    },
+    {
+      "iso": "UKR",
+      "u": -0.1313,
+      "cells": 366
+    },
+    {
+      "iso": "DNK",
+      "u": -0.1315,
+      "cells": 38
+    },
+    {
+      "iso": "CHE",
+      "u": -0.1342,
+      "cells": 122
+    },
+    {
+      "iso": "BLR",
+      "u": -0.1343,
+      "cells": 244
+    },
+    {
+      "iso": "LVA",
+      "u": -0.1454,
+      "cells": 125
+    },
+    {
+      "iso": "SRB",
+      "u": -0.1525,
+      "cells": 25
+    },
+    {
+      "iso": "KOR",
+      "u": -0.1628,
+      "cells": 658
+    },
+    {
+      "iso": "EGY",
+      "u": -0.1641,
+      "cells": 9
+    },
+    {
+      "iso": "KGZ",
+      "u": -0.1761,
+      "cells": 235
+    },
+    {
+      "iso": "SAU",
+      "u": -0.2005,
+      "cells": 13
+    },
+    {
+      "iso": "JPN",
+      "u": -0.2162,
+      "cells": 158
     },
     {
       "iso": "IDN",
-      "u": -0.545,
-      "cells": 5
+      "u": -0.2324,
+      "cells": 23
+    },
+    {
+      "iso": "LTU",
+      "u": -0.2435,
+      "cells": 367
+    },
+    {
+      "iso": "ARG",
+      "u": -0.2517,
+      "cells": 2
     },
     {
       "iso": "THA",
-      "u": -0.7269,
-      "cells": 4
+      "u": -0.278,
+      "cells": 46
+    },
+    {
+      "iso": "TJK",
+      "u": -0.2958,
+      "cells": 69
+    },
+    {
+      "iso": "PAK",
+      "u": -0.3136,
+      "cells": 40
+    },
+    {
+      "iso": "MOZ",
+      "u": -0.347,
+      "cells": 1
     },
     {
       "iso": "VNM",
-      "u": -1.5878,
-      "cells": 5
+      "u": -0.3599,
+      "cells": 39
+    },
+    {
+      "iso": "IND",
+      "u": -0.3868,
+      "cells": 311
+    },
+    {
+      "iso": "ZAF",
+      "u": -0.4278,
+      "cells": 4
     },
     {
       "iso": "ECU",
-      "u": -2.311,
+      "u": -0.9625,
       "cells": 1
     }
   ]

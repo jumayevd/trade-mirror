@@ -671,6 +671,15 @@ const en = {
   "meth.words.budget.good": "“A fiscal estimate is impossible without rates, exemptions, tax bases and verified declarations.”",
   "meth.refs.title": "References",
   "meth.refs.note": "Missing partner-years are never treated as zero flows. Residual codes HS 98–99 are shown for transparency and excluded from screening. Source: UN Comtrade, a single versioned snapshot.",
+  "prof.aria.hs2": "HS2 chapter",
+  "prof.aria.hs4": "HS4 heading",
+  "prof.aria.hs6": "HS6 product code",
+  "prof.structure.title": "HS2 structure of the positive discrepancy",
+  "prof.structure.descPre": "Where",
+  "prof.structure.descPost": "concentrates, at chapter level. Shares are of the partner's total positive discrepancy",
+  "prof.signals.title": "HS6 screening signals",
+  "prof.signals.desc": "This partner's product channels ranked by risk band and score. Click a channel for its full profile.",
+  "prof.tip.positiveDiscrepancy": "Positive discrepancy",
 } as const;
 
 export type LocaleKey = keyof typeof en;
@@ -1333,6 +1342,15 @@ const ru: Record<LocaleKey, string> = {
   "meth.words.budget.good": "«Фискальная оценка невозможна без ставок, льгот, налоговых баз и проверенных деклараций.»",
   "meth.refs.title": "Источники",
   "meth.refs.note": "Отсутствующие годы партнёров никогда не считаются нулевыми потоками. Остаточные коды HS 98–99 показаны для прозрачности и исключены из скрининга. Источник: UN Comtrade, единый версионированный срез.",
+  "prof.aria.hs2": "Глава HS2",
+  "prof.aria.hs4": "Позиция HS4",
+  "prof.aria.hs6": "Код товара HS6",
+  "prof.structure.title": "Структура положительного расхождения по главам HS2",
+  "prof.structure.descPre": "Где концентрируется положительное расхождение страны",
+  "prof.structure.descPost": "— на уровне глав. Доли рассчитаны от общего положительного расхождения партнёра",
+  "prof.signals.title": "Сигналы скрининга на уровне HS6",
+  "prof.signals.desc": "Товарные каналы этого партнёра, упорядоченные по классу и величине риска. Нажмите на канал, чтобы открыть его профиль.",
+  "prof.tip.positiveDiscrepancy": "Положительное расхождение",
 };
 
 const uz: Record<LocaleKey, string> = {
@@ -1993,6 +2011,15 @@ const uz: Record<LocaleKey, string> = {
   "meth.words.budget.good": "«Stavkalar, imtiyozlar, soliq bazalari va tasdiqlangan deklaratsiyalarsiz fiskal baho berish mumkin emas.»",
   "meth.refs.title": "Manbalar",
   "meth.refs.note": "Hamkorlarning yetishmayotgan yillari hech qachon nol oqim deb hisoblanmaydi. HS 98–99 qoldiq kodlari shaffoflik uchun koʻrsatiladi va skriningdan chiqariladi. Manba: UN Comtrade, yagona versiyalangan kesim.",
+  "prof.aria.hs2": "HS2 boʻlimi",
+  "prof.aria.hs4": "HS4 pozitsiyasi",
+  "prof.aria.hs6": "HS6 tovar kodi",
+  "prof.structure.title": "Ijobiy tafovutning HS2 boʻlimlari boʻyicha tuzilishi",
+  "prof.structure.descPre": "Mamlakatning ijobiy tafovuti qayerda toʻplangan",
+  "prof.structure.descPost": "— boʻlimlar darajasida. Ulushlar hamkorning umumiy ijobiy tafovutidan hisoblanadi",
+  "prof.signals.title": "HS6 darajasidagi skrining signallari",
+  "prof.signals.desc": "Ushbu hamkorning tovar kanallari xavf toifasi va bahosi boʻyicha tartiblangan. Toʻliq profil uchun kanalni bosing.",
+  "prof.tip.positiveDiscrepancy": "Ijobiy tafovut",
 };
 
 export const DICT: Record<Lang, Record<LocaleKey, string>> = { en, ru, uz };

@@ -340,8 +340,18 @@ export default function ProductsView() {
    * in view, while the discrepancy tile stays on the screened population.
    */
   const nodeBase = useMemo(() => {
-    const prefix = level === 2 ? undefined : level === 4 ? (effChapter ?? undefined) : (hs4 ?? effChapter ?? undefined);
-    return observedTotals(filter, level, prefix);
+    /*
+     * Report at the most specific code the user has committed to. A selected HS6
+     * product is a narrower node than whatever level the drill happens to sit on,
+     * and summing the drill level instead returned the parent chapter's books —
+     * $631M for Germany rather than the $799K of the chosen product.
+     */
+    const codeLevel = filter.hs6.length ? 6 : filter.hs4.length ? 4 : level;
+    const prefix =
+      codeLevel === 2 ? undefined
+        : codeLevel === 4 ? (filter.hs4.length ? undefined : effChapter ?? undefined)
+          : (filter.hs6.length ? undefined : hs4 ?? effChapter ?? undefined);
+    return observedTotals(filter, codeLevel, prefix);
   }, [filter, level, effChapter, hs4]);
 
   /** What the partner's FOB books become once the chosen freight margin is applied. */
