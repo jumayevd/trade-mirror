@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import FilterBar from "@/components/FilterBar";
+import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
 import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, DATA_VERSION, METHODOLOGY_VERSION, type PartnerMeta } from "@/lib/dataset";
+import { meta, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
@@ -15,6 +16,9 @@ import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/e
 /** Fill {placeholders} in a translated string with dataset values. */
 const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
+
+/** Bare code name for sentence interpolation — the tab label carries the "derived" qualifier. */
+const LEVEL_CODE: Record<HsLevel, string> = { 2: "HS2", 4: "HS4", 6: "HS6" };
 
 /* ------------------------------------------------------------------ */
 /* 1. Reporter coverage heatmap cells                                  */
@@ -112,10 +116,15 @@ export default function QualityView() {
   );
   const transitPartners = useMemo(() => partnersByCoverage.filter((p) => p.transit), [partnersByCoverage]);
 
-  // ---- 2. product (HS6) coverage per year, from the full-window aggregate ----
+  // ---- 2. product coverage per year at the chosen HS level, from the full-window aggregate ----
+  const [level, setLevel] = useState<HsLevel>(6);
+  const levelCode = LEVEL_CODE[level];
+  const levelChannels =
+    level === 2 ? series.baseChannels : level === 4 ? series.baseChannels4 : series.baseChannels6;
+
   const hs6ByYear = useMemo(() => {
     const m = new Map<number, { count: number; pe: number }>();
-    for (const c of series.baseChannels6) {
+    for (const c of levelChannels) {
       for (const yr of c.years) {
         const e = m.get(yr.y) ?? { count: 0, pe: 0 };
         e.count += 1;
@@ -124,7 +133,7 @@ export default function QualityView() {
       }
     }
     return meta.years.map((y) => ({ y, count: m.get(y)?.count ?? 0, pe: m.get(y)?.pe ?? 0 }));
-  }, [series]);
+  }, [levelChannels]);
 
   // Single measure on the axis (channel counts); partner-reported USD value is a
   // second measure of a different scale, so it lives in the tooltip — never a dual axis.
@@ -142,15 +151,15 @@ export default function QualityView() {
           if (!row) return "";
           return [
             `<b>${p?.axisValueLabel ?? row.y}</b>`,
-            `${t("qual.hs6.channelsWithData")}: <b>${fmtNum(row.count)}</b>`,
-            `${t("qual.hs6.partnerValue")}: ${fmtUSDFull(row.pe)}`,
+            `${fill(t("qual.level.channelsWithData"), { level: levelCode })}: <b>${fmtNum(row.count)}</b>`,
+            `${t("qual.level.partnerValue")}: ${fmtUSDFull(row.pe)}`,
           ].join("<br/>");
         },
       },
       xAxis: catAxis(hs6ByYear.map((r) => r.y)),
       yAxis: {
         type: "value",
-        name: t("qual.hs6.axis"),
+        name: fill(t("qual.level.axis"), { level: levelCode }),
         nameTextStyle: { color: COLORS.axis, fontSize: 10 },
         axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
         splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
@@ -158,7 +167,7 @@ export default function QualityView() {
       },
       series: [
         {
-          name: t("qual.hs6.channelsWithData"),
+          name: fill(t("qual.level.channelsWithData"), { level: levelCode }),
           type: "bar",
           ...BAR_SPEC,
           data: hs6ByYear.map((r) => r.count),
@@ -166,7 +175,7 @@ export default function QualityView() {
         },
       ],
     };
-  }, [hs6ByYear, t]);
+  }, [hs6ByYear, levelCode, t]);
 
   // ---- 3. weight & quantity availability, from the full-window HS6 base ----
   const hs6 = series.baseChannels6;
@@ -185,9 +194,6 @@ export default function QualityView() {
           UN Comtrade · {meta.window.start}–{meta.window.end} · {t("qual.header.kicker")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
-        <p className="max-w-3xl text-[15px] leading-relaxed text-muted">
-          {t("qual.header.intro")}
-        </p>
       </section>
 
       <FilterBar />
@@ -243,19 +249,23 @@ export default function QualityView() {
         </p>
       </section>
 
-      {/* 2. product coverage */}
+      {/* 2. product coverage — at the HS level chosen here, independent of the page filters */}
       <section>
         <SectionTitle
-          title={t("qual.hs6.title")}
-          desc={t("qual.hs6.desc")} right={<InfoTip text={t("qual.hs6.tip")} />}
+          title={t("qual.level.title")}
+          desc={fill(t("qual.level.desc"), { level: levelCode })}
+          right={<InfoTip text={t("qual.level.tip")} />}
         />
-        {hs6.length === 0 ? (
+        <div className="mb-3">
+          <LevelTabs level={level} onChange={setLevel} />
+        </div>
+        {levelChannels.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="card p-4">
             <EChart option={coverageOption} style={{ height: 300 }} />
             <p className="mt-2 max-w-3xl text-xs text-faint">
-              {t("qual.hs6.note")}
+              {fill(t("qual.level.note"), { level: levelCode })}
             </p>
           </div>
         )}
@@ -393,39 +403,6 @@ export default function QualityView() {
         </div>
       </section>
 
-      {/* 6. refresh history */}
-      <section>
-        <SectionTitle
-          title={t("qual.refresh.title")}
-          desc={t("qual.refresh.desc")} right={<InfoTip text={t("qual.refresh.tip")} />}
-        />
-        <div className="card divide-y divide-[var(--color-border-soft)]">
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.dataVersion")}</span>
-            <span className="tabular text-sm font-semibold">{DATA_VERSION}</span>
-          </div>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.generated")}</span>
-            <span className="tabular text-sm">{meta.generatedAt}</span>
-          </div>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("meta.methodologyVersion")}</span>
-            <span className="tabular text-sm">v{METHODOLOGY_VERSION}</span>
-          </div>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("qual.refresh.sourceLabel")}</span>
-            <span className="text-sm">
-              {fill(t("qual.refresh.sourceValue"), { start: meta.window.start, end: meta.window.end })}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-3">
-            <span className="w-44 shrink-0 text-[11px] font-medium text-faint">{t("qual.refresh.policyLabel")}</span>
-            <span className="max-w-2xl text-sm text-muted">
-              {t("qual.refresh.policy")}
-            </span>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

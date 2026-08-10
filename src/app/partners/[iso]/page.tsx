@@ -85,7 +85,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
         ? `${p.name} reported to UN Comtrade in ${pm.reportedYears.length} of ${WINDOW.length} window years, so part of any apparent discrepancy may reflect missing reports rather than measured gaps.`
         : `${p.name} reported to UN Comtrade in every year of the window, so reporting gaps are an unlikely driver of the discrepancy.`;
   const summary = [
-    `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.peT)} in comparable channels, while Uzbekistan recorded ${fmtUSD(p.uiT)} of imports from ${p.name}.`,
+    `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.observed.pe)} and Uzbekistan recorded ${fmtUSD(p.observed.ui)} of imports from ${p.name}. Of that, ${fmtUSD(p.peT)} and ${fmtUSD(p.uiT)} respectively sit in comparable channels — the only ones a discrepancy can be measured on.`,
     `Accumulated year by year at the central ${cifPct}% freight adjustment, the positive discrepancy — partner-reported exports uplifted for freight, minus Uzbekistan-recorded imports, counted only where that difference is positive — is ${fmtUSD(p.posT)}.`,
     topSector
       ? `It concentrates in ${topSector.label.toLowerCase()} (HS ${topSector.chapter}, ${fmtUSD(topSector.posT)}) and is ${trendWord} over the window.`
@@ -170,7 +170,7 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label="Comparable trade" value={fmtUSD(p.peT)} accent={COLORS.partner}
           sub={`${p.name} reported, FOB`}
-          info={`Cumulative partner-reported exports to Uzbekistan in channels where both sides reported, ${period}. ${fmtUSDFull(p.peT)}. Uzbekistan recorded ${fmtUSDFull(p.uiT)}.`} />
+          info={`Cumulative partner-reported exports to Uzbekistan in channels where both sides reported, ${period}. ${fmtUSDFull(p.peT)}, against ${fmtUSDFull(p.uiT)} recorded by Uzbekistan. As reported in total — including flows only one side booked, which cannot enter a discrepancy — ${p.name} reported ${fmtUSDFull(p.observed.pe)} and Uzbekistan ${fmtUSDFull(p.observed.ui)}.`} />
         <Stat label="Positive discrepancy" value={fmtUSD(p.posT)} accent={COLORS.positive}
           sub={`${fmtPct(posShare, 0)} of expected CIF imports`}
           info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal. ${fmtUSDFull(p.posT)}.`} />

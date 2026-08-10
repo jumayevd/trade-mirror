@@ -122,10 +122,15 @@ export interface Filter {
   /** Ticked years — any subset of meta.years, never a range. */
   years: number[];
   cif: number;
-  country: string; // "all" | iso3
-  hs2: string; // "all" | chapter
-  hs4: string; // "all" | 4-digit code
-  hs6: string; // "all" | 6-digit code
+  /**
+   * Multi-select dimensions. An empty list means "everything": a cleared filter
+   * shows the whole dataset rather than nothing, so clearing can never strand the
+   * user on an empty page.
+   */
+  country: string[]; // iso3 codes
+  hs2: string[]; // chapters
+  hs4: string[]; // 4-digit codes
+  hs6: string[]; // 6-digit codes
   category: string; // "all" | key
   minGap: number; // materiality floor on the positive discrepancy
   signal: "all" | SignalClass;
@@ -133,14 +138,17 @@ export interface Filter {
 export const DEFAULT_FILTER: Filter = {
   years: [...meta.years],
   cif: meta.cif.central,
-  country: "all",
-  hs2: "all",
-  hs4: "all",
-  hs6: "all",
+  country: [],
+  hs2: [],
+  hs4: [],
+  hs6: [],
   category: "all",
   minGap: 0,
   signal: "all",
 };
+
+/** The single selected value, or null when the selection is empty or plural. */
+export const soleValue = (values: string[]): string | null => (values.length === 1 ? values[0] : null);
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
 const pos = (x: number) => Math.max(0, x);
@@ -310,7 +318,10 @@ function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
 export interface PartnerAgg {
   iso3: string; name: string; region: string; transit: boolean; tier: Tier;
   coverage: number; lapse: boolean; lastReportedYear: number; reportedYears: number[];
+  /** Paired totals — the population every discrepancy measure below is computed on. */
   peT: number; uiT: number; posT: number; signedT: number;
+  /** As-reported totals including one-sided observations; for reported-value display only. */
+  observed: ObservedTotals;
   channels: number; investigate: number; anomaly: number; evidence: number; risk: number;
   byYear: { year: number; pe: number; ui: number; positive: number; reported: boolean }[];
   topChapters: { chapter: string; label: string; value: number; share: number }[];
@@ -325,6 +336,8 @@ export interface ChapterAgg {
 export interface Aggregate {
   filter: Filter;
   years: number[];
+  /** As-reported totals at the rollup level, one-sided observations included. */
+  observed: ObservedTotals;
   channels: Channel[]; // HS2 after all filters
   channels4: Channel[]; // derived HS4 after all filters
   channels6: Channel[]; // HS6 after all filters
@@ -351,6 +364,110 @@ export interface Aggregate {
   };
 }
 
+/**
+ * HS match for one cell under the cascading multi-select filters: the most
+ * specific level carrying a selection decides, so picking HS6 lines inside an
+ * already-chosen chapter narrows rather than contradicts.
+ */
+function matchesCode(r: Cell, f: Filter): boolean {
+  if (f.hs6.length > 0) return f.hs6.some((c) => r.k === c || (r.l < 6 && c.startsWith(r.k)));
+  if (f.hs4.length > 0)
+    return f.hs4.some((c) => r.k === c || (r.l < 4 && c.startsWith(r.k)) || (r.l === 6 && r.k.startsWith(c)));
+  if (f.hs2.length > 0) return f.hs2.includes(r.c);
+  return f.category === "all" || r.cat === f.category;
+}
+
+export interface ObservedTotals {
+  /** Partner-reported exports to Uzbekistan (FOB), as reported. */
+  pe: number;
+  /** Uzbekistan-recorded imports (CIF), as reported. */
+  ui: number;
+  cells: number;
+  /** The slice above that only one book reported — never enters a discrepancy. */
+  oneSidedPe: number;
+  oneSidedUi: number;
+  oneSidedCells: number;
+}
+
+/** Cells surviving the active filters, before any mirror pairing. */
+function filterCells(f: Filter): Cell[] {
+  const picked = f.years.length ? new Set(f.years) : new Set(meta.years);
+  return cells.filter(
+    (r) => picked.has(r.y) && (f.country.length === 0 || f.country.includes(r.p)) && matchesCode(r, f),
+  );
+}
+
+function sumObserved(rows: Cell[], level: number, codePrefix?: string): ObservedTotals {
+  let pe = 0, ui = 0, n = 0, oneSidedPe = 0, oneSidedUi = 0, oneSidedCells = 0;
+  for (const r of rows) {
+    if (r.l !== level) continue;
+    if (codePrefix && !r.k.startsWith(codePrefix)) continue;
+    pe += r.pe; ui += r.ui; n++;
+    // one book only: counted as reported trade, excluded from every gap measure
+    if (r.pe <= NOISE || r.ui <= NOISE) { oneSidedPe += r.pe; oneSidedUi += r.ui; oneSidedCells++; }
+  }
+  return { pe, ui, cells: n, oneSidedPe, oneSidedUi, oneSidedCells };
+}
+
+/**
+ * As-reported totals for a node, including one-sided observations.
+ *
+ * Discrepancy measures pair the two books and therefore drop anything only one
+ * side reported. Those observations are still real trade, so reported-value
+ * figures read from here rather than from the paired channels — otherwise the
+ * headline totals under-report and cannot be reconciled against UN Comtrade.
+ */
+export function observedTotals(f: Filter, level: number, codePrefix?: string): ObservedTotals {
+  return sumObserved(filterCells(f), level, codePrefix);
+}
+
+/**
+ * Which option values are still reachable, per dimension. Each list is built
+ * with every filter applied EXCEPT its own, so ticking one value never hides its
+ * own siblings — standard faceted behaviour. Empty selections mean "all", so the
+ * lists narrow as the user commits to a chapter, a partner or a set of years.
+ */
+export function availableOptions(f: Filter): {
+  years: number[];
+  countries: string[];
+  hs2: string[];
+  hs4: string[];
+  hs6: string[];
+} {
+  const yearOn = (r: Cell) => f.years.length === 0 || f.years.includes(r.y);
+  const partnerOn = (r: Cell) => f.country.length === 0 || f.country.includes(r.p);
+
+  const years = new Set<number>();
+  const countries = new Set<string>();
+  const hs2 = new Set<string>();
+  const hs4 = new Set<string>();
+  const hs6 = new Set<string>();
+
+  for (const r of cells) {
+    const code = matchesCode(r, f);
+    // a dimension's own selection is excluded from its own facet
+    if (partnerOn(r) && code) years.add(r.y);
+    if (yearOn(r) && code) countries.add(r.p);
+    if (yearOn(r) && partnerOn(r)) {
+      // chapters ignore the HS selection entirely; HS4/HS6 respect the level above them
+      hs2.add(r.c);
+      if (r.l === 6) {
+        const inChapter = f.hs2.length === 0 || f.hs2.includes(r.c);
+        if (inChapter) hs4.add(r.k.slice(0, 4));
+        if (inChapter && (f.hs4.length === 0 || f.hs4.some((c) => r.k.startsWith(c)))) hs6.add(r.k);
+      }
+    }
+  }
+
+  return {
+    years: meta.years.filter((y) => years.has(y)),
+    countries: [...countries],
+    hs2: [...hs2],
+    hs4: [...hs4],
+    hs6: [...hs6],
+  };
+}
+
 export function aggregate(f: Filter): Aggregate {
   const picked = f.years.length ? new Set(f.years) : new Set(meta.years);
   const years = meta.years.filter((y) => picked.has(y));
@@ -358,16 +475,11 @@ export function aggregate(f: Filter): Aggregate {
   const allowPartner = (iso: string) => {
     const pm = pMeta.get(iso);
     if (!pm) return false;
-    if (f.country !== "all" && iso !== f.country) return false;
+    if (f.country.length > 0 && !f.country.includes(iso)) return false;
     return true;
   };
-  /** HS filters cascade: the most specific code wins. */
-  const allowCode = (r: Cell) => {
-    if (f.hs6 !== "all") return r.k === f.hs6 || (r.l < 6 && f.hs6.startsWith(r.k));
-    if (f.hs4 !== "all") return r.k === f.hs4 || (r.l < 4 && f.hs4.startsWith(r.k)) || (r.l === 6 && r.k.startsWith(f.hs4));
-    if (f.hs2 !== "all") return r.c === f.hs2;
-    return f.category === "all" || r.cat === f.category;
-  };
+  /** HS filters cascade: the most specific level with a selection wins. */
+  const allowCode = (r: Cell) => matchesCode(r, f);
   const fc = cells.filter((r) => picked.has(r.y) && allowPartner(r.p) && allowCode(r));
 
   const baseChannels = buildChannels(fc, 2, f, yearsInRange);
@@ -382,13 +494,17 @@ export function aggregate(f: Filter): Aggregate {
   // Roll up at the most specific HS level the user picked: selecting a product
   // must report that product, not its whole chapter. With no HS filter the
   // rollup stays at HS2, which is the stable chapter-level view.
-  const rollupLevel = f.hs6 !== "all" ? 6 : f.hs4 !== "all" ? 4 : 2;
+  const rollupLevel = f.hs6.length > 0 ? 6 : f.hs4.length > 0 ? 4 : 2;
+  const observed = sumObserved(fc, rollupLevel);
   const rollup = rollupLevel === 6 ? channels6 : rollupLevel === 4 ? channels4 : channels;
   const rollupBase = rollupLevel === 6 ? baseChannels6 : rollupLevel === 4 ? baseChannels4 : baseChannels;
 
   // ---- partner rollups ----
   const pMap = new Map<string, Channel[]>();
   for (const c of rollup) (pMap.get(c.partnerIso) ?? pMap.set(c.partnerIso, []).get(c.partnerIso)!).push(c);
+  // as-reported totals per partner, read from the cells rather than the paired channels
+  const obsByPartner = new Map<string, Cell[]>();
+  for (const r of fc) (obsByPartner.get(r.p) ?? obsByPartner.set(r.p, []).get(r.p)!).push(r);
   const partners: PartnerAgg[] = [];
   for (const [iso, cs] of pMap) {
     const pm = pMeta.get(iso)!;
@@ -407,6 +523,7 @@ export function aggregate(f: Filter): Aggregate {
       iso3: iso, name: pm.name, region: pm.region, transit: pm.transit, tier: pm.tier,
       coverage: pm.coverage, lapse: pm.lapse, lastReportedYear: pm.lastReportedYear, reportedYears: pm.reportedYears,
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
+      observed: sumObserved(obsByPartner.get(iso) ?? [], rollupLevel),
       posT: posTotal, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       channels: cs.length, investigate: cs.filter((c) => c.cls === "investigate").length,
       anomaly: cs.reduce((m, c) => Math.max(m, c.anomaly), 0),
@@ -519,7 +636,7 @@ export function aggregate(f: Filter): Aggregate {
   };
 
   return {
-    filter: f, years, channels, channels4, channels6, baseChannels, baseChannels4, baseChannels6,
+    filter: f, years, observed, channels, channels4, channels6, baseChannels, baseChannels4, baseChannels6,
     partners, chapters, categories, annual, concentration,
     movers: { goods, countries },
     heatmap: { import: heatImport, partners: partners.map((p) => ({ iso3: p.iso3, name: p.name, tier: p.tier })) },
@@ -545,9 +662,11 @@ export function yearsLabel(years: number[]): string {
 /** Context line per spec §5.3 — shown above every analytical block. */
 export function contextLine(f: Filter): string {
   const parts = [yearsLabel(f.years.length ? f.years : meta.years)];
-  if (f.hs6 !== "all") parts.push(`HS ${f.hs6}`);
-  else if (f.hs4 !== "all") parts.push(`HS ${f.hs4}`);
-  else if (f.hs2 !== "all") parts.push(`HS ${f.hs2}`);
+  // list a short selection outright; collapse a long one to a count
+  const codes = (values: string[]) => (values.length <= 3 ? `HS ${values.join(", ")}` : `${values.length} HS codes`);
+  if (f.hs6.length > 0) parts.push(codes(f.hs6));
+  else if (f.hs4.length > 0) parts.push(codes(f.hs4));
+  else if (f.hs2.length > 0) parts.push(codes(f.hs2));
   parts.push(`freight ${Math.round(f.cif * 100)}%`);
   return parts.join(" · ");
 }

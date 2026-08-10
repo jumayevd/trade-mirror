@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import SearchSelect, { type SearchOption } from "@/components/SearchSelect";
-import YearTicks from "@/components/YearTicks";
+import MultiSelect from "@/components/MultiSelect";
+import type { SearchOption } from "@/components/SearchSelect";
+import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
-import { meta, DEFAULT_FILTER } from "@/lib/dataset";
+import { meta, DEFAULT_FILTER, availableOptions } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
@@ -25,37 +26,57 @@ export default function FilterBar() {
   const { t } = useI18n();
   const isDefault = JSON.stringify(filter) === JSON.stringify(DEFAULT_FILTER);
 
-  const countryOptions = useMemo<SearchOption[]>(
-    () => [...meta.partners]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({ value: p.iso3, code: p.iso3, label: p.name })),
-    [],
-  );
+  // Self-completing options: every list is narrowed to what the other filters
+  // still leave reachable, so a picker can never offer a combination that
+  // resolves to an empty page.
+  const avail = useMemo(() => availableOptions(filter), [filter]);
 
-  // HS pickers cascade: HS4 options follow the chosen chapter, HS6 follows HS4.
-  const hs2Options = useMemo<SearchOption[]>(
-    () => meta.chapters.map((c) => ({ value: c.chapter, code: c.chapter, label: c.label })),
-    [],
-  );
-  const hs4Options = useMemo<SearchOption[]>(
-    () => Object.keys(meta.hs4labels)
-      .filter((c) => filter.hs2 === "all" || c.startsWith(filter.hs2))
+  const countryOptions = useMemo<SearchOption[]>(() => {
+    const reachable = new Set(avail.countries);
+    return [...meta.partners]
+      .filter((p) => reachable.has(p.iso3) || filter.country.includes(p.iso3))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => ({ value: p.iso3, code: p.iso3, label: p.name }));
+  }, [avail.countries, filter.country]);
+
+  const hs2Options = useMemo<SearchOption[]>(() => {
+    const reachable = new Set(avail.hs2);
+    return meta.chapters
+      .filter((c) => reachable.has(c.chapter) || filter.hs2.includes(c.chapter))
+      .map((c) => ({ value: c.chapter, code: c.chapter, label: c.label }));
+  }, [avail.hs2, filter.hs2]);
+
+  // HS pickers cascade: HS4 follows the chosen chapters, HS6 follows the HS4 groups.
+  const hs4Options = useMemo<SearchOption[]>(() => {
+    const reachable = new Set(avail.hs4);
+    return Object.keys(meta.hs4labels)
+      .filter((c) => reachable.has(c) || filter.hs4.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] })),
-    [filter.hs2],
-  );
-  const hs6Options = useMemo<SearchOption[]>(
-    () => Object.keys(meta.hs6labels)
-      .filter((c) => (filter.hs4 !== "all" ? c.startsWith(filter.hs4) : filter.hs2 === "all" || c.startsWith(filter.hs2)))
+      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] }));
+  }, [avail.hs4, filter.hs4]);
+
+  const hs6Options = useMemo<SearchOption[]>(() => {
+    const reachable = new Set(avail.hs6);
+    return Object.keys(meta.hs6labels)
+      .filter((c) => reachable.has(c) || filter.hs6.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] })),
-    [filter.hs2, filter.hs4],
-  );
+      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] }));
+  }, [avail.hs6, filter.hs6]);
+
+  /** Drop any narrower selection that no longer sits under the broader one. */
+  const pickHs2 = (v: string[]) =>
+    patch({
+      hs2: v,
+      hs4: filter.hs4.filter((c) => v.length === 0 || v.some((p) => c.startsWith(p))),
+      hs6: filter.hs6.filter((c) => v.length === 0 || v.some((p) => c.startsWith(p))),
+    });
+  const pickHs4 = (v: string[]) =>
+    patch({ hs4: v, hs6: filter.hs6.filter((c) => v.length === 0 || v.some((p) => c.startsWith(p))) });
 
   return (
     <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-        <YearTicks years={filter.years} onChange={(years) => patch({ years })} />
+        <YearSelect years={filter.years} onChange={(years) => patch({ years })} available={avail.years} />
 
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
           <span className={lbl}>{t("filter.freight")}</span>
@@ -69,49 +90,37 @@ export default function FilterBar() {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <span className={lbl}>{t("filter.country")}</span>
-          <SearchSelect
-            value={filter.country}
-            onChange={(v) => patch({ country: v })}
-            options={countryOptions}
-            allLabel={t("filter.all")}
-            ariaLabel={t("filter.country")}
-          />
-        </div>
+        <MultiSelect
+          values={filter.country}
+          onChange={(v) => patch({ country: v })}
+          options={countryOptions}
+          label={t("filter.country")}
+          allLabel={t("filter.all")}
+        />
 
-        <div className="flex flex-col gap-1">
-          <span className={lbl}>{t("filter.hs2")}</span>
-          <SearchSelect
-            value={filter.hs2}
-            onChange={(v) => patch({ hs2: v, hs4: "all", hs6: "all", category: "all" })}
-            options={hs2Options}
-            allLabel={t("filter.all")}
-            ariaLabel={t("filter.hs2")}
-          />
-        </div>
+        <MultiSelect
+          values={filter.hs2}
+          onChange={pickHs2}
+          options={hs2Options}
+          label={t("filter.hs2")}
+          allLabel={t("filter.all")}
+        />
 
-        <div className="flex flex-col gap-1">
-          <span className={lbl}>{t("filter.hs4")}</span>
-          <SearchSelect
-            value={filter.hs4}
-            onChange={(v) => patch({ hs4: v, hs6: "all" })}
-            options={hs4Options}
-            allLabel={t("filter.all")}
-            ariaLabel={t("filter.hs4")}
-          />
-        </div>
+        <MultiSelect
+          values={filter.hs4}
+          onChange={pickHs4}
+          options={hs4Options}
+          label={t("filter.hs4")}
+          allLabel={t("filter.all")}
+        />
 
-        <div className="flex flex-col gap-1">
-          <span className={lbl}>{t("filter.hs6")}</span>
-          <SearchSelect
-            value={filter.hs6}
-            onChange={(v) => patch({ hs6: v })}
-            options={hs6Options}
-            allLabel={t("filter.all")}
-            ariaLabel={t("filter.hs6")}
-          />
-        </div>
+        <MultiSelect
+          values={filter.hs6}
+          onChange={(v) => patch({ hs6: v })}
+          options={hs6Options}
+          label={t("filter.hs6")}
+          allLabel={t("filter.all")}
+        />
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>

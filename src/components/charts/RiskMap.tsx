@@ -159,7 +159,9 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
             `<b>${pr.name}</b> · <span style="${small}">${t("ctry.map.dataQuality")}: ${pr.tier}</span>`,
             metricLine,
             `${t("kpi.positive")}: <b style="color:${COLORS.positive}">${fmtUSD(pr.posT)}</b>`,
-            `<span style="${small}">${t("ctry.partnerExportsFob")} ${fmtUSD(pr.peT)} · ${t("ctry.uzbImportsCif")} ${fmtUSD(pr.uiT)} · ${fmtNum(pr.channels)} ${t("ctry.channelsWord")}</span>`,
+            // reported values come from the observed totals, not the paired subset the
+            // discrepancy is built on, so they reconcile with the source statistics
+            `<span style="${small}">${t("ctry.partnerExportsFob")} ${fmtUSD(pr.observed.pe)} · ${t("ctry.uzbImportsCif")} ${fmtUSD(pr.observed.ui)} · ${fmtNum(pr.channels)} ${t("ctry.channelsWord")}</span>`,
           ].join("<br/>") + grey + transit +
             `<br/><span style="${small}">${t("ctry.map.clickProfile")}</span>`;
         },

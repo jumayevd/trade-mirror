@@ -3,19 +3,20 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
+import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import Sparkline from "@/components/charts/Sparkline";
 import {
   Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, EmptyState, MissingValue, Pill,
 } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import {
-  meta, hsLabel, productByCmd, isResidualChapter, yearsLabel, type Channel, type ChapterAgg,
+  meta, hsLabel, productByCmd, isResidualChapter, yearsLabel, soleValue, observedTotals,
+  type Channel, type ChapterAgg,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 
-type HsLevel = 2 | 4 | 6;
 const PAGE_SIZE = 15;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
@@ -225,18 +226,21 @@ export default function ProductsView() {
   const [sort, setSort] = useState<{ key: string; desc: boolean }>(() => ({ key: "posT", desc: true }));
   const [page, setPage] = useState(0);
 
-  // respect the global HS2 filter: it overrides (and disables) the local chapter drill
-  const effChapter = filter.hs2 !== "all" ? filter.hs2 : chapter;
+  // Respect the global HS2 filter: a single chosen chapter overrides (and disables)
+  // the local drill. A multi-chapter selection has no single node to drill into, so
+  // the local drill stays in charge and the aggregate does the narrowing.
+  const effChapter = soleValue(filter.hs2) ?? chapter;
 
   // Resets below are adjusted during render (react.dev: "Adjusting some state
   // when a prop changes") rather than in effects — the drill clearing must be
   // sticky (survive the filter being reverted), so it cannot be derived.
-  const [prevHs2, setPrevHs2] = useState(filter.hs2);
-  if (prevHs2 !== filter.hs2) {
-    setPrevHs2(filter.hs2);
-    if (filter.hs2 !== "all") {
+  const hs2Key = filter.hs2.join(",");
+  const [prevHs2, setPrevHs2] = useState(hs2Key);
+  if (prevHs2 !== hs2Key) {
+    setPrevHs2(hs2Key);
+    if (filter.hs2.length > 0) {
       setChapter(null);
-      setHs4((h) => (h && h.startsWith(filter.hs2) ? h : null));
+      setHs4((h) => (h && filter.hs2.some((p) => h.startsWith(p)) ? h : null));
     }
   }
 
@@ -263,15 +267,15 @@ export default function ProductsView() {
     setLevel(2);
     setChapter(null);
     setHs4(null);
-    if (filter.hs2 !== "all") patch({ hs2: "all" });
+    if (filter.hs2.length > 0 || filter.hs4.length > 0 || filter.hs6.length > 0) patch({ hs2: [], hs4: [], hs6: [] });
   };
   const drillChapter = (code: string) => {
-    if (filter.hs2 === "all") setChapter(code);
+    if (filter.hs2.length === 0) setChapter(code);
     setHs4(null);
     setLevel(4);
   };
   const drillHs4 = (code: string) => {
-    if (filter.hs2 === "all") setChapter(code.slice(0, 2));
+    if (filter.hs2.length === 0) setChapter(code.slice(0, 2));
     setHs4(code);
     setLevel(6);
   };
@@ -325,6 +329,24 @@ export default function ProductsView() {
     );
   }, [level, chapterRows, childRows]);
 
+  /*
+   * As-reported totals for the same node, taken from the pre-screen base.
+   *
+   * The ranked rows below keep only channels with a POSITIVE discrepancy, so
+   * summing them understates both books: a chapter where Uzbekistan recorded more
+   * than the partner is screened out and its trade disappears from the totals.
+   * That made "reported exports" / "UZB imports" impossible to reconcile against
+   * UN Comtrade. The two reported tiles therefore report every comparable channel
+   * in view, while the discrepancy tile stays on the screened population.
+   */
+  const nodeBase = useMemo(() => {
+    const prefix = level === 2 ? undefined : level === 4 ? (effChapter ?? undefined) : (hs4 ?? effChapter ?? undefined);
+    return observedTotals(filter, level, prefix);
+  }, [filter, level, effChapter, hs4]);
+
+  /** What the partner's FOB books become once the chosen freight margin is applied. */
+  const expectedCif = nodeBase.pe * (1 + filter.cif);
+
   // true when neither a chapter nor an HS4 code is drilled into — the node is the whole view
   const isAllNode = !(level === 6 && hs4) && !(effChapter && level !== 2);
   const nodeTitle =
@@ -363,22 +385,6 @@ export default function ProductsView() {
   const exportCsv = () =>
     downloadCsv(`products_hs${level}_${period.replace(/[^0-9]+/g, "_")}.csv`, channelsToCsv(activeChannels, filter));
 
-  // ---- level toggle (quiet segmented) ----
-  const levelBtn = (lv: HsLevel, label: string, tip: string) => (
-    <button
-      key={lv}
-      onClick={() => setToggle(lv)}
-      className={`whitespace-nowrap rounded-md border px-2 py-1 text-[12px] ${
-        level === lv
-          ? "border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold text-foreground"
-          : "border-[var(--color-border)] font-medium text-muted hover:text-foreground"
-      }`}
-      title={tip}
-    >
-      {label}
-    </button>
-  );
-
   const isEmpty = totalRows === 0;
 
   return (
@@ -391,7 +397,6 @@ export default function ProductsView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>
-            <p className="max-w-3xl text-[13px] leading-relaxed text-muted">{t("prod.intro")}</p>
           </div>
           <button
             onClick={exportCsv}
@@ -414,7 +419,7 @@ export default function ProductsView() {
           <button
             onClick={goRoot}
             className={level === 2 ? "font-medium" : "text-muted hover:underline"}
-            title={filter.hs2 !== "all" ? t("prod.breadcrumb.backAllClear") : t("prod.breadcrumb.backAll")}
+            title={filter.hs2.length > 0 ? t("prod.breadcrumb.backAllClear") : t("prod.breadcrumb.backAll")}
           >
             {t("prod.breadcrumb.root")}
           </button>
@@ -440,11 +445,12 @@ export default function ProductsView() {
           )}
           {level !== 2 && !effChapter && !hs4 && <Pill>HS{level} · {t("prod.flatView")}</Pill>}
         </nav>
-        <div className="flex items-center gap-1" role="group" aria-label={t("prod.aria.hsLevel")}>
-          {levelBtn(2, "HS2", t("prod.level.hs2.tip"))}
-          {levelBtn(4, t("prod.level.hs4"), t("prod.level.hs4.tip"))}
-          {levelBtn(6, "HS6", t("prod.level.hs6.tip"))}
-        </div>
+        <LevelTabs
+          level={level}
+          onChange={setToggle}
+          label={t("prod.aria.hsLevel")}
+          tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
+        />
       </section>
 
       {/* 5a. snapshot of the current node */}
@@ -459,20 +465,20 @@ export default function ProductsView() {
           <div className="grid gap-3 sm:grid-cols-3">
             <Stat
               label={t("prod.stat.reportedExports")}
-              value={fmtUSD(node.peT)}
-              sub={`${t("prod.stat.reportedExports.sub")}, ${period}`}
-              info={t("prod.stat.reportedExports.info")}
+              value={fmtUSD(nodeBase.pe)}
+              sub={`${t("prod.stat.reportedExports.sub")}, ${period} · ${fill(t("prod.stat.expectedCif"), { rate: Math.round(filter.cif * 100), value: fmtUSD(expectedCif) })}`}
+              info={`${t("prod.stat.reportedExports.info")} ${t("prod.stat.allComparable.info")}`}
             />
             <Stat
               label={t("prod.stat.uzbImports")}
-              value={fmtUSD(node.uiT)}
+              value={fmtUSD(nodeBase.ui)}
               sub={t("prod.stat.uzbImports.sub")}
-              info={t("prod.stat.uzbImports.info")}
+              info={`${t("prod.stat.uzbImports.info")} ${t("prod.stat.allComparable.info")}`}
             />
             <Stat
               label={t("kpi.positive")}
               value={fmtUSD(node.posT)}
-              sub={`${t("prod.stat.positive.sub")} (${Math.round(filter.cif * 100)}%)`}
+              sub={`${t("prod.stat.positive.sub")} (${Math.round(filter.cif * 100)}%) · ${fill(t("prod.stat.screenedOf"), { shown: fmtNum(totalRows), total: fmtNum(nodeBase.cells) })}`}
               accent={COLORS.positive}
               info={t("prod.stat.positive.info")}
             />

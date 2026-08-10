@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { Stat, SectionTitle, InfoTip, EmptyState } from "@/components/ui";
-import MultiSelect from "@/components/MultiSelect";
+import YearSelect from "@/components/YearSelect";
 import {
   aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsLabel, type Channel,
 } from "@/lib/dataset";
@@ -144,14 +144,7 @@ export default function OverviewView() {
 
       {/* 2. period — a dropdown of ticks, so any set of years can be summarised */}
       <section className="no-print">
-        <MultiSelect
-          values={years.length === meta.years.length ? [] : years.map(String)}
-          onChange={(v) => setYears(v.length === 0 ? [...meta.years] : v.map(Number).sort((a, b) => a - b))}
-          options={meta.years.map((y) => ({ value: String(y), label: String(y) }))}
-          label={t("ovw.period")}
-          allLabel={t("ovw.allYears")}
-          searchable={false}
-        />
+        <YearSelect years={years} onChange={setYears} label={t("ovw.period")} />
       </section>
 
       {/* 3. headline tiles */}

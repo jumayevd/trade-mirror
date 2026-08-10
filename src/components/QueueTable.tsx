@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClassBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
+import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -16,7 +17,7 @@ import type { LocaleKey } from "@/lib/locales";
  * one channel: who, what, how strong the signal is, and how big the gap is.
  */
 
-export type HsLevel = 2 | 4 | 6;
+export { LEVEL_LABEL_KEYS, type HsLevel };
 
 /** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
 function HeadDot({ color }: { color: string }) {
@@ -24,19 +25,6 @@ function HeadDot({ color }: { color: string }) {
     <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
   );
 }
-
-/** HS-level chips. HS2/HS6 are code names; only the "derived" qualifier is prose. */
-export const LEVEL_LABEL_KEYS: Record<HsLevel, LocaleKey> = {
-  2: "filter.hs2",
-  4: "risk.level.hs4",
-  6: "filter.hs6",
-};
-
-const LEVEL_TIP_KEYS: Record<HsLevel, LocaleKey> = {
-  2: "risk.levelTip.hs2",
-  4: "risk.levelTip.hs4",
-  6: "risk.levelTip.hs6",
-};
 
 type SortKey = "class" | "risk" | "gap" | "gapPct" | "persistence" | "value";
 
@@ -169,20 +157,12 @@ export default function QueueTable({
   return (
     <div className="space-y-3">
       {/* controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("risk.a11y.hsLevel")}>
-          {([2, 4, 6] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => controls(() => onLevelChange(l))}
-              aria-pressed={level === l}
-              className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
-              title={t(LEVEL_TIP_KEYS[l])}
-            >
-              {t(LEVEL_LABEL_KEYS[l])}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <LevelTabs
+          level={level}
+          onChange={(l) => controls(() => onLevelChange(l))}
+          label={t("risk.a11y.hsLevel")}
+        />
 
         <input
           type="search"

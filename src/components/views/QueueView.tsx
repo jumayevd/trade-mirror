@@ -5,9 +5,8 @@ import Link from "next/link";
 import type { EChartsOption, YAXisComponentOption } from "echarts";
 import EChart from "@/components/EChart";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
-import YearTicks from "@/components/YearTicks";
+import YearSelect from "@/components/YearSelect";
 import { EmptyState, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
-import { Cite } from "@/lib/references";
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -146,7 +145,7 @@ export default function QueueView() {
 
       {/* period selection — the whole page follows these ticks */}
       <section className="no-print">
-        <YearTicks years={years} onChange={setYears} />
+        <YearSelect years={years} onChange={setYears} />
       </section>
 
       {/* segmented tab control */}
@@ -208,7 +207,6 @@ function RankedTab({
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.score.title")}
-          desc={t("risk.score.desc")}
           right={<InfoTip text={t("risk.score.info")} />}
         />
         {riskStats && (
@@ -233,10 +231,6 @@ function RankedTab({
             />
           </div>
         )}
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.score.footnote")}
-          <Cite ids={["oecdjrc2008", "imf2023", "wco2011"]} />.
-        </p>
       </section>
 
       <section className="space-y-3">

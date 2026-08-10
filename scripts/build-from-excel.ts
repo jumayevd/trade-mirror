@@ -30,6 +30,17 @@ const ROOT = process.cwd();
 const RAW = path.join(ROOT, "data", "raw");
 const OUT = path.join(ROOT, "src", "data");
 const NOISE = 100_000;
+/**
+ * Dataset-inclusion floor, deliberately far below NOISE.
+ *
+ * Two different thresholds are at work. NOISE is a MATERIALITY rule: below it a
+ * flow is too small to carry a meaningful discrepancy, so src/lib/dataset.ts
+ * refuses to pair it. This is a COMPLETENESS rule: it only drops rows that are
+ * effectively empty. Using NOISE for both made reported totals miss ~0.12% of
+ * Uzbekistan's recorded imports — small in aggregate, but up to a couple of
+ * percent for a small partner, which is enough to fail a UN Comtrade check.
+ */
+const EMIT_FLOOR = 1_000;
 const WINDOW_YEARS = ANALYSIS_YEARS.length;
 const K = 1 + CIF_BAND.central;
 
@@ -216,7 +227,13 @@ async function main() {
 
     for (const yr of ANALYSIS_YEARS) {
       const y = cell.byYear.get(yr);
-      if (!y || y.ptnExp <= NOISE) continue;
+      if (!y) continue;
+      // Keep the observation when EITHER book reports it. Gating on the partner
+      // side alone silently discarded Uzbekistan-only imports, so reported totals
+      // could never reconcile against UN Comtrade. One-sided cells are retained
+      // here as reported trade and excluded from every discrepancy measure
+      // downstream (buildChannels requires both books for a comparison).
+      if (y.ptnExp <= EMIT_FLOOR && y.uzbImp <= EMIT_FLOOR) continue;
       const rec: Rec = { p: cell.iso, k: cell.cmd, c: chapter, cat, l: lvl, y: yr, pe: Math.round(y.ptnExp), ui: Math.round(y.uzbImp) };
       if (lvl === 6 && y.uzbWgt > 0 && y.ptnWgt > 0) { rec.uw = Math.round(y.uzbWgt); rec.pw = Math.round(y.ptnWgt); }
       recs.push(rec);
