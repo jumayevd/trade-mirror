@@ -61,10 +61,10 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
     .sort((a, b) => b.posT - a.posT)
     .map((c) => ({ chapter: c.chapter, label: c.cmdLabel, posT: Math.round(c.posT) }));
   const signalRows: ChannelRow[] = hs6.map((c) => ({
-    // engine order is preserved: class → anomaly → evidence → size
+    // engine order is preserved: band → MTRS → size
     cmd: c.cmd, label: c.cmdLabel, chapter: c.chapter, hs4: c.cmd.slice(0, 4),
-    cls: c.cls, anomaly: c.anomaly, evidence: c.evidence, robustness: c.robustness,
-    posT: Math.round(c.posT),
+    band: c.band, mtrs: c.mtrs, abnormalGap: c.abnormalGap, persistence: c.persistence,
+    robustness: c.robustness, posT: Math.round(c.posT),
   }));
 
   // weight availability among this partner's HS6 channels, value-weighted (measured, optional)
@@ -181,8 +181,8 @@ export default async function PartnerPage({ params }: { params: Promise<{ iso: s
           sub={`${trendWord} trend`}
           info="HS2 chapters with at least one comparable channel carrying a positive discrepancy above the noise floor for this partner." />
         <Stat label="HS6 channels" value={String(hs6.length)}
-          sub={`${p.investigate} classified Investigate (HS2)`}
-          info="Country × HS6 product channels with comparable data for this partner. The sub-line counts this partner's HS2 channels in the Investigate class (high anomaly + high evidence) — a review priority." />
+          sub={`${p.flagged} in the Critical or High band (HS2)`}
+          info="Country × HS6 product channels with comparable data for this partner. The sub-line counts this partner's HS2 channels whose risk score falls in the Critical or High band — a review priority." />
       </section>
 
       {/* 3. reporting quality */}

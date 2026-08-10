@@ -1,7 +1,7 @@
 "use client";
 
-import { anomalyColor, evidenceColor, CLASS_COLORS, COLORS } from "@/lib/format";
-import { contextLine, type Filter, type Robustness, type SignalClass, type Tier } from "@/lib/dataset";
+import { BAND_COLORS, COLORS } from "@/lib/format";
+import { contextLine, type Filter, type RiskBand, type Robustness, type Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 
 /** Fill {placeholders} in a translated string with runtime values. */
@@ -89,27 +89,25 @@ function DotChip({ dot, children, title, className = "" }: { dot?: string; child
   );
 }
 
-export function AnomalyBadge({ score }: { score: number }) {
+/** Abnormal gap intensity (G) and persistence (P), the two MTRS components. */
+export function ComponentChip({ kind, value }: { kind: "g" | "p"; value: number }) {
   const { t } = useI18n();
   return (
-    <DotChip dot={anomalyColor(score)} title={fill(t("qual.ui.anomalyTip"), { score: score.toFixed(0) })}>
-      A {score.toFixed(0)}
+    <DotChip
+      dot={kind === "g" ? COLORS.goldDeep : COLORS.navy3}
+      title={t(kind === "g" ? "risk.tip.gComponent" : "risk.tip.pComponent")}
+    >
+      {kind === "g" ? "G" : "P"} {value.toFixed(2)}
     </DotChip>
   );
 }
 
-export function EvidenceBadge({ score }: { score: number }) {
+/** MTRS: bold number + mini track bar, coloured by the risk band. */
+export function RiskScore({ score, band, scored = true }: { score: number; band: RiskBand; scored?: boolean }) {
   const { t } = useI18n();
-  return (
-    <DotChip dot={evidenceColor(score)} title={fill(t("qual.ui.evidenceTip"), { score: score.toFixed(0) })}>
-      E {score.toFixed(0)}
-    </DotChip>
-  );
-}
-
-/** Composite risk score: bold number + mini track bar, coloured by the signal class. */
-export function RiskScore({ score, cls }: { score: number; cls: SignalClass }) {
-  const { t } = useI18n();
+  if (!scored) {
+    return <span className="text-faint" title={t("risk.tip.notScored")}>{t("common.notComparable")}</span>;
+  }
   return (
     <span
       className="inline-flex flex-col gap-[3px]"
@@ -117,18 +115,61 @@ export function RiskScore({ score, cls }: { score: number; cls: SignalClass }) {
     >
       <span className="tabular text-[13px] font-semibold leading-none">{score.toFixed(0)}</span>
       <span className="h-[3px] w-8 overflow-hidden rounded-full bg-[var(--color-panel-2)]">
-        <span className="block h-full rounded-full" style={{ width: `${Math.min(score, 100)}%`, background: CLASS_COLORS[cls] }} />
+        <span className="block h-full rounded-full" style={{ width: `${Math.max(2, Math.min(score, 100))}%`, background: BAND_COLORS[band] }} />
       </span>
     </span>
   );
 }
 
-export function ClassBadge({ cls }: { cls: SignalClass }) {
+export function BandBadge({ band }: { band: RiskBand }) {
   const { t } = useI18n();
   return (
-    <DotChip dot={CLASS_COLORS[cls]} title={t(`qual.ui.clsDesc.${cls}` as never)}>
-      {t(`cls.${cls}` as never)}
+    <DotChip dot={BAND_COLORS[band]} title={t(`band.desc.${band}` as never)}>
+      {t(`band.${band}` as never)}
     </DotChip>
+  );
+}
+
+/**
+ * Segmented control. The active option takes the primary fill — the quiet panel
+ * tint it used to rely on read as "disabled" as often as "selected", so which
+ * option was live had to be inferred from the content underneath.
+ */
+export function Segmented<T extends string>({
+  value, options, onChange, ariaLabel, className = "",
+}: {
+  value: T;
+  options: { key: T; label: string; tip?: string }[];
+  onChange: (v: T) => void;
+  ariaLabel: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className={`inline-flex w-fit overflow-hidden rounded-md border border-[var(--color-border)] ${className}`}
+    >
+      {options.map((o, i) => {
+        const on = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            aria-pressed={on}
+            title={o.tip}
+            className={`whitespace-nowrap px-2.5 py-1 text-[12px] ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
+              on
+                ? "bg-[var(--color-primary)] font-semibold text-white"
+                : "bg-[var(--color-panel)] font-medium text-muted hover:bg-[var(--color-panel-2)] hover:text-foreground"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

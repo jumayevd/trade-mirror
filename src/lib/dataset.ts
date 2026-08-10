@@ -1,22 +1,25 @@
 /**
- * Mirror Trade Dashboard v2 — single calculation source (spec §7).
+ * Mirror Trade Dashboard — single calculation source.
  *
- * Implements: expected CIF, the positive discrepancy, bounded asymmetry, positive
- * share, Anomaly Strength (0–100), Evidence Quality (0–100), the composite Risk score
- * R = √(A × E) and the classification matrix (Investigate / Verify data first /
- * Monitor / Low priority / Transit-sensitive). Only the positive direction is
- * screened. All pages and exports read from aggregate() — one version of the numbers
- * everywhere. Missing partner-years are never treated as zero flows.
+ * Descriptive measures (expected CIF, the positive discrepancy, bounded asymmetry,
+ * positive share, persistence counts) are computed here, on the filters the user has
+ * set. The risk score is not: MTRS v3.0 needs a fitted structural model, so it is
+ * built once by scripts/build-risk-index.ts and read from src/data/risk.json as a
+ * fixed property of a partner × code cell. All pages and exports read from
+ * aggregate() — one version of the numbers everywhere. Missing partner-years are
+ * never treated as zero flows.
  */
 import cellsRaw from "@/data/cells.json";
 import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
 import productsRaw from "@/data/products.json";
+import riskRaw from "@/data/risk.json";
 
-export const METHODOLOGY_VERSION = "2.0";
+export const METHODOLOGY_VERSION = "3.0";
 
 export type Tier = "High" | "Medium" | "Low";
-export type SignalClass = "investigate" | "verify" | "monitor" | "low" | "transit";
+/** MTRS band. Ordered most to least urgent; `low` also covers unscored cells. */
+export type RiskBand = "critical" | "high" | "elevated" | "low";
 export type Robustness = "robust" | "freight-sensitive" | "coverage-sensitive" | "insufficient";
 
 interface Cell { p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number; uw?: number; pw?: number }
@@ -89,27 +92,41 @@ const histYears = (() => {
   return m;
 })();
 
-// partner-level dual-weight availability share (value-weighted, from HS6 cells) —
-// used as the weight/quantity evidence component for HS2 channels
-const wgtShare = (() => {
-  const tot = new Map<string, number>();
-  const withW = new Map<string, number>();
-  for (const r of cells) {
-    if (r.l !== 6) continue;
-    tot.set(r.p, (tot.get(r.p) ?? 0) + r.pe);
-    if (r.uw && r.pw) withW.set(r.p, (withW.get(r.p) ?? 0) + r.pe);
-  }
-  const out = new Map<string, number>();
-  for (const [iso, t] of tot) out.set(iso, t > 0 ? (withW.get(iso) ?? 0) / t : 0);
-  return out;
-})();
+/* ------------------------------------------------------------------ */
+/* MTRS v3.0 — precomputed risk index                                  */
+/* ------------------------------------------------------------------ */
 
-export const CLASS_LABELS: Record<SignalClass, { label: string; desc: string }> = {
-  investigate: { label: "Investigate", desc: "High anomaly with high-quality data — the strongest open-data signal; a priority for further statistical or customs review." },
-  verify: { label: "Verify data first", desc: "High anomaly but weaker data quality — confirm statistical comparability before interpreting." },
-  monitor: { label: "Monitor", desc: "Good data quality but the anomaly is not yet strong or persistent." },
-  low: { label: "Low priority", desc: "Neither strong nor well-evidenced — do not use for substantive conclusions." },
-  transit: { label: "Transit-sensitive", desc: "Involves a re-export/transit hub, where origin-vs-consignment recording can create legitimate discrepancies. Assessed separately from core channels." },
+/** `${level}|${partnerIso}|${code}` → [MTRS, G, P, k, n, excess gap USD, band]. */
+type RiskRow = readonly [number, number, number, number, number, number, number];
+interface PartnerEffect { iso: string; u: number; cells: number }
+
+const riskIndex = riskRaw as unknown as {
+  version: string;
+  generatedAt: string;
+  config: { tau: number; alpha: number; beta: number; filterMode: string; materialityFloor: number; criticalTop: number; strata: string };
+  cells: Record<string, RiskRow>;
+  partnerEffects: Record<string, PartnerEffect[]>;
+  bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
+};
+
+export const RISK_CONFIG = riskIndex.config;
+export const RISK_BAND_CUTS = riskIndex.bandCuts;
+const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
+const EMPTY_RISK: RiskRow = [0, 0, 0, 0, 0, 0, 3];
+
+/**
+ * Partner reporting-discrepancy indicator: the partner random intercept from the
+ * structural fit, in log points. Positive means that partner's books systematically
+ * run above Uzbekistan's, across its whole product range — a country-level signal
+ * that the cell score deliberately nets out.
+ */
+export const partnerEffects = (level: number): PartnerEffect[] => riskIndex.partnerEffects[String(level)] ?? [];
+
+export const BAND_LABELS: Record<RiskBand, { label: string; desc: string }> = {
+  critical: { label: "Critical", desc: "Top 2.5% of cells by MTRS — the strongest conjunction of an abnormal gap and a persistent one." },
+  high: { label: "High", desc: "Upper quartile of the remaining cells." },
+  elevated: { label: "Elevated", desc: "Second quartile of the remaining cells." },
+  low: { label: "Low", desc: "Lower half of the remaining cells, and every cell that was never in scope." },
 };
 export const ROBUSTNESS_LABELS: Record<Robustness, string> = {
   robust: "Robust",
@@ -133,7 +150,7 @@ export interface Filter {
   hs6: string[]; // 6-digit codes
   category: string; // "all" | key
   minGap: number; // materiality floor on the positive discrepancy
-  signal: "all" | SignalClass;
+  band: "all" | RiskBand;
 }
 export const DEFAULT_FILTER: Filter = {
   years: [...meta.years],
@@ -144,7 +161,7 @@ export const DEFAULT_FILTER: Filter = {
   hs6: [],
   category: "all",
   minGap: 0,
-  signal: "all",
+  band: "all",
 };
 
 /** The single selected value, or null when the selection is empty or plural. */
@@ -166,7 +183,14 @@ export interface Channel {
   flipsAcrossFreight: boolean;
   uvYears: number; uvRatio: number | null;
   robustness: Robustness; flags: string[];
-  anomaly: number; evidence: number; risk: number; cls: SignalClass;
+  /**
+   * MTRS v3.0, read from the precomputed index. Pooled over the whole window, so
+   * these five fields do not move with the period ticks — the ticks decide which
+   * cells are listed and how large their gap is, not how the cell scores.
+   */
+  mtrs: number; abnormalGap: number; persistence: number;
+  flaggedYears: number; matchedYears: number; excessGap: number;
+  band: RiskBand; scored: boolean;
   /** positive discrepancy used for ranking */
   primary: number;
   trend: number;
@@ -179,7 +203,7 @@ function trendOf(series: { y: number; v: number }[]) {
   return mean(series.slice(-n)) - mean(series.slice(0, n));
 }
 
-function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: number): Channel[] {
+function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
   const K = 1 + f.cif;
   const Klo = 1 + meta.cif.low;
   const Khi = 1 + meta.cif.high;
@@ -247,41 +271,15 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
     // (label resolution handles HS2 / derived HS4 / HS6 uniformly)
     // the dashboard screens the positive discrepancy only
     const primary = posT;
+    const trend = trendOf(years.map((x) => ({ y: x.y, v: pos(x.signed) })));
 
-    // ---- Anomaly Strength (spec §7.4): 35 magnitude / 25 relative / 20 persistence / 10 dynamics / 10 UV ----
-    const dirYears = posYears;
-    const dirSeries = years.map((x) => ({ y: x.y, v: pos(x.signed) }));
-    const trend = trendOf(dirSeries);
-    const meanYearly = dirSeries.reduce((s, x) => s + x.v, 0) / Math.max(dirSeries.length, 1);
-    const mag = clamp((Math.log10(1 + Math.abs(primary)) - 6) / 4);
-    const rel = boundedAsymmetry;
-    const pers = 0.7 * (dirYears / Math.max(n, 3)) + 0.3 * (longest / Math.max(n, 3));
-    const dyn = trend > 0 && meanYearly > 0 ? clamp(trend / meanYearly) : 0;
-    const uvA = uvRatio == null ? null : clamp((1 - uvRatio) / 0.5);
-    const anomaly = Math.round(10 * 100 * (uvA == null
-      ? (0.35 * mag + 0.25 * rel + 0.2 * pers + 0.1 * dyn) / 0.9
-      : 0.35 * mag + 0.25 * rel + 0.2 * pers + 0.1 * dyn + 0.1 * uvA)) / 10;
-
-    // ---- Evidence Quality (spec §7.5): 25 coverage / 20 reliability / 15 HS / 15 weight / 10 freight / 10 transit / 5 residual ----
-    const covC = clamp(n / Math.max(yearsInRange, 1));
-    const relC = clamp(pm.coverage * (pm.lapse ? 0.5 : 1));
-    const hsC = isResidualChapter(r0.c) ? 0 : 0.8; // single-revision extract; concordance table pending (P1 data)
-    const wqC = level === 6 ? clamp(uvYears / Math.max(n, 1)) : clamp(wgtShare.get(r0.p) ?? 0);
-    const frC = flipsAcrossFreight ? 0 : 1;
-    const trC = pm.transit ? 0 : 1;
-    const rsC = isResidualChapter(r0.c) ? 0 : Math.abs(primary) < 1_000_000 ? 0.5 : 1;
-    const evidence = Math.round(10 * 100 * (0.25 * covC + 0.2 * relC + 0.15 * hsC + 0.15 * wqC + 0.1 * frC + 0.1 * trC + 0.05 * rsC)) / 10;
-
-    // ---- classification matrix (§7.6); thresholds documented in Methodology ----
-    const cls: SignalClass = pm.transit ? "transit"
-      : anomaly >= 55 && evidence >= 60 ? "investigate"
-        : anomaly >= 55 ? "verify"
-          : evidence >= 60 ? "monitor"
-            : "low";
-
-    // ---- composite risk score R = √(A·E) — geometric aggregation limits compensability:
-    // R ≤ 10·√E, so weak evidence bounds the score (OECD/JRC 2008) ----
-    const risk = Math.round(10 * Math.sqrt(anomaly * evidence)) / 10;
+    // ---- MTRS v3.0, looked up rather than recomputed ----
+    // The score needs the fitted structural model, so it is a property of the
+    // whole-window cell. A channel the period ticks have narrowed still carries
+    // the score estimated on every year that cell was matched.
+    const rkey = `${level}|${r0.p}|${r0.k}`;
+    const rr = riskIndex.cells[rkey];
+    const [mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap, bandIdx] = rr ?? EMPTY_RISK;
 
     out.push({
       partner: pm.name, partnerIso: pm.iso3, region: pm.region, transit: pm.transit, tier: pm.tier,
@@ -291,13 +289,16 @@ function buildChannels(fc: Cell[], level: number, f: Filter, yearsInRange: numbe
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
-      robustness, flags, anomaly, evidence, risk, cls, primary, trend,
+      robustness, flags,
+      mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap,
+      band: BANDS[bandIdx] ?? "low", scored: !!rr,
+      primary, trend,
     });
   }
   return out;
 }
 
-const CLS_RANK: Record<SignalClass, number> = { investigate: 0, verify: 1, transit: 2, monitor: 3, low: 4 };
+const BAND_RANK: Record<RiskBand, number> = { critical: 0, high: 1, elevated: 2, low: 3 };
 
 function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
   return chs
@@ -306,13 +307,13 @@ function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
       // product level: they stay in baseChannels for totals and the statistical
       // profile, but never rank as screening priorities.
       if (isResidualChapter(c.chapter)) return false;
-      if (f.signal !== "all" && c.cls !== f.signal) return false;
+      if (f.band !== "all" && c.band !== f.band) return false;
       if (c.primary < f.minGap) return false;
       if (c.posT <= NOISE) return false;
       return true;
     })
     .sort((a, b) =>
-      CLS_RANK[a.cls] - CLS_RANK[b.cls] || b.anomaly - a.anomaly || b.evidence - a.evidence || Math.abs(b.primary) - Math.abs(a.primary));
+      BAND_RANK[a.band] - BAND_RANK[b.band] || b.mtrs - a.mtrs || Math.abs(b.primary) - Math.abs(a.primary));
 }
 
 export interface PartnerAgg {
@@ -322,7 +323,8 @@ export interface PartnerAgg {
   peT: number; uiT: number; posT: number; signedT: number;
   /** As-reported totals including one-sided observations; for reported-value display only. */
   observed: ObservedTotals;
-  channels: number; investigate: number; anomaly: number; evidence: number; risk: number;
+  /** Channels in the Critical or High MTRS band. */
+  channels: number; flagged: number; mtrs: number;
   byYear: { year: number; pe: number; ui: number; positive: number; reported: boolean }[];
   topChapters: { chapter: string; label: string; value: number; share: number }[];
   trend: number;
@@ -482,9 +484,9 @@ export function aggregate(f: Filter): Aggregate {
   const allowCode = (r: Cell) => matchesCode(r, f);
   const fc = cells.filter((r) => picked.has(r.y) && allowPartner(r.p) && allowCode(r));
 
-  const baseChannels = buildChannels(fc, 2, f, yearsInRange);
-  const baseChannels4 = buildChannels(fc, 4, f, yearsInRange);
-  const baseChannels6 = buildChannels(fc, 6, f, yearsInRange);
+  const baseChannels = buildChannels(fc, 2, f);
+  const baseChannels4 = buildChannels(fc, 4, f);
+  const baseChannels6 = buildChannels(fc, 6, f);
   const channels = applyChannelFilters(baseChannels, f);
   const channels4 = applyChannelFilters(baseChannels4, f);
   const channels6 = applyChannelFilters(baseChannels6, f);
@@ -525,10 +527,9 @@ export function aggregate(f: Filter): Aggregate {
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
       observed: sumObserved(obsByPartner.get(iso) ?? [], rollupLevel),
       posT: posTotal, signedT: cs.reduce((s, c) => s + c.signedT, 0),
-      channels: cs.length, investigate: cs.filter((c) => c.cls === "investigate").length,
-      anomaly: cs.reduce((m, c) => Math.max(m, c.anomaly), 0),
-      evidence: cs.reduce((m, c) => Math.max(m, c.evidence), 0),
-      risk: cs.reduce((m, c) => Math.max(m, c.risk), 0),
+      channels: cs.length,
+      flagged: cs.filter((c) => c.band === "critical" || c.band === "high").length,
+      mtrs: cs.reduce((m, c) => Math.max(m, c.mtrs), 0),
       byYear: years.map((y) => {
         const e = byYearMap.get(y);
         return { year: y, pe: e?.pe ?? 0, ui: e?.ui ?? 0, positive: e?.positive ?? 0, reported: pm.reportedYears.includes(y) };

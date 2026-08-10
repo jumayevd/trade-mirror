@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Filter, type SignalClass } from "@/lib/dataset";
+import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Filter, type RiskBand } from "@/lib/dataset";
 
 interface Ctx {
   filter: Filter;
@@ -40,7 +40,7 @@ function fromSearch(sp: URLSearchParams): Filter {
   f.hs6 = list("hs6") ?? f.hs6;
   f.category = str("cat") ?? f.category;
   const mg = num("min"); if (mg != null && mg >= 0) f.minGap = mg;
-  if (["all", "investigate", "verify", "monitor", "low", "transit"].includes(str("sig") ?? "")) f.signal = str("sig") as "all" | SignalClass;
+  if (["all", "critical", "high", "elevated", "low"].includes(str("band") ?? "")) f.band = str("band") as "all" | RiskBand;
   return f;
 }
 
@@ -56,7 +56,7 @@ function toSearch(f: Filter): string {
   setList("country", f.country);
   setList("hs2", f.hs2); setList("hs4", f.hs4); setList("hs6", f.hs6);
   set("cat", f.category, "all");
-  set("min", f.minGap, DEFAULT_FILTER.minGap); set("sig", f.signal, "all");
+  set("min", f.minGap, DEFAULT_FILTER.minGap); set("band", f.band, "all");
   const s = sp.toString();
   return s ? `?${s}` : "";
 }

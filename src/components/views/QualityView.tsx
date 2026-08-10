@@ -3,10 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
-import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
-import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
+import { Stat, SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
@@ -106,8 +105,15 @@ function CoverageLegend() {
 /* View                                                                */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Data Quality — a description of the record itself: who reported when, how much
+ * product detail exists, what weight data is available, and what is excluded.
+ * Deliberately unfiltered. These are the properties every other page's numbers
+ * rest on, so narrowing them to a partner or a chapter would make the page argue
+ * for a selection instead of describing the source.
+ */
 export default function QualityView() {
-  const { filter, series } = useFilter();
+  const { series } = useFilter();
   const { t } = useI18n();
 
   const partnersByCoverage = useMemo(
@@ -195,9 +201,6 @@ export default function QualityView() {
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
       </section>
-
-      <FilterBar />
-      <ContextLine filter={filter} />
 
       {/* 1. reporter coverage heatmap */}
       <section>

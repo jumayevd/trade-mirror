@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  SectionTitle, AnomalyBadge, EvidenceBadge, ClassBadge, RobustnessBadge,
+  SectionTitle, BandBadge, ComponentChip, RiskScore, RobustnessBadge,
 } from "@/components/ui";
-import { hs4Label, hsLabel, type Robustness, type SignalClass } from "@/lib/dataset";
+import { hs4Label, hsLabel, type RiskBand, type Robustness } from "@/lib/dataset";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 
 /**
@@ -18,7 +18,8 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 export interface ChapterRow { chapter: string; label: string; posT: number }
 export interface ChannelRow {
   cmd: string; label: string; chapter: string; hs4: string;
-  cls: SignalClass; anomaly: number; evidence: number; robustness: Robustness; posT: number;
+  band: RiskBand; mtrs: number; abnormalGap: number; persistence: number;
+  robustness: Robustness; posT: number;
 }
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
@@ -153,7 +154,7 @@ export default function PartnerChannels({
       <section>
         <SectionTitle
           title="HS6 screening signals"
-          desc="This partner's product channels ranked by signal class, anomaly strength and evidence quality. Click a channel for its full profile."
+          desc="This partner's product channels ranked by risk band and score. Click a channel for its full profile."
         />
         {filtered.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
@@ -165,9 +166,10 @@ export default function PartnerChannels({
             <div className="card zebra divide-y divide-[var(--color-border-soft)]">
               {filtered.slice(0, shown).map((c) => (
                 <div key={c.cmd} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-                  <ClassBadge cls={c.cls} />
-                  <AnomalyBadge score={c.anomaly} />
-                  <EvidenceBadge score={c.evidence} />
+                  <RiskScore score={c.mtrs} band={c.band} />
+                  <BandBadge band={c.band} />
+                  <ComponentChip kind="g" value={c.abnormalGap} />
+                  <ComponentChip kind="p" value={c.persistence} />
                   <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline" title={c.label}>
                     {c.label} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
                   </Link>

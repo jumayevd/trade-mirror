@@ -5,7 +5,7 @@ import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
 import RiskMap, { MAP_METRIC_KEYS, type MapMetric } from "@/components/charts/RiskMap";
-import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue } from "@/components/ui";
+import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue, Segmented } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, type PartnerAgg } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -61,32 +61,6 @@ function Pager({
       </span>
       <button className={btn} onClick={() => onPage(page - 1)} disabled={page === 0} aria-label={t("ctry.pager.prev")}>‹</button>
       <button className={btn} onClick={() => onPage(page + 1)} disabled={page >= pages - 1} aria-label={t("ctry.pager.next")}>›</button>
-    </div>
-  );
-}
-
-/** Quiet segmented toggle — bordered buttons, active = recessed well + semibold ink. */
-function Segmented<T extends string>({
-  value, options, onChange, ariaLabel,
-}: {
-  value: T; options: { key: T; label: string; tip?: string }[]; onChange: (v: T) => void; ariaLabel: string;
-}) {
-  return (
-    <div className="inline-flex items-center gap-1" role="group" aria-label={ariaLabel}>
-      {options.map((o) => (
-        <button
-          key={o.key}
-          onClick={() => onChange(o.key)}
-          title={o.tip}
-          className={`rounded-md border px-2 py-1 text-[12px] font-medium ${
-            value === o.key
-              ? "border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold text-foreground"
-              : "border-[var(--color-border)] text-muted hover:text-foreground"
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
     </div>
   );
 }
@@ -451,8 +425,8 @@ export default function PartnersView() {
                       <dd className="tabular">{fmtPct(p.coverage, 0)}{p.lapse ? ` · ${t("ctry.compare.stopped")} ${p.lastReportedYear}` : ""}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.compare.investigateChannels")}</dt>
-                      <dd className="tabular">{p.investigate}</dd>
+                      <dt className="text-faint">{t("ctry.compare.flaggedChannels")}</dt>
+                      <dd className="tabular">{p.flagged}</dd>
                     </div>
                   </dl>
                 </div>

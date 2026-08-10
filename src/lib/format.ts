@@ -45,31 +45,16 @@ const GOLD_INK = "#8f6212";
 const AMBER_HOT = "#a4560f";
 const ALERT_RED = "#b3261e";
 const GREEN = "#1a6b45";
-const GREEN_MID = "#5b8a6e";
 const GREEN_INK = "#155c3b";
 const SLATE = "#575c67";
 const GREY = "#898781";
 
-/** Anomaly strength dot color — neutral, warming with the score. Never red. */
-export function anomalyColor(score: number): string {
-  if (score >= 55) return AMBER_HOT;
-  if (score >= 35) return GOLD_2;
-  return GREY;
-}
-/** Evidence quality dot color — grey to green. */
-export function evidenceColor(score: number): string {
-  if (score >= 60) return GREEN;
-  if (score >= 40) return GREEN_MID;
-  return GREY;
-}
-
-/** Status palette (fixed): never reused as series colors. */
-export const CLASS_COLORS: Record<string, string> = {
-  investigate: ALERT_RED, // critical — the only red in the system
-  verify: GOLD_2, // serious — CBU gold
-  monitor: GREEN, // in range
+/** MTRS band palette (fixed): never reused as series colors. */
+export const BAND_COLORS: Record<string, string> = {
+  critical: ALERT_RED, // the only red in the system
+  high: AMBER_HOT,
+  elevated: GOLD_2,
   low: GREY,
-  transit: SLATE,
 };
 
 /** Categorical slots, in order, for charts that need more than one series. */

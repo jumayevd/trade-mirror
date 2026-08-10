@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ClassBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
+import { BandBadge, ComponentChip, EmptyState, MissingValue, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
 import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
@@ -26,11 +26,12 @@ function HeadDot({ color }: { color: string }) {
   );
 }
 
-type SortKey = "class" | "risk" | "gap" | "gapPct" | "persistence" | "value";
+type SortKey = "band" | "risk" | "abnormal" | "gap" | "gapPct" | "persistence" | "value";
 
 const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
-  { key: "class", labelKey: "risk.sort.class" },
+  { key: "band", labelKey: "risk.sort.band" },
   { key: "risk", labelKey: "risk.th.riskValue" },
+  { key: "abnormal", labelKey: "risk.th.abnormalGap" },
   { key: "gap", labelKey: "risk.sort.gap" },
   { key: "gapPct", labelKey: "risk.th.gapPct" },
   { key: "persistence", labelKey: "common.persistence" },
@@ -53,13 +54,14 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
 };
 
 function sortChannels(rows: Channel[], sort: SortKey): Channel[] {
-  if (sort === "class") return rows; // engine order: class → anomaly → evidence → gap
-  const by: Record<Exclude<SortKey, "class">, (a: Channel, b: Channel) => number> = {
-    risk: (a, b) => b.risk - a.risk || b.evidence - a.evidence || b.posT - a.posT,
-    gap: (a, b) => b.posT - a.posT || b.risk - a.risk,
+  if (sort === "band") return rows; // engine order: band → MTRS → gap
+  const by: Record<Exclude<SortKey, "band">, (a: Channel, b: Channel) => number> = {
+    risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
+    abnormal: (a, b) => b.abnormalGap - a.abnormalGap || b.mtrs - a.mtrs,
+    gap: (a, b) => b.posT - a.posT || b.mtrs - a.mtrs,
     gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
-      b.posYears - a.posYears || b.longestPosStreak - a.longestPosStreak || b.posT - a.posT,
+      b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
     value: (a, b) => b.peT - a.peT || b.posT - a.posT,
   };
   return [...rows].sort(by[sort]);
@@ -70,11 +72,15 @@ type Translate = (key: LocaleKey) => string;
 /** One-sentence cautious reading, built strictly from measured fields. */
 function interpretation(c: Channel, f: Filter, t: Translate): string {
   const pct = gapPct(c);
+  const score = c.scored
+    ? ` ${t("risk.read.scoreLead")} ${c.mtrs.toFixed(0)} (G ${c.abnormalGap.toFixed(2)} × P ${c.persistence.toFixed(2)}), ` +
+      `${t("risk.read.flaggedIn")} ${c.flaggedYears}/${c.matchedYears} ${t("risk.read.matchedYears")}.`
+    : "";
   return (
     `${c.partner} × HS ${c.cmd} — ${t("risk.read.lead")} ${c.posYears}/${c.comparableYears} ` +
     `${t("risk.read.comparableYears")} (${t("risk.read.longestStreak")} ${c.longestPosStreak}). ` +
     `${t("risk.read.gapLead")} ${fmtUSD(c.posT)} ${t("risk.read.atFreight")} ${Math.round(f.cif * 100)}%` +
-    `${pct == null ? "" : ` — ${fmtPct(pct, 1)} ${t("risk.read.ofExpectedCif")}`}.`
+    `${pct == null ? "" : ` — ${fmtPct(pct, 1)} ${t("risk.read.ofExpectedCif")}`}.${score}`
   );
 }
 
@@ -94,7 +100,7 @@ export default function QueueTable({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("class");
+  const [sort, setSort] = useState<SortKey>("band");
   const [pageSize, setPageSize] = useState(25);
   const [pageRaw, setPageRaw] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -214,19 +220,20 @@ export default function QueueTable({
         <EmptyState />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse">
+          <table className="w-full min-w-[1320px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
                 <th className={th}>{t("common.partner")}</th>
                 <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("risk.th.hsCode")}</th>
                 <th className={th}>{t("common.product")}</th>
                 <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
+                <th className={th} title={t("risk.tip.components")}>{t("risk.th.components")}</th>
                 <th className={thNum} title={t("risk.tip.uzbImport")}>{t("risk.th.uzbImport")}</th>
                 <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
                 <th className={thNum} title={t("risk.tip.gapPct")}>{t("risk.th.gapPct")}</th>
                 <th className={th} title={t("risk.tip.persistence")}>{t("common.persistence")}</th>
-                <th className={th} title={t("risk.tip.class")}>{t("risk.th.class")}</th>
+                <th className={th} title={t("risk.tip.band")}>{t("risk.th.band")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -278,7 +285,13 @@ export default function QueueTable({
                         </span>
                       )}
                     </td>
-                    <td className={td}><RiskScore score={c.risk} cls={c.cls} /></td>
+                    <td className={td}><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
+                    <td className={`${td} whitespace-nowrap`}>
+                      <span className="inline-flex gap-1">
+                        <ComponentChip kind="g" value={c.abnormalGap} />
+                        <ComponentChip kind="p" value={c.persistence} />
+                      </span>
+                    </td>
                     <td className={tdNum} title={c.uiT > 0 ? fmtUSDFull(c.uiT) : undefined}>
                       {/* no UZB record for this code — a gap in the mirror, never a measured zero */}
                       {c.uiT > 0 ? fmtUSD(c.uiT) : <MissingValue />}
@@ -291,11 +304,11 @@ export default function QueueTable({
                     <td className={`${td} tabular whitespace-nowrap`} title={`${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`}>
                       {c.posYears}/{c.comparableYears} {t("risk.unit.yr")} · {t("risk.streak")} {c.longestPosStreak}
                     </td>
-                    <td className={td}><ClassBadge cls={c.cls} /></td>
+                    <td className={td}><BandBadge band={c.band} /></td>
                   </tr>,
                   open ? (
                     <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">
-                      <td colSpan={10} className="px-4 py-3">
+                      <td colSpan={11} className="px-4 py-3">
                         <YearDetail c={c} filter={filter} years={years} />
                       </td>
                     </tr>

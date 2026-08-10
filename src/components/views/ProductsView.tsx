@@ -6,12 +6,12 @@ import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import Sparkline from "@/components/charts/Sparkline";
 import {
-  Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, EmptyState, MissingValue, Pill,
+  Stat, SectionTitle, ContextLine, RiskScore, BandBadge, EmptyState, MissingValue, Pill,
 } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import {
   meta, hsLabel, productByCmd, isResidualChapter, yearsLabel, soleValue, observedTotals,
-  type Channel, type ChapterAgg,
+  type Channel, type ChapterAgg, type RiskBand,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -34,8 +34,8 @@ interface CodeAgg {
   uiT: number;
   posT: number;
   partners: number;
-  anomaly: number;
-  evidence: number;
+  mtrs: number;
+  band: RiskBand;
   residual: boolean;
 }
 
@@ -43,17 +43,17 @@ interface CodeAgg {
 function aggregateByCode(chs: Channel[], prefix: string): CodeAgg[] {
   const m = new Map<
     string,
-    { peT: number; uiT: number; posT: number; pset: Set<string>; anomaly: number; evidence: number }
+    { peT: number; uiT: number; posT: number; pset: Set<string>; mtrs: number; band: RiskBand }
   >();
   for (const c of chs) {
     if (prefix && !c.cmd.startsWith(prefix)) continue;
-    const e = m.get(c.cmd) ?? { peT: 0, uiT: 0, posT: 0, pset: new Set<string>(), anomaly: 0, evidence: 0 };
+    const e = m.get(c.cmd) ?? { peT: 0, uiT: 0, posT: 0, pset: new Set<string>(), mtrs: 0, band: "low" as RiskBand };
     e.peT += c.peT;
     e.uiT += c.uiT;
     e.posT += c.posT;
     e.pset.add(c.partnerIso);
-    e.anomaly = Math.max(e.anomaly, c.anomaly);
-    e.evidence = Math.max(e.evidence, c.evidence);
+    // a product line inherits its worst partner channel
+    if (c.mtrs > e.mtrs) { e.mtrs = c.mtrs; e.band = c.band; }
     m.set(c.cmd, e);
   }
   return [...m.entries()].map(([cmd, e]) => ({
@@ -63,8 +63,8 @@ function aggregateByCode(chs: Channel[], prefix: string): CodeAgg[] {
     uiT: e.uiT,
     posT: e.posT,
     partners: e.pset.size,
-    anomaly: e.anomaly,
-    evidence: e.evidence,
+    mtrs: e.mtrs,
+    band: e.band,
     residual: isResidualChapter(cmd.slice(0, 2)),
   }));
 }
@@ -614,7 +614,7 @@ export default function ProductsView() {
                     <SortableTh label={t("prod.col.uzbImports")} k="uiT" sort={sort} onSort={onSort} title={t("prod.tip.uzbImports")} />
                     <SortableTh label={t("kpi.positive")} k="posT" sort={sort} onSort={onSort} color={COLORS.positive} title={t("prod.tip.positive")} />
                     <SortableTh label={t("prod.col.partners")} k="partners" sort={sort} onSort={onSort} title={t("prod.tip.partners")} />
-                    <SortableTh label={t("prod.col.maxAE")} k="anomaly" sort={sort} onSort={onSort} align="left" title={t("prod.tip.maxAE")} />
+                    <SortableTh label={t("prod.col.maxRisk")} k="mtrs" sort={sort} onSort={onSort} align="left" title={t("prod.tip.maxRisk")} />
                   </tr>
                 </thead>
                 <tbody className="zebra">
@@ -655,8 +655,8 @@ export default function ProductsView() {
                         <td className="tabular px-3 py-1.5 text-right text-muted">{fmtNum(r.partners)}</td>
                         <td className="px-3 py-1.5">
                           <span className="flex items-center gap-1.5">
-                            <AnomalyBadge score={r.anomaly} />
-                            <EvidenceBadge score={r.evidence} />
+                            <RiskScore score={r.mtrs} band={r.band} />
+                            <BandBadge band={r.band} />
                           </span>
                         </td>
                       </tr>

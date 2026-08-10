@@ -2,14 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ProductChart from "@/components/charts/ProductChart";
 import {
-  Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, ClassBadge,
+  Stat, SectionTitle, ContextLine, BandBadge, ComponentChip, RiskScore,
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
   aggregate, products, meta, DEFAULT_FILTER, isResidualChapter, categoryLabel,
-  CLASS_LABELS, type Filter, type SignalClass, type Tier,
+  BAND_LABELS, type Filter, type RiskBand, type Tier,
 } from "@/lib/dataset";
-import { fmtUSD, fmtUSDFull, fmtPct, COLORS, CLASS_COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, COLORS, BAND_COLORS } from "@/lib/format";
 
 /**
  * HS6 product profile (spec §6.8) — one 6-digit line across all partners.
@@ -26,7 +26,7 @@ const FULL_FILTER: Filter = {
 const FULL = aggregate(FULL_FILTER);
 
 const PROFILED = products.slice(0, 80);
-const CLS_ORDER: SignalClass[] = ["investigate", "verify", "monitor", "low", "transit"];
+const BAND_ORDER: RiskBand[] = ["critical", "high", "elevated", "low"];
 
 export function generateStaticParams() {
   return PROFILED.map((p) => ({ cmd: p.cmd }));
@@ -61,10 +61,10 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
   const topChannel = channels[0] ?? null;
   const topShare = topChannel && totalPos > 0 ? topChannel.posT / totalPos : 0;
 
-  // signal classification summary
-  const clsCounts = new Map<SignalClass, number>();
-  for (const c of channels) clsCounts.set(c.cls, (clsCounts.get(c.cls) ?? 0) + 1);
-  const investigateCount = clsCounts.get("investigate") ?? 0;
+  // risk band summary
+  const bandCounts = new Map<RiskBand, number>();
+  for (const c of channels) bandCounts.set(c.band, (bandCounts.get(c.band) ?? 0) + 1);
+  const flaggedCount = (bandCounts.get("critical") ?? 0) + (bandCounts.get("high") ?? 0);
 
   // data coverage: dual-weight availability across channels
   const uvChannels = channels.filter((c) => c.uvYears > 0).length;
@@ -99,9 +99,9 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
   const clsSentence =
     channels.length === 0
       ? "No comparable country channels exist for this line in the screening set."
-      : investigateCount > 0
-        ? `Of ${channels.length} country channels, ${investigateCount} ${investigateCount === 1 ? "is" : "are"} classified “${CLASS_LABELS.investigate.label}” (high anomaly with high-quality data) — priorities for further statistical or customs review.`
-        : `None of the ${channels.length} country channels reaches the “${CLASS_LABELS.investigate.label}” class under the current methodology.`;
+      : flaggedCount > 0
+        ? `Of ${channels.length} country channels, ${flaggedCount} ${flaggedCount === 1 ? "falls" : "fall"} in the “${BAND_LABELS.critical.label}” or “${BAND_LABELS.high.label}” risk band — priorities for further statistical or customs review.`
+        : `None of the ${channels.length} country channels reaches the “${BAND_LABELS.high.label}” risk band under the current methodology.`;
 
   const narrative =
     `Over ${period}, partners reported cumulative exports of ${p.label} (HS ${p.cmd}) to Uzbekistan worth ${fmtUSD(p.ptnExp)}, ` +
@@ -172,7 +172,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
       <section className="card p-5">
         <SectionTitle
           title="Signal classification across country channels"
-          desc="Each country × HS6 channel is scored separately for anomaly strength and evidence quality, then classified by the standard matrix. Counts below cover all comparable channels for this product over the full window."
+          desc="Each country × HS6 channel carries its own risk score, built from the abnormal part of its gap and how persistent that gap is, then placed in a band. Counts below cover all comparable channels for this product over the full window."
         />
         {channels.length === 0 ? (
           <p className="text-sm text-muted">
@@ -181,17 +181,17 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
           </p>
         ) : (
           <div className="flex flex-wrap gap-3">
-            {CLS_ORDER.filter((k) => (clsCounts.get(k) ?? 0) > 0).map((k) => (
+            {BAND_ORDER.filter((k) => (bandCounts.get(k) ?? 0) > 0).map((k) => (
               <div key={k} className="flex items-center gap-2 rounded-md border border-[var(--color-border-soft)] px-3 py-2"
-                title={CLASS_LABELS[k].desc}>
-                <ClassBadge cls={k} />
-                <span className="tabular text-lg font-semibold" style={{ color: CLASS_COLORS[k] }}>{clsCounts.get(k)}</span>
-                <span className="text-xs text-faint">channel{(clsCounts.get(k) ?? 0) === 1 ? "" : "s"}</span>
+                title={BAND_LABELS[k].desc}>
+                <BandBadge band={k} />
+                <span className="tabular text-lg font-semibold" style={{ color: BAND_COLORS[k] }}>{bandCounts.get(k)}</span>
+                <span className="text-xs text-faint">channel{(bandCounts.get(k) ?? 0) === 1 ? "" : "s"}</span>
               </div>
             ))}
             <p className="basis-full text-xs text-faint">
-              {channels.length} comparable channel{channels.length === 1 ? "" : "s"} in total. “{CLASS_LABELS.investigate.label}”
-              marks a priority for further statistical or customs review.
+              {channels.length} comparable channel{channels.length === 1 ? "" : "s"} in total. The “{BAND_LABELS.critical.label}”
+              and “{BAND_LABELS.high.label}” bands mark a priority for further statistical or customs review.
             </p>
           </div>
         )}
@@ -201,7 +201,7 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
       <section>
         <SectionTitle
           title="Country decomposition"
-          desc="Every comparable country channel for this HS6 line over the full window (no materiality floor). Badges show anomaly strength, evidence quality and the resulting class. Open a channel for the year-by-year record."
+          desc="Every comparable country channel for this HS6 line over the full window (no materiality floor). Badges show the risk score, its two components and the resulting band. Open a channel for the year-by-year record."
         />
         {channels.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
@@ -213,8 +213,8 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
                   <th className="px-3 py-2 font-medium">Partner</th>
-                  <th className="px-3 py-2 font-medium">Class</th>
-                  <th className="px-3 py-2 font-medium">Scores</th>
+                  <th className="px-3 py-2 font-medium">Risk</th>
+                  <th className="px-3 py-2 font-medium">Band · components</th>
                   <th className="px-3 py-2 text-right font-medium">Partner exports (FOB)</th>
                   <th className="px-3 py-2 text-right font-medium">UZB imports (CIF)</th>
                   <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.positive }}>Positive discrepancy</th>
@@ -232,11 +232,12 @@ export default async function ProductPage({ params }: { params: Promise<{ cmd: s
                       <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">{c.partner}</Link>
                       {c.transit && <span className="ml-2 inline-block align-middle"><TransitTag /></span>}
                     </td>
-                    <td className="px-3 py-2"><ClassBadge cls={c.cls} /></td>
+                    <td className="px-3 py-2"><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
                     <td className="px-3 py-2">
-                      <span className="inline-flex gap-1">
-                        <AnomalyBadge score={c.anomaly} />
-                        <EvidenceBadge score={c.evidence} />
+                      <span className="inline-flex flex-wrap gap-1">
+                        <BandBadge band={c.band} />
+                        <ComponentChip kind="g" value={c.abnormalGap} />
+                        <ComponentChip kind="p" value={c.persistence} />
                       </span>
                     </td>
                     <td className="tabular px-3 py-2 text-right" title={fmtUSDFull(c.peT)}>

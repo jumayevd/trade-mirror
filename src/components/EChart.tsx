@@ -16,18 +16,15 @@ interface Props {
 }
 
 /**
- * The page sets `body { zoom: 1.1 }` for a comfortable reading scale. CSS zoom
- * scales the rendered canvas BITMAP, so a canvas sized at the plain device
- * pixel ratio is stretched by 1.1x and every chart reads soft. Multiplying the
- * ratio by the effective zoom makes ECharts allocate the extra pixels up front,
- * so the marks stay sharp at the final on-screen size.
+ * The `.chart-frame` wrapper cancels the page zoom (see globals.css), so inside
+ * it one CSS pixel is one on-screen pixel again. The canvas therefore only needs
+ * the plain device pixel ratio to stay sharp — and, more importantly, ECharts'
+ * pointer maths and the rendered geometry share one coordinate system, so hover
+ * lands on the mark under the cursor.
  */
 function bitmapRatio(): number {
   if (typeof window === "undefined") return 1;
-  const dpr = window.devicePixelRatio || 1;
-  const raw = parseFloat(getComputedStyle(document.body).getPropertyValue("zoom"));
-  const zoom = Number.isFinite(raw) && raw > 0 ? raw : 1;
-  return dpr * zoom;
+  return window.devicePixelRatio || 1;
 }
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
@@ -71,10 +68,8 @@ export default function EChart({ option, className, style, registerMaps, onEvent
   }, [option]);
 
   return (
-    <div
-      ref={ref}
-      className={className}
-      style={{ width: "100%", height: "100%", ...style }}
-    />
+    <div className={className} style={{ width: "100%", height: "100%", ...style }}>
+      <div ref={ref} className="chart-frame" />
+    </div>
   );
 }

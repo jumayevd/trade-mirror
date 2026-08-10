@@ -2,68 +2,30 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { EChartsOption, YAXisComponentOption } from "echarts";
-import EChart from "@/components/EChart";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { EmptyState, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
+import { BandBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
-import type { LocaleKey } from "@/lib/locales";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
+import { COLORS, fmtNum, fmtPct, fmtUSD } from "@/lib/format";
 import {
-  aggregate, DEFAULT_FILTER, meta, yearsLabel,
-  type Aggregate, type Channel, type Filter,
+  aggregate, DEFAULT_FILTER, meta, partnerEffects, partnerMetaOf, RISK_CONFIG, yearsLabel,
+  type Aggregate, type Channel, type Filter, type RiskBand,
 } from "@/lib/dataset";
-import { BAR_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /**
- * Discrepancy & Risk — the analytical hub. Two quiet tabs share one HS-level state:
- *  1. Ranked components   — risk scores + the ranked table (the screening queue)
- *  2. Statistical profile — distribution, thresholds, concentration, persistence
- * Period is the page's only filter: ticking years rebuilds both tabs from the same
- * aggregate. It deliberately does not read the shared filter context, so partner
- * and HS selections made elsewhere never silently narrow the screening queue.
+ * Discrepancy & Risk — the screening queue. Every partner × code combination at
+ * the active HS level, carrying the MTRS v3.0 score, its two components and its
+ * band. Period is the page's only filter, and it deliberately does not read the
+ * shared filter context: partner and HS selections made elsewhere never silently
+ * narrow the queue.
+ *
+ * The score itself is pooled over the whole window, so ticking years changes
+ * which rows are listed and how large their gap is, not how a cell scores.
  */
-
-type TabKey = "ranked" | "profile";
-const TABS: { key: TabKey; labelKey: LocaleKey; tipKey: LocaleKey }[] = [
-  { key: "ranked", labelKey: "risk.tab.ranked", tipKey: "risk.tab.ranked.tip" },
-  { key: "profile", labelKey: "risk.tab.profile", tipKey: "risk.tab.profile.tip" },
-];
-
-/* ---------- quiet chart axis helpers (fontSize 10, palette-only) ---------- */
-
-const cat = (data: (string | number)[]) => ({
-  ...catAxis(data),
-  axisLabel: { color: COLORS.axis, fontSize: 10 },
-});
-const moneyAxis = (name?: string): YAXisComponentOption => ({
-  type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-  axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
-  splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
-  axisLine: { show: false },
-});
-const countAxis = (name?: string): YAXisComponentOption => ({
-  type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-  axisLabel: { color: COLORS.axis, fontSize: 10 },
-  splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
-  axisLine: { show: false },
-});
-
-/** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
-function HeadDot({ color }: { color: string }) {
-  return (
-    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
-  );
-}
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
-const levelBase = (a: Aggregate, level: HsLevel): Channel[] =>
-  level === 2 ? a.baseChannels : level === 4 ? a.baseChannels4 : a.baseChannels6;
 
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
@@ -75,48 +37,41 @@ function quantile(sortedAsc: number[], q: number): number {
   return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
 }
 
-/* shared table cell classes (design rules) */
 const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
 const TH_NUM = `${TH} text-right`;
 const TD = "px-3 py-1.5 align-middle text-[13px]";
 const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
 
-function LevelToggle({ level, onChange }: { level: HsLevel; onChange: (l: HsLevel) => void }) {
-  const { t } = useI18n();
-  return (
-    <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("risk.a11y.hsLevel")}>
-      {([2, 4, 6] as const).map((l) => (
-        <button
-          key={l}
-          onClick={() => onChange(l)}
-          aria-pressed={level === l}
-          className={`px-2 py-1 text-[12px] whitespace-nowrap ${level === l ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
-        >
-          {t(LEVEL_LABEL_KEYS[l])}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export default function QueueView() {
   const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(2);
-  const [tab, setTab] = useState<TabKey>("ranked");
   /** The one control on this page: which years the screening covers. */
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
 
   const filter = useMemo<Filter>(() => ({ ...DEFAULT_FILTER, years }), [years]);
   const data = useMemo(() => aggregate(filter), [filter]);
   const channels = levelChannels(data, level);
-  const statsBase = levelBase(data, level);
 
   const suffix = years.length === meta.years.length ? "" : `-${years.join("_")}`;
-  const exportCsv = () => {
-    if (tab === "profile") downloadCsv(`statistical-profile-base-hs${level}${suffix}.csv`, channelsToCsv(statsBase, filter));
-    else downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
-  };
-  const exportEmpty = tab === "profile" ? statsBase.length === 0 : channels.length === 0;
+  const exportCsv = () => downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
+
+  const stats = useMemo(() => {
+    const sorted = [...channels].sort((a, b) => b.posT - a.posT);
+    const total = sorted.reduce((s, c) => s + c.posT, 0);
+    const top5 = sorted.slice(0, 5).reduce((s, c) => s + c.posT, 0);
+    const counts = { critical: 0, high: 0, elevated: 0, low: 0 } as Record<RiskBand, number>;
+    for (const c of channels) counts[c.band]++;
+    return { counts, top5Share: total > 0 ? top5 / total : 0, total };
+  }, [channels]);
+
+  const riskStats = useMemo(() => {
+    if (channels.length === 0) return null;
+    const top = channels.reduce((m, c) => (c.mtrs > m.mtrs ? c : m), channels[0]);
+    const vals = channels.map((c) => c.mtrs).sort((a, b) => a - b);
+    return { top, median: quantile(vals, 0.5) };
+  }, [channels]);
+
+  const effects = useMemo(() => partnerEffects(level).slice(0, 12), [level]);
 
   return (
     <div className="space-y-6">
@@ -134,7 +89,7 @@ export default function QueueView() {
           </div>
           <button
             onClick={exportCsv}
-            disabled={exportEmpty}
+            disabled={channels.length === 0}
             className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={`${t("risk.export.tip")} (${t(LEVEL_LABEL_KEYS[level])})`}
           >
@@ -148,74 +103,21 @@ export default function QueueView() {
         <YearSelect years={years} onChange={setYears} />
       </section>
 
-      {/* segmented tab control */}
-      <div className="no-print flex overflow-hidden rounded-md border border-[var(--color-border)] self-start w-fit" role="tablist" aria-label={t("risk.a11y.tabs")}>
-        {TABS.map((tb) => (
-          <button
-            key={tb.key}
-            role="tab"
-            aria-selected={tab === tb.key}
-            onClick={() => setTab(tb.key)}
-            title={t(tb.tipKey)}
-            className={`px-2.5 py-1 text-[12px] whitespace-nowrap ${tab === tb.key ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
-          >
-            {t(tb.labelKey)}
-          </button>
-        ))}
-      </div>
-
-      {tab === "ranked" && (
-        <RankedTab channels={channels} level={level} onLevelChange={setLevel} years={data.years} filter={filter} />
-      )}
-      {tab === "profile" && (
-        <ProfileTab base={statsBase} agg={data} level={level} onLevelChange={setLevel} filter={filter} />
-      )}
-    </div>
-  );
-}
-
-/* ================================ TAB 1 — ranked ================================ */
-
-function RankedTab({
-  channels, level, onLevelChange, years, filter,
-}: {
-  channels: Channel[]; level: HsLevel; onLevelChange: (l: HsLevel) => void; years: number[]; filter: Filter;
-}) {
-  const { t } = useI18n();
-  const stats = useMemo(() => {
-    const investigate = channels.filter((c) => c.cls === "investigate").length;
-    const sorted = [...channels].sort((a, b) => b.posT - a.posT);
-    const total = sorted.reduce((s, c) => s + c.posT, 0);
-    const top5 = sorted.slice(0, 5).reduce((s, c) => s + c.posT, 0);
-    return { investigate, top5Share: total > 0 ? top5 / total : 0, total };
-  }, [channels]);
-
-  // R_BOTH = √(55 × 60) rounded to the score's 0.1 grid, so the exactly-at-both-
-  // thresholds channel (stored risk 57.4) is counted; a reference point, not a class.
-  const R_BOTH = Math.round(10 * Math.sqrt(55 * 60)) / 10;
-  const riskStats = useMemo(() => {
-    if (channels.length === 0) return null;
-    const top = channels.reduce((m, c) => (c.risk > m.risk ? c : m), channels[0]);
-    const vals = channels.map((c) => c.risk).sort((a, b) => a - b);
-    const median = quantile(vals, 0.5);
-    const above = channels.filter((c) => c.risk >= R_BOTH).length;
-    return { top, median, above };
-  }, [channels, R_BOTH]);
-
-  return (
-    <div className="space-y-6">
+      {/* MTRS summary */}
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.score.title")}
+          desc={t("risk.score.desc")}
           right={<InfoTip text={t("risk.score.info")} />}
         />
         {riskStats && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <Stat
               label={t("risk.stat.highest")}
-              value={riskStats.top.risk.toFixed(0)}
+              value={riskStats.top.mtrs.toFixed(0)}
               sub={`${riskStats.top.partner} × HS ${riskStats.top.cmd}${riskStats.top.transit ? ` · ${t("risk.transitHub")}` : ""}`}
-              info={`${t("risk.stat.highest.info")} (${t(LEVEL_LABEL_KEYS[level])}): A ${riskStats.top.anomaly.toFixed(1)} × E ${riskStats.top.evidence.toFixed(1)} → R ${riskStats.top.risk.toFixed(1)}.${riskStats.top.transit ? ` ${t("risk.stat.highest.infoTransit")}` : ""}`}
+              info={`${t("risk.stat.highest.info")} (${t(LEVEL_LABEL_KEYS[level])}): G ${riskStats.top.abnormalGap.toFixed(2)} × P ${riskStats.top.persistence.toFixed(2)} → MTRS ${riskStats.top.mtrs.toFixed(1)}.${riskStats.top.transit ? ` ${t("risk.stat.highest.infoTransit")}` : ""}`}
+              accent={COLORS.investigate}
             />
             <Stat
               label={t("risk.stat.median")}
@@ -224,15 +126,16 @@ function RankedTab({
               info={t("risk.stat.median.info")}
             />
             <Stat
-              label={`R ≥ ${R_BOTH.toFixed(1)}`}
-              value={fmtNum(riskStats.above)}
-              sub={t("risk.stat.above.sub")}
-              info={`${t("risk.stat.above.infoPre")} (${R_BOTH.toFixed(1)}) — ${t("risk.stat.above.infoPost")}`}
+              label={t("risk.stat.flagged")}
+              value={fmtNum(stats.counts.critical + stats.counts.high)}
+              sub={`${fmtNum(stats.counts.critical)} ${t("band.critical")} · ${fmtNum(stats.counts.high)} ${t("band.high")}`}
+              info={t("risk.stat.flagged.info")}
             />
           </div>
         )}
       </section>
 
+      {/* ranked queue */}
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.ranked.title")}
@@ -243,394 +146,59 @@ function RankedTab({
         <p className="max-w-3xl text-[12px] text-muted">
           <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
           {t(LEVEL_LABEL_KEYS[level])} {t("risk.combinationsCount")}
-          · <span className="tabular font-medium text-foreground">{fmtNum(stats.investigate)}</span>{" "}
-          <span className="cursor-help" title={t("risk.investigateClass.tip")}>{t("risk.investigateClass")}</span>
           · {t("risk.top5")} = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> ({fmtUSD(stats.total)})
+          · <span className="cursor-help" title={t("risk.floor.tip")}>{t("risk.floor.label")} ${fmtNum(RISK_CONFIG.materialityFloor)}</span>
         </p>
 
-        <QueueTable channels={channels} level={level} onLevelChange={onLevelChange} filter={filter} years={years} />
-      </section>
-    </div>
-  );
-}
-
-/* ============================= TAB 2 — statistical profile ============================= */
-
-const THRESHOLDS = [
-  { v: 100_000, label: "≥ $100K" },
-  { v: 1_000_000, label: "≥ $1M" },
-  { v: 5_000_000, label: "≥ $5M" },
-  { v: 10_000_000, label: "≥ $10M" },
-  { v: 50_000_000, label: "≥ $50M" },
-];
-
-// log10 histogram buckets for the gap (positive discrepancy only)
-const HIST_EDGES = [100_000, 1_000_000, 10_000_000, 100_000_000, 1_000_000_000];
-const HIST_LABELS = ["< $100K", "$100K–1M", "$1M–10M", "$10M–100M", "$100M–1B", "≥ $1B"];
-
-function ProfileTab({
-  base, agg, level, onLevelChange, filter,
-}: {
-  base: Channel[]; agg: Aggregate;
-  level: HsLevel; onLevelChange: (l: HsLevel) => void; filter: Filter;
-}) {
-  const { t } = useI18n();
-  const n = base.length;
-
-  /* ---- (a) distribution of the gap ---- */
-  const dist = useMemo(() => {
-    if (n === 0) return null;
-    const vals = base.map((c) => c.posT).sort((a, b) => a - b);
-    const mean = vals.reduce((s, v) => s + v, 0) / n;
-    const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / Math.max(n - 1, 1));
-    return {
-      mean, sd,
-      median: quantile(vals, 0.5),
-      p95: quantile(vals, 0.95), p99: quantile(vals, 0.99),
-    };
-  }, [base, n]);
-
-  const histOption = useMemo<EChartsOption>(() => {
-    const counts = new Array(HIST_LABELS.length).fill(0) as number[];
-    for (const c of base) {
-      let k = 0;
-      while (k < HIST_EDGES.length && c.posT >= HIST_EDGES[k]) k++;
-      counts[k] += 1;
-    }
-    return {
-      backgroundColor: "transparent",
-      grid: { ...baseGrid, bottom: 48 },
-      tooltip: {
-        ...baseTooltip(),
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        formatter: (params: unknown) => {
-          const p = (params as { dataIndex: number; value: number }[])[0];
-          return `${HIST_LABELS[p.dataIndex]}<br/>${fmtNum(p.value)} ${t("risk.channelsCount")}`;
-        },
-      },
-      xAxis: { ...cat(HIST_LABELS), axisLabel: { color: COLORS.axis, rotate: 35, fontSize: 10, interval: 0 } },
-      yAxis: countAxis(t("risk.channelsCount")),
-      series: [{
-        name: t("risk.channelsCount"),
-        type: "bar",
-        data: counts,
-        ...BAR_SPEC,
-        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
-        barMaxWidth: 32,
-      }],
-    };
-  }, [base, t]);
-
-  /* ---- (b) materiality thresholds ---- */
-  const thres = useMemo(() => {
-    const posTotal = base.reduce((s, c) => s + c.posT, 0);
-    const rows = THRESHOLDS.map(({ v, label }) => {
-      const above = base.filter((c) => c.posT >= v);
-      const value = above.reduce((s, c) => s + c.posT, 0);
-      return { label, count: above.length, value, share: posTotal > 0 ? value / posTotal : 0 };
-    });
-    return { rows, posTotal };
-  }, [base]);
-
-  // single value axis — the cumulative share lives in the tooltip and in the
-  // "Share of the total" column of the table above (no dual-axis charts)
-  const thresOption = useMemo<EChartsOption>(() => ({
-    backgroundColor: "transparent",
-    grid: baseGrid,
-    tooltip: {
-      ...baseTooltip(),
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
-      formatter: (params: unknown) => {
-        const arr = params as { dataIndex: number }[];
-        const r = thres.rows[arr[0].dataIndex];
-        return `${r.label}<br/>${fmtNum(r.count)} ${t("risk.channelsCount")} · ${fmtUSDFull(r.value)}<br/>${fmtPct(r.share)} ${t("risk.ofTotalGap")}`;
-      },
-    },
-    xAxis: cat(thres.rows.map((r) => r.label)),
-    yAxis: countAxis(t("risk.channelsCount")),
-    series: [
-      {
-        name: t("risk.series.aboveThreshold"),
-        type: "bar",
-        data: thres.rows.map((r) => r.count),
-        ...BAR_SPEC,
-        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
-      },
-    ],
-  }), [thres, t]);
-
-  /* ---- (c) concentration ---- */
-  const conc = useMemo(() => {
-    const sorted = base.filter((c) => c.posT > 0).sort((a, b) => b.posT - a.posT);
-    const total = sorted.reduce((s, c) => s + c.posT, 0);
-    const topShare = (k: number) => (total > 0 ? sorted.slice(0, k).reduce((s, c) => s + c.posT, 0) / total : 0);
-    const hhi = total > 0 ? Math.round(sorted.reduce((s, c) => s + (c.posT / total) ** 2, 0) * 10000) : 0;
-    const countTo = (p: number) => {
-      if (total <= 0) return 0;
-      let cum = 0;
-      for (let i = 0; i < sorted.length; i++) {
-        cum += sorted[i].posT;
-        if (cum / total >= p) return i + 1;
-      }
-      return sorted.length;
-    };
-    const pareto = sorted.slice(0, 15);
-    const cumShares: number[] = [];
-    pareto.reduce((cum, c) => {
-      const next = cum + c.posT;
-      cumShares.push(next / (total || 1));
-      return next;
-    }, 0);
-    return {
-      n: sorted.length, total, hhi,
-      top1: topShare(1), top5: topShare(5), top10: topShare(10), top20: topShare(20),
-      n50: countTo(0.5), n75: countTo(0.75), n90: countTo(0.9),
-      pareto, cumShares,
-    };
-  }, [base]);
-
-  const paretoOption = useMemo<EChartsOption>(() => ({
-    backgroundColor: "transparent",
-    grid: { ...baseGrid, bottom: 56 },
-    tooltip: {
-      ...baseTooltip(),
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
-      formatter: (params: unknown) => {
-        const arr = params as { dataIndex: number }[];
-        const i = arr[0].dataIndex;
-        const c = conc.pareto[i];
-        return `${c.partner} · ${c.cmdLabel}<br/>HS ${c.cmd}<br/>${t("risk.th.gap")}: ${fmtUSDFull(c.posT)}<br/>${t("risk.cumulativeShare")}: ${fmtPct(conc.cumShares[i])}`;
-      },
-    },
-    xAxis: {
-      ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
-      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 10, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
-    },
-    // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
-    yAxis: moneyAxis(),
-    series: [
-      {
-        name: t("risk.th.gap"),
-        type: "bar",
-        data: conc.pareto.map((c) => Math.round(c.posT)),
-        ...BAR_SPEC,
-        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
-      },
-    ],
-  }), [conc, t]);
-
-  /* ---- (d) persistent channels (full window, active level) ---- */
-  const persistent = useMemo(
-    () =>
-      levelBase(agg, level)
-        .filter((c) => c.comparableYears >= 3)
-        .sort(
-          (a, b) =>
-            b.longestPosStreak - a.longestPosStreak ||
-            b.posYears / b.comparableYears - a.posYears / a.comparableYears ||
-            b.posT - a.posT,
-        )
-        .slice(0, 10),
-    [agg, level],
-  );
-  const persistentShare = useMemo(
-    () => (n > 0 ? base.filter((c) => c.longestPosStreak >= 3).length / n : 0),
-    [base, n],
-  );
-
-  if (n === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-[13px] text-muted">{t("risk.profile.lead")}</p>
-          <LevelToggle level={level} onChange={onLevelChange} />
-        </div>
-        <EmptyState />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-          {t("risk.profile.introA")} <strong className="text-foreground">{t("risk.profile.baseWord")}</strong>{" "}
-          {t("risk.profile.introB")} {t("risk.profile.channelDef")} {t(LEVEL_LABEL_KEYS[level])} ·{" "}
-          {yearsLabel(filter.years)}.
-        </p>
-        <LevelToggle level={level} onChange={onLevelChange} />
-      </div>
-
-      {/* (a) distribution */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.dist.title")}
-          desc={`${t("risk.dist.desc")} ${Math.round(filter.cif * 100)}%. ${t("risk.dist.descTail")}`}
-        />
-        {dist && (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <Stat
-              label={t("risk.dist.mean")}
-              value={fmtUSD(dist.mean)}
-              sub={`${t("risk.dist.medianWord")} ${fmtUSD(dist.median)}`}
-              info={`${t("risk.dist.mean.info")} N = ${fmtNum(n)}.`}
-            />
-            <Stat
-              label={t("risk.dist.sd")}
-              value={fmtUSD(dist.sd)}
-              sub={t("risk.dist.sd.sub")}
-              info={`${t("risk.dist.sd.info")} N = ${fmtNum(n)}.`}
-            />
-            <Stat
-              label="P95"
-              value={fmtUSD(dist.p95)}
-              sub={t("risk.dist.p95.sub")}
-              info={`${t("risk.dist.p95.info")} N = ${fmtNum(n)}.`}
-            />
-            <Stat
-              label="P99"
-              value={fmtUSD(dist.p99)}
-              sub={t("risk.dist.p99.sub")}
-              info={`${t("risk.dist.p99.info")} N = ${fmtNum(n)}.`}
-            />
-          </div>
-        )}
-        <div className="card p-3" style={{ height: 300 }}>
-          <EChart option={histOption} />
-        </div>
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.dist.footnote")} {t("common.source")}.
-        </p>
+        <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years} />
       </section>
 
-      {/* (b) thresholds */}
+      {/* partner reporting-discrepancy indicator (u_p) */}
       <section className="space-y-3">
         <SectionTitle
-          title={t("risk.thres.title")}
-          desc={t("risk.thres.desc")}
+          title={t("risk.effects.title")}
+          desc={t("risk.effects.desc")}
+          right={<InfoTip text={t("risk.effects.info")} />}
         />
         <div className="card overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="w-full min-w-[520px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
-                <th className={TH}>
-                  {t("risk.th.threshold")} <InfoTip text={t("risk.thres.thresholdInfo")} />
-                </th>
-                <th className={TH_NUM}>{t("risk.th.channels")}</th>
-                <th className={TH_NUM}><HeadDot color={COLORS.positive} />{t("risk.th.sumGap")}</th>
-                <th className={TH_NUM}>
-                  {t("risk.th.shareOfTotal")} <InfoTip text={`${t("risk.thres.shareInfo")} ${fmtUSD(thres.posTotal)} (N = ${fmtNum(n)}).`} />
-                </th>
+                <th className={TH}>{t("common.partner")}</th>
+                <th className={TH_NUM} title={t("risk.effects.uTip")}>{t("risk.effects.uCol")}</th>
+                <th className={TH_NUM}>{t("risk.effects.cellsCol")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
-              {thres.rows.map((r) => (
-                <tr key={r.label} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} tabular font-medium`}>{r.label}</td>
-                  <td className={TD_NUM}>{fmtNum(r.count)}</td>
-                  <td className={TD_NUM}>{fmtUSD(r.value)}</td>
-                  <td className={TD_NUM}>{fmtPct(r.share)}</td>
-                </tr>
-              ))}
+              {effects.map((e) => {
+                const pm = partnerMetaOf(e.iso);
+                return (
+                  <tr key={e.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
+                    <td className={`${TD} whitespace-nowrap`}>
+                      <Link href={`/partners/${e.iso.toLowerCase()}`} className="font-medium hover:underline">
+                        {pm?.name ?? e.iso}
+                      </Link>
+                      {pm?.transit && <span className="ml-1.5"><TransitTag /></span>}
+                    </td>
+                    <td className={TD_NUM}>{e.u > 0 ? "+" : ""}{e.u.toFixed(2)}</td>
+                    <td className={TD_NUM}>{fmtNum(e.cells)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <div className="card p-3" style={{ height: 300 }}>
-          <EChart option={thresOption} />
-        </div>
+        <p className="max-w-3xl text-xs text-faint">{t("risk.effects.footnote")}</p>
       </section>
 
-      {/* (c) concentration */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.conc.title")}
-          desc={t("risk.conc.desc")}
-          right={<InfoTip text={`${t("risk.conc.info")} N = ${fmtNum(conc.n)}.`} />}
-        />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat
-            label={t("risk.conc.top1top5")}
-            value={`${fmtPct(conc.top1, 0)} / ${fmtPct(conc.top5, 0)}`}
-            sub={t("risk.ofTotalGap")}
-            info={`${t("risk.conc.top1top5.info")} ${fmtUSD(conc.total)}. N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label={t("risk.conc.top10top20")}
-            value={`${fmtPct(conc.top10, 0)} / ${fmtPct(conc.top20, 0)}`}
-            sub={t("risk.ofTotalGap")}
-            info={`${t("risk.conc.top10top20.info")} ${fmtUSD(conc.total)}. N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label="HHI"
-            value={fmtNum(conc.hhi)}
-            sub={t("risk.conc.hhi.sub")}
-            info={`${t("risk.conc.hhi.info")} N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label={t("risk.conc.coverage")}
-            value={`${fmtNum(conc.n50)} / ${fmtNum(conc.n75)} / ${fmtNum(conc.n90)}`}
-            sub={t("risk.conc.coverage.sub")}
-            info={`${t("risk.conc.coverage.info")} ${fmtUSD(conc.total)}.`}
-          />
-        </div>
-        <div className="card p-3" style={{ height: 320 }}>
-          <EChart option={paretoOption} />
-        </div>
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.conc.paretoTop")} {conc.pareto.length} / {fmtNum(conc.n)}{" "}
-          {t("risk.conc.channelsWithGap")}. {t("risk.conc.paretoNote")} {t("common.source")}.
-        </p>
-      </section>
-
-      {/* (d) persistent channels */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.persist.title")}
-          desc={`${t(LEVEL_LABEL_KEYS[level])} · ${meta.window.start}–${meta.window.end}. ${t("risk.persist.desc")}`}
-          right={<InfoTip text={`${t("risk.persist.info")} ${fmtPct(persistentShare, 0)} (N = ${fmtNum(n)}).`} />}
-        />
-        {persistent.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse">
-              <thead className="border-b border-[var(--color-border)]">
-                <tr>
-                  <th className={TH}>{t("common.partner")}</th>
-                  <th className={TH}>{t(LEVEL_LABEL_KEYS[level])} · {t("risk.th.code")}</th>
-                  <th className={TH_NUM} title={t("risk.persist.streakTip")}>{t("risk.th.streak")}</th>
-                  <th className={TH_NUM} title={t("risk.persist.gapYearsTip")}>{t("risk.th.gapCompYrs")}</th>
-                  <th className={TH_NUM} title={t("risk.persist.totalGapTip")}><HeadDot color={COLORS.positive} />{t("risk.th.totalGap")}</th>
-                </tr>
-              </thead>
-              <tbody className="zebra">
-                {persistent.map((c) => (
-                  <tr key={`${c.partnerIso}-${c.cmd}`} className="border-b border-[var(--color-border-soft)]">
-                    <td className={`${TD} whitespace-nowrap`}>
-                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">{c.partner}</Link>
-                      {c.transit && <span className="ml-1.5"><TransitTag /></span>}
-                    </td>
-                    <td className={`${TD} max-w-[320px]`}>
-                      <span className="tabular mr-1.5 text-xs text-faint">{c.cmd}</span>
-                      <span title={c.cmdLabel}>{c.cmdLabel.length > 52 ? `${c.cmdLabel.slice(0, 52)}…` : c.cmdLabel}</span>
-                    </td>
-                    <td className={TD_NUM} title={`${t("risk.persist.streakTip")}: ${c.longestPosStreak}`}>
-                      {c.longestPosStreak} {t("risk.unit.yr")}
-                    </td>
-                    <td className={TD_NUM}>{c.posYears}/{c.comparableYears}</td>
-                    <td className={TD_NUM} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.persist.footnote")} {t("common.source")}.
-        </p>
+      {/* band legend */}
+      <section className="flex flex-wrap items-center gap-2">
+        {(["critical", "high", "elevated", "low"] as RiskBand[]).map((b) => (
+          <span key={b} className="inline-flex items-center gap-1.5">
+            <BandBadge band={b} />
+            <span className="tabular text-[11px] text-faint">{fmtNum(stats.counts[b])}</span>
+          </span>
+        ))}
       </section>
     </div>
   );

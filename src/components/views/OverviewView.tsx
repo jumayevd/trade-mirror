@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
-import { Stat, SectionTitle, InfoTip, EmptyState } from "@/components/ui";
+import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
+import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
   aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsLabel, type Channel,
@@ -15,12 +16,16 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
 /**
- * Executive Overview — a standalone summary across every partner. Period is its
- * only control; it builds its own aggregate rather than reading the shared filter
- * context, so partner and HS selections made elsewhere never reshape this page.
+ * Executive Overview — a standalone summary across every partner, with the
+ * statistical profile of the discrepancy as its second view. Period is the only
+ * control and both views follow it; the page builds its own aggregate rather than
+ * reading the shared filter context, so partner and HS selections made elsewhere
+ * never reshape it.
  */
 const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...meta.years] };
 const TOP_N = 10;
+
+type OverviewTab = "summary" | "profile";
 
 interface RankRow {
   key: string;
@@ -62,6 +67,7 @@ export default function OverviewView() {
   const { t } = useI18n();
   /** Overview's only control: which years the summary covers. */
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [tab, setTab] = useState<OverviewTab>("summary");
   const data = useMemo(() => aggregate({ ...FULL_WINDOW, years }), [years]);
   const k = data.kpis;
   const periodLabel = yearsLabel(years);
@@ -142,11 +148,24 @@ export default function OverviewView() {
         </p>
       </section>
 
-      {/* 2. period — a dropdown of ticks, so any set of years can be summarised */}
-      <section className="no-print">
+      {/* 2. period — a dropdown of ticks — and the view switch beside it */}
+      <section className="no-print flex flex-wrap items-end justify-between gap-3">
         <YearSelect years={years} onChange={setYears} label={t("ovw.period")} />
+        <Segmented<OverviewTab>
+          ariaLabel={t("ovw.view.aria")}
+          value={tab}
+          onChange={setTab}
+          options={[
+            { key: "summary", label: t("ovw.view.summary"), tip: t("ovw.view.summaryTip") },
+            { key: "profile", label: t("ovw.view.profile"), tip: t("ovw.view.profileTip") },
+          ]}
+        />
       </section>
 
+      {tab === "profile" && <StatisticalProfile agg={data} />}
+
+      {tab === "summary" && (
+        <div className="space-y-6">
       {/* 3. headline tiles */}
       <section>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -227,6 +246,8 @@ export default function OverviewView() {
           codeWidth="w-14"
         />
       </section>
+        </div>
+      )}
     </div>
   );
 }

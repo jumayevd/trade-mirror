@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import ChannelChart from "@/components/charts/ChannelChart";
 import {
-  Stat, SectionTitle, ContextLine, AnomalyBadge, EvidenceBadge, ClassBadge,
+  Stat, SectionTitle, ContextLine, BandBadge, ComponentChip,
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
   aggregate, meta, DEFAULT_FILTER, partnerMetaOf, productByCmd, isResidualChapter,
-  CLASS_LABELS, type Filter, type SignalClass,
+  BAND_LABELS, type Filter, type RiskBand,
 } from "@/lib/dataset";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 
@@ -24,12 +24,11 @@ const FULL_FILTER: Filter = {
 const FULL = aggregate(FULL_FILTER);
 const WINDOW = meta.years;
 
-const NEXT_STEP: Record<SignalClass, string> = {
-  investigate: "further statistical reconciliation and, where appropriate, customs analytics review",
-  verify: "verification of statistical comparability before interpretation",
-  monitor: "routine monitoring",
+const NEXT_STEP: Record<RiskBand, string> = {
+  critical: "further statistical reconciliation and, where appropriate, customs analytics review",
+  high: "verification of statistical comparability before interpretation",
+  elevated: "routine monitoring",
   low: "no action",
-  transit: "clarification of routing and origin attribution first",
 };
 
 const FLAG_LABELS: Record<string, string> = {
@@ -136,8 +135,10 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
     `while Uzbekistan recorded imports of ${fmtUSD(channel.uiT)}. Under the central ${cifPct}% freight adjustment ` +
     `the residual positive asymmetry is ${fmtUSD(channel.posT)} and ${channel.flipsAcrossFreight ? "does not hold" : "holds"} ` +
     `across all three freight scenarios (6%, 10%, 15%). The channel has ${channel.comparableYears} of ${WINDOW.length} ` +
-    `comparable years and evidence quality ${channel.evidence.toFixed(0)}/100. Main limitations: ${limitations}. ` +
-    `The pattern is classified as “${CLASS_LABELS[channel.cls].label}” and warrants ${NEXT_STEP[channel.cls]}.`;
+    `comparable years. Main limitations: ${limitations}. ` +
+    `Its risk score is ${channel.mtrs.toFixed(0)}/100 — abnormal gap intensity ${channel.abnormalGap.toFixed(2)}, persistence ` +
+    `${channel.persistence.toFixed(2)} from ${channel.flaggedYears} flagged of ${channel.matchedYears} matched years — ` +
+    `placing it in the “${BAND_LABELS[channel.band].label}” band, which warrants ${NEXT_STEP[channel.band]}.`;
 
   return (
     <div className="space-y-8">
@@ -157,9 +158,9 @@ export default async function ChannelPage({ params }: { params: Promise<{ iso: s
           <span className="tabular rounded bg-[var(--color-panel-2)] px-2 py-0.5 text-xs text-faint">HS {channel.cmd}</span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <ClassBadge cls={channel.cls} />
-          <AnomalyBadge score={channel.anomaly} />
-          <EvidenceBadge score={channel.evidence} />
+          <BandBadge band={channel.band} />
+          <ComponentChip kind="g" value={channel.abnormalGap} />
+          <ComponentChip kind="p" value={channel.persistence} />
           <RobustnessBadge r={channel.robustness} />
           {channel.transit && <TransitTag />}
           <span className="text-xs text-faint">{channel.region} · channel profile · full {period} window</span>
