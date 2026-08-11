@@ -162,10 +162,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       </section>
 
       {/* 2. key indicators */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <Stat label={t("prof.stat.comparableTrade")} value={fmtUSD(p.peT)} accent={COLORS.partner}
-          sub={`${p.name} reported, FOB`}
-          info={`Cumulative partner-reported exports to Uzbekistan in channels where both sides reported, ${period}. ${fmtUSDFull(p.peT)}, against ${fmtUSDFull(p.uiT)} recorded by Uzbekistan. As reported in total — including flows only one side booked, which cannot enter a discrepancy — ${p.name} reported ${fmtUSDFull(p.observed.pe)} and Uzbekistan ${fmtUSDFull(p.observed.ui)}.`} />
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
           sub={`${fmtPct(posShare, 0)} of expected CIF imports`}
           info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal. ${fmtUSDFull(p.posT)}.`} />
