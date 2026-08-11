@@ -16,7 +16,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
-import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
 /**
  * Executive Overview — a standalone summary across every partner, with the
@@ -117,59 +117,82 @@ export default function OverviewView() {
   const hs6 = useMemo(() => topByCode(data.channels6, true, t), [data, t]);
 
   const annualOption = useMemo<EChartsOption>(() => {
-    const periodOf = (a: (typeof data.annual)[number]) => a.label ?? String(a.year);
-    const partnersByYear = new Map(data.annual.map((a) => [periodOf(a), a.comparablePartners]));
+    // Uzbekistan's monthly book only starts partway into the window (2019-01):
+    // leading periods where nothing is comparable are a data gap, not a signal,
+    // so the chart starts at the first period both books cover.
+    const firstLive = data.annual.findIndex((a) => a.comparablePartners > 0);
+    const rows = firstLive > 0 ? data.annual.slice(firstLive) : data.annual;
+    const periods = rows.map((a) => a.label ?? String(a.year));
+    const positiveName = t("kpi.positive");
+    const partnersName = t("ovw.tooltip.comparablePartners");
+    // 90+ monthly points would smother the lines in dots
+    const dots = rows.length > 24 ? 0 : 7;
     return {
       backgroundColor: "transparent",
       textStyle: baseTextStyle,
-      grid: { ...baseGrid, top: 16 },
+      grid: { ...baseGrid, top: 40, right: 48 },
+      legend: {
+        top: 4,
+        icon: "roundRect",
+        itemWidth: 14,
+        itemHeight: 3,
+        textStyle: { color: COLORS.text, fontSize: 11 },
+      },
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
-        axisPointer: { type: "shadow" },
+        axisPointer: { type: "line" },
         formatter: (raw: unknown) => {
-          const items = (Array.isArray(raw) ? raw : [raw]) as { axisValue?: string | number; value?: number }[];
+          const items = (Array.isArray(raw) ? raw : [raw]) as {
+            axisValue?: string | number; seriesName?: string; value?: number; marker?: string;
+          }[];
           if (items.length === 0) return "";
-          const year = String(items[0]?.axisValue ?? "");
-          const v0 = items[0]?.value;
-          const v = typeof v0 === "number" ? fmtUSDFull(v0) : t("common.notComparable");
-          const p = partnersByYear.get(year);
-          const partnerLine =
-            p !== undefined
-              ? `<div style="margin-top:2px;color:${COLORS.text}">${t("ovw.tooltip.comparablePartners")}: <span style="font-weight:600">${fmtNum(p)}</span></div>`
-              : "";
-          return `<div style="font-weight:600;margin-bottom:4px">${year}</div>${t("kpi.positive")}: <span style="font-weight:600">${v}</span>${partnerLine}`;
+          const period = String(items[0]?.axisValue ?? "");
+          const lines = items.map((it) => {
+            const v = it.seriesName === partnersName
+              ? fmtNum(it.value ?? 0)
+              : typeof it.value === "number" ? fmtUSDFull(it.value) : t("common.notComparable");
+            return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
+          });
+          return `<div style="font-weight:600;margin-bottom:4px">${period}</div>${lines.join("")}`;
         },
       },
-      xAxis: catAxis(data.annual.map((a) => a.label ?? String(a.year))),
-      yAxis: valueAxis("USD"),
+      xAxis: catAxis(periods),
+      yAxis: [
+        valueAxis("USD"),
+        {
+          type: "value",
+          name: partnersName,
+          nameTextStyle: { color: COLORS.axis, fontSize: 10 },
+          axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
+          splitLine: { show: false },
+          axisLine: { show: false },
+        },
+      ],
       series: [
         {
-          name: t("kpi.positive"),
-          type: "bar",
-          data: data.annual.map((a) => Math.round(a.positive)),
-          ...BAR_SPEC,
-          itemStyle: {
-            ...BAR_SPEC.itemStyle,
-            color: COLORS.positive,
-            borderColor: COLORS.surface,
-            borderWidth: 1,
-          },
-        },
-        // the same measure traced as a line, so the movement over time reads at a glance
-        {
-          name: t("kpi.positive"),
+          name: positiveName,
           type: "line",
-          data: data.annual.map((a) => Math.round(a.positive)),
+          yAxisIndex: 0,
+          data: rows.map((a) => Math.round(a.positive)),
           smooth: 0.3,
           symbol: "circle",
-          // on the monthly basis 90+ points would smother the line in dots
-          symbolSize: data.annual.length > 24 ? 0 : 7,
+          symbolSize: dots,
+          lineStyle: { width: 2, color: COLORS.positive },
+          itemStyle: { color: COLORS.positive, borderColor: COLORS.surface, borderWidth: 2 },
+          z: 3,
+        },
+        {
+          name: partnersName,
+          type: "line",
+          yAxisIndex: 1,
+          data: rows.map((a) => a.comparablePartners),
+          smooth: 0.3,
+          symbol: "circle",
+          symbolSize: dots,
           lineStyle: { width: 2, color: COLORS.gold },
           itemStyle: { color: COLORS.gold, borderColor: COLORS.surface, borderWidth: 2 },
-          emphasis: { disabled: true },
-          silent: true,
-          z: 3,
+          z: 2,
         },
       ],
     };
