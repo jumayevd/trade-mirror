@@ -2,26 +2,31 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import MultiSelect from "@/components/MultiSelect";
+import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
 import { BandBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
+import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum, fmtPct, fmtUSD } from "@/lib/format";
 import {
-  aggregate, DEFAULT_FILTER, meta, partnerEffects, partnerMetaOf, RISK_CONFIG, yearsLabel,
-  type Aggregate, type Channel, type Filter, type RiskBand,
+  aggregate, DEFAULT_FILTER, meta, partnerEffects, partnerMetaOf, RISK_CONFIG, yearsFor, yearsLabel,
+  type Aggregate, type Channel, type Filter, type Granularity, type RiskBand,
 } from "@/lib/dataset";
 
 /**
  * Discrepancy & Risk — the screening queue. Every partner × code combination at
  * the active HS level, carrying the MTRS v3.0 score, its two components and its
- * band. Period is the page's only filter, and it deliberately does not read the
- * shared filter context: partner and HS selections made elsewhere never silently
- * narrow the queue.
+ * band. Time basis and period are the page's only filters, and they deliberately
+ * do not read the shared filter context: partner and HS selections made
+ * elsewhere never silently narrow the queue.
  *
- * The score itself is pooled over the whole window, so ticking years changes
- * which rows are listed and how large their gap is, not how a cell scores.
+ * The score is fitted on the whole yearly window, so the basis and period ticks
+ * change which rows are listed and how large their gap is, not how a cell
+ * scores; monthly-only combinations the yearly books never matched are listed
+ * unscored.
  */
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
@@ -45,14 +50,41 @@ const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
 export default function QueueView() {
   const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(2);
-  /** The one control on this page: which years the screening covers. */
+  /** The page's controls: the time basis and which periods the screening covers. */
+  const [granularity, setGranularity] = useState<Granularity>("year");
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [months, setMonths] = useState<number[]>([]);
+  // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
+  const detailVer = useMonthlyDetail(granularity === "month");
 
-  const filter = useMemo<Filter>(() => ({ ...DEFAULT_FILTER, years }), [years]);
-  const data = useMemo(() => aggregate(filter), [filter]);
+  const pickGranularity = (g: Granularity) => {
+    if (g === granularity) return;
+    setGranularity(g);
+    setMonths([]);
+    // keep only years the target basis actually carries; empty means the full window
+    const window = yearsFor(g);
+    const kept = years.filter((y) => window.includes(y));
+    setYears(kept.length ? kept : [...window]);
+  };
+
+  const monthOptions = useMemo<SearchOption[]>(
+    () => Array.from({ length: 12 }, (_, i) => ({
+      value: String(i + 1),
+      label: t(`month.${i + 1}` as never),
+    })),
+    [t],
+  );
+
+  const filter = useMemo<Filter>(
+    () => ({ ...DEFAULT_FILTER, granularity, years, months }),
+    [granularity, years, months],
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const data = useMemo(() => aggregate(filter), [filter, detailVer]);
   const channels = levelChannels(data, level);
 
-  const suffix = years.length === meta.years.length ? "" : `-${years.join("_")}`;
+  const basisSuffix = granularity === "month" ? `-monthly${months.length ? `-m${months.join("_")}` : ""}` : "";
+  const suffix = `${years.length === yearsFor(granularity).length ? "" : `-${years.join("_")}`}${basisSuffix}`;
   const exportCsv = () => downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
 
   const stats = useMemo(() => {
@@ -80,7 +112,8 @@ export default function QueueView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <p className="text-[10.5px] font-medium text-faint">
-              UN Comtrade · {yearsLabel(years)} · {t("risk.header.screening")}
+              UN Comtrade · {yearsLabel(years)}
+              {granularity === "month" ? ` · ${t("gran.month").toLowerCase()}${months.length ? `: ${months.join(", ")}` : ""}` : ""} · {t("risk.header.screening")}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
             <p className="text-[13px] text-muted">
@@ -98,9 +131,34 @@ export default function QueueView() {
         </div>
       </section>
 
-      {/* period selection — the whole page follows these ticks */}
-      <section className="no-print">
-        <YearSelect years={years} onChange={setYears} />
+      {/* time basis + period selection — the whole page follows these ticks */}
+      <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
+            {(["year", "month"] as const).map((g) => (
+              <button
+                key={g}
+                onClick={() => pickGranularity(g)}
+                aria-pressed={granularity === g}
+                className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+              >
+                {t(g === "year" ? "gran.year" : "gran.month")}
+              </button>
+            ))}
+          </div>
+        </div>
+        <YearSelect years={years} onChange={setYears} available={yearsFor(granularity)} />
+        {granularity === "month" && (
+          <MultiSelect
+            values={months.map(String)}
+            onChange={(v) => setMonths(v.map(Number).sort((a, b) => a - b))}
+            options={monthOptions}
+            label={t("filter.months")}
+            allLabel={t("filter.allMonths")}
+            searchable={false}
+          />
+        )}
       </section>
 
       {/* MTRS summary */}
