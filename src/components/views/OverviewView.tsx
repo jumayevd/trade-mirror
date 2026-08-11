@@ -4,11 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
+import MultiSelect from "@/components/MultiSelect";
+import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
 import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsLabel, type Channel,
+  aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsFor, yearsLabel,
+  type Channel, type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
@@ -65,12 +68,35 @@ function topByCode(chs: Channel[], link: boolean, t: Translate): { rows: RankRow
 
 export default function OverviewView() {
   const { t } = useI18n();
-  /** Overview's only control: which years the summary covers. */
+  /** Overview's controls: the time basis and which periods the summary covers. */
+  const [granularity, setGranularity] = useState<Granularity>("year");
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
-  const data = useMemo(() => aggregate({ ...FULL_WINDOW, years }), [years]);
+  const data = useMemo(
+    () => aggregate({ ...FULL_WINDOW, granularity, years, months }),
+    [granularity, years, months],
+  );
   const k = data.kpis;
   const periodLabel = yearsLabel(years);
+
+  const pickGranularity = (g: Granularity) => {
+    if (g === granularity) return;
+    setGranularity(g);
+    setMonths([]);
+    // keep only years the target basis actually carries; empty means the full window
+    const window = yearsFor(g);
+    const kept = years.filter((y) => window.includes(y));
+    setYears(kept.length ? kept : [...window]);
+  };
+
+  const monthOptions = useMemo<SearchOption[]>(
+    () => Array.from({ length: 12 }, (_, i) => ({
+      value: String(i + 1),
+      label: t(`month.${i + 1}` as never),
+    })),
+    [t],
+  );
 
   const partners = useMemo(() => {
     const all = data.partners.filter((p) => p.posT > 0);
@@ -91,7 +117,8 @@ export default function OverviewView() {
   const hs6 = useMemo(() => topByCode(data.channels6, true, t), [data, t]);
 
   const annualOption = useMemo<EChartsOption>(() => {
-    const partnersByYear = new Map(data.annual.map((a) => [String(a.year), a.comparablePartners]));
+    const periodOf = (a: (typeof data.annual)[number]) => a.label ?? String(a.year);
+    const partnersByYear = new Map(data.annual.map((a) => [periodOf(a), a.comparablePartners]));
     return {
       backgroundColor: "transparent",
       textStyle: baseTextStyle,
@@ -114,7 +141,7 @@ export default function OverviewView() {
           return `<div style="font-weight:600;margin-bottom:4px">${year}</div>${t("kpi.positive")}: <span style="font-weight:600">${v}</span>${partnerLine}`;
         },
       },
-      xAxis: catAxis(data.annual.map((a) => String(a.year))),
+      xAxis: catAxis(data.annual.map((a) => a.label ?? String(a.year))),
       yAxis: valueAxis("USD"),
       series: [
         {
@@ -128,6 +155,21 @@ export default function OverviewView() {
             borderColor: COLORS.surface,
             borderWidth: 1,
           },
+        },
+        // the same measure traced as a line, so the movement over time reads at a glance
+        {
+          name: t("kpi.positive"),
+          type: "line",
+          data: data.annual.map((a) => Math.round(a.positive)),
+          smooth: 0.3,
+          symbol: "circle",
+          // on the monthly basis 90+ points would smother the line in dots
+          symbolSize: data.annual.length > 24 ? 0 : 7,
+          lineStyle: { width: 2, color: COLORS.gold },
+          itemStyle: { color: COLORS.gold, borderColor: COLORS.surface, borderWidth: 2 },
+          emphasis: { disabled: true },
+          silent: true,
+          z: 3,
         },
       ],
     };
@@ -148,9 +190,37 @@ export default function OverviewView() {
         </p>
       </section>
 
-      {/* 2. period — a dropdown of ticks — and the view switch beside it */}
+      {/* 2. time basis + period — dropdowns of ticks — and the view switch beside them */}
       <section className="no-print flex flex-wrap items-end justify-between gap-3">
-        <YearSelect years={years} onChange={setYears} label={t("ovw.period")} />
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+            <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
+              {(["year", "month"] as const).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => pickGranularity(g)}
+                  aria-pressed={granularity === g}
+                  title={g === "month" ? t("filter.monthlyHsTip") : undefined}
+                  className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                >
+                  {t(g === "year" ? "gran.year" : "gran.month")}
+                </button>
+              ))}
+            </div>
+          </div>
+          <YearSelect years={years} onChange={setYears} label={t("ovw.period")} available={yearsFor(granularity)} />
+          {granularity === "month" && (
+            <MultiSelect
+              values={months.map(String)}
+              onChange={(v) => setMonths(v.map(Number).sort((a, b) => a - b))}
+              options={monthOptions}
+              label={t("filter.months")}
+              allLabel={t("filter.allMonths")}
+              searchable={false}
+            />
+          )}
+        </div>
         <Segmented<OverviewTab>
           ariaLabel={t("ovw.view.aria")}
           value={tab}
@@ -231,20 +301,26 @@ export default function OverviewView() {
           total={hs2.total}
           codeWidth="w-8"
         />
-        <RankedBlock
-          title={t("ovw.hs4.title")}
-          hint={t("ovw.hs4.hint")}
-          rows={hs4.rows}
-          total={hs4.total}
-          codeWidth="w-12"
-        />
-        <RankedBlock
-          title={t("ovw.hs6.title")}
-          hint={t("ovw.hs6.hint")}
-          rows={hs6.rows}
-          total={hs6.total}
-          codeWidth="w-14"
-        />
+        {granularity === "year" ? (
+          <>
+            <RankedBlock
+              title={t("ovw.hs4.title")}
+              hint={t("ovw.hs4.hint")}
+              rows={hs4.rows}
+              total={hs4.total}
+              codeWidth="w-12"
+            />
+            <RankedBlock
+              title={t("ovw.hs6.title")}
+              hint={t("ovw.hs6.hint")}
+              rows={hs6.rows}
+              total={hs6.total}
+              codeWidth="w-14"
+            />
+          </>
+        ) : (
+          <p className="card p-4 text-[13px] leading-relaxed text-muted">{t("filter.monthlyHsTip")}</p>
+        )}
       </section>
         </div>
       )}
