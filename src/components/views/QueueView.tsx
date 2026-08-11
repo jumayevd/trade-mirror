@@ -18,8 +18,8 @@ import {
 
 /**
  * Discrepancy & Risk — the screening queue. Every partner × code combination at
- * the active HS level, carrying the MTRS v3.0 score, its two components and its
- * band. Time basis and period are the page's only filters, and they deliberately
+ * the active HS level, carrying the risk score RS = 100 × √(G × P), its two
+ * components and its band. Time basis and period are the page's only filters, and they deliberately
  * do not read the shared filter context: partner and HS selections made
  * elsewhere never silently narrow the queue.
  *
@@ -173,7 +173,7 @@ export default function QueueView() {
               label={t("risk.stat.highest")}
               value={riskStats.top.mtrs.toFixed(0)}
               sub={`${riskStats.top.partner} × HS ${riskStats.top.cmd}${riskStats.top.transit ? ` · ${t("risk.transitHub")}` : ""}`}
-              info={`${t("risk.stat.highest.info")} (${t(LEVEL_LABEL_KEYS[level])}): G ${riskStats.top.abnormalGap.toFixed(2)} × P ${riskStats.top.persistence.toFixed(2)} → MTRS ${riskStats.top.mtrs.toFixed(1)}.${riskStats.top.transit ? ` ${t("risk.stat.highest.infoTransit")}` : ""}`}
+              info={`${t("risk.stat.highest.info")} (${t(LEVEL_LABEL_KEYS[level])}): G ${riskStats.top.abnormalGap.toFixed(2)} × P ${riskStats.top.persistence.toFixed(2)} → RS ${riskStats.top.mtrs.toFixed(1)}.${riskStats.top.transit ? ` ${t("risk.stat.highest.infoTransit")}` : ""}`}
               accent={COLORS.positive}
             />
             <Stat

@@ -1,7 +1,7 @@
 "use client";
 
 import { InfoTip } from "@/components/ui";
-import { aggregate, DEFAULT_FILTER, meta, METHODOLOGY_VERSION, RISK_CONFIG } from "@/lib/dataset";
+import { aggregate, DEFAULT_FILTER, meta, METHODOLOGY_VERSION } from "@/lib/dataset";
 import diagnosticsRaw from "@/data/diagnostics.json";
 import { fmtNum, fmtPct, fmtUSD } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -11,25 +11,23 @@ import { Cite, REFERENCES } from "@/lib/references";
 /**
  * Methodology — the shortest honest account of what the numbers are.
  *
- * Order: why a positive mirror gap is worth reading at all, the measures the
- * dashboard shows, how the risk score is built, what the model diagnostics say
- * (including the check that does NOT pass), what is borrowed from the literature
- * versus invented here, the limitations, and the bibliography.
+ * Order: why a positive mirror gap is worth reading at all, the literature the
+ * reading rests on, the measures the dashboard shows, how the risk score is
+ * built, what the score diagnostics say, the limitations, and the bibliography.
  */
 
 const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
 
 interface Diagnostics {
-  rSquared: Record<string, number>;
   corGP: Record<string, number>;
-  distanceCoef: Record<string, number>;
+  gapRateQuantiles: Record<string, { p50: number; p90: number; p99: number }>;
   coverage: Record<string, {
     matchedCellYears: number; matchedCells: number;
     orphanImportCellYears: number; lostExportCellYears: number;
     inScopeCells: number; inScopeCellYears: number;
     valueRetainedShare: number; belowFloor: number;
   }>;
-  chapterEffects: { chapter: string; label: string; effect: number; obs: number }[];
+  bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
 }
 const diag = diagnosticsRaw as unknown as Diagnostics;
 const HS6 = "6";
@@ -62,14 +60,33 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
   );
 }
 
+/** Papers behind the reading, with their one-line findings. Order = the table. */
+const LIT: { key: string; refId: string }[] = [
+  { key: "bhagwati", refId: "bhagwati1964" },
+  { key: "yeats", refId: "yeats1990" },
+  { key: "fisman", refId: "fisman2004" },
+  { key: "javorcik", refId: "javorcik2008" },
+  { key: "berger", refId: "berger2008" },
+  { key: "ferrantino", refId: "ferrantino2008" },
+  { key: "buehn", refId: "buehn2011" },
+  { key: "carrere", refId: "carrere2015" },
+  { key: "kellenberg", refId: "kellenberg2019" },
+  { key: "farhad", refId: "farhad2019" },
+  { key: "gara", refId: "gara2018" },
+  { key: "choi", refId: "choi2019" },
+  { key: "nitsch", refId: "nitsch2016" },
+  { key: "medina", refId: "medina2018" },
+];
+
+const refById = new Map(REFERENCES.map((r) => [r.id, r]));
+
 export default function MethodologyView() {
   const { t } = useI18n();
   const k = FULL.kpis;
   const cov = diag.coverage[HS6];
+  const cuts = diag.bandCuts[HS6];
+  const rates = diag.gapRateQuantiles[HS6];
   const tr = (key: string) => t(key as LocaleKey);
-
-  /* the three named freight-heavy chapters, straight from the fitted model */
-  const effectOf = (c: string) => diag.chapterEffects.find((x) => x.chapter === c);
 
   const MEASURES: { key: string; formula: string }[] = [
     { key: "expected", formula: "X_fob × (1 + f),  f ∈ {6%, 10%, 15%}" },
@@ -77,21 +94,7 @@ export default function MethodologyView() {
     { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ X_fob × (1 + f)" },
   ];
 
-  const ATTRIBUTION: { key: string; source: string; ours?: boolean }[] = [
-    { key: "grain", source: "Choi (2019); Gara et al. (2018)" },
-    { key: "residual", source: "Gara et al. (2018)" },
-    { key: "direction", source: "Choi (2019)" },
-    { key: "dual", source: "Gara et al. (2018)" },
-    { key: "ranknorm", source: "OECD/JRC (2008)" },
-    { key: "geometric", source: "OECD/JRC (2008); UNDP HDI since 2010" },
-    { key: "smoothing", source: "Standard statistical practice" },
-    { key: "persistence", source: "", ours: true },
-    { key: "composite", source: "", ours: true },
-  ];
-
-  const LIMITS = ["1", "2", "3", "4", "5", "6", "7", "8"];
-
-  const WORDING: string[] = ["shadow", "undeclared", "smuggling", "budget"];
+  const LIMITS = ["1", "2", "3", "4", "5", "6", "7"];
 
   return (
     <div className="space-y-9">
@@ -119,13 +122,40 @@ export default function MethodologyView() {
           {tr("meth.why.p3")}
           <Cite ids={["buehn2011", "carrere2015", "kellenberg2019"]} />
         </p>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-gold)] bg-[var(--color-panel)] px-4 py-2.5 text-[13px] leading-relaxed text-muted">
-          <strong className="text-foreground">{tr("meth.why.caveatLead")}</strong> {tr("meth.why.caveat")}
-          <Cite ids={["medina2018", "nitsch2016", "hamanaka2012"]} />
-        </p>
       </section>
 
-      {/* 2. the measures on the dashboard ------------------------------- */}
+      {/* 2. literature findings ------------------------------------------ */}
+      <section className="space-y-2">
+        <h2 className={H2}>{tr("meth.lit.title")}</h2>
+        <p className={P}>{tr("meth.lit.desc")}</p>
+        <div className="card max-w-5xl overflow-x-auto">
+          <table className="w-full min-w-[680px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)]">
+                <th className={TH}>{tr("meth.lit.colPaper")}</th>
+                <th className={TH}>{tr("meth.lit.colFinding")}</th>
+              </tr>
+            </thead>
+            <tbody className="zebra">
+              {LIT.map((row) => {
+                const r = refById.get(row.refId);
+                if (!r) return null;
+                return (
+                  <tr key={row.key} className="border-b border-[var(--color-border-soft)] last:border-0">
+                    <td className={`${TD} whitespace-nowrap font-medium text-foreground`} title={`${r.title}. ${r.source}.`}>
+                      {r.authors.split(",")[0].split("&")[0].trim()}
+                      {r.authors.includes("&") ? " et al." : ""} ({r.year})
+                    </td>
+                    <td className={TD}>{tr(`meth.lit.${row.key}`)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* 3. the measures on the dashboard ------------------------------- */}
       <section className="space-y-2">
         <h2 className={H2}>{tr("meth.measures.title")}</h2>
         <p className={P}>{tr("meth.measures.desc")}</p>
@@ -159,7 +189,7 @@ export default function MethodologyView() {
         </p>
       </section>
 
-      {/* 3. the risk score ---------------------------------------------- */}
+      {/* 4. the risk score ---------------------------------------------- */}
       <section className="space-y-3">
         <h2 className={H2}>{tr("meth.risk.title")}</h2>
         <p className={P}>
@@ -174,37 +204,29 @@ export default function MethodologyView() {
           </Step>
 
           <Step n="1" title={tr("meth.risk.s1.title")}>
-            <Formula>d = ln(X) − ln(M)</Formula>
             {tr("meth.risk.s1.body")}
-            <Formula>d ~ ln(distance) + chapter + year + partner + product</Formula>
+            <Formula>gap rate = Σ max(X × (1 + f) − M, 0) ÷ Σ X × (1 + f)</Formula>
             {tr("meth.risk.s1.body2")}
-            <Cite ids={["gara2018", "dujava2022"]} />
+            <Formula>G = percentile rank of the gap rate, 0 … 1</Formula>
+            {tr("meth.risk.s1.body3")}
+            <Cite ids={["bhagwati1964", "oecdjrc2008"]} />
           </Step>
 
           <Step n="2" title={tr("meth.risk.s2.title")}>
             {tr("meth.risk.s2.body")}
-            <Formula>G = rank of e among cells of similar size, 0 … 1</Formula>
+            <Formula>P = (k + 1) / (n + 2)</Formula>
             {tr("meth.risk.s2.body2")}
-            <Cite ids={["oecdjrc2008"]} />
+            <Cite ids={["laplace1812", "farhad2019"]} />
           </Step>
 
           <Step n="3" title={tr("meth.risk.s3.title")}>
+            <Formula>RS = 100 × √(G × P)</Formula>
             {tr("meth.risk.s3.body")}
-            <Formula>
-              P = (k + {RISK_CONFIG.alpha}) / (n + {RISK_CONFIG.alpha + RISK_CONFIG.beta})
-            </Formula>
-            {tr("meth.risk.s3.body2")}
-            <Cite ids={["farhad2019"]} />
-          </Step>
-
-          <Step n="4" title={tr("meth.risk.s4.title")}>
-            <Formula>MTRS = 100 × √(G × P)</Formula>
-            {tr("meth.risk.s4.body")}
             <Cite ids={["oecdjrc2008", "undp2010"]} />
           </Step>
 
-          <Step n="5" title={tr("meth.risk.s5.title")}>
-            {tr("meth.risk.s5.body")}
+          <Step n="4" title={tr("meth.risk.s4.title")}>
+            {tr("meth.risk.s4.body")}
             <Cite ids={["gara2018", "wco2011", "imf2023"]} />
           </Step>
         </div>
@@ -214,12 +236,11 @@ export default function MethodologyView() {
         </p>
       </section>
 
-      {/* 4. diagnostics -------------------------------------------------- */}
+      {/* 5. diagnostics -------------------------------------------------- */}
       <section className="space-y-2">
         <h2 className={H2}>{tr("meth.diag.title")}</h2>
         <p className={P}>{tr("meth.diag.desc")}</p>
         <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Diag label="R²" value={diag.rSquared[HS6].toFixed(2)} note={tr("meth.diag.r2")} />
           <Diag label="cor(G, P)" value={diag.corGP[HS6].toFixed(2)} note={tr("meth.diag.corGP")} />
           <Diag
             label={tr("meth.diag.matched")}
@@ -227,47 +248,19 @@ export default function MethodologyView() {
             note={`${fmtPct(cov.valueRetainedShare, 0)} ${tr("meth.diag.matchedNote")}`}
           />
           <Diag
+            label={tr("meth.diag.gapRate")}
+            value={fmtPct(rates.p50, 0)}
+            note={`${tr("meth.diag.gapRateNote")} p90 ${fmtPct(rates.p90, 0)} · p99 ${fmtPct(rates.p99, 0)}`}
+          />
+          <Diag
             label={tr("meth.diag.unmatched")}
             value={fmtNum(cov.orphanImportCellYears + cov.lostExportCellYears)}
             note={tr("meth.diag.unmatchedNote")}
           />
         </div>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-gold)] bg-[var(--color-panel)] px-4 py-2.5 text-[13px] leading-relaxed text-muted">
-          <strong className="text-foreground">{tr("meth.diag.freightLead")}</strong> {tr("meth.diag.freight")}{" "}
-          <span className="tabular">
-            (25 {fmt(effectOf("25")?.effect)}, 72 {fmt(effectOf("72")?.effect)}, 44 {fmt(effectOf("44")?.effect)};
-            {" "}30 {fmt(effectOf("30")?.effect)}, 69 {fmt(effectOf("69")?.effect)}, 39 {fmt(effectOf("39")?.effect)})
-          </span>
-          {". "}
-          {tr("meth.diag.freight2")} <span className="tabular">{diag.distanceCoef[HS6].toFixed(2)}</span>{" "}
-          {tr("meth.diag.freight3")}
+        <p className="tabular max-w-3xl text-[11.5px] text-faint">
+          {tr("meth.diag.bands")}: Critical ≥ {cuts.critical.toFixed(1)} · High ≥ {cuts.high.toFixed(1)} · Elevated ≥ {cuts.elevated.toFixed(1)} (HS6)
         </p>
-      </section>
-
-      {/* 5. attribution --------------------------------------------------- */}
-      <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.attr.title")}</h2>
-        <p className={P}>{tr("meth.attr.desc")}</p>
-        <div className="card max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[560px]">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]">
-                <th className={TH}>{tr("meth.attr.colElement")}</th>
-                <th className={TH}>{tr("meth.attr.colStatus")}</th>
-              </tr>
-            </thead>
-            <tbody className="zebra">
-              {ATTRIBUTION.map((a) => (
-                <tr key={a.key} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} ${a.ours ? "font-semibold text-foreground" : ""}`}>{tr(`meth.attr.${a.key}`)}</td>
-                  <td className={`${TD} ${a.ours ? "font-semibold text-foreground" : ""}`}>
-                    {a.ours ? tr("meth.attr.ours") : a.source}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </section>
 
       {/* 6. limitations --------------------------------------------------- */}
@@ -280,30 +273,7 @@ export default function MethodologyView() {
         </ol>
       </section>
 
-      {/* 7. wording rules -------------------------------------------------- */}
-      <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.words.title")}</h2>
-        <div className="card max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[560px]">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]">
-                <th className={TH}>{tr("meth.words.notAllowed")}</th>
-                <th className={TH}>{tr("meth.words.allowed")}</th>
-              </tr>
-            </thead>
-            <tbody className="zebra">
-              {WORDING.map((w) => (
-                <tr key={w} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} text-[var(--color-investigate)]`}>{tr(`meth.words.${w}.bad`)}</td>
-                  <td className={TD}>{tr(`meth.words.${w}.good`)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* 8. references ------------------------------------------------------ */}
+      {/* 7. references ------------------------------------------------------ */}
       <section className="max-w-4xl space-y-2">
         <h2 className={H2}>{tr("meth.refs.title")}</h2>
         <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-muted">
@@ -326,8 +296,6 @@ export default function MethodologyView() {
     </div>
   );
 }
-
-const fmt = (v?: number) => (v === undefined ? "—" : v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2));
 
 function Diag({ label, value, note }: { label: string; value: string; note: string }) {
   return (

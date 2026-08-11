@@ -15,7 +15,7 @@ import monthlyRaw from "@/data/monthly.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
 
-export const METHODOLOGY_VERSION = "3.0";
+export const METHODOLOGY_VERSION = "3.1";
 
 export type Tier = "High" | "Medium" | "Low";
 /** MTRS band. Ordered most to least urgent; `low` also covers unscored cells. */
@@ -336,7 +336,7 @@ interface PartnerEffect { iso: string; u: number; cells: number }
 const riskIndex = riskRaw as unknown as {
   version: string;
   generatedAt: string;
-  config: { tau: number; alpha: number; beta: number; filterMode: string; materialityFloor: number; criticalTop: number; strata: string };
+  config: { alpha: number; beta: number; materialityFloor: number; criticalTop: number; freight: number };
   cells: Record<string, RiskRow>;
   partnerEffects: Record<string, PartnerEffect[]>;
   bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
@@ -348,15 +348,15 @@ const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
 const EMPTY_RISK: RiskRow = [0, 0, 0, 0, 0, 0, 3];
 
 /**
- * Partner reporting-discrepancy indicator: the partner random intercept from the
- * structural fit, in log points. Positive means that partner's books systematically
- * run above Uzbekistan's, across its whole product range — a country-level signal
- * that the cell score deliberately nets out.
+ * Partner reporting-discrepancy indicator: the value-weighted mean log gap
+ * ln(X/M) across the partner's matched cell-years, in log points. Positive means
+ * that partner's books systematically run above Uzbekistan's, across its whole
+ * product range — a purely descriptive country-level signal.
  */
 export const partnerEffects = (level: number): PartnerEffect[] => riskIndex.partnerEffects[String(level)] ?? [];
 
 export const BAND_LABELS: Record<RiskBand, { label: string; desc: string }> = {
-  critical: { label: "Critical", desc: "Top 2.5% of cells by MTRS — the strongest conjunction of an abnormal gap and a persistent one." },
+  critical: { label: "Critical", desc: "Top 2.5% of cells by risk score — the strongest conjunction of a large gap rate and a persistent one." },
   high: { label: "High", desc: "Upper quartile of the remaining cells." },
   elevated: { label: "Elevated", desc: "Second quartile of the remaining cells." },
   low: { label: "Low", desc: "Lower half of the remaining cells, and every cell that was never in scope." },

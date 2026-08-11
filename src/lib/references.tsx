@@ -24,7 +24,7 @@ export const REFERENCES: Ref[] = [
     title: "Magic mirror in my hand… How trade mirror statistics can help us detect illegal financial flows",
     source: "Bank of Italy Occasional Papers (QEF) No. 445; journal version: The World Economy (2019), 42(11)",
     url: "https://www.bancaditalia.it/pubblicazioni/qef/2018-0445/",
-    note: "The structural model this risk score follows: bilateral discrepancies are regressed on their structural determinants, netting out CIF/FOB freight, before risk is ranked at country and product level.",
+    note: "Mirror-statistics screening at country and product level, with a top-share critical band — the banding convention this score follows.",
   },
   {
     id: "choi2019",
@@ -64,7 +64,7 @@ export const REFERENCES: Ref[] = [
     year: "2022",
     title: "Is it me or you? A deeper insight into profile of misreporting economies",
     source: "Quarterly Review of Economics and Finance, 83",
-    note: "Country-level reporting behaviour is systematic and persistent — the justification for a partner random intercept rather than a partner-by-partner control.",
+    note: "Country-level reporting behaviour is systematic and persistent — the justification for reporting a partner-level indicator alongside the cell score.",
   },
   {
     id: "markowicz2020",
@@ -81,6 +81,14 @@ export const REFERENCES: Ref[] = [
     title: "Misreported Trade",
     source: "ESCoE Discussion Paper 2019-13",
     note: "Evidence that misreporting is concentrated and repeats in the same product lines — the empirical grounding for scoring persistence.",
+  },
+  {
+    id: "laplace1812",
+    authors: "Laplace, P.-S.",
+    year: "1812",
+    title: "Théorie analytique des probabilités",
+    source: "Courcier, Paris",
+    note: "The rule of succession: (k + 1) / (n + 2) as the probability estimate from k successes in n trials — the persistence term P of the risk score.",
   },
   {
     id: "undp2010",
