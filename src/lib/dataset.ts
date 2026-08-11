@@ -422,6 +422,13 @@ export interface Channel {
   chapter: string; cmd: string; cmdLabel: string; level: number; category: string;
   years: YearRow[];
   peT: number; uiT: number; expectedT: number;
+  /**
+   * Totals over the positive channel-years only — both books reported and the
+   * partner side exceeds Uzbekistan's after freight. Wherever these sit beside
+   * the positive discrepancy the three figures form one identity:
+   * pePosT × (1 + f) − uiPosT = posT.
+   */
+  pePosT: number; uiPosT: number;
   signedT: number; posT: number; revT: number; absT: number;
   boundedAsymmetry: number; positiveShare: number;
   comparableYears: number; posYears: number; revYears: number; longestPosStreak: number;
@@ -466,7 +473,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     rs.sort((a, b) => a.y - b.y);
 
     const years: YearRow[] = [];
-    let peT = 0, uiT = 0, posT = 0, revT = 0;
+    let peT = 0, uiT = 0, posT = 0, revT = 0, pePosT = 0, uiPosT = 0;
     let posYears = 0, revYears = 0, streak = 0, longest = 0;
     let uvYears = 0, uw = 0, pw = 0, uwv = 0, pwv = 0;
     for (const r of rs) {
@@ -479,6 +486,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       years.push({ y: r.y, pe: r.pe, ui: r.ui, signed, uvOk: !!(r.uw && r.pw) });
       peT += r.pe; uiT += r.ui;
       posT += pos(signed); revT += pos(-signed);
+      if (signed > 0) { pePosT += r.pe; uiPosT += r.ui; }
       if (signed > NOISE) { posYears++; streak++; longest = Math.max(longest, streak); } else streak = 0;
       if (signed < -NOISE) revYears++;
       if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
@@ -530,7 +538,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       partner: pm.name, partnerIso: pm.iso3, region: pm.region, transit: pm.transit, tier: pm.tier,
       chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
       level, category: r0.cat,
-      years, peT, uiT, expectedT, signedT, posT, revT, absT,
+      years, peT, uiT, expectedT, pePosT, uiPosT, signedT, posT, revT, absT,
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
@@ -566,6 +574,8 @@ export interface PartnerAgg {
   coverage: number; lapse: boolean; lastReportedYear: number; reportedYears: number[];
   /** Paired totals — the population every discrepancy measure below is computed on. */
   peT: number; uiT: number; posT: number; signedT: number;
+  /** Positive channel-years only: pePosT × (1 + f) − uiPosT = posT exactly. */
+  pePosT: number; uiPosT: number;
   /** As-reported totals including one-sided observations; for reported-value display only. */
   observed: ObservedTotals;
   /** Channels in the Critical or High MTRS band. */
@@ -594,7 +604,13 @@ export interface Aggregate {
   partners: PartnerAgg[];
   chapters: ChapterAgg[];
   categories: { key: string; label: string; value: number; share: number }[];
-  annual: { year: number; month?: number; label?: string; pe: number; ui: number; positive: number; comparablePartners: number }[];
+  annual: {
+    year: number; month?: number; label?: string;
+    pe: number; ui: number;
+    /** Positive channel-years only: pePos × (1 + f) − uiPos = positive exactly. */
+    pePos: number; uiPos: number;
+    positive: number; comparablePartners: number;
+  }[];
   concentration: { name: string; partner: string; iso3: string; cmd: string; value: number; share: number; cumShare: number }[];
   movers: {
     goods: { key: string; label: string; total: number; trend: number; series: { y: number; v: number }[] }[];
@@ -774,6 +790,7 @@ export function aggregate(f: Filter): Aggregate {
       iso3: iso, name: pm.name, region: pm.region, transit: pm.transit, tier: pm.tier,
       coverage: pm.coverage, lapse: pm.lapse, lastReportedYear: pm.lastReportedYear, reportedYears: pm.reportedYears,
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
+      pePosT: cs.reduce((s, c) => s + c.pePosT, 0), uiPosT: cs.reduce((s, c) => s + c.uiPosT, 0),
       observed: sumObserved(obsByPartner.get(iso) ?? [], rollupLevel),
       posT: posTotal, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       channels: cs.length,
@@ -820,15 +837,16 @@ export function aggregate(f: Filter): Aggregate {
     .filter((c) => c.value > 0).sort((a, b) => b.value - a.value);
 
   // ---- annual (positive discrepancy, plus comparable partner count) ----
-  const yAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
+  const yAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; partners: Set<string> }>();
   for (const c of rollupBase) for (const yr of c.years) {
-    const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
+    const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
     e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.partners.add(c.partnerIso);
+    if (yr.signed > 0) { e.pePos += yr.pe; e.uiPos += yr.ui; }
     yAgg.set(yr.y, e);
   }
   const annual: Aggregate["annual"] = years.map((y) => {
-    const e = yAgg.get(y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
-    return { year: y, pe: e.pe, ui: e.ui, positive: e.positive, comparablePartners: e.partners.size };
+    const e = yAgg.get(y) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
+    return { year: y, pe: e.pe, ui: e.ui, pePos: e.pePos, uiPos: e.uiPos, positive: e.positive, comparablePartners: e.partners.size };
   });
 
   /*
@@ -841,12 +859,14 @@ export function aggregate(f: Filter): Aggregate {
   if (f.granularity === "month") {
     const K = 1 + f.cif;
     const wantM = f.months.length ? new Set(f.months) : null;
-    const mAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
+    const mAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; partners: Set<string> }>();
     const bump = (key: number, p: string, pe: number, ui: number) => {
-      const e = mAgg.get(key) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
+      const e = mAgg.get(key) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
       e.pe += pe; e.ui += ui;
       if (pe > NOISE && ui > NOISE) {
-        e.positive += pos(pe * K - ui);
+        const signed = pe * K - ui;
+        e.positive += pos(signed);
+        if (signed > 0) { e.pePos += pe; e.uiPos += ui; }
         e.partners.add(p);
       }
       mAgg.set(key, e);
@@ -895,7 +915,8 @@ export function aggregate(f: Filter): Aggregate {
       annual.push({
         year, month,
         label: `${year}-${String(month).padStart(2, "0")}`,
-        pe: e.pe, ui: e.ui, positive: e.positive, comparablePartners: e.partners.size,
+        pe: e.pe, ui: e.ui, pePos: e.pePos, uiPos: e.uiPos,
+        positive: e.positive, comparablePartners: e.partners.size,
       });
     }
   }

@@ -277,6 +277,8 @@ export default function MethodologyView() {
       <section className="max-w-4xl space-y-2">
         <h2 className={H2}>{tr("meth.refs.title")}</h2>
         <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-muted">
+          {/* the annotated readings live in the Literature findings table — the
+              list here is the bare citation, only for sources actually used */}
           {REFERENCES.map((r) => (
             <li key={r.id}>
               {r.authors} ({r.year}).{" "}
@@ -287,7 +289,7 @@ export default function MethodologyView() {
               ) : (
                 <em>{r.title}</em>
               )}
-              . {r.source}. <span className="text-faint">{r.note}</span>
+              . {r.source}.
             </li>
           ))}
         </ol>

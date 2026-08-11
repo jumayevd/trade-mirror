@@ -51,30 +51,6 @@ export const REFERENCES: Ref[] = [
     note: "A sceptical audit of headline gap-based estimates — the reason this platform ranks cells and never totals them into an illicit-flow figure.",
   },
   {
-    id: "hamanaka2012",
-    authors: "Hamanaka, S.",
-    year: "2012",
-    title: "Whose trade statistics are correct? Multiple mirror comparison techniques: a test case of Cambodia",
-    source: "Journal of Economic Policy Reform, 15(1)",
-    note: "Shows a mirror gap identifies that two books disagree, not which one is wrong — the basis for reporting the partner term separately from the cell score.",
-  },
-  {
-    id: "dujava2022",
-    authors: "Dujava, D. & Širanová, M.",
-    year: "2022",
-    title: "Is it me or you? A deeper insight into profile of misreporting economies",
-    source: "Quarterly Review of Economics and Finance, 83",
-    note: "Country-level reporting behaviour is systematic and persistent — the justification for reporting a partner-level indicator alongside the cell score.",
-  },
-  {
-    id: "markowicz2020",
-    authors: "Markowicz, I. & Baran, P.",
-    year: "2020",
-    title: "Discrepancies between mirror data on intra-community trade: the case of Poland",
-    source: "Econometrics. Advances in Applied Data Analysis, 24(1)",
-    note: "Documents how much mirror discrepancy survives even between well-resourced reporters with harmonised methods.",
-  },
-  {
     id: "farhad2019",
     authors: "Farhad, M., Jetter, M., Siddique, A. & Williams, A.",
     year: "2019",
@@ -217,15 +193,6 @@ export const REFERENCES: Ref[] = [
     note: "How customs administrations operationalize mirror analysis for risk screening — the institutional template for our investigation queue.",
   },
   {
-    id: "gfi2021",
-    authors: "Global Financial Integrity",
-    year: "2021",
-    title: "Trade-Related Illicit Financial Flows in 134 Developing Countries 2009–2018",
-    source: "GFI, Washington DC",
-    url: "https://gfintegrity.org/report/trade-related-illicit-financial-flows-in-134-developing-countries-2009-2018/",
-    note: "The gross (positive + reverse, never netted) aggregation convention for value gaps that our totals follow.",
-  },
-  {
     id: "medina2018",
     authors: "Medina, L. & Schneider, F.",
     year: "2018",
@@ -233,15 +200,6 @@ export const REFERENCES: Ref[] = [
     source: "IMF Working Paper 18/17",
     url: "https://www.imf.org/en/Publications/WP/Issues/2018/01/25/Shadow-Economies-Around-the-World-What-Did-We-Learn-Over-the-Last-20-Years-45583",
     note: "Shadow-economy measurement requires structural methods; trade mirror gaps are one input signal, never the measure itself — our central caveat.",
-  },
-  {
-    id: "wits",
-    authors: "World Bank",
-    year: "n.d.",
-    title: "Imports, Exports and Mirror Data (WITS Help)",
-    source: "World Integrated Trade Solution",
-    url: "https://wits.worldbank.org/wits/wits/witshelp/content/data_retrieval/T/Intro/B2.Imports_Exports_and_Mirror.htm",
-    note: "Practical guidance on using partner (mirror) data when own reporting is incomplete — the rationale for the partner-side baseline.",
   },
 ];
 

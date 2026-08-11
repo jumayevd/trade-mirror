@@ -40,8 +40,13 @@ const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
 
 const PAGE_SIZES = [25, 50, 100];
 
-/** Gap as a share of the expected CIF import value; null when there is no denominator. */
-const gapPct = (c: Channel): number | null => (c.expectedT > 0 ? c.posT / c.expectedT : null);
+/**
+ * Gap as a share of the expected CIF import value over the positive channel-years,
+ * so the row reads as one identity: pePosT × (1 + f) − uiPosT = posT, and
+ * Gap % = posT ÷ (pePosT × (1 + f)). Null when there is no denominator.
+ */
+const gapPct = (c: Channel, K: number): number | null =>
+  c.pePosT > 0 ? c.posT / (c.pePosT * K) : null;
 
 /** Short alternative-explanation hints per engine flag, used in the expanded row. */
 const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
@@ -53,16 +58,16 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
   "freight-sensitive": "risk.flag.freightSensitive",
 };
 
-function sortChannels(rows: Channel[], sort: SortKey): Channel[] {
+function sortChannels(rows: Channel[], sort: SortKey, K: number): Channel[] {
   if (sort === "band") return rows; // engine order: band → MTRS → gap
   const by: Record<Exclude<SortKey, "band">, (a: Channel, b: Channel) => number> = {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
     abnormal: (a, b) => b.abnormalGap - a.abnormalGap || b.mtrs - a.mtrs,
     gap: (a, b) => b.posT - a.posT || b.mtrs - a.mtrs,
-    gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
+    gapPct: (a, b) => (gapPct(b, K) ?? -1) - (gapPct(a, K) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
       b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
-    value: (a, b) => b.peT - a.peT || b.posT - a.posT,
+    value: (a, b) => b.pePosT - a.pePosT || b.posT - a.posT,
   };
   return [...rows].sort(by[sort]);
 }
@@ -71,7 +76,7 @@ type Translate = (key: LocaleKey) => string;
 
 /** One-sentence cautious reading, built strictly from measured fields. */
 function interpretation(c: Channel, f: Filter, t: Translate): string {
-  const pct = gapPct(c);
+  const pct = gapPct(c, 1 + f.cif);
   const score = c.scored
     ? ` ${t("risk.read.scoreLead")} ${c.mtrs.toFixed(0)} (G ${c.abnormalGap.toFixed(2)} × P ${c.persistence.toFixed(2)}), ` +
       `${t("risk.read.flaggedIn")} ${c.flaggedYears}/${c.matchedYears} ${t("risk.read.matchedYears")}.`
@@ -139,8 +144,8 @@ export default function QueueTable({
         c.cmdLabel.toLowerCase().includes(q)
       );
     });
-    return sortChannels(filtered, sort);
-  }, [channels, query, sort, partnerSel, productSel]);
+    return sortChannels(filtered, sort, 1 + filter.cif);
+  }, [channels, query, sort, partnerSel, productSel, filter.cif]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -241,7 +246,7 @@ export default function QueueTable({
                 const key = keyOf(c);
                 const open = expanded === key;
                 const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
-                const pct = gapPct(c);
+                const pct = gapPct(c, 1 + filter.cif);
                 return [
                   <tr
                     key={key}
@@ -292,11 +297,11 @@ export default function QueueTable({
                         <ComponentChip kind="p" value={c.persistence} />
                       </span>
                     </td>
-                    <td className={tdNum} title={c.uiT > 0 ? fmtUSDFull(c.uiT) : undefined}>
-                      {/* no UZB record for this code — a gap in the mirror, never a measured zero */}
-                      {c.uiT > 0 ? fmtUSD(c.uiT) : <MissingValue />}
+                    <td className={tdNum} title={c.uiPosT > 0 ? fmtUSDFull(c.uiPosT) : undefined}>
+                      {/* no positive-year UZB record — a gap in the mirror, never a measured zero */}
+                      {c.uiPosT > 0 ? fmtUSD(c.uiPosT) : <MissingValue />}
                     </td>
-                    <td className={tdNum} title={fmtUSDFull(c.peT)}>{fmtUSD(c.peT)}</td>
+                    <td className={tdNum} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
                     <td className={`${tdNum} font-semibold`} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                     <td className={tdNum}>
                       {pct == null ? <MissingValue kind="notComparable" /> : fmtPct(pct, 1)}

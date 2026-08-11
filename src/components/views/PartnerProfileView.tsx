@@ -67,7 +67,8 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const pe6w = hs6.reduce((s, c) => s + (c.uvYears > 0 ? c.peT : 0), 0);
   const weightShare = pe6 > 0 ? pe6w / pe6 : null;
 
-  const expected = p.peT * (1 + meta.cif.central);
+  // positive channel-years only, so expected − imports = the positive discrepancy
+  const expected = p.pePosT * (1 + meta.cif.central);
   const posShare = expected > 0 ? p.posT / expected : 0;
   const trendWord = p.trend > 1_000_000 ? "rising" : p.trend < -1_000_000 ? "declining" : "broadly stable";
   const topSector = structure[0];
@@ -80,8 +81,8 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         ? `${p.name} reported to UN Comtrade in ${pm.reportedYears.length} of ${WINDOW.length} window years, so part of any apparent discrepancy may reflect missing reports rather than measured gaps.`
         : `${p.name} reported to UN Comtrade in every year of the window, so reporting gaps are an unlikely driver of the discrepancy.`;
   const summary = [
-    `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.observed.pe)} and Uzbekistan recorded ${fmtUSD(p.observed.ui)} of imports from ${p.name}. Of that, ${fmtUSD(p.peT)} and ${fmtUSD(p.uiT)} respectively sit in comparable channels — the only ones a discrepancy can be measured on.`,
-    `Accumulated year by year at the central ${cifPct}% freight adjustment, the positive discrepancy — partner-reported exports uplifted for freight, minus Uzbekistan-recorded imports, counted only where that difference is positive — is ${fmtUSD(p.posT)}.`,
+    `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.observed.pe)} and Uzbekistan recorded ${fmtUSD(p.observed.ui)} of imports from ${p.name}.`,
+    `In the screened channel-years — both books reported and the partner side above Uzbekistan's record at the central ${cifPct}% freight adjustment — ${p.name} reported ${fmtUSD(p.pePosT)} (expected CIF ${fmtUSD(expected)}) against ${fmtUSD(p.uiPosT)} recorded by Uzbekistan, a positive discrepancy of ${fmtUSD(p.posT)}.`,
     topSector
       ? `It concentrates in ${topSector.label.toLowerCase()} (HS ${topSector.chapter}, ${fmtUSD(topSector.posT)}) and is ${trendWord} over the window.`
       : `No single HS2 chapter carries a positive discrepancy above the noise floor, and the series is ${trendWord} over the window.`,

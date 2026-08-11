@@ -490,14 +490,15 @@ export default function PartnersView() {
               <tbody className="zebra">
                 {data.annual.map((r) => {
                   const noData = r.comparablePartners === 0;
-                  const expected = r.pe * K;
+                  // positive channel-years only, so expected − imports = positive exactly
+                  const expected = r.pePos * K;
                   const period = r.label ?? String(r.year);
                   return (
                     <tr key={period} className="border-b border-[var(--color-border-soft)] last:border-b-0">
                       <td className={`${td} tabular font-medium`}>{period}</td>
                       <td className={tdNum}>{noData ? <MissingValue kind="notComparable" /> : fmtNum(r.comparablePartners)}</td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.pe)}>{noData ? <MissingValue /> : fmtUSD(r.pe)}</td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.ui)}>{noData ? <MissingValue /> : fmtUSD(r.ui)}</td>
+                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.pePos)}>{noData ? <MissingValue /> : fmtUSD(r.pePos)}</td>
+                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.uiPos)}>{noData ? <MissingValue /> : fmtUSD(r.uiPos)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.positive)}>
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
                       </td>
