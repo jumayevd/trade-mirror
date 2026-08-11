@@ -113,7 +113,7 @@ function CoverageLegend() {
  * for a selection instead of describing the source.
  */
 export default function QualityView() {
-  const { series } = useFilter();
+  const { series, filter } = useFilter();
   const { t } = useI18n();
 
   const partnersByCoverage = useMemo(
@@ -280,7 +280,10 @@ export default function QualityView() {
           title={t("qual.weight.title")}
           desc={t("qual.weight.desc")} right={<InfoTip text={t("qual.weight.tip")} />}
         />
-        {hs6.length === 0 ? (
+        {/* weights ride on the HS6 layer, which only exists on the yearly basis */}
+        {filter.granularity === "month" ? (
+          <p className="card p-4 text-[13px] text-muted">{t("filter.monthlyHsTip")}</p>
+        ) : hs6.length === 0 ? (
           <EmptyState />
         ) : (
           <>

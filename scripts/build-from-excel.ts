@@ -22,6 +22,8 @@ import {
   CIF_BAND,
   HS_SECTIONS,
   categoryFor,
+  NAME_OVERRIDES,
+  REGION_BY_ISO,
   TRANSIT_HUBS,
   UZBEKISTAN,
 } from "./config";
@@ -44,54 +46,7 @@ const EMIT_FLOOR = 0;
 const WINDOW_YEARS = ANALYSIS_YEARS.length;
 const K = 1 + CIF_BAND.central;
 
-/** Preferred short names; the workbook uses long UN designations. */
-const NAME_OVERRIDES: Record<string, string> = {
-  RUS: "Russia", KOR: "South Korea", USA: "USA", HKG: "Hong Kong SAR",
-  IRN: "Iran", VNM: "Vietnam", MDA: "Moldova", TZA: "Tanzania",
-  BOL: "Bolivia", PSE: "Palestine", BIH: "Bosnia & Herzegovina",
-  GBR: "United Kingdom", ARE: "United Arab Emirates", CZE: "Czechia",
-};
 
-const REGION_BY_ISO: Record<string, string> = {
-  // Central Asia
-  KAZ: "Central Asia", KGZ: "Central Asia", TJK: "Central Asia", TKM: "Central Asia",
-  // Russia & CIS
-  RUS: "Russia & CIS", BLR: "Russia & CIS", UKR: "Russia & CIS", AZE: "Russia & CIS",
-  GEO: "Russia & CIS", ARM: "Russia & CIS", MDA: "Russia & CIS",
-  // East & Southeast Asia
-  CHN: "East Asia", KOR: "East Asia", JPN: "East Asia", HKG: "East Asia",
-  SGP: "East Asia", VNM: "East Asia", MYS: "East Asia", THA: "East Asia",
-  IDN: "East Asia", PHL: "East Asia", KHM: "East Asia", MNG: "East Asia", TWN: "East Asia",
-  // South Asia
-  IND: "South Asia", PAK: "South Asia", BGD: "South Asia", LKA: "South Asia",
-  AFG: "South Asia", NPL: "South Asia",
-  // Middle East
-  TUR: "Middle East", IRN: "Middle East", ARE: "Middle East", SAU: "Middle East",
-  ISR: "Middle East", JOR: "Middle East", OMN: "Middle East", BHR: "Middle East",
-  KWT: "Middle East", LBN: "Middle East", QAT: "Middle East", IRQ: "Middle East",
-  PSE: "Middle East", SYR: "Middle East", YEM: "Middle East",
-  // Europe
-  DEU: "Europe", ITA: "Europe", FRA: "Europe", POL: "Europe", NLD: "Europe",
-  CHE: "Europe", GBR: "Europe", LTU: "Europe", LVA: "Europe", EST: "Europe",
-  CZE: "Europe", AUT: "Europe", HUN: "Europe", BEL: "Europe", SVN: "Europe",
-  ESP: "Europe", FIN: "Europe", IRL: "Europe", BGR: "Europe", SVK: "Europe",
-  SWE: "Europe", ROU: "Europe", DNK: "Europe", SRB: "Europe", GRC: "Europe",
-  LUX: "Europe", NOR: "Europe", PRT: "Europe", HRV: "Europe", MLT: "Europe",
-  CYP: "Europe", ALB: "Europe", BIH: "Europe", MNE: "Europe", MKD: "Europe",
-  ISL: "Europe", LIE: "Europe",
-  // Americas
-  USA: "Americas", BRA: "Americas", MEX: "Americas", CAN: "Americas",
-  ECU: "Americas", CUB: "Americas", ARG: "Americas", COL: "Americas",
-  CHL: "Americas", HND: "Americas", GTM: "Americas", BOL: "Americas",
-  PER: "Americas", URY: "Americas", CRI: "Americas", PAN: "Americas",
-  // Africa
-  ZAF: "Africa", EGY: "Africa", KEN: "Africa", MAR: "Africa", TUN: "Africa",
-  RWA: "Africa", MOZ: "Africa", ZWE: "Africa", UGA: "Africa", TZA: "Africa",
-  MLI: "Africa", NGA: "Africa", ETH: "Africa", GHA: "Africa", DZA: "Africa",
-  SEN: "Africa", CIV: "Africa", CMR: "Africa", ZMB: "Africa", SDN: "Africa",
-  // Oceania
-  AUS: "Oceania", NZL: "Oceania",
-};
 
 /**
  * Re-export / transit hubs, extended for the full partner list. Uzbekistan records

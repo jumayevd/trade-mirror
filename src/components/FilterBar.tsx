@@ -73,10 +73,48 @@ export default function FilterBar() {
   const pickHs4 = (v: string[]) =>
     patch({ hs4: v, hs6: filter.hs6.filter((c) => v.length === 0 || v.some((p) => c.startsWith(p))) });
 
+  const monthly = filter.granularity === "month";
+  const monthOptions = useMemo<SearchOption[]>(
+    () => Array.from({ length: 12 }, (_, i) => ({
+      value: String(i + 1),
+      label: t(`month.${i + 1}` as never),
+    })),
+    [t],
+  );
+
   return (
     <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+        {/* time basis: yearly reads the annual books, monthly the monthly ones */}
+        <div className="flex flex-col gap-1">
+          <span className={lbl}>{t("filter.granularity")}</span>
+          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
+            {(["year", "month"] as const).map((g) => (
+              <button
+                key={g}
+                onClick={() => patch(g === "year" ? { granularity: g, months: [] } : { granularity: g, hs4: [], hs6: [] })}
+                aria-pressed={filter.granularity === g}
+                title={g === "month" ? t("filter.monthlyHsTip") : undefined}
+                className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+              >
+                {t(g === "year" ? "gran.year" : "gran.month")}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <YearSelect years={filter.years} onChange={(years) => patch({ years })} available={avail.years} />
+
+        {monthly && (
+          <MultiSelect
+            values={filter.months.map(String)}
+            onChange={(v) => patch({ months: v.map(Number).sort((a, b) => a - b) })}
+            options={monthOptions}
+            label={t("filter.months")}
+            allLabel={t("filter.allMonths")}
+            searchable={false}
+          />
+        )}
 
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
           <span className={lbl}>{t("filter.freight")}</span>
@@ -106,6 +144,9 @@ export default function FilterBar() {
           allLabel={t("filter.all")}
         />
 
+        {/* monthly Comtrade data is chapter-level: the finer HS dimensions only
+            exist on the yearly basis, so the pickers leave with it */}
+        {!monthly && (
         <MultiSelect
           values={filter.hs4}
           onChange={pickHs4}
@@ -113,7 +154,9 @@ export default function FilterBar() {
           label={t("filter.hs4")}
           allLabel={t("filter.all")}
         />
+        )}
 
+        {!monthly && (
         <MultiSelect
           values={filter.hs6}
           onChange={(v) => patch({ hs6: v })}
@@ -121,6 +164,7 @@ export default function FilterBar() {
           label={t("filter.hs6")}
           allLabel={t("filter.all")}
         />
+        )}
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>

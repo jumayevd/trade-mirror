@@ -125,6 +125,59 @@ for (const p of pick(partners, 6)) {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* Monthly basis: the engine's month path vs the monthly workbook       */
+/* ------------------------------------------------------------------ */
+
+interface MonthSrc { p: string; k: string; y: number; m: number; pe: number; ui: number }
+const monthlySrc: MonthSrc[] = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells.json"), "utf8"),
+).cells;
+
+function expectedMonthly(f: Filter, codes: string[]) {
+  const years = new Set(f.years);
+  const months = new Set(f.months);
+  const partners = new Set(f.country);
+  const codeSet = new Set(codes);
+  let pe = 0, ui = 0;
+  for (const r of monthlySrc) {
+    if (years.size && !years.has(r.y)) continue;
+    if (months.size && !months.has(r.m)) continue;
+    if (partners.size && !partners.has(r.p)) continue;
+    if (codeSet.size && !codeSet.has(r.k)) continue;
+    pe += r.pe; ui += r.ui;
+  }
+  return { pe, ui };
+}
+
+const mbase = (): Filter => ({ ...base(), granularity: "month", months: [] });
+const reportMonthly = (name: string, f: Filter, codes: string[]) => {
+  const got = observedTotals(f, 2, undefined);
+  const want = expectedMonthly(f, codes);
+  checks++;
+  if (got.pe !== want.pe || got.ui !== want.ui) {
+    fails++;
+    console.log(`  FAIL ${name}`);
+    console.log(`       engine   exports ${got.pe.toLocaleString()}  imports ${got.ui.toLocaleString()}`);
+    console.log(`       workbook exports ${want.pe.toLocaleString()}  imports ${want.ui.toLocaleString()}`);
+  }
+};
+
+reportMonthly("monthly: all data", mbase(), []);
+for (const y of [2017, 2020, 2024, 2025, 2026]) {
+  reportMonthly(`monthly: year ${y}`, { ...mbase(), years: [y] }, []);
+}
+reportMonthly("monthly: 2024 Jan only", { ...mbase(), years: [2024], months: [1] }, []);
+reportMonthly("monthly: 2024 Q4", { ...mbase(), years: [2024], months: [10, 11, 12] }, []);
+reportMonthly("monthly: Jan across all years", { ...mbase(), months: [1] }, []);
+for (const p of pick(partners, 6)) {
+  reportMonthly(`monthly: partner ${p}, 2023 H1`, { ...mbase(), country: [p], years: [2023], months: [1, 2, 3, 4, 5, 6] }, []);
+}
+for (const c of pick(chapters, 6)) {
+  reportMonthly(`monthly: chapter ${c}, 2025`, { ...mbase(), hs2: [c], years: [2025] }, [c]);
+}
+reportMonthly("monthly: CHN x 85 x 2026 Mar", { ...mbase(), country: ["CHN"], hs2: ["85"], years: [2026], months: [3] }, ["85"]);
+
 console.log(`\n${checks - fails}/${checks} slices reconcile exactly.`);
 if (fails) {
   console.error(`${fails} MISMATCH(ES) — figures would not agree with UN Comtrade.`);

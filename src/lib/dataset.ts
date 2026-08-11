@@ -44,7 +44,6 @@ export interface Meta {
   orphans: { importValue: number; importCells: number };
   datasetRows: number;
 }
-export interface MonthlyPoint { period: string; ptnExp: number; uzbImp: number; provisional: boolean }
 export interface ProductPartner { iso3: string; name: string; tier: Tier; transit: boolean; ptnExp: number; uzbImp: number; gap: number }
 export interface Product {
   cmd: string; label: string; chapter: string; chapterLabel: string; category: string;
@@ -59,7 +58,6 @@ export interface Product {
 const NOISE = 100_000;
 
 export const meta = metaRaw as unknown as Meta;
-export const monthly = monthlyRaw as unknown as MonthlyPoint[];
 export const products = productsRaw as unknown as Product[];
 export const DATA_VERSION = meta.generatedAt.slice(0, 10).replace(/-/g, ".");
 
@@ -120,6 +118,89 @@ const cells: Cell[] = (() => {
   for (const cell of h4.values()) out.push(cell);
   return out;
 })();
+
+/* ------------------------------------------------------------------ */
+/* Monthly dataset (UN Comtrade monthly, chapter level)                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * monthly.json ships columnar like cells.json, with the time axis in months:
+ * [pIdx, kIdx, monthOffset, pe, ui] where monthOffset = (year − y0) × 12 + (month − 1).
+ * UN Comtrade publishes the monthly series at chapter (HS2) level here, which is
+ * why the finer HS dimensions only exist on the yearly basis.
+ */
+interface PackedMonthly {
+  v: number;
+  y0: number;
+  p: string[];
+  k: string[];
+  monthsByYear: Record<string, number[]>;
+  r: number[][];
+}
+interface MonthCell { p: string; k: string; c: string; cat: string; y: number; m: number; pe: number; ui: number }
+
+const monthlyPacked = monthlyRaw as unknown as PackedMonthly;
+
+const monthlyCells: MonthCell[] = (() => {
+  if (!monthlyPacked || !Array.isArray(monthlyPacked.r)) return [];
+  const out: MonthCell[] = new Array(monthlyPacked.r.length);
+  for (let i = 0; i < monthlyPacked.r.length; i++) {
+    const row = monthlyPacked.r[i];
+    const k = monthlyPacked.k[row[1]];
+    out[i] = {
+      p: monthlyPacked.p[row[0]],
+      k,
+      c: k.slice(0, 2),
+      cat: categoryOfChapter(k.slice(0, 2)),
+      y: monthlyPacked.y0 + Math.floor(row[2] / 12),
+      m: (row[2] % 12) + 1,
+      pe: row[3],
+      ui: row[4],
+    };
+  }
+  return out;
+})();
+
+/** Years the monthly series covers — a longer window than the annual books. */
+export const monthlyYears: number[] = Object.keys(monthlyPacked?.monthsByYear ?? {})
+  .map(Number)
+  .sort((a, b) => a - b);
+/** Calendar months actually reported for a year (the current year is partial). */
+export const monthsOfYear = (y: number): number[] => monthlyPacked?.monthsByYear?.[String(y)] ?? [];
+/** Every selectable year on either basis, for URL validation and pickers. */
+export const ALL_YEARS: number[] = [...new Set([...meta.years, ...monthlyYears])].sort((a, b) => a - b);
+
+/** Years the active granularity offers. */
+export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : meta.years);
+
+/**
+ * Monthly rows folded into yearly-shaped cells over the ticked months, so every
+ * downstream computation — channels, screening, totals — runs unchanged on the
+ * monthly basis. The month filter is applied here and only here.
+ */
+function monthlySource(f: Filter): Cell[] {
+  const wantY = f.years.length ? new Set(f.years) : null;
+  const wantM = f.months.length ? new Set(f.months) : null;
+  const acc = new Map<string, Cell>();
+  for (const r of monthlyCells) {
+    if (wantY && !wantY.has(r.y)) continue;
+    if (wantM && !wantM.has(r.m)) continue;
+    const key = `${r.p}|${r.k}|${r.y}`;
+    let cell = acc.get(key);
+    if (!cell) {
+      cell = { p: r.p, k: r.k, c: r.c, cat: r.cat, l: 2, y: r.y, pe: 0, ui: 0 };
+      acc.set(key, cell);
+    }
+    cell.pe += r.pe;
+    cell.ui += r.ui;
+  }
+  return [...acc.values()];
+}
+
+/** The cell universe the filter's time basis selects. */
+function sourceCells(f: Filter): Cell[] {
+  return f.granularity === "month" ? monthlySource(f) : cells;
+}
 
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
 const chapLabel = new Map(meta.chapters.map((c) => [c.chapter, c.label]));
@@ -193,9 +274,19 @@ export const ROBUSTNESS_LABELS: Record<Robustness, string> = {
   insufficient: "Insufficient data",
 };
 
+export type Granularity = "year" | "month";
+
 export interface Filter {
+  /**
+   * Time base. "year" reads the annual dataset (HS2 + HS6); "month" reads the
+   * monthly dataset, which UN Comtrade publishes at chapter level here, so the
+   * HS4/HS6 dimensions do not apply in monthly mode.
+   */
+  granularity: Granularity;
   /** Ticked years — any subset of meta.years, never a range. */
   years: number[];
+  /** Ticked calendar months (1–12); empty means every month. Monthly mode only. */
+  months: number[];
   cif: number;
   /**
    * Multi-select dimensions. An empty list means "everything": a cleared filter
@@ -211,7 +302,9 @@ export interface Filter {
   band: "all" | RiskBand;
 }
 export const DEFAULT_FILTER: Filter = {
+  granularity: "year",
   years: [...meta.years],
+  months: [],
   cif: meta.cif.central,
   country: [],
   hs2: [],
@@ -407,7 +500,7 @@ export interface Aggregate {
   partners: PartnerAgg[];
   chapters: ChapterAgg[];
   categories: { key: string; label: string; value: number; share: number }[];
-  annual: { year: number; pe: number; ui: number; positive: number; comparablePartners: number }[];
+  annual: { year: number; month?: number; label?: string; pe: number; ui: number; positive: number; comparablePartners: number }[];
   concentration: { name: string; partner: string; iso3: string; cmd: string; value: number; share: number; cumShare: number }[];
   movers: {
     goods: { key: string; label: string; total: number; trend: number; series: { y: number; v: number }[] }[];
@@ -451,8 +544,8 @@ export interface ObservedTotals {
 
 /** Cells surviving the active filters, before any mirror pairing. */
 function filterCells(f: Filter): Cell[] {
-  const picked = f.years.length ? new Set(f.years) : new Set(meta.years);
-  return cells.filter(
+  const picked = f.years.length ? new Set(f.years) : new Set(yearsFor(f.granularity));
+  return sourceCells(f).filter(
     (r) => picked.has(r.y) && (f.country.length === 0 || f.country.includes(r.p)) && matchesCode(r, f),
   );
 }
@@ -503,7 +596,10 @@ export function availableOptions(f: Filter): {
   const hs4 = new Set<string>();
   const hs6 = new Set<string>();
 
-  for (const r of cells) {
+  // In monthly mode the month filter is deliberately NOT applied to the year
+  // facet: unticking months must never hide years, only narrow their totals.
+  const universe = f.granularity === "month" ? monthlySource({ ...f, months: [], years: [] }) : cells;
+  for (const r of universe) {
     const code = matchesCode(r, f);
     // a dimension's own selection is excluded from its own facet
     if (partnerOn(r) && code) years.add(r.y);
@@ -520,7 +616,7 @@ export function availableOptions(f: Filter): {
   }
 
   return {
-    years: meta.years.filter((y) => years.has(y)),
+    years: yearsFor(f.granularity).filter((y) => years.has(y)),
     countries: [...countries],
     hs2: [...hs2],
     hs4: [...hs4],
@@ -529,8 +625,9 @@ export function availableOptions(f: Filter): {
 }
 
 export function aggregate(f: Filter): Aggregate {
-  const picked = f.years.length ? new Set(f.years) : new Set(meta.years);
-  const years = meta.years.filter((y) => picked.has(y));
+  const windowYears = yearsFor(f.granularity);
+  const picked = f.years.length ? new Set(f.years) : new Set(windowYears);
+  const years = windowYears.filter((y) => picked.has(y));
   const yearsInRange = years.length;
   const allowPartner = (iso: string) => {
     const pm = pMeta.get(iso);
@@ -540,7 +637,7 @@ export function aggregate(f: Filter): Aggregate {
   };
   /** HS filters cascade: the most specific level with a selection wins. */
   const allowCode = (r: Cell) => matchesCode(r, f);
-  const fc = cells.filter((r) => picked.has(r.y) && allowPartner(r.p) && allowCode(r));
+  const fc = sourceCells(f).filter((r) => picked.has(r.y) && allowPartner(r.p) && allowCode(r));
 
   const baseChannels = buildChannels(fc, 2, f);
   const baseChannels4 = buildChannels(fc, 4, f);
@@ -635,10 +732,48 @@ export function aggregate(f: Filter): Aggregate {
     e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.partners.add(c.partnerIso);
     yAgg.set(yr.y, e);
   }
-  const annual = years.map((y) => {
+  const annual: Aggregate["annual"] = years.map((y) => {
     const e = yAgg.get(y) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
     return { year: y, pe: e.pe, ui: e.ui, positive: e.positive, comparablePartners: e.partners.size };
   });
+
+  /*
+   * On the monthly basis the dynamics keep month resolution: the year-shaped
+   * channels above have already summed the ticked months (correct for every
+   * total), but a time series drawn from them would collapse to yearly bars.
+   * Recompute the series straight from the month rows under the same filters,
+   * with the same both-books rule applied per month.
+   */
+  if (f.granularity === "month") {
+    const K = 1 + f.cif;
+    const wantM = f.months.length ? new Set(f.months) : null;
+    const mAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
+    for (const r of monthlyCells) {
+      if (!picked.has(r.y)) continue;
+      if (wantM && !wantM.has(r.m)) continue;
+      if (!allowPartner(r.p)) continue;
+      if (!allowCode({ ...r, l: 2 } as Cell)) continue;
+      const key = (r.y - monthlyPacked.y0) * 12 + (r.m - 1);
+      const e = mAgg.get(key) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
+      e.pe += r.pe; e.ui += r.ui;
+      if (r.pe > NOISE && r.ui > NOISE) {
+        e.positive += pos(r.pe * K - r.ui);
+        e.partners.add(r.p);
+      }
+      mAgg.set(key, e);
+    }
+    annual.length = 0;
+    for (const key of [...mAgg.keys()].sort((x, y) => x - y)) {
+      const e = mAgg.get(key)!;
+      const year = monthlyPacked.y0 + Math.floor(key / 12);
+      const month = (key % 12) + 1;
+      annual.push({
+        year, month,
+        label: `${year}-${String(month).padStart(2, "0")}`,
+        pe: e.pe, ui: e.ui, positive: e.positive, comparablePartners: e.partners.size,
+      });
+    }
+  }
 
   // ---- concentration (positive discrepancy over filtered channels) ----
   const sorted = [...rollup].filter((c) => dirVal(c) > NOISE).sort((a, b) => dirVal(b) - dirVal(a));
@@ -720,7 +855,12 @@ export function yearsLabel(years: number[]): string {
 
 /** Context line per spec §5.3 — shown above every analytical block. */
 export function contextLine(f: Filter): string {
-  const parts = [yearsLabel(f.years.length ? f.years : meta.years)];
+  const parts = [yearsLabel(f.years.length ? f.years : yearsFor(f.granularity))];
+  if (f.granularity === "month") {
+    parts.push(f.months.length === 0 || f.months.length === 12
+      ? "monthly"
+      : `monthly: ${f.months.join(", ")}`);
+  }
   // list a short selection outright; collapse a long one to a count
   const codes = (values: string[]) => (values.length <= 3 ? `HS ${values.join(", ")}` : `${values.length} HS codes`);
   if (f.hs6.length > 0) parts.push(codes(f.hs6));

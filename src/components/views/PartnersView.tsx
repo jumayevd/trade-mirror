@@ -491,9 +491,10 @@ export default function PartnersView() {
                 {data.annual.map((r) => {
                   const noData = r.comparablePartners === 0;
                   const expected = r.pe * K;
+                  const period = r.label ?? String(r.year);
                   return (
-                    <tr key={r.year} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                      <td className={`${td} tabular font-medium`}>{r.year}</td>
+                    <tr key={period} className="border-b border-[var(--color-border-soft)] last:border-b-0">
+                      <td className={`${td} tabular font-medium`}>{period}</td>
                       <td className={tdNum}>{noData ? <MissingValue kind="notComparable" /> : fmtNum(r.comparablePartners)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.pe)}>{noData ? <MissingValue /> : fmtUSD(r.pe)}</td>
                       <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.ui)}>{noData ? <MissingValue /> : fmtUSD(r.ui)}</td>

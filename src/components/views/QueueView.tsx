@@ -107,7 +107,6 @@ export default function QueueView() {
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.score.title")}
-          desc={t("risk.score.desc")}
           right={<InfoTip text={t("risk.score.info")} />}
         />
         {riskStats && (
@@ -117,7 +116,7 @@ export default function QueueView() {
               value={riskStats.top.mtrs.toFixed(0)}
               sub={`${riskStats.top.partner} × HS ${riskStats.top.cmd}${riskStats.top.transit ? ` · ${t("risk.transitHub")}` : ""}`}
               info={`${t("risk.stat.highest.info")} (${t(LEVEL_LABEL_KEYS[level])}): G ${riskStats.top.abnormalGap.toFixed(2)} × P ${riskStats.top.persistence.toFixed(2)} → MTRS ${riskStats.top.mtrs.toFixed(1)}.${riskStats.top.transit ? ` ${t("risk.stat.highest.infoTransit")}` : ""}`}
-              accent={COLORS.investigate}
+              accent={COLORS.positive}
             />
             <Stat
               label={t("risk.stat.median")}

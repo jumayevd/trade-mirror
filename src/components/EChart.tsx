@@ -27,9 +27,48 @@ function bitmapRatio(): number {
   return window.devicePixelRatio || 1;
 }
 
+/**
+ * Events ECharts hit-tests through `offsetX/Y`. Browsers disagree on which
+ * coordinate space those carry once CSS `zoom` is in the ancestry (Chrome
+ * changed behaviour in 128, Edge/Safari differ again), so hover can land a
+ * few percent off the mark — worst at the far corner of a large canvas.
+ */
+const POINTER_EVENTS = ["click", "dblclick", "mousedown", "mouseup", "mousemove", "contextmenu", "wheel"] as const;
+
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const outer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
+
+  /*
+   * Self-calibrating pointer correction. `clientX` and getBoundingClientRect()
+   * always share one space (the visual viewport), so mapping through their
+   * ratio yields the chart's local coordinates no matter how the browser
+   * scaled `offsetX`. Runs on the wrapper in the CAPTURE phase, which is
+   * guaranteed to precede zrender's own listeners on the inner element; when
+   * the two spaces already agree it redefines nothing.
+   */
+  useEffect(() => {
+    const host = outer.current;
+    if (!host) return;
+    const fix = (e: Event) => {
+      const el = ref.current;
+      if (!el || !(e instanceof MouseEvent)) return;
+      const rect = el.getBoundingClientRect();
+      if (!rect.width || !rect.height || !el.clientWidth || !el.clientHeight) return;
+      const sx = rect.width / el.clientWidth;
+      const sy = rect.height / el.clientHeight;
+      const ox = (e.clientX - rect.left) / sx;
+      const oy = (e.clientY - rect.top) / sy;
+      if (Math.abs(ox - e.offsetX) < 1 && Math.abs(oy - e.offsetY) < 1) return;
+      Object.defineProperty(e, "offsetX", { value: ox, configurable: true });
+      Object.defineProperty(e, "offsetY", { value: oy, configurable: true });
+    };
+    for (const type of POINTER_EVENTS) host.addEventListener(type, fix, { capture: true, passive: true });
+    return () => {
+      for (const type of POINTER_EVENTS) host.removeEventListener(type, fix, { capture: true });
+    };
+  }, []);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -68,7 +107,7 @@ export default function EChart({ option, className, style, registerMaps, onEvent
   }, [option]);
 
   return (
-    <div className={className} style={{ width: "100%", height: "100%", ...style }}>
+    <div ref={outer} className={className} style={{ width: "100%", height: "100%", ...style }}>
       <div ref={ref} className="chart-frame" />
     </div>
   );

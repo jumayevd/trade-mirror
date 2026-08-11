@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Filter, type RiskBand } from "@/lib/dataset";
+import { aggregate, ALL_YEARS, DEFAULT_FILTER, type Aggregate, type Filter, type RiskBand } from "@/lib/dataset";
 
 interface Ctx {
   filter: Filter;
@@ -23,8 +23,14 @@ function fromSearch(sp: URLSearchParams): Filter {
   const str = (k: string) => sp.get(k);
   const yearsRaw = str("years");
   if (yearsRaw) {
-    const picked = yearsRaw.split(",").map(Number).filter((y) => meta.years.includes(y));
+    const picked = yearsRaw.split(",").map(Number).filter((y) => ALL_YEARS.includes(y));
     if (picked.length) f.years = [...new Set(picked)].sort((a, b) => a - b);
+  }
+  if (sp.get("gran") === "month") f.granularity = "month";
+  const monthsRaw = str("months");
+  if (monthsRaw) {
+    const picked = monthsRaw.split(",").map(Number).filter((m) => m >= 1 && m <= 12);
+    if (picked.length) f.months = [...new Set(picked)].sort((x, y) => x - y);
   }
   const cif = num("cif"); if (cif != null && cif >= 0 && cif <= 0.3) f.cif = cif;
   /** Comma-separated multi-select values; "all" is still accepted from older links. */
@@ -51,6 +57,8 @@ function toSearch(f: Filter): string {
   const sp = new URLSearchParams();
   const set = (k: string, v: string | number, d: string | number) => { if (v !== d) sp.set(k, String(v)); };
   if (!sameYears(f.years, DEFAULT_FILTER.years)) sp.set("years", f.years.join(","));
+  set("gran", f.granularity, "year");
+  if (f.months.length) sp.set("months", f.months.join(","));
   set("cif", f.cif, DEFAULT_FILTER.cif);
   const setList = (k: string, v: string[]) => { if (v.length) sp.set(k, v.join(",")); };
   setList("country", f.country);
@@ -82,7 +90,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       patch: (p) => setFilter((f) => ({ ...f, ...p })),
       reset: () => setFilter(DEFAULT_FILTER),
       data: aggregate(filter),
-      series: aggregate({ ...filter, years: [...meta.years] }),
+      // full window on the same time basis, for trend components
+      series: aggregate({ ...filter, years: [] }),
     }),
     [filter],
   );
