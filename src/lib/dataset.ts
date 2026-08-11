@@ -126,8 +126,8 @@ const cells: Cell[] = (() => {
 /**
  * monthly.json ships columnar like cells.json, with the time axis in months:
  * [pIdx, kIdx, monthOffset, pe, ui] where monthOffset = (year − y0) × 12 + (month − 1).
- * UN Comtrade publishes the monthly series at chapter (HS2) level here, which is
- * why the finer HS dimensions only exist on the yearly basis.
+ * This bundled file carries the chapter (HS2) series; the far larger HS6 detail
+ * lives in public/data/monthly-hs6.json and is fetched on demand (see below).
  */
 interface PackedMonthly {
   v: number;
@@ -173,12 +173,61 @@ export const ALL_YEARS: number[] = [...new Set([...meta.years, ...monthlyYears])
 /** Years the active granularity offers. */
 export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : meta.years);
 
+/* ------------------------------------------------------------------ */
+/* Monthly HS6 detail — fetched on demand                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The HS6 monthly layer is ~1.9M cells, far past what the main bundle can
+ * carry, so it ships as public/data/monthly-hs6.json and loads the first time
+ * the monthly basis is entered. Until it arrives the monthly basis serves
+ * chapter level only; the store notifies subscribers so views recompute.
+ * HS4 is derived from HS6 by truncation, exactly as on the yearly basis.
+ */
+interface PackedMonthlyDetail { v: number; y0: number; p: string[]; k: string[]; r: number[][] }
+
+let monthlyDetail: PackedMonthlyDetail | null = null;
+let monthlyDetailVersion = 0;
+let monthlyDetailLoading = false;
+const monthlyDetailListeners = new Set<() => void>();
+
+export const monthlyDetailReady = (): boolean => monthlyDetail !== null;
+/** Bumps when the detail arrives — a dependency for memoized aggregates. */
+export const monthlyDetailVer = (): number => monthlyDetailVersion;
+export function subscribeMonthlyDetail(fn: () => void): () => void {
+  monthlyDetailListeners.add(fn);
+  return () => monthlyDetailListeners.delete(fn);
+}
+/** Direct injection for Node (verification scripts); the client uses ensureMonthlyDetail. */
+export function loadMonthlyDetail(payload: PackedMonthlyDetail): void {
+  monthlyDetail = payload;
+  monthlyDetailVersion++;
+  monthlySourceCache.clear();
+  for (const fn of monthlyDetailListeners) fn();
+}
+export function ensureMonthlyDetail(): void {
+  if (monthlyDetail || monthlyDetailLoading || typeof window === "undefined") return;
+  monthlyDetailLoading = true;
+  fetch("/data/monthly-hs6.json")
+    .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then((j: PackedMonthlyDetail) => { monthlyDetailLoading = false; loadMonthlyDetail(j); })
+    .catch(() => { monthlyDetailLoading = false; });
+}
+
 /**
  * Monthly rows folded into yearly-shaped cells over the ticked months, so every
  * downstream computation — channels, screening, totals — runs unchanged on the
- * monthly basis. The month filter is applied here and only here.
+ * monthly basis. The month filter is applied here and only here. Folding the
+ * detail layer walks ~1.9M rows, so results are memoized per period selection;
+ * partner and HS filters apply downstream and never fragment the cache.
  */
+const monthlySourceCache = new Map<string, Cell[]>();
+
 function monthlySource(f: Filter): Cell[] {
+  const cacheKey = `${f.years.join(",")}|${f.months.join(",")}|${monthlyDetailVersion}`;
+  const hit = monthlySourceCache.get(cacheKey);
+  if (hit) return hit;
+
   const wantY = f.years.length ? new Set(f.years) : null;
   const wantM = f.months.length ? new Set(f.months) : null;
   const acc = new Map<string, Cell>();
@@ -194,7 +243,52 @@ function monthlySource(f: Filter): Cell[] {
     cell.pe += r.pe;
     cell.ui += r.ui;
   }
-  return [...acc.values()];
+  const out = [...acc.values()];
+
+  const det = monthlyDetail;
+  if (det) {
+    // fold straight off the packed rows on numeric keys — string keys on 1.9M
+    // iterations would dominate the cost
+    const nK = det.k.length;
+    const acc6 = new Map<number, Cell>();
+    for (const row of det.r) {
+      const y = det.y0 + ((row[2] / 12) | 0);
+      if (wantY && !wantY.has(y)) continue;
+      if (wantM && !wantM.has((row[2] % 12) + 1)) continue;
+      const id = (row[0] * nK + row[1]) * 16 + (y - det.y0);
+      let cell = acc6.get(id);
+      if (!cell) {
+        const k = det.k[row[1]];
+        const c = k.slice(0, 2);
+        cell = { p: det.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6, y, pe: 0, ui: 0 };
+        acc6.set(id, cell);
+      }
+      cell.pe += row[3];
+      cell.ui += row[4];
+    }
+    // derived HS4 layer, same rule as the yearly load: exact truncation of HS6
+    const acc4 = new Map<string, Cell>();
+    for (const r of acc6.values()) {
+      const code = r.k.slice(0, 4);
+      const key = `${r.p}|${code}|${r.y}`;
+      let agg = acc4.get(key);
+      if (!agg) {
+        agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
+        acc4.set(key, agg);
+      }
+      agg.pe += r.pe;
+      agg.ui += r.ui;
+      out.push(r);
+    }
+    for (const cell of acc4.values()) out.push(cell);
+  }
+
+  if (monthlySourceCache.size >= 6) {
+    const oldest = monthlySourceCache.keys().next().value;
+    if (oldest !== undefined) monthlySourceCache.delete(oldest);
+  }
+  monthlySourceCache.set(cacheKey, out);
+  return out;
 }
 
 /** The cell universe the filter's time basis selects. */
@@ -279,8 +373,8 @@ export type Granularity = "year" | "month";
 export interface Filter {
   /**
    * Time base. "year" reads the annual dataset (HS2 + HS6); "month" reads the
-   * monthly dataset, which UN Comtrade publishes at chapter level here, so the
-   * HS4/HS6 dimensions do not apply in monthly mode.
+   * monthly books — the chapter series ships in the bundle, the HS6 detail
+   * loads on demand (see ensureMonthlyDetail) with HS4 derived by truncation.
    */
   granularity: Granularity;
   /** Ticked years — any subset of meta.years, never a range. */
@@ -748,19 +842,50 @@ export function aggregate(f: Filter): Aggregate {
     const K = 1 + f.cif;
     const wantM = f.months.length ? new Set(f.months) : null;
     const mAgg = new Map<number, { pe: number; ui: number; positive: number; partners: Set<string> }>();
-    for (const r of monthlyCells) {
-      if (!picked.has(r.y)) continue;
-      if (wantM && !wantM.has(r.m)) continue;
-      if (!allowPartner(r.p)) continue;
-      if (!allowCode({ ...r, l: 2 } as Cell)) continue;
-      const key = (r.y - monthlyPacked.y0) * 12 + (r.m - 1);
+    const bump = (key: number, p: string, pe: number, ui: number) => {
       const e = mAgg.get(key) ?? { pe: 0, ui: 0, positive: 0, partners: new Set<string>() };
-      e.pe += r.pe; e.ui += r.ui;
-      if (r.pe > NOISE && r.ui > NOISE) {
-        e.positive += pos(r.pe * K - r.ui);
-        e.partners.add(r.p);
+      e.pe += pe; e.ui += ui;
+      if (pe > NOISE && ui > NOISE) {
+        e.positive += pos(pe * K - ui);
+        e.partners.add(p);
       }
       mAgg.set(key, e);
+    };
+    if (rollupLevel === 2) {
+      for (const r of monthlyCells) {
+        if (!picked.has(r.y)) continue;
+        if (wantM && !wantM.has(r.m)) continue;
+        if (!allowPartner(r.p)) continue;
+        if (!allowCode({ ...r, l: 2 } as Cell)) continue;
+        bump((r.y - monthlyPacked.y0) * 12 + (r.m - 1), r.p, r.pe, r.ui);
+      }
+    } else if (monthlyDetail) {
+      // an HS4/HS6 selection rolls the series up from the detail rows — the HS2
+      // sheet is a separate aggregation and would not tie to the totals above.
+      // Per-code and per-partner verdicts are precomputed so the 1.9M-row walk
+      // stays cheap. Rows first fold to (partner × rollup code × month) cells so
+      // the both-books rule tests the same grain the channels use.
+      const det = monthlyDetail;
+      const codeOk = det.k.map((k) => {
+        const c = k.slice(0, 2);
+        return matchesCode({ p: "", k, c, cat: categoryOfChapter(c), l: 6, y: 0, pe: 0, ui: 0 }, f);
+      });
+      const groupOf = det.k.map((k) => (rollupLevel === 4 ? k.slice(0, 4) : k));
+      const pOk = det.p.map((iso) => allowPartner(iso));
+      const detY0 = det.y0 - monthlyPacked.y0; // align month offsets to the chapter series' epoch
+      const cellAgg = new Map<string, { p: string; off: number; pe: number; ui: number }>();
+      for (const row of det.r) {
+        if (!pOk[row[0]] || !codeOk[row[1]]) continue;
+        const off = row[2] + detY0 * 12;
+        const y = monthlyPacked.y0 + ((off / 12) | 0);
+        if (!picked.has(y)) continue;
+        if (wantM && !wantM.has((off % 12) + 1)) continue;
+        const key = `${row[0]}|${groupOf[row[1]]}|${off}`;
+        const e = cellAgg.get(key) ?? { p: det.p[row[0]], off, pe: 0, ui: 0 };
+        e.pe += row[3]; e.ui += row[4];
+        cellAgg.set(key, e);
+      }
+      for (const e of cellAgg.values()) bump(e.off, e.p, e.pe, e.ui);
     }
     annual.length = 0;
     for (const key of [...mAgg.keys()].sort((x, y) => x - y)) {

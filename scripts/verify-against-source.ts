@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { DEFAULT_FILTER, observedTotals, meta, type Filter } from "../src/lib/dataset";
+import { DEFAULT_FILTER, loadMonthlyDetail, observedTotals, meta, type Filter } from "../src/lib/dataset";
 
 interface SrcCell { p: string; l: number; k: string; y: number; pe: number; ui: number }
 const src: SrcCell[] = JSON.parse(
@@ -163,6 +163,45 @@ const reportMonthly = (name: string, f: Filter, codes: string[]) => {
   }
 };
 
+/* Monthly HS6 detail: injected the way the client receives it, then checked
+   at HS6 and at the derived HS4 truncation. */
+type Hs6Row = [string, string, number, number, number, number];
+const monthlyHs6: Hs6Row[] = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells-hs6.json"), "utf8"),
+).cells;
+loadMonthlyDetail(JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
+));
+
+function expectedMonthly6(f: Filter, level: number) {
+  const years = new Set(f.years);
+  const months = new Set(f.months);
+  const partners = new Set(f.country);
+  const codes = new Set(level === 6 ? f.hs6 : f.hs4);
+  let pe = 0, ui = 0;
+  for (const r of monthlyHs6) {
+    if (years.size && !years.has(r[2])) continue;
+    if (months.size && !months.has(r[3])) continue;
+    if (partners.size && !partners.has(r[0])) continue;
+    const k = level === 6 ? r[1] : r[1].slice(0, 4);
+    if (codes.size && !codes.has(k)) continue;
+    pe += r[4]; ui += r[5];
+  }
+  return { pe, ui };
+}
+
+const reportMonthlyDetail = (name: string, f: Filter, level: number) => {
+  const got = observedTotals(f, level, undefined);
+  const want = expectedMonthly6(f, level);
+  checks++;
+  if (got.pe !== want.pe || got.ui !== want.ui) {
+    fails++;
+    console.log(`  FAIL ${name}`);
+    console.log(`       engine   exports ${got.pe.toLocaleString()}  imports ${got.ui.toLocaleString()}`);
+    console.log(`       workbook exports ${want.pe.toLocaleString()}  imports ${want.ui.toLocaleString()}`);
+  }
+};
+
 reportMonthly("monthly: all data", mbase(), []);
 for (const y of [2017, 2020, 2024, 2025, 2026]) {
   reportMonthly(`monthly: year ${y}`, { ...mbase(), years: [y] }, []);
@@ -177,6 +216,28 @@ for (const c of pick(chapters, 6)) {
   reportMonthly(`monthly: chapter ${c}, 2025`, { ...mbase(), hs2: [c], years: [2025] }, [c]);
 }
 reportMonthly("monthly: CHN x 85 x 2026 Mar", { ...mbase(), country: ["CHN"], hs2: ["85"], years: [2026], months: [3] }, ["85"]);
+
+// HS6 detail slices — whole set, periods, partners, codes, and the HS4 truncation
+const mHs6Codes = [...new Set(monthlyHs6.map((r) => r[1]))].sort();
+const mHs4Codes = [...new Set(mHs6Codes.map((k) => k.slice(0, 4)))].sort();
+reportMonthlyDetail("monthly HS6: all data", mbase(), 6);
+reportMonthlyDetail("monthly HS4: all data", mbase(), 4);
+for (const y of [2019, 2024, 2026]) {
+  reportMonthlyDetail(`monthly HS6: year ${y}`, { ...mbase(), years: [y] }, 6);
+}
+reportMonthlyDetail("monthly HS6: 2024 Q4", { ...mbase(), years: [2024], months: [10, 11, 12] }, 6);
+reportMonthlyDetail("monthly HS4: 2025 Jan", { ...mbase(), years: [2025], months: [1] }, 4);
+for (const p of pick(partners, 5)) {
+  reportMonthlyDetail(`monthly HS6: partner ${p}, 2023`, { ...mbase(), country: [p], years: [2023] }, 6);
+}
+for (const k of pick(mHs6Codes, 8)) {
+  reportMonthlyDetail(`monthly HS6: product ${k}`, { ...mbase(), hs6: [k] }, 6);
+}
+for (const k of pick(mHs4Codes, 6)) {
+  reportMonthlyDetail(`monthly HS4: heading ${k}, 2024`, { ...mbase(), hs4: [k], years: [2024] }, 4);
+}
+reportMonthlyDetail("monthly HS6: CHN x 851713 x 2025 H1",
+  { ...mbase(), country: ["CHN"], hs6: [mHs6Codes.includes("851713") ? "851713" : mHs6Codes[0]], years: [2025], months: [1, 2, 3, 4, 5, 6] }, 6);
 
 console.log(`\n${checks - fails}/${checks} slices reconcile exactly.`);
 if (fails) {

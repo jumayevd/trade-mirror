@@ -14,6 +14,7 @@ import {
   type Channel, type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
+import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import type { LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
@@ -73,9 +74,12 @@ export default function OverviewView() {
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
   const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
+  // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
+  const detailVer = useMonthlyDetail(granularity === "month");
   const data = useMemo(
     () => aggregate({ ...FULL_WINDOW, granularity, years, months }),
-    [granularity, years, months],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [granularity, years, months, detailVer],
   );
   const k = data.kpis;
   const periodLabel = yearsLabel(years);
@@ -224,7 +228,6 @@ export default function OverviewView() {
                   key={g}
                   onClick={() => pickGranularity(g)}
                   aria-pressed={granularity === g}
-                  title={g === "month" ? t("filter.monthlyHsTip") : undefined}
                   className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
                 >
                   {t(g === "year" ? "gran.year" : "gran.month")}
@@ -324,26 +327,20 @@ export default function OverviewView() {
           total={hs2.total}
           codeWidth="w-8"
         />
-        {granularity === "year" ? (
-          <>
-            <RankedBlock
-              title={t("ovw.hs4.title")}
-              hint={t("ovw.hs4.hint")}
-              rows={hs4.rows}
-              total={hs4.total}
-              codeWidth="w-12"
-            />
-            <RankedBlock
-              title={t("ovw.hs6.title")}
-              hint={t("ovw.hs6.hint")}
-              rows={hs6.rows}
-              total={hs6.total}
-              codeWidth="w-14"
-            />
-          </>
-        ) : (
-          <p className="card p-4 text-[13px] leading-relaxed text-muted">{t("filter.monthlyHsTip")}</p>
-        )}
+        <RankedBlock
+          title={t("ovw.hs4.title")}
+          hint={t("ovw.hs4.hint")}
+          rows={hs4.rows}
+          total={hs4.total}
+          codeWidth="w-12"
+        />
+        <RankedBlock
+          title={t("ovw.hs6.title")}
+          hint={t("ovw.hs6.hint")}
+          rows={hs6.rows}
+          total={hs6.total}
+          codeWidth="w-14"
+        />
       </section>
         </div>
       )}

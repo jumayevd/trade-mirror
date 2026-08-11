@@ -280,9 +280,9 @@ export default function QualityView() {
           title={t("qual.weight.title")}
           desc={t("qual.weight.desc")} right={<InfoTip text={t("qual.weight.tip")} />}
         />
-        {/* weights ride on the HS6 layer, which only exists on the yearly basis */}
+        {/* the monthly books carry trade values only — no weight columns */}
         {filter.granularity === "month" ? (
-          <p className="card p-4 text-[13px] text-muted">{t("filter.monthlyHsTip")}</p>
+          <p className="card p-4 text-[13px] text-muted">{t("qual.monthlyWeights")}</p>
         ) : hs6.length === 0 ? (
           <EmptyState />
         ) : (

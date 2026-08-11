@@ -47,20 +47,22 @@ export default function FilterBar() {
   }, [avail.hs2, filter.hs2]);
 
   // HS pickers cascade: HS4 follows the chosen chapters, HS6 follows the HS4 groups.
+  // The monthly detail can carry codes the yearly books never shipped labels for,
+  // so the option list is the union of both, with the bare code as fallback label.
   const hs4Options = useMemo<SearchOption[]>(() => {
     const reachable = new Set(avail.hs4);
-    return Object.keys(meta.hs4labels)
+    return [...new Set([...Object.keys(meta.hs4labels), ...avail.hs4])]
       .filter((c) => reachable.has(c) || filter.hs4.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] }));
+      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] ?? `HS ${c}` }));
   }, [avail.hs4, filter.hs4]);
 
   const hs6Options = useMemo<SearchOption[]>(() => {
     const reachable = new Set(avail.hs6);
-    return Object.keys(meta.hs6labels)
+    return [...new Set([...Object.keys(meta.hs6labels), ...avail.hs6])]
       .filter((c) => reachable.has(c) || filter.hs6.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] }));
+      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] ?? `HS ${c}` }));
   }, [avail.hs6, filter.hs6]);
 
   /** Drop any narrower selection that no longer sits under the broader one. */
@@ -92,9 +94,8 @@ export default function FilterBar() {
             {(["year", "month"] as const).map((g) => (
               <button
                 key={g}
-                onClick={() => patch(g === "year" ? { granularity: g, months: [] } : { granularity: g, hs4: [], hs6: [] })}
+                onClick={() => patch(g === "year" ? { granularity: g, months: [] } : { granularity: g })}
                 aria-pressed={filter.granularity === g}
-                title={g === "month" ? t("filter.monthlyHsTip") : undefined}
                 className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               >
                 {t(g === "year" ? "gran.year" : "gran.month")}
@@ -144,9 +145,6 @@ export default function FilterBar() {
           allLabel={t("filter.all")}
         />
 
-        {/* monthly Comtrade data is chapter-level: the finer HS dimensions only
-            exist on the yearly basis, so the pickers leave with it */}
-        {!monthly && (
         <MultiSelect
           values={filter.hs4}
           onChange={pickHs4}
@@ -154,9 +152,7 @@ export default function FilterBar() {
           label={t("filter.hs4")}
           allLabel={t("filter.all")}
         />
-        )}
 
-        {!monthly && (
         <MultiSelect
           values={filter.hs6}
           onChange={(v) => patch({ hs6: v })}
@@ -164,7 +160,6 @@ export default function FilterBar() {
           label={t("filter.hs6")}
           allLabel={t("filter.all")}
         />
-        )}
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>

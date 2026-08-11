@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { aggregate, ALL_YEARS, DEFAULT_FILTER, type Aggregate, type Filter, type RiskBand } from "@/lib/dataset";
+import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 
 interface Ctx {
   filter: Filter;
@@ -75,6 +76,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const search = useSearchParams();
   const [filter, setFilter] = useState<Filter>(() => fromSearch(new URLSearchParams(search?.toString() ?? "")));
   const skipSync = useRef(false);
+  // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
+  const detailVer = useMonthlyDetail(filter.granularity === "month");
 
   // reflect filter changes into the URL (shareable links, spec §5.2)
   useEffect(() => {
@@ -93,7 +96,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       // full window on the same time basis, for trend components
       series: aggregate({ ...filter, years: [] }),
     }),
-    [filter],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, detailVer],
   );
   return <FilterCtx.Provider value={value}>{children}</FilterCtx.Provider>;
 }

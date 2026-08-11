@@ -6,6 +6,10 @@
  * the time axis in months: [pIdx, kIdx, monthOffset, pe, ui] where
  * monthOffset = (year − y0) × 12 + (month − 1).
  *
+ * The HS6 detail (data/raw/monthly-cells-hs6.json) packs the same way into
+ * public/data/monthly-hs6.json — served statically and fetched on demand by
+ * src/lib/dataset.ts, because at ~1.9M cells it cannot ride in the bundle.
+ *
  * The monthly series runs past the annual window (currently into 2026) and can
  * mention partners the annual books never saw. Any such partner is appended to
  * src/data/meta.json so channel building — which resolves partners through the
@@ -20,7 +24,9 @@ import { NAME_OVERRIDES, REGION_BY_ISO, TRANSIT_HUBS } from "./config";
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "data", "raw", "monthly-cells.json");
+const SRC_HS6 = path.join(ROOT, "data", "raw", "monthly-cells-hs6.json");
 const OUT = path.join(ROOT, "src", "data", "monthly.json");
+const OUT_HS6 = path.join(ROOT, "public", "data", "monthly-hs6.json");
 const META = path.join(ROOT, "src", "data", "meta.json");
 
 interface InCell { p: string; k: string; y: number; m: number; pe: number; ui: number }
@@ -29,6 +35,8 @@ interface Payload {
   partnerNames: Record<string, string>;
   monthsByYear: Record<string, number[]>;
 }
+/** HS6 raw rows are positional to keep the big file lean: [iso, code, year, month, pe, ui]. */
+type Hs6Row = [string, string, number, number, number, number];
 
 async function main() {
   const payload: Payload = JSON.parse(await fs.readFile(SRC, "utf8"));
@@ -54,10 +62,26 @@ async function main() {
 
   await fs.writeFile(OUT, JSON.stringify({ v: 1, y0, p: pList, k: kList, monthsByYear: payload.monthsByYear, r: rows }));
 
+  // ---- HS6 detail, fetched on demand by the client ----
+  const hs6: { cells: Hs6Row[] } = JSON.parse(await fs.readFile(SRC_HS6, "utf8"));
+  const pIdx6 = new Map<string, number>();
+  const kIdx6 = new Map<string, number>();
+  const pList6: string[] = [];
+  const kList6: string[] = [];
+  const rows6 = hs6.cells.map((r) => [
+    idOf(r[0], pIdx6, pList6),
+    idOf(r[1], kIdx6, kList6),
+    (r[2] - y0) * 12 + (r[3] - 1),
+    r[4],
+    r[5],
+  ]);
+  await fs.mkdir(path.dirname(OUT_HS6), { recursive: true });
+  await fs.writeFile(OUT_HS6, JSON.stringify({ v: 1, y0, p: pList6, k: kList6, r: rows6 }));
+
   // ---- partner metadata reconciliation ----
   const meta = JSON.parse(await fs.readFile(META, "utf8"));
   const known = new Set(meta.partners.map((p: { iso3: string }) => p.iso3));
-  const missing = pList.filter((iso) => !known.has(iso));
+  const missing = [...new Set([...pList, ...pList6])].filter((iso) => !known.has(iso));
   for (const iso of missing) {
     meta.partners.push({
       iso3: iso,
@@ -79,8 +103,10 @@ async function main() {
   }
 
   const stat = await fs.stat(OUT);
-  console.log(`monthly.json  ${rows.length.toLocaleString()} cells · ${pList.length} partners · ${kList.length} chapters · ${(stat.size / 1e6).toFixed(1)}MB`);
-  console.log(`meta.json     +${missing.length} monthly-only partners${missing.length ? `: ${missing.join(", ")}` : ""}`);
+  const stat6 = await fs.stat(OUT_HS6);
+  console.log(`monthly.json      ${rows.length.toLocaleString()} cells · ${pList.length} partners · ${kList.length} chapters · ${(stat.size / 1e6).toFixed(1)}MB`);
+  console.log(`monthly-hs6.json  ${rows6.length.toLocaleString()} cells · ${pList6.length} partners · ${kList6.length} codes · ${(stat6.size / 1e6).toFixed(1)}MB`);
+  console.log(`meta.json         +${missing.length} monthly-only partners${missing.length ? `: ${missing.join(", ")}` : ""}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
