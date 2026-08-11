@@ -1,5 +1,11 @@
-# Don't ship secrets or the raw data cache — the site uses the baked src/data/*.json
+# Don't ship secrets or local data caches — the site uses the baked src/data/*.json
+# plus public/data/monthly-hs6.json. `/data` must stay anchored: a bare `data`
+# pattern also matches src/data and public/data and the build dies.
 .env
 .env.*
-data/raw
+/data
+*.xlsx
+.git
 .claude
+node_modules
+.next
