@@ -330,21 +330,13 @@ export default function ProductsView() {
   }, [level, chapterRows, childRows]);
 
   /*
-   * As-reported totals for the same node, taken from the pre-screen base.
-   *
-   * The ranked rows below keep only channels with a POSITIVE discrepancy, so
-   * summing them understates both books: a chapter where Uzbekistan recorded more
-   * than the partner is screened out and its trade disappears from the totals.
-   * That made "reported exports" / "UZB imports" impossible to reconcile against
-   * UN Comtrade. The two reported tiles therefore report every comparable channel
-   * in view, while the discrepancy tile stays on the screened population.
+   * Channel-count denominator for the "screened X of N" caption, from the
+   * pre-screen base (every comparable channel in view, either direction).
    */
   const nodeBase = useMemo(() => {
     /*
-     * Report at the most specific code the user has committed to. A selected HS6
-     * product is a narrower node than whatever level the drill happens to sit on,
-     * and summing the drill level instead returned the parent chapter's books —
-     * $631M for Germany rather than the $799K of the chosen product.
+     * Count at the most specific code the user has committed to. A selected HS6
+     * product is a narrower node than whatever level the drill happens to sit on.
      */
     const codeLevel = filter.hs6.length ? 6 : filter.hs4.length ? 4 : level;
     const prefix =
@@ -354,8 +346,28 @@ export default function ProductsView() {
     return observedTotals(filter, codeLevel, prefix);
   }, [filter, level, effChapter, hs4]);
 
+  /*
+   * Reported totals over the SCREENED population: both books reported the
+   * channel-year AND the partner side exceeds Uzbekistan's record after the
+   * freight uplift. Restricting all three tiles to the same channel-years makes
+   * them one identity — expected CIF − recorded imports = positive discrepancy,
+   * to the dollar. (As-reported totals including one-sided flows live on the
+   * Overview and Data Quality pages.)
+   */
+  const nodePos = useMemo(() => {
+    const chs: Channel[] =
+      level === 2
+        ? (filter.hs6.length ? data.channels6 : filter.hs4.length ? data.channels4 : data.channels)
+        : level === 4
+          ? data.channels4.filter((c) => c.cmd.startsWith(effChapter ?? ""))
+          : data.channels6.filter((c) => c.cmd.startsWith(hs4 ?? effChapter ?? ""));
+    let pe = 0, ui = 0;
+    for (const c of chs) for (const y of c.years) if (y.signed > 0) { pe += y.pe; ui += y.ui; }
+    return { pe, ui };
+  }, [level, effChapter, hs4, filter, data]);
+
   /** What the partner's FOB books become once the chosen freight margin is applied. */
-  const expectedCif = nodeBase.pe * (1 + filter.cif);
+  const expectedCif = nodePos.pe * (1 + filter.cif);
 
   // true when neither a chapter nor an HS4 code is drilled into — the node is the whole view
   const isAllNode = !(level === 6 && hs4) && !(effChapter && level !== 2);
@@ -475,13 +487,13 @@ export default function ProductsView() {
           <div className="grid gap-3 sm:grid-cols-3">
             <Stat
               label={t("prod.stat.reportedExports")}
-              value={fmtUSD(nodeBase.pe)}
+              value={fmtUSD(nodePos.pe)}
               sub={`${t("prod.stat.reportedExports.sub")}, ${period} · ${fill(t("prod.stat.expectedCif"), { rate: Math.round(filter.cif * 100), value: fmtUSD(expectedCif) })}`}
               info={`${t("prod.stat.reportedExports.info")} ${t("prod.stat.allComparable.info")}`}
             />
             <Stat
               label={t("prod.stat.uzbImports")}
-              value={fmtUSD(nodeBase.ui)}
+              value={fmtUSD(nodePos.ui)}
               sub={t("prod.stat.uzbImports.sub")}
               info={`${t("prod.stat.uzbImports.info")} ${t("prod.stat.allComparable.info")}`}
             />
