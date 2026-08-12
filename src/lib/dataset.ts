@@ -14,6 +14,7 @@ import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
+import { tCategory, tCountry, tRegion, tText } from "@/lib/labels";
 
 export const METHODOLOGY_VERSION = "3.1";
 
@@ -299,14 +300,18 @@ function sourceCells(f: Filter): Cell[] {
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
 const chapLabel = new Map(meta.chapters.map((c) => [c.chapter, c.label]));
 const catLabel = new Map(meta.categories.map((c) => [c.key, c.label]));
-export const partnerName = (iso: string) => pMeta.get(iso)?.name ?? iso;
+/* Every data-derived name the interface shows resolves through one of these,
+   so switching language reaches the tables and pickers as well as the chrome.
+   Untranslated entries fall back to the extract's English. */
+export const partnerName = (iso: string) => tCountry(iso, pMeta.get(iso)?.name ?? iso);
+export const regionLabel = (region: string) => tRegion(region);
 export const partnerMetaOf = (iso: string) => pMeta.get(iso);
-export const categoryLabel = (key: string) => catLabel.get(key) ?? key;
-export const hs6Label = (cmd: string) => meta.hs6labels[cmd] ?? `HS ${cmd}`;
+export const categoryLabel = (key: string) => tCategory(key, catLabel.get(key) ?? key);
+export const hs6Label = (cmd: string) => tText(meta.hs6labels[cmd] ?? `HS ${cmd}`);
 /** HS4 is derived from HS6; labels borrow the largest child's description. */
-export const hs4Label = (cmd: string) => meta.hs4labels[cmd] ?? `HS ${cmd}`;
+export const hs4Label = (cmd: string) => tText(meta.hs4labels[cmd] ?? `HS ${cmd}`);
 export const hsLabel = (cmd: string) =>
-  cmd.length === 2 ? (chapLabel.get(cmd) ?? `HS ${cmd}`) : cmd.length === 4 ? hs4Label(cmd) : hs6Label(cmd);
+  cmd.length === 2 ? tText(chapLabel.get(cmd) ?? `HS ${cmd}`) : cmd.length === 4 ? hs4Label(cmd) : hs6Label(cmd);
 export const productByCmd = (cmd: string) => products.find((p) => p.cmd === cmd);
 export const isResidualChapter = (c: string) => c === "98" || c === "99";
 
@@ -535,7 +540,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     const [mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap, bandIdx] = rr ?? EMPTY_RISK;
 
     out.push({
-      partner: pm.name, partnerIso: pm.iso3, region: pm.region, transit: pm.transit, tier: pm.tier,
+      partner: partnerName(pm.iso3), partnerIso: pm.iso3, region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
       chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
       level, category: r0.cat,
       years, peT, uiT, expectedT, pePosT, uiPosT, signedT, posT, revT, absT,
@@ -787,7 +792,7 @@ export function aggregate(f: Filter): Aggregate {
     const topChapters = [...cs].sort((a, b) => dirVal(b) - dirVal(a)).filter((c) => dirVal(c) > NOISE).slice(0, 8)
       .map((c) => ({ chapter: c.chapter, label: c.cmdLabel, value: Math.round(dirVal(c)), share: posTotal > 0 ? c.posT / posTotal : 0 }));
     partners.push({
-      iso3: iso, name: pm.name, region: pm.region, transit: pm.transit, tier: pm.tier,
+      iso3: iso, name: partnerName(iso), region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
       coverage: pm.coverage, lapse: pm.lapse, lastReportedYear: pm.lastReportedYear, reportedYears: pm.reportedYears,
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
       pePosT: cs.reduce((s, c) => s + c.pePosT, 0), uiPosT: cs.reduce((s, c) => s + c.uiPosT, 0),
@@ -819,7 +824,7 @@ export function aggregate(f: Filter): Aggregate {
     const posT = cs.reduce((s, c) => s + c.posT, 0);
     const top = [...cs].sort((a, b) => dirVal(b) - dirVal(a))[0];
     chapters.push({
-      chapter, label: chapLabel.get(chapter) ?? `HS ${chapter}`, category: cs[0].category, residual: isResidualChapter(chapter),
+      chapter, label: hsLabel(chapter), category: cs[0].category, residual: isResidualChapter(chapter),
       peT, uiT: cs.reduce((s, c) => s + c.uiT, 0),
       posT, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       gapRate: peT > 0 ? posT / (peT * (1 + f.cif)) : 0, channels: cs.length,
@@ -833,7 +838,7 @@ export function aggregate(f: Filter): Aggregate {
   const catTotals = new Map<string, number>();
   for (const c of rollup) catTotals.set(c.category, (catTotals.get(c.category) ?? 0) + c.posT);
   const catSum = [...catTotals.values()].reduce((a, b) => a + b, 0) || 1;
-  const categories = [...catTotals.entries()].map(([key, v]) => ({ key, label: catLabel.get(key) ?? key, value: v, share: v / catSum }))
+  const categories = [...catTotals.entries()].map(([key, v]) => ({ key, label: categoryLabel(key), value: v, share: v / catSum }))
     .filter((c) => c.value > 0).sort((a, b) => b.value - a.value);
 
   // ---- annual (positive discrepancy, plus comparable partner count) ----

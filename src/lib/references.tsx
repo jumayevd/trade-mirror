@@ -24,7 +24,7 @@ export const REFERENCES: Ref[] = [
     title: "Magic mirror in my hand… How trade mirror statistics can help us detect illegal financial flows",
     source: "Bank of Italy Occasional Papers (QEF) No. 445; journal version: The World Economy (2019), 42(11)",
     url: "https://www.bancaditalia.it/pubblicazioni/qef/2018-0445/",
-    note: "Mirror-statistics screening at country and product level, with a top-share critical band — the banding convention this score follows.",
+    note: "Mirror screening at country and product level, and the top-share critical band.",
   },
   {
     id: "choi2019",
@@ -32,7 +32,7 @@ export const REFERENCES: Ref[] = [
     year: "2019",
     title: "Identifying trade mis-invoicing through customs data analysis",
     source: "World Customs Journal, 13(2)",
-    note: "The direction filter and the exclusion of unmatched flows. Validated against customs enforcement outcomes — but with a second, price-based screen that this dataset cannot support.",
+    note: "The direction filter and the exclusion of unmatched flows.",
   },
   {
     id: "berger2008",
@@ -40,7 +40,7 @@ export const REFERENCES: Ref[] = [
     year: "2008",
     title: "Gotcha! A Profile of Smuggling in International Trade",
     source: "CESifo Working Paper No. 2475",
-    note: "Profiles the country and product characteristics associated with trade-gap smuggling; supports reading a persistent positive gap as a screening signal.",
+    note: "Which countries and products carry trade-gap smuggling.",
   },
   {
     id: "nitsch2016",
@@ -48,7 +48,7 @@ export const REFERENCES: Ref[] = [
     year: "2016",
     title: "Trillion Dollar Estimate: Illicit Financial Flows from Developing Countries",
     source: "Darmstadt Discussion Papers in Economics No. 227",
-    note: "A sceptical audit of headline gap-based estimates — the reason this platform ranks cells and never totals them into an illicit-flow figure.",
+    note: "Why gap totals are not an illicit-flow estimate.",
   },
   {
     id: "farhad2019",
@@ -56,7 +56,7 @@ export const REFERENCES: Ref[] = [
     year: "2019",
     title: "Misreported Trade",
     source: "ESCoE Discussion Paper 2019-13",
-    note: "Evidence that misreporting is concentrated and repeats in the same product lines — the empirical grounding for scoring persistence.",
+    note: "Misreporting repeats in the same product lines, which is what persistence scores.",
   },
   {
     id: "laplace1812",
@@ -64,7 +64,7 @@ export const REFERENCES: Ref[] = [
     year: "1812",
     title: "Théorie analytique des probabilités",
     source: "Courcier, Paris",
-    note: "The rule of succession: (k + 1) / (n + 2) as the probability estimate from k successes in n trials — the persistence term P of the risk score.",
+    note: "The rule of succession, (k + 1) / (n + 2) — the persistence term.",
   },
   {
     id: "undp2010",
@@ -73,7 +73,7 @@ export const REFERENCES: Ref[] = [
     title: "Human Development Report 2010: The Real Wealth of Nations",
     source: "UNDP, New York",
     url: "https://hdr.undp.org/content/human-development-report-2010",
-    note: "The best-known applied case of geometric aggregation: components that only partly substitute for one another are multiplied, not averaged.",
+    note: "Geometric aggregation of partly substitutable components, as in the HDI.",
   },
   {
     id: "bhagwati1964",
@@ -81,7 +81,7 @@ export const REFERENCES: Ref[] = [
     year: "1964",
     title: "On the Underinvoicing of Imports",
     source: "Bulletin of the Oxford University Institute of Economics and Statistics, 27(4)",
-    note: "The founding paper of partner-country trade comparison: systematic import–export gaps as evidence consistent with misinvoicing.",
+    note: "The founding paper of partner-country trade comparison.",
   },
   {
     id: "yeats1990",
@@ -89,7 +89,7 @@ export const REFERENCES: Ref[] = [
     year: "1990",
     title: "On the Accuracy of Economic Observations: Do Sub-Saharan Trade Statistics Mean Anything?",
     source: "World Bank Economic Review, 4(2)",
-    note: "Why raw mirror gaps overstate irregularities — reporting quality must be assessed before interpretation, which is what the Data Quality page is for.",
+    note: "Reporting quality must be judged before a gap is interpreted.",
   },
   {
     id: "hummels2006",
@@ -97,7 +97,7 @@ export const REFERENCES: Ref[] = [
     year: "2006",
     title: "Are Matched Partner Trade Statistics a Usable Measure of Transportation Costs?",
     source: "Review of International Economics, 14(1)",
-    note: "The CIF/FOB wedge between matched mirrors is noisy and commodity-dependent — the reason we show a 6–15% scenario band rather than one rate.",
+    note: "The CIF/FOB wedge is commodity-dependent — hence a freight band, not a rate.",
   },
   {
     id: "gaulier2010",
@@ -106,7 +106,7 @@ export const REFERENCES: Ref[] = [
     title: "BACI: International Trade Database at the Product-Level",
     source: "CEPII Working Paper 2010-23",
     url: "https://www.cepii.fr/CEPII/en/publications/wp/abstract.asp?NoDoc=2726",
-    note: "Standard practice for reconciling CIF imports with FOB exports at product level; motivates our expected-CIF construction.",
+    note: "Standard practice for reconciling CIF imports with FOB exports.",
   },
   {
     id: "fisman2004",
@@ -114,7 +114,7 @@ export const REFERENCES: Ref[] = [
     year: "2004",
     title: "Tax Rates and Tax Evasion: Evidence from “Missing Imports” in China",
     source: "Journal of Political Economy, 112(2)",
-    note: "The behavioural test: gaps that grow with the tax burden are consistent with evasion incentives — the design of our planned phase-2 tariff module.",
+    note: "Gaps that rise with the tax burden — the planned tariff module.",
   },
   {
     id: "javorcik2008",
@@ -122,7 +122,7 @@ export const REFERENCES: Ref[] = [
     year: "2008",
     title: "Differentiated Products and Evasion of Import Tariffs",
     source: "Journal of International Economics, 76(2)",
-    note: "Under-valuation concentrates in differentiated goods where prices are hard to verify — the check this dataset cannot run, since it carries no quantity or weight.",
+    note: "Under-valuation hides in differentiated goods, which needs price data this extract lacks.",
   },
   {
     id: "ferrantino2008",
@@ -130,7 +130,7 @@ export const REFERENCES: Ref[] = [
     year: "2008",
     title: "Accounting for Discrepancies in Bilateral Trade: The Case of China, Hong Kong, and the United States",
     source: "China Economic Review, 19(3)",
-    note: "Re-export and transit routing create large legitimate mirror gaps — the reason transit hubs are tagged throughout and read separately.",
+    note: "Re-export routing creates large legitimate gaps — why transit hubs are tagged.",
   },
   {
     id: "buehn2011",
@@ -138,7 +138,7 @@ export const REFERENCES: Ref[] = [
     year: "2011",
     title: "Trade Misinvoicing: The Dark Side of World Trade",
     source: "The World Economy, 34(8)",
-    note: "Separating positive and reverse discrepancies as distinct phenomena — the reason net gaps are never our headline.",
+    note: "Positive and reverse discrepancies are distinct, so net gaps are never the headline.",
   },
   {
     id: "carrere2015",
@@ -147,7 +147,7 @@ export const REFERENCES: Ref[] = [
     title: "Can Mirror Data Help to Capture Informal International Trade?",
     source: "FERDI Working Paper P123",
     url: "https://ferdi.fr/dl/df-6iH6FxjdWS8K1vAs43xfqnwQ/ferdi-p123-can-mirror-data-help-to-capture-informal-international-trade.pdf",
-    note: "Mirror statistics as a window onto informal trade — with strict caveats on coverage and valuation that our stages implement.",
+    note: "Mirror data as a window onto informal trade, with coverage caveats.",
   },
   {
     id: "kellenberg2019",
@@ -155,7 +155,7 @@ export const REFERENCES: Ref[] = [
     year: "2019",
     title: "Misreporting Trade: Tariff Evasion, Corruption, and Auditing Standards",
     source: "Review of International Economics, 27(1)",
-    note: "Cross-country evidence that mirror gaps correlate with institutions and audit standards at the country level.",
+    note: "Mirror gaps track institutions and audit standards across countries.",
   },
   {
     id: "oecdjrc2008",
@@ -164,7 +164,7 @@ export const REFERENCES: Ref[] = [
     title: "Handbook on Constructing Composite Indicators: Methodology and User Guide",
     source: "OECD Publishing, Paris",
     url: "https://doi.org/10.1787/9789264043466-en",
-    note: "The aggregation theory behind the risk score: geometric means limit compensability, so a weak evidence base caps the composite instead of being averaged away.",
+    note: "Rank normalisation before aggregation, and geometric means to limit compensability.",
   },
   {
     id: "wco2011",
@@ -172,7 +172,7 @@ export const REFERENCES: Ref[] = [
     year: "2011",
     title: "Customs Risk Management Compendium",
     source: "WCO, Brussels",
-    note: "Customs risk-selectivity practice: composite scores rank targets for review — a score triggers scrutiny, never a conclusion. The operational frame for R.",
+    note: "Customs practice: a composite score ranks targets, it never concludes.",
   },
   {
     id: "unsd2019",
@@ -181,7 +181,7 @@ export const REFERENCES: Ref[] = [
     title: "Guidelines on the Analysis and Reduction of Bilateral Trade Asymmetries",
     source: "UNSD, New York",
     url: "https://comtradeapi.un.org/files/v1/app/wiki/Guidelines_on_Analyzing_and_Reducing_Bilateral_Asymmetry-23_Apr_2019.pdf",
-    note: "The official taxonomy of legitimate asymmetry causes (trade system, partner attribution, timing, confidentiality) used in our checklists.",
+    note: "The official taxonomy of legitimate asymmetry causes.",
   },
   {
     id: "imf2023",
@@ -190,7 +190,7 @@ export const REFERENCES: Ref[] = [
     title: "The Use of Mirror Data by Customs Administrations: From Principles to Practice",
     source: "IMF Technical Notes and Manuals 2023/005",
     url: "https://www.imf.org/en/publications/tnm/issues/2023/09/26/the-use-of-mirror-data-by-customs-administrations-fromprinciplestopractice-537562",
-    note: "How customs administrations operationalize mirror analysis for risk screening — the institutional template for our investigation queue.",
+    note: "How customs administrations run mirror analysis for risk screening.",
   },
   {
     id: "medina2018",
@@ -199,7 +199,7 @@ export const REFERENCES: Ref[] = [
     title: "Shadow Economies Around the World: What Did We Learn Over the Last 20 Years?",
     source: "IMF Working Paper 18/17",
     url: "https://www.imf.org/en/Publications/WP/Issues/2018/01/25/Shadow-Economies-Around-the-World-What-Did-We-Learn-Over-the-Last-20-Years-45583",
-    note: "Shadow-economy measurement requires structural methods; trade mirror gaps are one input signal, never the measure itself — our central caveat.",
+    note: "Shadow-economy size needs structural methods; a mirror gap is one input signal.",
   },
 ];
 

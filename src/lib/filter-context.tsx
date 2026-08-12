@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { aggregate, ALL_YEARS, DEFAULT_FILTER, type Aggregate, type Filter, type RiskBand } from "@/lib/dataset";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
+import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
 
 interface Ctx {
   filter: Filter;
@@ -71,6 +73,10 @@ function toSearch(f: Filter): string {
 }
 
 export function FilterProvider({ children }: { children: ReactNode }) {
+  // Names inside the aggregate are localised as it is built, so the language is
+  // part of the memo key: switching it has to rebuild the rollups, not just the
+  // chrome around them. FilterProvider sits inside I18nProvider (see layout).
+  const { lang } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -92,12 +98,12 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       filter,
       patch: (p) => setFilter((f) => ({ ...f, ...p })),
       reset: () => setFilter(DEFAULT_FILTER),
-      data: aggregate(filter),
+      data: labelsFor(lang, () => aggregate(filter)),
       // full window on the same time basis, for trend components
-      series: aggregate({ ...filter, years: [] }),
+      series: labelsFor(lang, () => aggregate({ ...filter, years: [] })),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filter, detailVer],
+    [filter, detailVer, lang],
   );
   return <FilterCtx.Provider value={value}>{children}</FilterCtx.Provider>;
 }

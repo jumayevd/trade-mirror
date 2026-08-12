@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BandBadge, ComponentChip, EmptyState, MissingValue, RiskScore } from "@/components/ui";
+import { BandBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
 import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
@@ -225,14 +225,13 @@ export default function QueueTable({
         <EmptyState />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-collapse">
+          <table className="w-full min-w-[1180px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
                 <th className={th}>{t("common.partner")}</th>
                 <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("risk.th.hsCode")}</th>
                 <th className={th}>{t("common.product")}</th>
                 <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
-                <th className={th} title={t("risk.tip.components")}>{t("risk.th.components")}</th>
                 <th className={thNum} title={t("risk.tip.uzbImport")}>{t("risk.th.uzbImport")}</th>
                 <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
@@ -291,12 +290,6 @@ export default function QueueTable({
                       )}
                     </td>
                     <td className={td}><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
-                    <td className={`${td} whitespace-nowrap`}>
-                      <span className="inline-flex gap-1">
-                        <ComponentChip kind="g" value={c.abnormalGap} />
-                        <ComponentChip kind="p" value={c.persistence} />
-                      </span>
-                    </td>
                     <td className={tdNum} title={c.uiPosT > 0 ? fmtUSDFull(c.uiPosT) : undefined}>
                       {/* no positive-year UZB record — a gap in the mirror, never a measured zero */}
                       {c.uiPosT > 0 ? fmtUSD(c.uiPosT) : <MissingValue />}
@@ -313,7 +306,7 @@ export default function QueueTable({
                   </tr>,
                   open ? (
                     <tr key={`${key}-detail`} className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel-2)]">
-                      <td colSpan={11} className="px-4 py-3">
+                      <td colSpan={10} className="px-4 py-3">
                         <YearDetail c={c} filter={filter} years={years} />
                       </td>
                     </tr>
