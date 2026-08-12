@@ -26,16 +26,15 @@ function HeadDot({ color }: { color: string }) {
   );
 }
 
-type SortKey = "band" | "risk" | "abnormal" | "gap" | "gapPct" | "persistence" | "value";
+type SortKey = "risk" | "gapPct" | "persistence" | "value" | "importReported";
+type SortDir = "desc" | "asc";
 
 const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
-  { key: "band", labelKey: "risk.sort.band" },
   { key: "risk", labelKey: "risk.th.riskValue" },
-  { key: "abnormal", labelKey: "risk.th.abnormalGap" },
-  { key: "gap", labelKey: "risk.sort.gap" },
   { key: "gapPct", labelKey: "risk.th.gapPct" },
   { key: "persistence", labelKey: "common.persistence" },
   { key: "value", labelKey: "risk.th.exportReported" },
+  { key: "importReported", labelKey: "risk.th.uzbImport" },
 ];
 
 const PAGE_SIZES = [25, 50, 100];
@@ -58,18 +57,22 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
   "freight-sensitive": "risk.flag.freightSensitive",
 };
 
-function sortChannels(rows: Channel[], sort: SortKey, K: number): Channel[] {
-  if (sort === "band") return rows; // engine order: band → MTRS → gap
-  const by: Record<Exclude<SortKey, "band">, (a: Channel, b: Channel) => number> = {
+/**
+ * Every comparator ranks the strongest signal first; ascending reverses the
+ * finished order so the tie-breaks stay attached to their primary key rather
+ * than flipping independently of it.
+ */
+function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir, K: number): Channel[] {
+  const by: Record<SortKey, (a: Channel, b: Channel) => number> = {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
-    abnormal: (a, b) => b.abnormalGap - a.abnormalGap || b.mtrs - a.mtrs,
-    gap: (a, b) => b.posT - a.posT || b.mtrs - a.mtrs,
     gapPct: (a, b) => (gapPct(b, K) ?? -1) - (gapPct(a, K) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
       b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
     value: (a, b) => b.pePosT - a.pePosT || b.posT - a.posT,
+    importReported: (a, b) => b.uiPosT - a.uiPosT || b.posT - a.posT,
   };
-  return [...rows].sort(by[sort]);
+  const sorted = [...rows].sort(by[sort]);
+  return dir === "asc" ? sorted.reverse() : sorted;
 }
 
 type Translate = (key: LocaleKey) => string;
@@ -105,7 +108,8 @@ export default function QueueTable({
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortKey>("band");
+  const [sort, setSort] = useState<SortKey>("risk");
+  const [dir, setDir] = useState<SortDir>("desc");
   const [pageSize, setPageSize] = useState(25);
   const [pageRaw, setPageRaw] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -144,8 +148,8 @@ export default function QueueTable({
         c.cmdLabel.toLowerCase().includes(q)
       );
     });
-    return sortChannels(filtered, sort, 1 + filter.cif);
-  }, [channels, query, sort, partnerSel, productSel, filter.cif]);
+    return sortChannels(filtered, sort, dir, 1 + filter.cif);
+  }, [channels, query, sort, dir, partnerSel, productSel, filter.cif]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -211,6 +215,16 @@ export default function QueueTable({
               <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
             ))}
           </select>
+          <select
+            value={dir}
+            onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
+            aria-label={t("risk.sortDir")}
+            title={t("risk.sortDir")}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+          >
+            <option value="desc">{t("risk.sortDesc")}</option>
+            <option value="asc">{t("risk.sortAsc")}</option>
+          </select>
         </label>
 
         <span className="tabular text-[12px] text-faint">
@@ -272,7 +286,7 @@ export default function QueueTable({
                         {c.partner}
                       </Link>
                     </td>
-                    <td className={`${td} tabular font-mono text-xs text-faint`}>{c.cmd}</td>
+                    <td className={`${td} tabular text-faint`}>{c.cmd}</td>
                     <td className={`${td} max-w-[280px]`}>
                       {product ? (
                         <Link
@@ -380,7 +394,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
       <div>
         <h4 className="mb-1 text-[10.5px] font-medium text-faint">
-          {t("risk.detail.perYear")} · {c.partner} × HS <span className="font-mono">{c.cmd}</span>
+          {t("risk.detail.perYear")} · {c.partner} × HS <span className="tabular">{c.cmd}</span>
         </h4>
         <table className="w-full border-collapse">
           <thead>

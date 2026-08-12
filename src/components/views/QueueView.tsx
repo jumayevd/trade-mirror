@@ -6,13 +6,15 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { BandBadge, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
+import { BandBadge, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { COLORS, fmtNum, fmtPct, fmtUSD } from "@/lib/format";
+import { COLORS, fmtNum } from "@/lib/format";
+import diagnosticsRaw from "@/data/diagnostics.json";
+import type { LocaleKey } from "@/lib/locales";
 import {
-  aggregate, DEFAULT_FILTER, meta, partnerEffects, partnerMetaOf, RISK_CONFIG, yearsFor, yearsLabel,
+  aggregate, DEFAULT_FILTER, meta, yearsFor, yearsLabel,
   type Aggregate, type Channel, type Filter, type Granularity, type RiskBand,
 } from "@/lib/dataset";
 
@@ -46,6 +48,13 @@ const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespac
 const TH_NUM = `${TH} text-right`;
 const TD = "px-3 py-1.5 align-middle text-[13px]";
 const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
+
+const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
+
+/** Band cut-offs are fitted per HS level, so the legend quotes the live level. */
+const BAND_CUTS = (diagnosticsRaw as unknown as {
+  bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
+}).bandCuts;
 
 export default function QueueView() {
   const { t } = useI18n();
@@ -88,12 +97,9 @@ export default function QueueView() {
   const exportCsv = () => downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
 
   const stats = useMemo(() => {
-    const sorted = [...channels].sort((a, b) => b.posT - a.posT);
-    const total = sorted.reduce((s, c) => s + c.posT, 0);
-    const top5 = sorted.slice(0, 5).reduce((s, c) => s + c.posT, 0);
     const counts = { critical: 0, high: 0, elevated: 0, low: 0 } as Record<RiskBand, number>;
     for (const c of channels) counts[c.band]++;
-    return { counts, top5Share: total > 0 ? top5 / total : 0, total };
+    return { counts };
   }, [channels]);
 
   const riskStats = useMemo(() => {
@@ -103,7 +109,17 @@ export default function QueueView() {
     return { top, median: quantile(vals, 0.5) };
   }, [channels]);
 
-  const effects = useMemo(() => partnerEffects(level).slice(0, 12), [level]);
+  /** Score ranges quoted beside each band, at the HS level currently listed. */
+  const bandRanges = useMemo<Record<RiskBand, string>>(() => {
+    const c = BAND_CUTS[String(level)] ?? BAND_CUTS["6"];
+    const n = (v: number) => v.toFixed(1);
+    return {
+      critical: `≥ ${n(c.critical)}`,
+      high: `${n(c.high)} – ${n(c.critical)}`,
+      elevated: `${n(c.elevated)} – ${n(c.high)}`,
+      low: `< ${n(c.elevated)}`,
+    };
+  }, [level]);
 
   return (
     <div className="space-y-6">
@@ -200,62 +216,41 @@ export default function QueueView() {
           right={<InfoTip text={t("risk.ranked.info")} />}
         />
 
-        <p className="max-w-3xl text-[12px] text-muted">
-          <span className="tabular font-medium text-foreground">{fmtNum(channels.length)}</span>{" "}
-          {t(LEVEL_LABEL_KEYS[level])} {t("risk.combinationsCount")}
-          · {t("risk.top5")} = <span className="tabular font-medium text-foreground">{fmtPct(stats.top5Share, 0)}</span> ({fmtUSD(stats.total)})
-          · <span className="cursor-help" title={t("risk.floor.tip")}>{t("risk.floor.label")} ${fmtNum(RISK_CONFIG.materialityFloor)}</span>
-        </p>
-
         <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years} />
       </section>
 
-      {/* partner reporting-discrepancy indicator (u_p) */}
+      {/* what the bands mean — read after the queue, so the ranks above have context */}
       <section className="space-y-3">
         <SectionTitle
-          title={t("risk.effects.title")}
-          desc={t("risk.effects.desc")}
-          right={<InfoTip text={t("risk.effects.info")} />}
+          title={t("risk.bands.title")}
+          desc={t("risk.bands.desc")}
+          right={<InfoTip text={t("risk.bands.info")} />}
         />
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[520px] border-collapse">
+          <table className="w-full min-w-[720px] border-collapse">
             <thead className="border-b border-[var(--color-border)]">
               <tr>
-                <th className={TH}>{t("common.partner")}</th>
-                <th className={TH_NUM} title={t("risk.effects.uTip")}>{t("risk.effects.uCol")}</th>
-                <th className={TH_NUM}>{t("risk.effects.cellsCol")}</th>
+                <th className={TH}>{t("risk.th.band")}</th>
+                <th className={TH}>{t("risk.bands.colScore")}</th>
+                <th className={TH}>{t("risk.bands.colWhere")}</th>
+                <th className={TH_NUM}>{t("risk.bands.colCells")}</th>
+                <th className={TH}>{t("risk.bands.colMeans")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
-              {effects.map((e) => {
-                const pm = partnerMetaOf(e.iso);
-                return (
-                  <tr key={e.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
-                    <td className={`${TD} whitespace-nowrap`}>
-                      <Link href={`/partners/${e.iso.toLowerCase()}`} className="font-medium hover:underline">
-                        {pm?.name ?? e.iso}
-                      </Link>
-                      {pm?.transit && <span className="ml-1.5"><TransitTag /></span>}
-                    </td>
-                    <td className={TD_NUM}>{e.u > 0 ? "+" : ""}{e.u.toFixed(2)}</td>
-                    <td className={TD_NUM}>{fmtNum(e.cells)}</td>
-                  </tr>
-                );
-              })}
+              {BANDS.map((b) => (
+                <tr key={b} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <td className={`${TD} whitespace-nowrap`}><BandBadge band={b} /></td>
+                  <td className={`${TD} tabular whitespace-nowrap`}>{bandRanges[b]}</td>
+                  <td className={`${TD} whitespace-nowrap`}>{t(`risk.bands.${b}.where` as LocaleKey)}</td>
+                  <td className={TD_NUM}>{fmtNum(stats.counts[b])}</td>
+                  <td className={TD}>{t(`risk.bands.${b}.means` as LocaleKey)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-        <p className="max-w-3xl text-xs text-faint">{t("risk.effects.footnote")}</p>
-      </section>
-
-      {/* band legend */}
-      <section className="flex flex-wrap items-center gap-2">
-        {(["critical", "high", "elevated", "low"] as RiskBand[]).map((b) => (
-          <span key={b} className="inline-flex items-center gap-1.5">
-            <BandBadge band={b} />
-            <span className="tabular text-[11px] text-faint">{fmtNum(stats.counts[b])}</span>
-          </span>
-        ))}
+        <p className="max-w-3xl text-xs text-faint">{t("risk.bands.footnote")}</p>
       </section>
     </div>
   );

@@ -80,6 +80,18 @@ const LIT: { key: string; refId: string }[] = [
 
 const refById = new Map(REFERENCES.map((r) => [r.id, r]));
 
+/**
+ * The four bands as percentile cuts on the score. Written as bare numbers so the
+ * rows read the same in every language; the fitted thresholds per HS level are
+ * in Model diagnostics below.
+ */
+const BAND_ROWS: { key: string; pct: string; share: string }[] = [
+  { key: "critical", pct: "≥ 97.5", share: "2.5%" },
+  { key: "high", pct: "75.0 – 97.5", share: "22.5%" },
+  { key: "elevated", pct: "50.0 – 75.0", share: "25%" },
+  { key: "low", pct: "< 50.0", share: "50%" },
+];
+
 export default function MethodologyView() {
   const { t } = useI18n();
   const k = FULL.kpis;
@@ -206,8 +218,7 @@ export default function MethodologyView() {
           <Step n="1" title={tr("meth.risk.s1.title")}>
             {tr("meth.risk.s1.body")}
             <Formula>gap rate = Σ max(X × (1 + f) − M, 0) ÷ Σ X × (1 + f)</Formula>
-            {tr("meth.risk.s1.body2")}
-            <Formula>G = percentile rank of the gap rate, 0 … 1</Formula>
+            {tr("meth.risk.s1.body2")}{" "}
             {tr("meth.risk.s1.body3")}
             <Cite ids={["bhagwati1964", "oecdjrc2008"]} />
           </Step>
@@ -227,6 +238,27 @@ export default function MethodologyView() {
 
           <Step n="4" title={tr("meth.risk.s4.title")}>
             {tr("meth.risk.s4.body")}
+            <div className="mt-2 overflow-x-auto rounded-md border border-[var(--color-border-soft)]">
+              <table className="w-full min-w-[420px]">
+                <thead>
+                  <tr className="border-b border-[var(--color-border-soft)]">
+                    <th className={TH}>{tr("meth.risk.s4.colBand")}</th>
+                    <th className={TH}>{tr("meth.risk.s4.colPct")}</th>
+                    <th className={TH}>{tr("meth.risk.s4.colShare")}</th>
+                  </tr>
+                </thead>
+                <tbody className="zebra">
+                  {BAND_ROWS.map((b) => (
+                    <tr key={b.key} className="border-b border-[var(--color-border-soft)] last:border-0">
+                      <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b.key}`)}</td>
+                      <td className={`${TD} tabular whitespace-nowrap`}>{b.pct}</td>
+                      <td className={`${TD} tabular whitespace-nowrap`}>{b.share}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2">{tr("meth.risk.s4.body2")}</p>
             <Cite ids={["gara2018", "wco2011", "imf2023"]} />
           </Step>
         </div>
@@ -240,7 +272,7 @@ export default function MethodologyView() {
       <section className="space-y-2">
         <h2 className={H2}>{tr("meth.diag.title")}</h2>
         <p className={P}>{tr("meth.diag.desc")}</p>
-        <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Diag label="cor(G, P)" value={diag.corGP[HS6].toFixed(2)} note={tr("meth.diag.corGP")} />
           <Diag
             label={tr("meth.diag.matched")}
@@ -251,11 +283,6 @@ export default function MethodologyView() {
             label={tr("meth.diag.gapRate")}
             value={fmtPct(rates.p50, 0)}
             note={`${tr("meth.diag.gapRateNote")} p90 ${fmtPct(rates.p90, 0)} · p99 ${fmtPct(rates.p99, 0)}`}
-          />
-          <Diag
-            label={tr("meth.diag.unmatched")}
-            value={fmtNum(cov.orphanImportCellYears + cov.lostExportCellYears)}
-            note={tr("meth.diag.unmatchedNote")}
           />
         </div>
         <p className="tabular max-w-3xl text-[11.5px] text-faint">

@@ -7,7 +7,7 @@ import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
 import { Stat, SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, type PartnerMeta } from "@/lib/dataset";
+import { meta, RISK_CONFIG, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
@@ -395,9 +395,8 @@ export default function QualityView() {
             <h3 className="mb-1.5 text-sm font-semibold">{t("qual.excl.floorTitle")}</h3>
             <p className="text-sm text-muted">
               {t("qual.excl.floor1")}{" "}
-              <span className="tabular">$8M</span> {t("qual.excl.floor2")}{" "}
-              <span className="tabular">$4M</span>{" "}
-              {fill(t("qual.excl.floor3"), { start: meta.window.start, end: meta.window.end })}
+              <span className="tabular">${fmtNum(RISK_CONFIG.materialityFloor)}</span>{" "}
+              {t("qual.excl.floor2")}
             </p>
           </div>
           <div className="card p-4">

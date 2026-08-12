@@ -128,7 +128,11 @@ export default function OverviewView() {
     const rows = firstLive > 0 ? data.annual.slice(firstLive) : data.annual;
     const periods = rows.map((a) => a.label ?? String(a.year));
     const positiveName = t("kpi.positive");
-    const partnersName = t("ovw.tooltip.comparablePartners");
+    const shareName = t("ovw.series.gapShare");
+    // The gap as a share of expected CIF imports over the positive channel-years,
+    // the same identity the queue's Gap % column reports, so the two read alike.
+    const K = 1 + FULL_WINDOW.cif;
+    const shares = rows.map((a) => (a.pePos > 0 ? a.positive / (a.pePos * K) : null));
     // 90+ monthly points would smother the lines in dots
     const dots = rows.length > 24 ? 0 : 7;
     return {
@@ -153,9 +157,9 @@ export default function OverviewView() {
           if (items.length === 0) return "";
           const period = String(items[0]?.axisValue ?? "");
           const lines = items.map((it) => {
-            const v = it.seriesName === partnersName
-              ? fmtNum(it.value ?? 0)
-              : typeof it.value === "number" ? fmtUSDFull(it.value) : t("common.notComparable");
+            const v = typeof it.value !== "number"
+              ? t("common.notComparable")
+              : it.seriesName === shareName ? fmtPct(it.value, 1) : fmtUSDFull(it.value);
             return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
           });
           return `<div style="font-weight:600;margin-bottom:4px">${period}</div>${lines.join("")}`;
@@ -166,9 +170,9 @@ export default function OverviewView() {
         valueAxis("USD"),
         {
           type: "value",
-          name: partnersName,
+          name: shareName,
           nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-          axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
+          axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtPct(v, 0) },
           splitLine: { show: false },
           axisLine: { show: false },
         },
@@ -187,10 +191,10 @@ export default function OverviewView() {
           z: 3,
         },
         {
-          name: partnersName,
+          name: shareName,
           type: "line",
           yAxisIndex: 1,
-          data: rows.map((a) => a.comparablePartners),
+          data: shares,
           smooth: 0.3,
           symbol: "circle",
           symbolSize: dots,
