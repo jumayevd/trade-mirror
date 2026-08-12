@@ -1,0 +1,482 @@
+{
+ "Cork; blocks, plates, sheets and strip, tiles of any shape, solid cylinders (including…": [
+  "Пробка; блоки, плиты, листы и лента, плитки любой формы, цилиндры сплошные (включая…",
+  "Probka; bloklar, plitalar, listlar va tasma, har qanday shakldagi plitkalar, yaxlit silindrlar…"
+ ],
+ "Cork; corks and stoppers, of natural cork": [
+  "Пробка; пробки и затычки из натуральной пробки",
+  "Probka; tabiiy probkadan probka va tiqinlar"
+ ],
+ "Cork; natural cork, debacked or roughly squared, or in rectangular (including square) b…": [
+  "Пробка; пробка натуральная, с удалённой коркой или грубо обрезанная, или в прямоугольных б…",
+  "Probka; tabiiy probka, poʻstlogʻi olingan yoki qoʻpol kesilgan, yoki toʻgʻri toʻrtburchak b…"
+ ],
+ "Cork; waste cork, crushed, granulated or ground cork": [
+  "Пробка; отходы пробки, дроблёная, гранулированная или молотая пробка",
+  "Probka; probka chiqindilari, maydalangan, granulalangan yoki yanchilgan probka"
+ ],
+ "Corselettes; whether or not knitted or crocheted": [
+  "Грации; трикотажные или нетрикотажные",
+  "Gratsiyalar; trikotaj yoki trikotaj emas"
+ ],
+ "Cosmetic and toilet preparations": [
+  "Средства косметические и туалетные",
+  "Kosmetika va parvarish vositalari"
+ ],
+ "Cotton yarn; (not sewing thread), containing 85% or more by weight of cotton, put up fo…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), с содержанием хлопка 85% или более, расфасованная для…",
+  "Paxta iplari; (tikuv iplaridan boshqa), tarkibida 85% yoki undan ortiq paxta, chakana…"
+ ],
+ "Cotton yarn; (not sewing thread), containing less than 85% by weight of cotton, put up…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), с содержанием хлопка менее 85%, расфасованная…",
+  "Paxta iplari; (tikuv iplaridan boshqa), tarkibida 85% dan kam paxta, chakana…"
+ ],
+ "Cotton yarn; (not sewing thread), multiple or cabled, of combed fibres, 85% or more by…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), крученая или многокруточная, из гребенных волокон, 85% или более…",
+  "Paxta iplari; (tikuv iplaridan boshqa), qoʻshaloq yoki koʻp qatlamli, taralgan tolalardan, 85% yoki undan ortiq…"
+ ],
+ "Cotton yarn; (not sewing thread), multiple or cabled, of combed fibres, less than 85% b…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), крученая или многокруточная, из гребенных волокон, менее 85%…",
+  "Paxta iplari; (tikuv iplaridan boshqa), qoʻshaloq yoki koʻp qatlamli, taralgan tolalardan, 85% dan kam…"
+ ],
+ "Cotton yarn; (not sewing thread), multiple or cabled, of uncombed fibres, 85% or more b…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), крученая или многокруточная, из негребенных волокон, 85% или более…",
+  "Paxta iplari; (tikuv iplaridan boshqa), qoʻshaloq yoki koʻp qatlamli, taralmagan tolalardan, 85% yoki undan ortiq…"
+ ],
+ "Cotton yarn; (not sewing thread), multiple or cabled, of uncombed fibres, less than 85%…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), крученая или многокруточная, из негребенных волокон, менее 85%…",
+  "Paxta iplari; (tikuv iplaridan boshqa), qoʻshaloq yoki koʻp qatlamli, taralmagan tolalardan, 85% dan kam…"
+ ],
+ "Cotton yarn; (not sewing thread), single, of combed fibres, 85% or more by weight of co…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), однониточная, из гребенных волокон, 85% или более по массе…",
+  "Paxta iplari; (tikuv iplaridan boshqa), bir tolali, taralgan tolalardan, massasi boʻyicha 85% yoki undan ortiq…"
+ ],
+ "Cotton yarn; (not sewing thread), single, of combed fibres, less than 85% by weight of…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), однониточная, из гребенных волокон, менее 85% по массе…",
+  "Paxta iplari; (tikuv iplaridan boshqa), bir tolali, taralgan tolalardan, massasi boʻyicha 85% dan kam…"
+ ],
+ "Cotton yarn; (not sewing thread), single, of uncombed fibres, 85% or more by weight of…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), однониточная, из негребенных волокон, 85% или более по массе…",
+  "Paxta iplari; (tikuv iplaridan boshqa), bir tolali, taralmagan tolalardan, massasi boʻyicha 85% yoki undan ortiq…"
+ ],
+ "Cotton yarn; (not sewing thread), single, of uncombed fibres, less than 85% by weight o…": [
+  "Пряжа хлопчатобумажная; (кроме швейных ниток), однониточная, из негребенных волокон, менее 85% по массе…",
+  "Paxta iplari; (tikuv iplaridan boshqa), bir tolali, taralmagan tolalardan, massasi boʻyicha 85% dan kam…"
+ ],
+ "Cotton; carded or combed": [
+  "Хлопок; чёсаный или гребенной",
+  "Paxta; kardalangan yoki taralgan"
+ ],
+ "Cotton; garnetted stock waste": [
+  "Хлопок; расщипанное сырьё (отходы)",
+  "Paxta; titilgan xomashyo (chiqindilar)"
+ ],
+ "Cotton; not carded or combed": [
+  "Хлопок; не подвергнутый чесанию или гребнечесанию",
+  "Paxta; kardalanmagan yoki taralmagan"
+ ],
+ "Cotton; sewing thread, containing 85% or more by weight of cotton, not put up for retai…": [
+  "Хлопок; нитки швейные с содержанием хлопка 85% или более, не расфасованные для розничной…",
+  "Paxta; tikuv iplari, tarkibida 85% yoki undan ortiq paxta, chakana savdo uchun qadoqlanmagan…"
+ ],
+ "Cotton; sewing thread, containing less than 85% by weight of cotton, not put up for ret…": [
+  "Хлопок; нитки швейные с содержанием хлопка менее 85%, не расфасованные для розничной…",
+  "Paxta; tikuv iplari, tarkibida 85% dan kam paxta, chakana savdo uchun qadoqlanmagan…"
+ ],
+ "Cotton; sewing thread, put up for retail sale": [
+  "Хлопок; нитки швейные, расфасованные для розничной продажи",
+  "Paxta; chakana savdo uchun qadoqlangan tikuv iplari"
+ ],
+ "Cotton; waste other than garnetted stock and yarn (including thread) waste": [
+  "Хлопок; отходы, кроме расщипанного сырья и отходов пряжи (включая нитки)",
+  "Paxta; chiqindilar, titilgan xomashyo va ip chiqindilaridan boshqa"
+ ],
+ "Cotton; yarn waste (including thread waste)": [
+  "Хлопок; отходы пряжи (включая отходы ниток)",
+  "Paxta; ip chiqindilari (tikuv ipi chiqindilari bilan)"
+ ],
+ "Cranes and derricks; designed for mounting on road vehicles": [
+  "Краны и деррик-краны; предназначенные для установки на дорожных транспортных средствах",
+  "Kranlar va derrik-kranlar; yoʻl transport vositalariga oʻrnatish uchun moʻljallangan"
+ ],
+ "Cranes and derricks; for other than mounting on road vehicles, n.e.c. in heading no. 8426": [
+  "Краны и деррик-краны; кроме предназначенных для дорожных транспортных средств, не поименованные в позиции 8426",
+  "Kranlar va derrik-kranlar; yoʻl transport vositalari uchun moʻljallanganidan boshqa, 8426 pozitsiyasida nomlanmagan"
+ ],
+ "Cranes; mobile lifting frames on tyres and straddle carriers": [
+  "Краны; передвижные подъёмные фермы на пневмоходу и погрузчики портальные",
+  "Kranlar; gʻildirakli koʻchma koʻtargich ramalari va portal yuklagichlar"
+ ],
+ "Cranes; overhead travelling cranes on fixed support": [
+  "Краны; мостовые на неподвижных опорах",
+  "Kranlar; qoʻzgʻalmas tayanchlardagi koʻprikli kranlar"
+ ],
+ "Cranes; portal or pedestal jib cranes": [
+  "Краны; портальные или стреловые на колонне",
+  "Kranlar; portal yoki ustunli strelali kranlar"
+ ],
+ "Cranes; self-propelled derricks and cranes, not on tyres, n.e.c. in heading no. 8426": [
+  "Краны; самоходные деррик-краны и краны, не на пневмоходу, не поименованные в позиции 8426",
+  "Kranlar; oʻzi yuruvchi derrik-kran va kranlar, gʻildirakli emas, 8426 pozitsiyasida nomlanmagan"
+ ],
+ "Cranes; self-propelled derricks and cranes, on tyres, n.e.c. in heading no. 8426": [
+  "Краны; самоходные деррик-краны и краны на пневмоходу, не поименованные в позиции 8426",
+  "Kranlar; oʻzi yuruvchi gʻildirakli derrik-kran va kranlar, 8426 pozitsiyasida nomlanmagan"
+ ],
+ "Cranes; tower cranes": [
+  "Краны; башенные",
+  "Kranlar; minorali"
+ ],
+ "Cranes; transporter, gantry and bridge cranes": [
+  "Краны; транспортёрные, козловые и мостовые",
+  "Kranlar; transportyor, koziolli va koʻprikli"
+ ],
+ "Cruise ships, excursion boats and similar vessels, principally designed for the transpo…": [
+  "Суда круизные, экскурсионные и аналогичные суда, предназначенные главным образом для перевозки…",
+  "Kruiz kemalari, ekskursiya qayiqlari va asosan tashish uchun moʻljallangan shunga oʻxshash kemalar…"
+ ],
+ "Crustacean preparations; crab, prepared or preserved": [
+  "Готовые продукты из ракообразных; крабы, готовые или консервированные",
+  "Qisqichbaqasimonlardan tayyor mahsulotlar; qisqichbaqalar, tayyorlangan yoki konservalangan"
+ ],
+ "Crustacean preparations; lobster, prepared or preserved": [
+  "Готовые продукты из ракообразных; омары, готовые или консервированные",
+  "Qisqichbaqasimonlardan tayyor mahsulotlar; omarlar, tayyorlangan yoki konservalangan"
+ ],
+ "Crustacean preparations; other than crab, shrimps, prawns, and lobsters, prepared or pr…": [
+  "Готовые продукты из ракообразных; кроме крабов, креветок и омаров, готовые или консерв…",
+  "Qisqichbaqasimonlardan tayyor mahsulotlar; qisqichbaqa, krevetka va omarlardan boshqa, tayyorlangan yoki konserv…"
+ ],
+ "Crustacean preparations; shrimps and prawns, prepared or preserved, in airtight containers": [
+  "Готовые продукты из ракообразных; креветки, готовые или консервированные, в герметичной упаковке",
+  "Qisqichbaqasimonlardan tayyor mahsulotlar; krevetkalar, tayyorlangan yoki konservalangan, germetik qadoqda"
+ ],
+ "Crustacean preparations; shrimps and prawns, prepared or preserved, not in airtight con…": [
+  "Готовые продукты из ракообразных; креветки, готовые или консервированные, не в герметичной…",
+  "Qisqichbaqasimonlardan tayyor mahsulotlar; krevetkalar, tayyorlangan yoki konservalangan, germetik boʻlmagan…"
+ ],
+ "Crustaceans; crabs, smoked, cooked or not, whether in shell or not, whether or not cook…": [
+  "Ракообразные; крабы копчёные, варёные или нет, в панцире или без, приготовленные…",
+  "Qisqichbaqasimonlar; dudlangan qisqichbaqalar, pishirilgan yoki yoʻq, qobiqli yoki qobiqsiz…"
+ ],
+ "Crustaceans; frozen, Norway lobsters (Nephrops norvegicus), in shell or not, smoked, co…": [
+  "Ракообразные; мороженые, омары норвежские (Nephrops norvegicus), в панцире или без, копчёные…",
+  "Qisqichbaqasimonlar; muzlatilgan, Norvegiya omarlari (Nephrops norvegicus), qobiqli yoki qobiqsiz, dudlangan…"
+ ],
+ "Crustaceans; frozen, cold-water shrimps and prawns (Pandalus spp., Crangon crangon), in…": [
+  "Ракообразные; мороженые, креветки холодноводные (Pandalus spp., Crangon crangon), в панцире…",
+  "Qisqichbaqasimonlar; muzlatilgan, sovuq suv krevetkalari (Pandalus spp., Crangon crangon), qobiqli…"
+ ],
+ "Crustaceans; frozen, crabs, in shell or not, smoked, cooked or not before or during smo…": [
+  "Ракообразные; мороженые, крабы, в панцире или без, копчёные, варёные или нет до или во время копче…",
+  "Qisqichbaqasimonlar; muzlatilgan, qisqichbaqalar, qobiqli yoki qobiqsiz, dudlangan, dudlashdan oldin yoki davomida pishirilgan…"
+ ],
+ "Crustaceans; frozen, lobsters (Homarus spp.), in shell or not, smoked, cooked or not be…": [
+  "Ракообразные; мороженые, омары (Homarus spp.), в панцире или без, копчёные, варёные или нет…",
+  "Qisqichbaqasimonlar; muzlatilgan, omarlar (Homarus spp.), qobiqli yoki qobiqsiz, dudlangan, pishirilgan yoki…"
+ ],
+ "Crustaceans; frozen, n.e.c. in item no. 0306.1, in shell or not, smoked, cooked or not…": [
+  "Ракообразные; мороженые, не поименованные в субпозиции 0306.1, в панцире или без, копчёные…",
+  "Qisqichbaqasimonlar; muzlatilgan, 0306.1 subpozitsiyasida nomlanmagan, qobiqli yoki qobiqsiz, dudlangan…"
+ ],
+ "Crustaceans; frozen, rock lobsters and other sea crawfish (Palinurus spp., Panulirus sp…": [
+  "Ракообразные; мороженые, лангусты и прочие морские раки (Palinurus spp., Panulirus sp…",
+  "Qisqichbaqasimonlar; muzlatilgan, langustlar va boshqa dengiz qisqichbaqalari (Palinurus spp., Panulirus sp…"
+ ],
+ "Crustaceans; frozen, shrimps and prawns, excluding cold-water varieties, in shell or no…": [
+  "Ракообразные; мороженые, креветки, кроме холодноводных, в панцире или…",
+  "Qisqichbaqasimonlar; muzlatilgan, krevetkalar, sovuq suvlilardan boshqa, qobiqli yoki…"
+ ],
+ "Crustaceans; live, fresh or chilled, cold-water shrimps and prawns (Pandalus spp., Cran…": [
+  "Ракообразные; живые, свежие или охлаждённые, креветки холодноводные (Pandalus spp., Cran…",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, sovuq suv krevetkalari (Pandalus spp., Cran…"
+ ],
+ "Crustaceans; live, fresh or chilled, crabs, whether in shell or not": [
+  "Ракообразные; живые, свежие или охлаждённые, крабы, в панцире или без",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, qisqichbaqalar, qobiqli yoki qobiqsiz"
+ ],
+ "Crustaceans; live, fresh or chilled, lobsters (Homarus spp.), whether in shell or not": [
+  "Ракообразные; живые, свежие или охлаждённые, омары (Homarus spp.), в панцире или без",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, omarlar (Homarus spp.), qobiqli yoki qobiqsiz"
+ ],
+ "Crustaceans; live, fresh or chilled, n.e.c. in item no. 0306.3, in shell or not, includ…": [
+  "Ракообразные; живые, свежие или охлаждённые, не поименованные в субпозиции 0306.3, в панцире или без, включ…",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, 0306.3 subpozitsiyasida nomlanmagan, qobiqli yoki qobiqsiz…"
+ ],
+ "Crustaceans; live, fresh or chilled, rock lobsters and other sea crawfish (Palinurus sp…": [
+  "Ракообразные; живые, свежие или охлаждённые, лангусты и прочие морские раки (Palinurus sp…",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, langustlar va boshqa dengiz qisqichbaqalari (Palinurus sp…"
+ ],
+ "Crustaceans; live, fresh or chilled, shrimps and prawns excluding cold-water varieties,…": [
+  "Ракообразные; живые, свежие или охлаждённые, креветки, кроме холодноводных…",
+  "Qisqichbaqasimonlar; tirik, yangi yoki sovutilgan, krevetkalar, sovuq suvlilardan boshqa…"
+ ],
+ "Crustaceans; lobsters (Homarus spp.), smoked, cooked or not, whether in shell or not, w…": [
+  "Ракообразные; омары (Homarus spp.) копчёные, варёные или нет, в панцире или без…",
+  "Qisqichbaqasimonlar; dudlangan omarlar (Homarus spp.), pishirilgan yoki yoʻq, qobiqli yoki qobiqsiz…"
+ ],
+ "Crustaceans; shrimps and prawns, smoked, cooked or not, whether in shell or not, whethe…": [
+  "Ракообразные; креветки копчёные, варёные или нет, в панцире или без…",
+  "Qisqichbaqasimonlar; dudlangan krevetkalar, pishirilgan yoki yoʻq, qobiqli yoki qobiqsiz…"
+ ],
+ "Crustaceans; smoked, whole, cooked or not, n.e.c. in item no. 0306.9, in shell or not,…": [
+  "Ракообразные; копчёные целиком, варёные или нет, не поименованные в субпозиции 0306.9, в панцире или…",
+  "Qisqichbaqasimonlar; butun dudlangan, pishirilgan yoki yoʻq, 0306.9 subpozitsiyasida nomlanmagan, qobiqli yoki…"
+ ],
+ "Crystals; mounted piezo-electric": [
+  "Кристаллы; пьезоэлектрические смонтированные",
+  "Kristallar; oʻrnatilgan pyezoelektrik"
+ ],
+ "Curtains (including drapes) and interior blinds, curtain or bed valances; of cotton, no…": [
+  "Занавеси (включая портьеры) и внутренние жалюзи, подзоры для занавесей или кроватей; хлопчатобумажные, не…",
+  "Pardalar (portyeralar bilan) va ichki jalyuzlar, parda yoki karavot lambrekenlari; paxtadan, …"
+ ],
+ "Curtains (including drapes) and interior blinds, curtain or bed valances; of synthetic…": [
+  "Занавеси (включая портьеры) и внутренние жалюзи, подзоры для занавесей или кроватей; из синтетических…",
+  "Pardalar (portyeralar bilan) va ichki jalyuzlar, parda yoki karavot lambrekenlari; sintetik…"
+ ],
+ "Curtains (including drapes) and interior blinds, curtain or bed valances; of textile ma…": [
+  "Занавеси (включая портьеры) и внутренние жалюзи, подзоры для занавесей или кроватей; из текстильных ма…",
+  "Pardalar (portyeralar bilan) va ichki jalyuzlar, parda yoki karavot lambrekenlari; toʻqimachilik ma…"
+ ],
+ "Curtains (including drapes) and interior blinds; curtain or bed valances, knitted or cr…": [
+  "Занавеси (включая портьеры) и внутренние жалюзи; подзоры для занавесей или кроватей, трикотажные…",
+  "Pardalar (portyeralar bilan) va ichki jalyuzlar; parda yoki karavot lambrekenlari, trikotaj…"
+ ],
+ "Cutlery; (e.g. spoons, forks, ladles, skimmers, cake-servers, fish-knives, butter-knive…": [
+  "Приборы столовые; (например, ложки, вилки, половники, шумовки, лопатки для торта, ножи для рыбы, масла…",
+  "Stol asboblari; (masalan, qoshiqlar, sanchqilar, choʻmichlar, kapgirlar, tort kurakchalari, baliq va sariyogʻ pichoqlari…"
+ ],
+ "Cutlery; hair clippers and mincing knives": [
+  "Приборы режущие; машинки для стрижки волос и ножи для измельчения",
+  "Kesuvchi asboblar; soch olish mashinkalari va maydalash pichoqlari"
+ ],
+ "Cutlery; other than plated with precious metal": [
+  "Приборы столовые; кроме плакированных драгоценным металлом",
+  "Stol asboblari; qimmatbaho metall bilan qoplanganidan boshqa"
+ ],
+ "Cutlery; paper knives, letter openers, erasing knives, pencil sharpeners and blades the…": [
+  "Приборы режущие; ножи для бумаги, вскрытия писем, подчистки, точилки для карандашей и лезвия к ним…",
+  "Kesuvchi asboblar; qogʻoz pichoqlari, xat ochgichlar, oʻchirish pichoqlari, qalamtaroshlar va ularning tigʻlari…"
+ ],
+ "Cutlery; sets of assorted articles (e.g. spoons, forks, ladles, skimmers, cake-servers,…": [
+  "Приборы столовые; наборы разнородных изделий (например, ложки, вилки, половники, шумовки, лопатки для торта…",
+  "Stol asboblari; turli buyumlar toʻplami (masalan, qoshiqlar, sanchqilar, choʻmichlar, kapgirlar, tort kurakchalari…"
+ ],
+ "Cyanides and cyanide oxides": [
+  "Цианиды и оксицианиды",
+  "Sianidlar va sianid oksidlari"
+ ],
+ "Cycles; frames and forks, and parts thereof": [
+  "Велосипеды; рамы и вилки, их части",
+  "Velosipedlar; ramalar va vilkalar hamda ularning qismlari"
+ ],
+ "Cycles; parts thereof, brakes, including coaster braking hubs and hub-brakes, and parts…": [
+  "Велосипеды; их части, тормоза, включая втулки с тормозом и втулочные тормоза, и части…",
+  "Velosipedlar; qismlari, tormozlar, tormozli vtulkalar va vtulka tormozlari bilan, hamda qismlari…"
+ ],
+ "Cycles; parts thereof, hubs (other than coaster braking hubs and hub brakes) and free-w…": [
+  "Велосипеды; их части, втулки (кроме втулок с тормозом и втулочных тормозов) и трещотки…",
+  "Velosipedlar; qismlari, vtulkalar (tormozli vtulka va vtulka tormozlaridan boshqa) va erkin yurish…"
+ ],
+ "Cycles; parts thereof, n.e.c. in item no. 8714.9": [
+  "Велосипеды; их части, не поименованные в субпозиции 8714.9",
+  "Velosipedlar; qismlari, 8714.9 subpozitsiyasida nomlanmagan"
+ ],
+ "Cycles; parts thereof, saddles": [
+  "Велосипеды; их части, сёдла",
+  "Velosipedlar; qismlari, egarlar"
+ ],
+ "Cycles; parts thereof, wheel rims and spokes": [
+  "Велосипеды; их части, ободья колёс и спицы",
+  "Velosipedlar; qismlari, gʻildirak gardishlari va spitsalar"
+ ],
+ "Cycles; parts, pedals and crank-gear, and parts thereof": [
+  "Велосипеды; части, педали и кривошипный механизм, и их части",
+  "Velosipedlar; qismlar, pedallar va krivoship mexanizmi hamda ularning qismlari"
+ ],
+ "Cyclic amides (including cyclic carbamates) and their derivatives, ureines and their de…": [
+  "Амиды циклические (включая циклические карбаматы) и их производные, уреины и их…",
+  "Siklik amidlar (siklik karbamatlar bilan) va hosilalari, ureinlar va ularning…"
+ ],
+ "Cyclic amides (including cyclic carbamates) and their derivatives; alachlor (ISO) and i…": [
+  "Амиды циклические (включая циклические карбаматы) и их производные; алахлор (ИСО) и его…",
+  "Siklik amidlar (siklik karbamatlar bilan) va hosilalari; alaxlor (ISO) va uning…"
+ ],
+ "Cyclic amides (including cyclic carbamates) and their derivatives; other than the deriv…": [
+  "Амиды циклические (включая циклические карбаматы) и их производные; кроме производных…",
+  "Siklik amidlar (siklik karbamatlar bilan) va hosilalari; hosilalaridan boshqa…"
+ ],
+ "Cyclic hydrocarbons; benzene": [
+  "Углеводороды циклические; бензол",
+  "Siklik uglevodorodlar; benzol"
+ ],
+ "Cyclic hydrocarbons; cyclanes, cyclenes and cycloterpenes, excluding cyclohexane": [
+  "Углеводороды циклические; цикланы, циклены и циклотерпены, кроме циклогексана",
+  "Siklik uglevodorodlar; tsiklanlar, tsiklenlar va tsikloterpenlar, tsiklogeksandan boshqa"
+ ],
+ "Cyclic hydrocarbons; cyclohexane": [
+  "Углеводороды циклические; циклогексан",
+  "Siklik uglevodorodlar; tsiklogeksan"
+ ],
+ "Cyclic hydrocarbons; ethylbenzene": [
+  "Углеводороды циклические; этилбензол",
+  "Siklik uglevodorodlar; etilbenzol"
+ ],
+ "Cyclic hydrocarbons; m-xylene": [
+  "Углеводороды циклические; м-ксилол",
+  "Siklik uglevodorodlar; m-ksilol"
+ ],
+ "Cyclic hydrocarbons; mixed xylene isomers": [
+  "Углеводороды циклические; смеси изомеров ксилола",
+  "Siklik uglevodorodlar; ksilol izomerlari aralashmalari"
+ ],
+ "Cyclic hydrocarbons; n.e.c. in heading no. 2902": [
+  "Углеводороды циклические; не поименованные в товарной позиции 2902",
+  "Siklik uglevodorodlar; 2902 tovar pozitsiyasida nomlanmagan"
+ ],
+ "Cyclic hydrocarbons; o-xylene": [
+  "Углеводороды циклические; о-ксилол",
+  "Siklik uglevodorodlar; o-ksilol"
+ ],
+ "Cyclic hydrocarbons; p-xylene": [
+  "Углеводороды циклические; п-ксилол",
+  "Siklik uglevodorodlar; p-ksilol"
+ ],
+ "Cyclic hydrocarbons; styrene": [
+  "Углеводороды циклические; стирол",
+  "Siklik uglevodorodlar; stirol"
+ ],
+ "Cyclic hydrocarbons; toluene": [
+  "Углеводороды циклические; толуол",
+  "Siklik uglevodorodlar; toluol"
+ ],
+ "Dairy machinery": [
+  "Оборудование молочное",
+  "Sut uskunalari"
+ ],
+ "Dairy produce; buttermilk, curdled milk or cream, kephir, fermented or acidified milk o…": [
+  "Молочная продукция; пахта, свернувшиеся молоко или сливки, кефир, ферментированное или сквашенное молоко…",
+  "Sut mahsulotlari; qaymoq suvi, uyugan sut yoki qaymoq, kefir, achitilgan yoki fermentlangan sut…"
+ ],
+ "Dairy produce; cheese (not grated, powdered or processed), n.e.c. in heading no. 0406": [
+  "Молочная продукция; сыр (не тёртый, не порошкообразный, не плавленый), не поименованный в позиции 0406",
+  "Sut mahsulotlari; pishloq (maydalanmagan, kukun holida emas, eritilmagan), 0406 pozitsiyasida nomlanmagan"
+ ],
+ "Dairy produce; cheese of all kinds, grated or powdered": [
+  "Молочная продукция; сыры всех видов, тёртые или порошкообразные",
+  "Sut mahsulotlari; barcha turdagi pishloqlar, maydalangan yoki kukun holida"
+ ],
+ "Dairy produce; cheese, blue-veined and other cheese containing veins produced by Penici…": [
+  "Молочная продукция; сыр голубой и прочие сыры с прожилками, полученными с использованием Penici…",
+  "Sut mahsulotlari; koʻk pishloq va Penici… yordamida hosil qilingan tomirli boshqa pishloqlar…"
+ ],
+ "Dairy produce; cheese, processed (not grated or powdered)": [
+  "Молочная продукция; сыр плавленый (не тёртый и не порошкообразный)",
+  "Sut mahsulotlari; eritilgan pishloq (maydalanmagan va kukun holida emas)"
+ ],
+ "Dairy produce; dairy spreads": [
+  "Молочная продукция; пасты молочные",
+  "Sut mahsulotlari; sut pastalari"
+ ],
+ "Dairy produce; derived from milk, butter": [
+  "Молочная продукция; полученная из молока, масло сливочное",
+  "Sut mahsulotlari; sutdan olingan, sariyogʻ"
+ ],
+ "Dairy produce; fats and oils derived from milk (other than butter or dairy spreads)": [
+  "Молочная продукция; жиры и масла, полученные из молока (кроме сливочного масла и молочных паст)",
+  "Sut mahsulotlari; sutdan olingan yogʻ va moylar (sariyogʻ va sut pastalaridan boshqa)"
+ ],
+ "Dairy produce; fresh cheese (including whey cheese), not fermented, and curd": [
+  "Молочная продукция; сыр свежий (включая сывороточный), неферментированный, и творог",
+  "Sut mahsulotlari; yangi pishloq (zardob pishlogʻi bilan), fermentlanmagan, va tvorog"
+ ],
+ "Dairy produce; milk and cream, concentrated or containing added sugar or other sweeteni…": [
+  "Молочная продукция; молоко и сливки, концентрированные или с добавлением сахара или прочих подсласти…",
+  "Sut mahsulotlari; sut va qaymoq, konsentrlangan yoki shakar yoxud boshqa shirinlashtiruvchi…"
+ ],
+ "Dairy produce; milk and cream, concentrated, not containing added sugar or other sweete…": [
+  "Молочная продукция; молоко и сливки, концентрированные, без добавления сахара или прочих подсласт…",
+  "Sut mahsulotlari; sut va qaymoq, konsentrlangan, shakar yoki boshqa shirinlashtiruvchi qoʻshilmagan…"
+ ],
+ "Dairy produce; milk and cream, containing added sugar or other sweetening matter, in po…": [
+  "Молочная продукция; молоко и сливки с добавлением сахара или прочих подслащивающих веществ, в порошке…",
+  "Sut mahsulotlari; shakar yoki boshqa shirinlashtiruvchi qoʻshilgan sut va qaymoq, kukun…"
+ ],
+ "Dairy produce; milk and cream, containing added sugar or other sweetening matter, other…": [
+  "Молочная продукция; молоко и сливки с добавлением сахара или прочих подслащивающих веществ, прочие…",
+  "Sut mahsulotlari; shakar yoki boshqa shirinlashtiruvchi qoʻshilgan sut va qaymoq, boshqalar…"
+ ],
+ "Dairy produce; milk and cream, not concentrated, not containing added sugar or other sw…": [
+  "Молочная продукция; молоко и сливки, неконцентрированные, без добавления сахара или прочих…",
+  "Sut mahsulotlari; sut va qaymoq, konsentrlanmagan, shakar yoki boshqa qoʻshimchalarsiz…"
+ ],
+ "Dairy produce; natural milk constituents (excluding whey), whether or not containing ad…": [
+  "Молочная продукция; натуральные компоненты молока (кроме сыворотки), с добавлением или без…",
+  "Sut mahsulotlari; sutning tabiiy tarkibiy qismlari (zardobdan boshqa), qoʻshimchali yoki…"
+ ],
+ "Dairy produce; whey, whether or not concentrated or containing added sugar or other swe…": [
+  "Молочная продукция; сыворотка, концентрированная или нет, с добавлением сахара или прочих подсласт…",
+  "Sut mahsulotlari; zardob, konsentrlangan yoki yoʻq, shakar yoki boshqa shirinlashtiruvchi…"
+ ],
+ "Dairy produce; yoghurt, whether or not concentrated or containing added sugar or other…": [
+  "Молочная продукция; йогурт, концентрированный или нет, с добавлением сахара или прочих…",
+  "Sut mahsulotlari; yogurt, konsentrlangan yoki yoʻq, shakar yoki boshqa qoʻshimchalar bilan…"
+ ],
+ "Degras; residues resulting from the treatment of fatty substances or animal or vegetabl…": [
+  "Дегра; остатки, полученные при обработке жировых веществ или животных или растительных…",
+  "Degra; yogʻli moddalar yoki hayvon yoxud oʻsimlik moylari ishlovidan qolgan qoldiqlar…"
+ ],
+ "Dental fittings; artificial teeth": [
+  "Приспособления зубные; зубы искусственные",
+  "Tish moslamalari; sunʼiy tishlar"
+ ],
+ "Dental fittings; other than artificial teeth": [
+  "Приспособления зубные; кроме искусственных зубов",
+  "Tish moslamalari; sunʼiy tishlardan boshqa"
+ ],
+ "Dental instruments and appliances": [
+  "Инструменты и приспособления стоматологические",
+  "Stomatologiya asboblari va moslamalari"
+ ],
+ "Derivatives of hydrocarbons": [
+  "Производные углеводородов",
+  "Uglevodorod hosilalari"
+ ],
+ "Derivatives of hydrocarbons n.e.c. in heading no. 2904, whether or not halogenated": [
+  "Производные углеводородов, не поименованные в товарной позиции 2904, галогенированные или нет",
+  "2904 tovar pozitsiyasida nomlanmagan uglevodorod hosilalari, galogenlangan yoki yoʻq"
+ ],
+ "Dextrins and other modified starches": [
+  "Декстрины и прочие модифицированные крахмалы",
+  "Dekstrinlar va boshqa modifikatsiyalangan kraxmallar"
+ ],
+ "Diamonds; industrial, (other than unworked or simply sawn, cleaved or bruted), but not…": [
+  "Алмазы; промышленные (кроме необработанных или просто распиленных, расколотых или обточенных), но не…",
+  "Olmoslar; sanoat (ishlov berilmagan yoki shunchaki arralangan, yorilgan yoki charxlanganidan boshqa), lekin…"
+ ],
+ "Diamonds; non-industrial, (other than unworked or simply sawn, cleaved or bruted), but…": [
+  "Алмазы; непромышленные (кроме необработанных или просто распиленных, расколотых или обточенных), но…",
+  "Olmoslar; sanoat boʻlmagan (ishlov berilmagan yoki shunchaki arralangan, yorilgan yoki charxlanganidan boshqa)…"
+ ],
+ "Diamonds; whether or not worked, but not mounted or set, unsorted": [
+  "Алмазы; обработанные или нет, но неоправленные и незакреплённые, несортированные",
+  "Olmoslar; ishlov berilgan yoki yoʻq, lekin oʻrnatilmagan va mahkamlanmagan, saralanmagan"
+ ],
+ "Diazo-, azo- or azoxy compounds": [
+  "Соединения диазо-, азо- или азоксисоединения",
+  "Diazo-, azo- yoki azoksibirikmalar"
+ ],
+ "Diphosphorus pentoxide": [
+  "Пентаоксид дифосфора",
+  "Difosfor pentaoksidi"
+ ],
+ "Discharge lamps or tubes; ballasts therefor": [
+  "Лампы или трубки газоразрядные; пускорегулирующие аппараты для них",
+  "Gaz razryadli lampalar yoki naychalar; ular uchun ballastlar"
+ ],
+ "Dish washing machines; of other than household type": [
+  "Машины посудомоечные; кроме бытового типа",
+  "Idish yuvish mashinalari; maishiy turdan boshqa"
+ ]
+}
