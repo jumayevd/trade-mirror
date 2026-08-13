@@ -1,0 +1,482 @@
+{
+ "Lamps; sealed beam units": [
+  "Лампы; фары герметичные (лампы-фары)",
+  "Chiroqlar; germetik faralar (fara-chiroqlar)"
+ ],
+ "Lamps; ultra-violet or infra-red lamps, (excluding arc-lamps)": [
+  "Лампы; ультрафиолетовые или инфракрасные, (кроме дуговых)",
+  "Chiroqlar; ultrabinafsha yoki infraqizil, (yoyli chiroqlardan boshqa)"
+ ],
+ "Lasers; other than laser diodes": [
+  "Лазеры; кроме лазерных диодов",
+  "Lazerlar; lazer diodlaridan boshqa"
+ ],
+ "Lathes; for removing metal, horizontal, numerically controlled": [
+  "Станки токарные; для удаления металла, горизонтальные, с числовым программным управлением",
+  "Tokarlik stanoklari; metallni olib tashlash uchun, gorizontal, raqamli dasturiy boshqaruvli"
+ ],
+ "Lathes; for removing metal, horizontal, other than numerically controlled": [
+  "Станки токарные; для удаления металла, горизонтальные, кроме с числовым программным управлением",
+  "Tokarlik stanoklari; metallni olib tashlash uchun, gorizontal, raqamli dasturiy boshqaruvlidan boshqa"
+ ],
+ "Lathes; for removing metal, numerically controlled, other than horizontal lathes": [
+  "Станки токарные; для удаления металла, с числовым программным управлением, кроме горизонтальных",
+  "Tokarlik stanoklari; metallni olib tashlash uchun, raqamli dasturiy boshqaruvli, gorizontallardan boshqa"
+ ],
+ "Lathes; for removing metal, other than horizontal or numerically controlled lathes": [
+  "Станки токарные; для удаления металла, кроме горизонтальных или с числовым программным управлением",
+  "Tokarlik stanoklari; metallni olib tashlash uchun, gorizontal yoki raqamli dasturiy boshqaruvlidan boshqa"
+ ],
+ "Lawn-tennis balls": [
+  "Мячи для тенниса",
+  "Tennis toplari"
+ ],
+ "Lawn-tennis racquets; whether or not strung": [
+  "Ракетки теннисные; с натянутыми струнами или без",
+  "Tennis raketkalari; tori tortilgan yoki tortilmagan"
+ ],
+ "Lead ores and concentrates": [
+  "Руды и концентраты свинцовые",
+  "Qoʻrgʻoshin rudalari va konsentratlari"
+ ],
+ "Lead oxides; n.e.c. in heading no. 2824": [
+  "Оксиды свинца; не поименованные в позиции 2824",
+  "Qoʻrgʻoshin oksidlari; 2824 pozitsiyasida nomlanmagan"
+ ],
+ "Lead; articles n.e.c. in chapter 78": [
+  "Свинец; изделия, не поименованные в группе 78",
+  "Qoʻrgʻoshin; 78-guruhda nomlanmagan buyumlar"
+ ],
+ "Lead; lead monoxide (litharge, massicot)": [
+  "Свинец; монооксид свинца (глёт, массикот)",
+  "Qoʻrgʻoshin; qoʻrgʻoshin monooksidi (glyot, massikot)"
+ ],
+ "Lead; plates, sheets, strip and foil, of a thickness (excluding any backing) exceeding…": [
+  "Свинец; плиты, листы, полосы и фольга толщиной (без основы) более…",
+  "Qoʻrgʻoshin; plitalar, varaqlar, tasmalar va folga, qalinligi (asossiz) ortiq…"
+ ],
+ "Lead; powders and flakes": [
+  "Свинец; порошки и чешуйки",
+  "Qoʻrgʻoshin; kukunlar va parrakchalar"
+ ],
+ "Lead; sheets, strip and foil, of a thickness (excluding any backing) not exceeding 0.2mm": [
+  "Свинец; листы, полосы и фольга толщиной (без основы) не более 0,2 мм",
+  "Qoʻrgʻoshin; varaqlar, tasmalar va folga, qalinligi (asossiz) 0,2 mm dan oshmaydigan"
+ ],
+ "Lead; unwrought, refined": [
+  "Свинец; необработанный, рафинированный",
+  "Qoʻrgʻoshin; qayta ishlanmagan, rafinatsiyalangan"
+ ],
+ "Lead; unwrought, unrefined, containing by weight antimony as the principal other element": [
+  "Свинец; необработанный, нерафинированный, содержащий сурьму в качестве основного прочего элемента",
+  "Qoʻrgʻoshin; qayta ishlanmagan, rafinatsiyalanmagan, asosiy boshqa element sifatida surma saqlovchi"
+ ],
+ "Lead; unwrought, unrefined, not containing by weight antimony as the principal other el…": [
+  "Свинец; необработанный, нерафинированный, не содержащий сурьму в качестве основного прочего эл…",
+  "Qoʻrgʻoshin; qayta ishlanmagan, rafinatsiyalanmagan, asosiy boshqa element sifatida surma saqlamaydigan…"
+ ],
+ "Lead; waste and scrap": [
+  "Свинец; отходы и лом",
+  "Qoʻrgʻoshin; chiqindi va parchalari"
+ ],
+ "Leather articles; n.e.c. in chapter 42, of leather or composition leather": [
+  "Изделия из кожи; не поименованные в группе 42, из натуральной или композиционной кожи",
+  "Charm buyumlar; 42-guruhda nomlanmagan, tabiiy yoki kompozitsion charmdan"
+ ],
+ "Leather; chamois (including combination chamois)": [
+  "Кожа; замша (включая комбинированную замшу)",
+  "Charm; zamsha (kombinatsiyalangan zamsha bilan)"
+ ],
+ "Leather; composition leather with a basis of leather or leather fibre, in slabs, sheets…": [
+  "Кожа; кожа композиционная на основе натуральной кожи или кожевенного волокна, в плитах, листах…",
+  "Charm; tabiiy charm yoki charm tolasi asosidagi kompozitsion charm, plita, varaq…"
+ ],
+ "Leather; further prepared after tanning or crusting, incl. parchment-dressed, of bovine…": [
+  "Кожа; дополнительно обработанная после дубления или крастирования, вкл. пергаментированную, из крупного рогатого…",
+  "Charm; oshlash yoki krastlashdan keyin qoʻshimcha ishlangan, pergament ishlovlisi bilan, qoramol…"
+ ],
+ "Leather; further prepared after tanning or crusting, including parchment dressed leathe…": [
+  "Кожа; дополнительно обработанная после дубления или крастирования, включая пергаментированную кожу…",
+  "Charm; oshlash yoki krastlashdan keyin qoʻshimcha ishlangan, pergament ishlovli charm bilan…"
+ ],
+ "Leather; further prepared after tanning or crusting, including parchment-dressed leathe…": [
+  "Кожа; дополнительно обработанная после дубления или крастирования, включая пергаментированную выделанную кожу…",
+  "Charm; oshlash yoki krastlashdan keyin qoʻshimcha ishlangan, pergament ishlovli tayyor charm bilan…"
+ ],
+ "Leather; further prepared after tanning or crusting, including parchment-dressed, of bo…": [
+  "Кожа; дополнительно обработанная после дубления или крастирования, включая пергаментированную, из круп…",
+  "Charm; oshlash yoki krastlashdan keyin qoʻshimcha ishlangan, pergament ishlovlisi bilan, yirik…"
+ ],
+ "Leather; parings and other waste, of leather or composition leather; not suitable for t…": [
+  "Кожа; обрезки и прочие отходы, из натуральной или композиционной кожи; непригодные для…",
+  "Charm; qirindilar va boshqa chiqindilar, tabiiy yoki kompozitsion charmdan; yaroqsiz…"
+ ],
+ "Leather; patent leather and laminated patent leather; metallised leather": [
+  "Кожа; лакированная и лакированная ламинированная кожа; металлизированная кожа",
+  "Charm; lakli va lakli laminatlangan charm; metallangan charm"
+ ],
+ "Lecithins and other phosphoaminolipids, whether or not chemically defined": [
+  "Лецитины и прочие фосфоаминолипиды, определённого или неопределённого химического состава",
+  "Letsitinlar va boshqa fosfoaminolipidlar, kimyoviy tarkibi aniqlangan yoki aniqlanmagan"
+ ],
+ "Lenses, contact; unmounted, of any material, excluding elements of glass not optically…": [
+  "Линзы контактные; неоправленные, из любого материала, кроме элементов из стекла, не обработанных оптич…",
+  "Kontakt linzalar; oʻrnatilmagan, har qanday materialdan, optik ishlov berilmagan shisha element…"
+ ],
+ "Lenses, spectacle; unmounted, of glass, excluding elements of glass not optically worked": [
+  "Линзы для очков; неоправленные, из стекла, кроме элементов из стекла, не обработанных оптически",
+  "Koʻzoynak linzalari; oʻrnatilmagan, shishadan, optik ishlov berilmagan shisha elementlaridan boshqa"
+ ],
+ "Lenses, spectacle; unmounted, of materials other than glass": [
+  "Линзы для очков; неоправленные, из материалов, кроме стекла",
+  "Koʻzoynak linzalari; oʻrnatilmagan, shishadan boshqa materiallardan"
+ ],
+ "Lenses; objective, (other than for cameras, projectors or photographic enlargers or red…": [
+  "Линзы; объективы, (кроме для фотокамер, проекторов или фотоувеличителей или умень…",
+  "Linzalar; obyektivlar, (kamera, proyektor yoki fotokattalashtirgich hamda kichray…"
+ ],
+ "Lenses; objective, for cameras, projectors or photographic enlargers or reducers, mount…": [
+  "Линзы; объективы для фотокамер, проекторов или фотоувеличителей или уменьшителей, оправ…",
+  "Linzalar; kamera, proyektor yoki fotokattalashtirgich hamda kichraytirgichlar uchun obyektivlar, oʻrnat…"
+ ],
+ "Leucite; nepheline and nepheline syenite": [
+  "Лейцит; нефелин и нефелиновый сиенит",
+  "Leytsit; nefelin va nefelin siyeniti"
+ ],
+ "Life-jackets and life-belts": [
+  "Жилеты и пояса спасательные",
+  "Qutqaruv jiletlari va kamarlari"
+ ],
+ "Lifting, handling, loading or unloading machinery": [
+  "Машины подъёмные, погрузочные, разгрузочные или для перемещения грузов",
+  "Koʻtarish, yuklash, tushirish yoki yuk tashish mashinalari"
+ ],
+ "Lifts and skip hoists": [
+  "Лифты и подъёмники скиповые",
+  "Liftlar va skipli koʻtargichlar"
+ ],
+ "Lifts, skip hoists or escalators": [
+  "Лифты, подъёмники скиповые или эскалаторы",
+  "Liftlar, skipli koʻtargichlar yoki eskalatorlar"
+ ],
+ "Lighters; parts for cigarette lighters and other lighters, whether or not mechanical or…": [
+  "Зажигалки; части для сигаретных и прочих зажигалок, механических или электрических или…",
+  "Chaqmoqlar; sigaret va boshqa chaqmoqlar uchun qismlar, mexanik yoki elektr yoki…"
+ ],
+ "Lighters; pocket, cigarette, gas fuelled, non-refillable": [
+  "Зажигалки; карманные, сигаретные, газовые, неперезаправляемые",
+  "Chaqmoqlar; choʻntak, sigaret, gazli, qayta toʻldirilmaydigan"
+ ],
+ "Lighters; pocket, cigarette, gas fuelled, refillable": [
+  "Зажигалки; карманные, сигаретные, газовые, перезаправляемые",
+  "Chaqmoqlar; choʻntak, sigaret, gazli, qayta toʻldiriladigan"
+ ],
+ "Lighters; whether or not mechanical or electrical, n.e.c. in heading no. 9613": [
+  "Зажигалки; механические или электрические или нет, не поименованные в позиции 9613",
+  "Chaqmoqlar; mexanik yoki elektr boʻlishidan qatʼi nazar, 9613 pozitsiyasida nomlanmagan"
+ ],
+ "Lighting or signalling equipment": [
+  "Оборудование осветительное или сигнальное",
+  "Yoritish yoki signal berish uskunalari"
+ ],
+ "Lighting or visual signalling equipment": [
+  "Оборудование осветительное или визуальное сигнальное",
+  "Yoritish yoki koʻrinadigan signal berish uskunalari"
+ ],
+ "Lighting sets; of a kind used for Christmas trees": [
+  "Гирлянды осветительные; используемые для рождественских ёлок",
+  "Yoritish girlyandalari; Rojdestvo archalari uchun ishlatiladigan"
+ ],
+ "Lignite; agglomerated, excluding jet": [
+  "Лигнит; агломерированный, кроме гагата",
+  "Lignit; aglomerlangan, gagatdan boshqa"
+ ],
+ "Lignite; whether or not pulverised, but not agglomerated, excluding jet": [
+  "Лигнит; измельчённый или нет, но неагломерированный, кроме гагата",
+  "Lignit; maydalangan yoki maydalanmagan, ammo aglomerlanmagan, gagatdan boshqa"
+ ],
+ "Limestone flux; limestone and other calcareous stone, of a kind used for the manufactur…": [
+  "Флюс известняковый; известняк и прочий известковый камень, используемые для производ…",
+  "Ohaktosh flyusi; ohaktosh va boshqa ohakli tosh, ishlab chiqarish uchun ishlatila…"
+ ],
+ "Line telephone sets with cordless handsets": [
+  "Аппараты телефонные проводные с беспроводными трубками",
+  "Simsiz trubkali simli telefon apparatlari"
+ ],
+ "Linoleum, whether or not cut to shape": [
+  "Линолеум; раскроенный по форме или нет",
+  "Linoleum; shakl boʻyicha kesilgan yoki kesilmagan"
+ ],
+ "Liqueurs and cordials": [
+  "Ликёры и кордиалы",
+  "Likyor va kordiallar"
+ ],
+ "Liquid elevators": [
+  "Элеваторы жидкостные",
+  "Suyuqlik elevatorlari"
+ ],
+ "Liquid elevators; parts thereof": [
+  "Элеваторы жидкостные; их части",
+  "Suyuqlik elevatorlari; ularning qismlari"
+ ],
+ "Lithium oxide and hydroxide": [
+  "Оксид и гидроксид лития",
+  "Litiy oksidi va gidroksidi"
+ ],
+ "Locks; (other than those for motor vehicles or furniture), (key, combination or electri…": [
+  "Замки; (кроме для автомобилей или мебели), (ключевые, кодовые или электри…",
+  "Qulflar; (avtomobil yoki mebel uchun boʻlganlaridan boshqa), (kalitli, kodli yoki elektr…"
+ ],
+ "Locks; of a kind used for furniture (key, combination or electrically operated), of bas…": [
+  "Замки; используемые для мебели (ключевые, кодовые или электрические), из недра…",
+  "Qulflar; mebel uchun ishlatiladigan (kalitli, kodli yoki elektrli), qimmatba…"
+ ],
+ "Locks; of a kind used for motor vehicles (key, combination or electrically operated), o…": [
+  "Замки; используемые для автомобилей (ключевые, кодовые или электрические), из…",
+  "Qulflar; avtomobillar uchun ishlatiladigan (kalitli, kodli yoki elektrli), …"
+ ],
+ "Locks; parts of padlocks, locks, clasps and frames with clasps incorporating locks, of…": [
+  "Замки; части висячих замков, замков, застёжек и рамок с застёжками с замками, из…",
+  "Qulflar; osma qulflar, qulflar, qisqichlar va qulfli qisqichli ramkalar qismlari, …"
+ ],
+ "Locust beans (carob); fit for human consumption, fresh, chilled, frozen or dried, wheth…": [
+  "Плоды рожкового дерева (кэроб); пригодные для употребления в пищу, свежие, охлаждённые, замороженные или сушёные…",
+  "Shoxsimon daraxt mevalari (karob); oziq-ovqatga yaroqli, yangi, sovutilgan, muzlatilgan yoki quritilgan…"
+ ],
+ "Loudspeakers; multiple, mounted in the same enclosure": [
+  "Громкоговорители; многополосные, смонтированные в одном корпусе",
+  "Karnaylar; bir korpusga oʻrnatilgan koʻp polosali"
+ ],
+ "Loudspeakers; not mounted in their enclosures": [
+  "Громкоговорители; не смонтированные в корпусах",
+  "Karnaylar; korpuslarga oʻrnatilmagan"
+ ],
+ "Loudspeakers; single, mounted in their enclosures": [
+  "Громкоговорители; однополосные, смонтированные в корпусах",
+  "Karnaylar; korpusga oʻrnatilgan bir polosali"
+ ],
+ "Lubricating oil additives": [
+  "Присадки к смазочным маслам",
+  "Moylash moylari uchun qoʻshimchalar"
+ ],
+ "Lubricating preparations; (other than for the treatment of textile and similar material…": [
+  "Материалы смазочные; (кроме для обработки текстильных и аналогичных материал…",
+  "Moylash materiallari; (toʻqimachilik va shunga oʻxshash materiallarni ishlashdan boshqa…"
+ ],
+ "Lubricating preparations; for the treatment of textile and similar materials (leather,…": [
+  "Материалы смазочные; для обработки текстильных и аналогичных материалов (кожи,…",
+  "Moylash materiallari; toʻqimachilik va shunga oʻxshash materiallarni ishlash uchun (charm,…"
+ ],
+ "Lubricating preparations; other than for the treatment of textile and similar materials…": [
+  "Материалы смазочные; кроме для обработки текстильных и аналогичных материалов…",
+  "Moylash materiallari; toʻqimachilik va shunga oʻxshash materiallarni ishlashdan boshqa maqsad…"
+ ],
+ "Lucerne (alfalfa) meal and pellets": [
+  "Мука и гранулы из люцерны",
+  "Beda uni va granulalari"
+ ],
+ "Lustres; liquid lustres and similar preparations": [
+  "Глянцы; глянцы жидкие и аналогичные препараты",
+  "Yaltiratgichlar; suyuq yaltiratgichlar va shunga oʻxshash preparatlar"
+ ],
+ "Lyes, residual; from the manufacture of wood pulp, whether or not concentrated, desugar…": [
+  "Щёлока остаточные; от производства древесной массы, концентрированные или нет, обессахар…",
+  "Qoldiq ishqorlar; yogʻoch massasi ishlab chiqarishdan, konsentrlangan yoki yoʻq, shakarsizlan…"
+ ],
+ "Macadam of slag, dross or similar industrial waste": [
+  "Макадам из шлака, дросса или аналогичных промышленных отходов",
+  "Shlak, dross yoki shunga oʻxshash sanoat chiqindilaridan makadam"
+ ],
+ "Machine tools; for working any material by removal of material; operated by other proce…": [
+  "Станки; для обработки любых материалов путём удаления материала; работающие по прочим проц…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan har qanday materialga ishlov beruvchi; boshqa jarayon…"
+ ],
+ "Machine tools; for working any material by removal of material; operated by plasma arc…": [
+  "Станки; для обработки любых материалов путём удаления материала; работающие с плазменной дуг…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi; plazma yoyi bilan ishlay…"
+ ],
+ "Machine tools; for working any material by removal of material; operated by water-jet c…": [
+  "Станки; для обработки любых материалов путём удаления материала; работающие водоструйным ре…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi; suv oqimi bilan kes…"
+ ],
+ "Machine-tools; bending, folding, straightening or flattening machines (including presse…": [
+  "Станки; машины гибочные, кромкогибочные, правильные или разравнивающие (включая прессы…",
+  "Stanoklar; egish, buklash, toʻgʻrilash yoki tekislash mashinalari (preslar bilan…"
+ ],
+ "Machine-tools; broaching machines, working by removing metal, sintered metal carbides o…": [
+  "Станки; протяжные, работающие путём удаления металла, спечённых карбидов металлов или…",
+  "Stanoklar; protyajka, metall, aglomerlangan metall karbidlari yoki…ni olib tashlash yoʻli bilan…"
+ ],
+ "Machine-tools; cylindrical grinding machines (excluding flat-surface and centreless), n…": [
+  "Станки; круглошлифовальные (кроме плоскошлифовальных и бесцентровых), н…",
+  "Stanoklar; silindrik jilvirlash (tekis yuzali va markazsizlardan boshqa), r…"
+ ],
+ "Machine-tools; flat-surface grinding machines, numerically controlled": [
+  "Станки; плоскошлифовальные, с числовым программным управлением",
+  "Stanoklar; tekis yuzali jilvirlash, raqamli dasturiy boshqaruvli"
+ ],
+ "Machine-tools; flat-surface grinding machines, other than numerically controlled": [
+  "Станки; плоскошлифовальные, кроме с числовым программным управлением",
+  "Stanoklar; tekis yuzali jilvirlash, raqamli dasturiy boshqaruvlidan boshqa"
+ ],
+ "Machine-tools; for boring by removing metal, not numerically controlled boring machines…": [
+  "Станки; расточные, работающие путём удаления металла, без числового программного управления, н…",
+  "Stanoklar; metallni olib tashlash yoʻli bilan yoʻnish, raqamli dasturiy boshqaruvsiz, …"
+ ],
+ "Machine-tools; for boring by removing metal, numerically controlled boring machines, n.…": [
+  "Станки; расточные, работающие путём удаления металла, с числовым программным управлением, н…",
+  "Stanoklar; metallni olib tashlash yoʻli bilan yoʻnish, raqamli dasturiy boshqaruvli, …"
+ ],
+ "Machine-tools; for boring-milling by removing metal, numerically controlled": [
+  "Станки; расточно-фрезерные, работающие путём удаления металла, с числовым программным управлением",
+  "Stanoklar; metallni olib tashlash yoʻli bilan yoʻnish-frezalash, raqamli dasturiy boshqaruvli"
+ ],
+ "Machine-tools; for boring-milling by removing metal, other than numerically controlled": [
+  "Станки; расточно-фрезерные, работающие путём удаления металла, кроме с числовым программным управлением",
+  "Stanoklar; metallni olib tashlash yoʻli bilan yoʻnish-frezalash, raqamli dasturiy boshqaruvlidan boshqa"
+ ],
+ "Machine-tools; for deburring, grinding, polishing or otherwise finishing metal, sintere…": [
+  "Станки; для снятия заусенцев, шлифования, полирования или иной отделки металла, спечён…",
+  "Stanoklar; metallning quyqumlarini olish, jilvirlash, sayqallash yoki boshqacha pardozlash, aglomer…"
+ ],
+ "Machine-tools; for drilling by removing metal, numerically controlled": [
+  "Станки; сверлильные, работающие путём удаления металла, с числовым программным управлением",
+  "Stanoklar; metallni olib tashlash yoʻli bilan parmalash, raqamli dasturiy boshqaruvli"
+ ],
+ "Machine-tools; for drilling by removing metal, other than numerically controlled": [
+  "Станки; сверлильные, работающие путём удаления металла, кроме с числовым программным управлением",
+  "Stanoklar; metallni olib tashlash yoʻli bilan parmalash, raqamli dasturiy boshqaruvlidan boshqa"
+ ],
+ "Machine-tools; for honing or lapping": [
+  "Станки; хонинговальные или притирочные",
+  "Stanoklar; xoninglash yoki pritirkalash"
+ ],
+ "Machine-tools; for milling by removing metal, (not knee-type), numerically controlled": [
+  "Станки; фрезерные (не консольные), с числовым программным управлением, работающие путём удаления металла",
+  "Stanoklar; frezalash (konsolsiz), raqamli dasturiy boshqaruvli, metallni olib tashlash yoʻli bilan"
+ ],
+ "Machine-tools; for milling by removing metal, knee-type, numerically controlled": [
+  "Станки; фрезерные консольные, с числовым программным управлением, работающие путём удаления металла",
+  "Stanoklar; konsolli frezalash, raqamli dasturiy boshqaruvli, metallni olib tashlash yoʻli bilan"
+ ],
+ "Machine-tools; for milling by removing metal, knee-type, other than numerically controlled": [
+  "Станки; фрезерные консольные, кроме с числовым программным управлением, работающие путём удаления металла",
+  "Stanoklar; konsolli frezalash, raqamli dasturiy boshqaruvlidan boshqa, metallni olib tashlash yoʻli bilan"
+ ],
+ "Machine-tools; for milling by removing metal, not knee-type, other than numerically con…": [
+  "Станки; фрезерные не консольные, работающие путём удаления металла, кроме с числовым программным упр…",
+  "Stanoklar; konsolsiz frezalash, metallni olib tashlash yoʻli bilan, raqamli dasturiy boshqaruvli…"
+ ],
+ "Machine-tools; for threading or tapping by removing metal": [
+  "Станки; для нарезания наружной или внутренней резьбы путём удаления металла",
+  "Stanoklar; metallni olib tashlash yoʻli bilan tashqi yoki ichki rezba kesish uchun"
+ ],
+ "Machine-tools; for working any material by removal of material, operated by electro-dis…": [
+  "Станки; для обработки любых материалов путём удаления материала, электроэрозионные…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi, elektroeroziy…"
+ ],
+ "Machine-tools; for working any material by removal of material, operated by ultrasonic…": [
+  "Станки; для обработки любых материалов путём удаления материала, ультразвуковые…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi, ultratovush…"
+ ],
+ "Machine-tools; for working any material by removal of material; operated by laser": [
+  "Станки; для обработки любых материалов путём удаления материала; работающие с помощью лазера",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi; lazer yordamida ishlaydigan"
+ ],
+ "Machine-tools; for working any material by removal of material; operated by other light…": [
+  "Станки; для обработки любых материалов путём удаления материала; работающие с помощью прочих свето…",
+  "Stanoklar; materialni olib tashlash yoʻli bilan ishlov beruvchi; boshqa yorugʻ…"
+ ],
+ "Machine-tools; for working metal, sintered metal carbides or cermets, without removing…": [
+  "Станки; для обработки металла, спечённых карбидов металлов или керметов, без удале…",
+  "Stanoklar; metall, aglomerlangan metall karbidlari yoki kermetlarni ishlash uchun, olib tashla…"
+ ],
+ "Machine-tools; for working stone, ceramics, concrete, asbestos-cement or like mineral m…": [
+  "Станки; для обработки камня, керамики, бетона, асбестоцемента или аналогичных минеральных ма…",
+  "Stanoklar; tosh, keramika, beton, asbestsement yoki shunga oʻxshash mineral mat…"
+ ],
+ "Machine-tools; for working wood, cork, bone, hard rubber, hard plastics or similar hard…": [
+  "Станки; для обработки дерева, пробки, кости, эбонита, твёрдых пластмасс или аналогичных твёр…",
+  "Stanoklar; yogʻoch, poʻkak, suyak, ebonit, qattiq plastmassa yoki shunga oʻxshash qat…"
+ ],
+ "Machine-tools; forging or die-stamping machines (including presses) and hammers, for wo…": [
+  "Станки; машины ковочные или штамповочные (включая прессы) и молоты, для обра…",
+  "Stanoklar; bosish yoki shtamplash mashinalari (preslar bilan) va bolgʻalar, ishlov…"
+ ],
+ "Machine-tools; gear cutting, gear grinding or gear finishing machines, working by remov…": [
+  "Станки; зубообрабатывающие, зубошлифовальные или зубоотделочные, работающие путём удал…",
+  "Stanoklar; tish kesish, tish jilvirlash yoki tish pardozlash, olib tashlash yoʻ…"
+ ],
+ "Machine-tools; grinding machines (excluding flat-surface), centreless, numerically cont…": [
+  "Станки; шлифовальные (кроме плоскошлифовальных), бесцентровые, с числовым программным упр…",
+  "Stanoklar; jilvirlash (tekis yuzalilardan boshqa), markazsiz, raqamli dasturiy boshq…"
+ ],
+ "Machine-tools; grinding machines (excluding flat-surface), other than numerically contr…": [
+  "Станки; шлифовальные (кроме плоскошлифовальных), кроме с числовым программным управл…",
+  "Stanoklar; jilvirlash (tekis yuzalilardan boshqa), raqamli dasturiy boshqaruvlidan bo…"
+ ],
+ "Machine-tools; grinding machines (excluding flat-surface, cylindrical and centreless),…": [
+  "Станки; шлифовальные (кроме плоско-, кругло- и бесцентрово-шлифовальных),…",
+  "Stanoklar; jilvirlash (tekis yuzali, silindrik va markazsizlardan boshqa),…"
+ ],
+ "Machine-tools; grinding or polishing machines, for working stone, ceramics, concrete, a…": [
+  "Станки; шлифовальные или полировальные, для обработки камня, керамики, бетона, а…",
+  "Stanoklar; jilvirlash yoki sayqallash, tosh, keramika, beton, a…ni ishlash uchun…"
+ ],
+ "Machine-tools; machines for working wire, without removing material": [
+  "Станки; машины для обработки проволоки, без удаления материала",
+  "Stanoklar; simni ishlash mashinalari, materialni olib tashlamasdan"
+ ],
+ "Machine-tools; parts and accessories, for the machines of heading no. 8462 or 8463, n.e…": [
+  "Станки; части и принадлежности для машин товарной позиции 8462 или 8463, не поим…",
+  "Stanoklar; 8462 yoki 8463 tovar pozitsiyasidagi mashinalar uchun qismlar va butlovchilar, nom…"
+ ],
+ "Machine-tools; planing machines, and other machine-tools n.e.c. in heading no. 8461; wo…": [
+  "Станки; строгальные и прочие станки, не поименованные в позиции 8461; работ…",
+  "Stanoklar; randalash va 8461 pozitsiyasida nomlanmagan boshqa stanoklar; ishl…"
+ ],
+ "Machine-tools; presses for working metal or metal carbides, n.e.c. in heading no. 8462,…": [
+  "Станки; прессы для обработки металла или карбидов металлов, не поименованные в позиции 8462,…",
+  "Stanoklar; metall yoki metall karbidlarini ishlash uchun preslar, 8462 pozitsiyasida nomlanmagan,…"
+ ],
+ "Machine-tools; punching or notching machines (including presses), including combined pu…": [
+  "Станки; машины пробивные или высечные (включая прессы), включая комбинированные проб…",
+  "Stanoklar; teshish yoki oʻyish mashinalari (preslar bilan), kombinatsiyalangan teshi…"
+ ],
+ "Machine-tools; sawing machines, for working stone, ceramics, concrete, asbestos-cement…": [
+  "Станки; пильные, для обработки камня, керамики, бетона, асбестоцемента…",
+  "Stanoklar; arralash, tosh, keramika, beton, asbestsementni ishlash…"
+ ],
+ "Machine-tools; sawing or cutting-off machines, working by removing metal, sintered meta…": [
+  "Станки; пильные или отрезные, работающие путём удаления металла, спечённых мета…",
+  "Stanoklar; arralash yoki kesish, metall, aglomerlangan meta…ni olib tashlash yoʻli bilan…"
+ ],
+ "Machine-tools; shaping or slotting machines, working by removing metal, sintered metal…": [
+  "Станки; поперечно-строгальные или долбёжные, работающие путём удаления металла, спечённых металл…",
+  "Stanoklar; koʻndalang randalash yoki oʻyish, metall, aglomerlangan metall…ni olib tashlash bilan…"
+ ],
+ "Machine-tools; sharpening (tool or cutter grinding) machines, numerically controlled": [
+  "Станки; заточные (для заточки инструмента или резцов), с числовым программным управлением",
+  "Stanoklar; charxlash (asbob yoki kesgichlarni charxlash), raqamli dasturiy boshqaruvli"
+ ],
+ "Machine-tools; sharpening (tool or cutter grinding) machines, other than numerically co…": [
+  "Станки; заточные (для заточки инструмента или резцов), кроме с числовым программным упр…",
+  "Stanoklar; charxlash (asbob yoki kesgichlarni charxlash), raqamli dasturiy boshqaruvlidan bosh…"
+ ],
+ "Machine-tools; shearing machines (including presses), (other than combined punching and…": [
+  "Станки; машины отрезные ножничные (включая прессы), (кроме комбинированных пробивных и…",
+  "Stanoklar; qaychili kesish mashinalari (preslar bilan), (kombinatsiyalangan teshish va…"
+ ],
+ "Machine-tools; way-type unit head machines, for drilling, boring, milling, threading or…": [
+  "Станки; агрегатные однопозиционные, для сверления, растачивания, фрезерования, нарезания резьбы или…",
+  "Stanoklar; agregatli bir pozitsiyali, parmalash, yoʻnish, frezalash, rezba kesish yoki…"
+ ],
+ "Machine-tools; which can carry out different types of machining operations without tool…": [
+  "Станки; выполняющие различные виды операций механической обработки без смены инструмен…",
+  "Stanoklar; asbobni almashtirmasdan turli xil mexanik ishlov berish operatsiyalarini bajaruv…"
+ ],
+ "Machinery and apparatus; for isotopic separation, and parts thereof": [
+  "Машины и аппараты; для разделения изотопов, и их части",
+  "Mashina va apparatlar; izotoplarni ajratish uchun, va ularning qismlari"
+ ]
+}
