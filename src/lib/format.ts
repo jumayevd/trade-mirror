@@ -1,9 +1,25 @@
+import { labelLang } from "@/lib/labels";
+
+/**
+ * Magnitude suffixes for compact money, per language.
+ *
+ * English keeps the tight single letter ($1.5B). Russian and Uzbek use their
+ * own conventional abbreviations, which are several letters long and so take a
+ * thin gap from the digits — "$1.5млрд" run together reads as a typo.
+ */
+const MAGNITUDES: Record<string, readonly [string, string, string]> = {
+  en: ["B", "M", "K"],
+  ru: [" млрд", " млн", " тыс."],
+  uz: [" mlrd", " mln", " ming"],
+};
+
 export function fmtUSD(v: number, opts: { sign?: boolean } = {}): string {
   const a = Math.abs(v);
   const sign = v < 0 ? "-" : opts.sign ? "+" : "";
-  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(a >= 1e10 ? 0 : 1)}B`;
-  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(a >= 1e7 ? 0 : 1)}M`;
-  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(0)}K`;
+  const [B, M, K] = MAGNITUDES[labelLang()] ?? MAGNITUDES.en;
+  if (a >= 1e9) return `${sign}$${(a / 1e9).toFixed(a >= 1e10 ? 0 : 1)}${B}`;
+  if (a >= 1e6) return `${sign}$${(a / 1e6).toFixed(a >= 1e7 ? 0 : 1)}${M}`;
+  if (a >= 1e3) return `${sign}$${(a / 1e3).toFixed(0)}${K}`;
   return `${sign}$${a.toFixed(0)}`;
 }
 

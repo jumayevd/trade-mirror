@@ -286,7 +286,7 @@ export default function MethodologyView() {
           />
         </div>
         <p className="tabular max-w-3xl text-[11.5px] text-faint">
-          {tr("meth.diag.bands")}: Critical ≥ {cuts.critical.toFixed(1)} · High ≥ {cuts.high.toFixed(1)} · Elevated ≥ {cuts.elevated.toFixed(1)} (HS6)
+          {tr("meth.diag.bands")}: {tr("band.critical")} ≥ {cuts.critical.toFixed(1)} · {tr("band.high")} ≥ {cuts.high.toFixed(1)} · {tr("band.elevated")} ≥ {cuts.elevated.toFixed(1)} (HS6)
         </p>
       </section>
 

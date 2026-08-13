@@ -363,7 +363,7 @@ export const partnerEffects = (level: number): PartnerEffect[] => riskIndex.part
 export const BAND_LABELS: Record<RiskBand, { label: string; desc: string }> = {
   critical: { label: "Critical", desc: "Top 2.5% of cells by risk score — the strongest conjunction of a large gap rate and a persistent one." },
   high: { label: "High", desc: "Upper quartile of the remaining cells." },
-  elevated: { label: "Elevated", desc: "Second quartile of the remaining cells." },
+  elevated: { label: "Medium", desc: "Second quartile of the remaining cells." },
   low: { label: "Low", desc: "Lower half of the remaining cells, and every cell that was never in scope." },
 };
 export const ROBUSTNESS_LABELS: Record<Robustness, string> = {

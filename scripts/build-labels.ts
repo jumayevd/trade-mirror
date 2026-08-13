@@ -148,6 +148,18 @@ const out: Record<Lang, {
 const CHAPTER_LABELS = new Set(meta.chapters.map((c) => c.label));
 const PRODUCT_LABELS = new Set([...Object.values(meta.hs4labels), ...Object.values(meta.hs6labels)]);
 
+/**
+ * Uzbek spells the letters oʻ and gʻ with a modifier letter turned comma
+ * (ʻ U+02BB), which is what the rest of the app's Uzbek copy uses. A few CLDR
+ * entries spell that same mark with a typographic quote instead — "Amerika
+ * Qo‘shma Shtatlari" — which renders as an opening quote and reads as a
+ * mistake next to every other oʻ on the page.
+ *
+ * Only the mark directly after o or g is that letter. The apostrophe in
+ * "Kot-d’Ivuar" is a genuine French elision and is left alone.
+ */
+const uzLetterMark = (s: string) => s.replace(/([oOgG])[‘’`´']/g, "$1ʻ");
+
 const missingIso: string[] = [];
 const englishCheck: { iso3: string; extract: string; cldr: string }[] = [];
 const displayNames = {
@@ -171,7 +183,7 @@ for (const p of meta.partners) {
   englishCheck.push({ iso3: p.iso3, extract: p.name, cldr: en });
   for (const lang of LANGS) {
     const name = displayNames[lang].of(a2);
-    if (name && name !== a2) out[lang].countries[p.iso3] = name;
+    if (name && name !== a2) out[lang].countries[p.iso3] = lang === "uz" ? uzLetterMark(name) : name;
   }
 }
 
