@@ -1,0 +1,482 @@
+{
+ "Footwear; with uppers of leather or composition leather, n.e.c. in chapter 64": [
+  "Обувь; с верхом из натуральной или композиционной кожи, не поименованная в группе 64",
+  "Poyabzal; tabiiy yoki kompozitsion teridan ustki qismli, 64-guruhda nomlanmagan"
+ ],
+ "Footwear; with uppers of textile materials, n.e.c. in chapter 64": [
+  "Обувь; с верхом из текстильных материалов, не поименованная в группе 64",
+  "Poyabzal; toʻqimachilik materiallaridan ustki qismli, 64-guruhda nomlanmagan"
+ ],
+ "Forage products including swedes, mangolds, fodder roots, hay, sainfoin, clover, forage…": [
+  "Продукты кормовые, включая брюкву, мангольд, кормовые корнеплоды, сено, эспарцет, клевер, кормо…",
+  "Yem mahsulotlari, sholgʻom, mangold, yem ildizmevalari, pichan, esparset, sebarga, yem…"
+ ],
+ "Fork-lift and other works trucks": [
+  "Автопогрузчики вилочные и прочие погрузчики",
+  "Vilkali avtoyuklagichlar va boshqa yuklagichlar"
+ ],
+ "Frames and mountings; for spectacles, goggles or the like, of materials other than plas…": [
+  "Оправы и арматура; для очков, защитных очков или аналогичных изделий, из материалов, кроме пласт…",
+  "Gardishlar va armatura; koʻzoynak, himoya koʻzoynagi yoki shunga oʻxshashlar uchun, plastmassadan boshqa materiallardan…"
+ ],
+ "Frames and mountings; for spectacles, goggles or the like, of plastics": [
+  "Оправы и арматура; для очков, защитных очков или аналогичных изделий, из пластмассы",
+  "Gardishlar va armatura; koʻzoynak, himoya koʻzoynagi yoki shunga oʻxshashlar uchun, plastmassadan"
+ ],
+ "Frames and mountings; parts for spectacles, goggles or the like": [
+  "Оправы и арматура; части для очков, защитных очков или аналогичных изделий",
+  "Gardishlar va armatura; koʻzoynak, himoya koʻzoynagi yoki shunga oʻxshashlar uchun qismlar"
+ ],
+ "Freezers; of the chest type, not exceeding 800l capacity": [
+  "Морозильники; ларьного типа, вместимостью не более 800 л",
+  "Muzlatgichlar; sandiq turdagi, sigʻimi 800 l dan oshmaydigan"
+ ],
+ "Freezers; of the upright type, not exceeding 900l capacity": [
+  "Морозильники; шкафного типа, вместимостью не более 900 л",
+  "Muzlatgichlar; shkaf turdagi, sigʻimi 900 l dan oshmaydigan"
+ ],
+ "Friction material and articles thereof": [
+  "Материалы фрикционные и изделия из них",
+  "Ishqalanish materiallari va ulardan buyumlar"
+ ],
+ "Front-end shovel loaders": [
+  "Погрузчики одноковшовые фронтальные",
+  "Bir chelakli frontal yuklagichlar"
+ ],
+ "Fruit, edible; apples, dried": [
+  "Фрукты пищевые; яблоки сушёные",
+  "Yeyiladigan mevalar; quritilgan olma"
+ ],
+ "Fruit, edible; apples, fresh": [
+  "Фрукты пищевые; яблоки свежие",
+  "Yeyiladigan mevalar; yangi olma"
+ ],
+ "Fruit, edible; apricots, dried": [
+  "Фрукты пищевые; абрикосы сушёные",
+  "Yeyiladigan mevalar; quritilgan oʻrik"
+ ],
+ "Fruit, edible; apricots, fresh": [
+  "Фрукты пищевые; абрикосы свежие",
+  "Yeyiladigan mevalar; yangi oʻrik"
+ ],
+ "Fruit, edible; avocados, fresh or dried": [
+  "Фрукты пищевые; авокадо свежие или сушёные",
+  "Yeyiladigan mevalar; yangi yoki quritilgan avokado"
+ ],
+ "Fruit, edible; bananas, other than plantains, fresh or dried": [
+  "Фрукты пищевые; бананы, кроме плантанов, свежие или сушёные",
+  "Yeyiladigan mevalar; banan, plantandan boshqa, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; black, white or red currants and gooseberries, fresh": [
+  "Фрукты пищевые; смородина чёрная, белая или красная и крыжовник, свежие",
+  "Yeyiladigan mevalar; qora, oq yoki qizil smorodina va krijovnik, yangi"
+ ],
+ "Fruit, edible; cherries, other than sour cherries (Prunus cerasus), fresh": [
+  "Фрукты пищевые; вишня, кроме кислой вишни (Prunus cerasus), свежая",
+  "Yeyiladigan mevalar; gilos, nordon olcha (Prunus cerasus) dan boshqa, yangi"
+ ],
+ "Fruit, edible; citrus fruit n.e.c. in heading no. 0805, fresh or dried": [
+  "Фрукты пищевые; цитрусовые, не поименованные в позиции 0805, свежие или сушёные",
+  "Yeyiladigan mevalar; 0805 pozitsiyasida nomlanmagan sitrus mevalari, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; clementines, fresh or dried": [
+  "Фрукты пищевые; клементины, свежие или сушёные",
+  "Yeyiladigan mevalar; klementinlar, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; cranberries, bilberries and other fruits of the genus vaccinium, fresh": [
+  "Фрукты пищевые; клюква, черника и прочие плоды рода vaccinium, свежие",
+  "Yeyiladigan mevalar; klyukva, chernika va vaccinium turkumidagi boshqa mevalar, yangi"
+ ],
+ "Fruit, edible; dates, fresh or dried": [
+  "Фрукты пищевые; финики, свежие или сушёные",
+  "Yeyiladigan mevalar; xurmo (dattel), yangi yoki quritilgan"
+ ],
+ "Fruit, edible; figs, fresh or dried": [
+  "Фрукты пищевые; инжир, свежий или сушёный",
+  "Yeyiladigan mevalar; anjir, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; fruit and nuts n.e.c. in heading no. 0811, uncooked or cooked, frozen wh…": [
+  "Фрукты пищевые; плоды и орехи, не поименованные в позиции 0811, сырые или варёные, замороженные, с…",
+  "Yeyiladigan mevalar; 0811 pozitsiyasida nomlanmagan meva va yongʻoqlar, xom yoki pishirilgan, muzlatilgan…"
+ ],
+ "Fruit, edible; fruit and nuts n.e.c. in heading no. 0812, provisionally preserved, but…": [
+  "Фрукты пищевые; плоды и орехи, не поименованные в позиции 0812, консервированные для временного хранения, но…",
+  "Yeyiladigan mevalar; 0812 pozitsiyasida nomlanmagan meva va yongʻoqlar, vaqtincha saqlash uchun konservalangan, lekin…"
+ ],
+ "Fruit, edible; fruit n.e.c. in heading no. 0812, dried": [
+  "Фрукты пищевые; плоды, не поименованные в позиции 0812, сушёные",
+  "Yeyiladigan mevalar; 0812 pozitsiyasida nomlanmagan mevalar, quritilgan"
+ ],
+ "Fruit, edible; fruits n.e.c. in heading no. 0801 to 0810, fresh": [
+  "Фрукты пищевые; плоды, не поименованные в позициях 0801–0810, свежие",
+  "Yeyiladigan mevalar; 0801–0810 pozitsiyalarida nomlanmagan mevalar, yangi"
+ ],
+ "Fruit, edible; grapefruit, including pomelos, fresh or dried": [
+  "Фрукты пищевые; грейпфруты, включая помело, свежие или сушёные",
+  "Yeyiladigan mevalar; greypfrutlar, pomelo bilan, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; grapes, dried": [
+  "Фрукты пищевые; виноград сушёный",
+  "Yeyiladigan mevalar; quritilgan uzum"
+ ],
+ "Fruit, edible; grapes, fresh": [
+  "Фрукты пищевые; виноград свежий",
+  "Yeyiladigan mevalar; yangi uzum"
+ ],
+ "Fruit, edible; guavas, mangoes and mangosteens, fresh or dried": [
+  "Фрукты пищевые; гуава, манго и мангостан, свежие или сушёные",
+  "Yeyiladigan mevalar; guava, mango va mangostan, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; kiwifruit, fresh": [
+  "Фрукты пищевые; киви свежие",
+  "Yeyiladigan mevalar; yangi kivi"
+ ],
+ "Fruit, edible; lemons (Citrus limon, Citrus limonum), limes (Citrus aurantifolia , Citr…": [
+  "Фрукты пищевые; лимоны (Citrus limon, Citrus limonum), лаймы (Citrus aurantifolia, Citr…",
+  "Yeyiladigan mevalar; limonlar (Citrus limon, Citrus limonum), laymlar (Citrus aurantifolia, Citr…"
+ ],
+ "Fruit, edible; mandarins (including tangerines and satsumas), fresh or dried": [
+  "Фрукты пищевые; мандарины (включая танжерины и сатсума), свежие или сушёные",
+  "Yeyiladigan mevalar; mandarinlar (tanjerin va satsuma bilan), yangi yoki quritilgan"
+ ],
+ "Fruit, edible; melons, other than watermelons, fresh": [
+  "Фрукты пищевые; дыни, кроме арбузов, свежие",
+  "Yeyiladigan mevalar; qovunlar, tarvuzdan boshqa, yangi"
+ ],
+ "Fruit, edible; oranges, fresh or dried": [
+  "Фрукты пищевые; апельсины, свежие или сушёные",
+  "Yeyiladigan mevalar; apelsinlar, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; papaws (papayas), fresh": [
+  "Фрукты пищевые; папайя свежая",
+  "Yeyiladigan mevalar; yangi papayya"
+ ],
+ "Fruit, edible; peaches, including nectarines, fresh": [
+  "Фрукты пищевые; персики, включая нектарины, свежие",
+  "Yeyiladigan mevalar; shaftolilar, nektarin bilan, yangi"
+ ],
+ "Fruit, edible; pears, fresh": [
+  "Фрукты пищевые; груши свежие",
+  "Yeyiladigan mevalar; yangi nok"
+ ],
+ "Fruit, edible; persimmons, fresh": [
+  "Фрукты пищевые; хурма свежая",
+  "Yeyiladigan mevalar; yangi xurmo (persimmon)"
+ ],
+ "Fruit, edible; pineapples, fresh or dried": [
+  "Фрукты пищевые; ананасы, свежие или сушёные",
+  "Yeyiladigan mevalar; ananaslar, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; plantains, fresh or dried": [
+  "Фрукты пищевые; плантаны, свежие или сушёные",
+  "Yeyiladigan mevalar; plantanlar, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; plums and sloes, fresh": [
+  "Фрукты пищевые; сливы и тёрн, свежие",
+  "Yeyiladigan mevalar; olxoʻri va tikanli olxoʻri, yangi"
+ ],
+ "Fruit, edible; prunes, dried": [
+  "Фрукты пищевые; чернослив сушёный",
+  "Yeyiladigan mevalar; quritilgan qora olxoʻri"
+ ],
+ "Fruit, edible; quinces, fresh": [
+  "Фрукты пищевые; айва свежая",
+  "Yeyiladigan mevalar; yangi behi"
+ ],
+ "Fruit, edible; raspberries, blackberries, mulberries, and loganberries, fresh": [
+  "Фрукты пищевые; малина, ежевика, шелковица и логанова ягода, свежие",
+  "Yeyiladigan mevalar; malina, ojina, tut va logan mevasi, yangi"
+ ],
+ "Fruit, edible; raspberries, blackberries, mulberries, loganberries, black, white or red…": [
+  "Фрукты пищевые; малина, ежевика, шелковица, логанова ягода, смородина чёрная, белая или красная…",
+  "Yeyiladigan mevalar; malina, ojina, tut, logan mevasi, qora, oq yoki qizil smorodina…"
+ ],
+ "Fruit, edible; sour cherries (Prunus cerasus), fresh": [
+  "Фрукты пищевые; вишня кислая (Prunus cerasus), свежая",
+  "Yeyiladigan mevalar; nordon olcha (Prunus cerasus), yangi"
+ ],
+ "Fruit, edible; strawberries, fresh": [
+  "Фрукты пищевые; земляника и клубника, свежие",
+  "Yeyiladigan mevalar; qulupnay, yangi"
+ ],
+ "Fruit, edible; strawberries, uncooked or cooked by steaming or boiling in water, frozen…": [
+  "Фрукты пищевые; земляника и клубника, сырые или сваренные на пару или в воде, замороженные…",
+  "Yeyiladigan mevalar; qulupnay, xom yoki bugʻda hamda suvda pishirilgan, muzlatilgan…"
+ ],
+ "Fruit, edible; tangelos, wilkings and similar citrus hybrid, fresh or dried": [
+  "Фрукты пищевые; тангело, вилкинг и аналогичные гибриды цитрусовых, свежие или сушёные",
+  "Yeyiladigan mevalar; tangelo, vilking va shunga oʻxshash sitrus duragaylari, yangi yoki quritilgan"
+ ],
+ "Fruit, edible; watermelons, fresh": [
+  "Фрукты пищевые; арбузы свежие",
+  "Yeyiladigan mevalar; yangi tarvuz"
+ ],
+ "Fruit, nuts and other edible parts of plants": [
+  "Плоды, орехи и прочие съедобные части растений",
+  "Mevalar, yongʻoqlar va oʻsimliklarning boshqa yeyiladigan qismlari"
+ ],
+ "Fruit, palm hearts; prepared or preserved, whether or not containing added sugar, other…": [
+  "Плоды, сердцевина пальмы; приготовленные или консервированные, с добавлением сахара или без, проч…",
+  "Mevalar, palma oʻzagi; tayyorlangan yoki konservalangan, shakar qoʻshilgan yoki qoʻshilmagan, bosh…"
+ ],
+ "Fruit; apricots, prepared or preserved in ways n.e.c. in heading no. 2007, whether or n…": [
+  "Плоды; абрикосы, приготовленные или консервированные способами, не поименованными в позиции 2007, с добавлением или н…",
+  "Mevalar; oʻrik, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan, qoʻshilgan yoki yoʻq…"
+ ],
+ "Fruit; cherries, prepared or preserved in ways n.e.c. in heading no. 2007, whether or n…": [
+  "Плоды; вишня и черешня, приготовленные или консервированные способами, не поименованными в позиции 2007, с добавлением или н…",
+  "Mevalar; olcha va gilos, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan, qoʻshilgan yoki yoʻq…"
+ ],
+ "Fruit; citrus, prepared or preserved in ways n.e.c. in heading no. 2007, whether or not…": [
+  "Плоды; цитрусовые, приготовленные или консервированные способами, не поименованными в позиции 2007, с добавлением или…",
+  "Mevalar; sitrus, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan, qoʻshilgan yoki…"
+ ],
+ "Fruit; cranberries (Vaccinium macrocarpon, Vaccinium oxycoccos, Vaccinium vitis-idaea),…": [
+  "Плоды; клюква (Vaccinium macrocarpon, Vaccinium oxycoccos, Vaccinium vitis-idaea),…",
+  "Mevalar; klyukva (Vaccinium macrocarpon, Vaccinium oxycoccos, Vaccinium vitis-idaea),…"
+ ],
+ "Fruit; peaches, including nectarines, prepared or preserved in ways n.e.c. in heading n…": [
+  "Плоды; персики, включая нектарины, приготовленные или консервированные способами, не поименованными в поз…",
+  "Mevalar; shaftoli, nektarin bilan, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konserv…"
+ ],
+ "Fruit; pears, prepared or preserved in ways n.e.c. in heading no. 2007, whether or not…": [
+  "Плоды; груши, приготовленные или консервированные способами, не поименованными в позиции 2007, с добавлением или…",
+  "Mevalar; nok, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan, qoʻshilgan yoki…"
+ ],
+ "Fruit; pineapples, prepared or preserved in ways n.e.c. in heading no. 2007, whether or…": [
+  "Плоды; ананасы, приготовленные или консервированные способами, не поименованными в позиции 2007, с добавлением…",
+  "Mevalar; ananas, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan, qoʻshilgan…"
+ ],
+ "Fruit; strawberries, prepared or preserved in ways n.e.c. in heading no. 2007, whether…": [
+  "Плоды; земляника и клубника, приготовленные или консервированные способами, не поименованными в позиции 2007,…",
+  "Mevalar; qulupnay, 2007 pozitsiyasida nomlanmagan usullarda tayyorlangan yoki konservalangan,…"
+ ],
+ "Fuel elements (cartridges); non-irradiated": [
+  "Элементы твэлы (тепловыделяющие); необлучённые",
+  "Yoqilgʻi elementlari (kartrijlar); nurlantirilmagan"
+ ],
+ "Fuels; liquid or liquefied-gas, in containers, of a kind used for filling or refilling…": [
+  "Топливо; жидкое или сжиженный газ, в ёмкостях, используемое для заполнения или дозаправки…",
+  "Yoqilgʻi; suyuq yoki suyultirilgan gaz, idishlarda, toʻldirish yoki qayta toʻldirish uchun…"
+ ],
+ "Fungicides; other than containing goods specified in Subheading Note 1 to this Chapter;…": [
+  "Фунгициды; кроме содержащих товары, указанные в примечании 1 к субпозициям данной группы;…",
+  "Fungitsidlar; ushbu guruh subpozitsiyalariga 1-izohda koʻrsatilgan tovarlarni saqlaganlardan boshqa;…"
+ ],
+ "Fur, artificial; articles thereof": [
+  "Мех искусственный; изделия из него",
+  "Sunʼiy moʻyna; undan buyumlar"
+ ],
+ "Furnace accessories; mechanical stokers, mechanical grates, mechanical ash dischargers…": [
+  "Принадлежности топочные; топки механические, решётки механические, золоудалители механические…",
+  "Oʻchoq butlovchilari; mexanik oʻchoqlar, mexanik panjaralar, mexanik kul chiqargichlar…"
+ ],
+ "Furnaces and ovens; electric, for industrial or laboratory use, functioning by inductio…": [
+  "Печи; электрические, для промышленных или лабораторных целей, работающие на основе индукци…",
+  "Pechlar; elektr, sanoat yoki laboratoriya maqsadlari uchun, induksiya asosida ishlaydigan…"
+ ],
+ "Furnaces and ovens; electric, for industrial or laboratory use, other than those functi…": [
+  "Печи; электрические, для промышленных или лабораторных целей, кроме работающих…",
+  "Pechlar; elektr, sanoat yoki laboratoriya maqsadlari uchun, ishlaydiganlardan boshqa…"
+ ],
+ "Furnaces and ovens; electric, for industrial or laboratory use, resistance heated": [
+  "Печи; электрические, для промышленных или лабораторных целей, сопротивления",
+  "Pechlar; elektr, sanoat yoki laboratoriya maqsadlari uchun, qarshilikli isitiladigan"
+ ],
+ "Furnaces and ovens; including incinerators, non-electric, for industrial or laboratory…": [
+  "Печи; включая мусоросжигательные, неэлектрические, для промышленных или лабораторных…",
+  "Pechlar; chiqindi yoqish pechlari bilan, elektr boʻlmagan, sanoat yoki laboratoriya…"
+ ],
+ "Furnaces and ovens; non-electric, for the roasting, melting or other heat-treatment of…": [
+  "Печи; неэлектрические, для обжига, плавки или иной термообработки…",
+  "Pechlar; elektr boʻlmagan, kuydirish, eritish yoki boshqa issiqlik bilan ishlash uchun…"
+ ],
+ "Furnaces and ovens; parts of non-electric furnaces and ovens (including incinerators),…": [
+  "Печи; части неэлектрических печей (включая мусоросжигательные),…",
+  "Pechlar; elektr boʻlmagan pechlar qismlari (chiqindi yoqish pechlari bilan),…"
+ ],
+ "Furnaces, ovens and heating equipment": [
+  "Печи и оборудование нагревательное",
+  "Pechlar va isitish uskunalari"
+ ],
+ "Furnaces; furnace burners, for liquid fuel": [
+  "Печи; горелки топочные для жидкого топлива",
+  "Pechlar; suyuq yoqilgʻi uchun oʻchoq gorelkalari"
+ ],
+ "Furnaces; furnace burners, for pulverized solid fuel or gas, including combination burners": [
+  "Печи; горелки топочные для распылённого твёрдого топлива или газа, включая комбинированные горелки",
+  "Pechlar; changlatilgan qattiq yoqilgʻi yoki gaz uchun oʻchoq gorelkalari, kombinatsiyalanganlar bilan"
+ ],
+ "Furnaces; parts of furnace burners, for liquid fuel, pulverized solid fuel or gas, mech…": [
+  "Печи; части топочных горелок для жидкого, распылённого твёрдого топлива или газа, мех…",
+  "Pechlar; suyuq, changlatilgan qattiq yoqilgʻi yoki gaz uchun oʻchoq gorelkalari qismlari, mex…"
+ ],
+ "Furnishing articles; excluding those of heading no. 9404, bed nets, specified in Subhea…": [
+  "Изделия декоративные; кроме позиции 9404, сетки противомоскитные, указанные в примечании к субп…",
+  "Bezak buyumlari; 9404 pozitsiyasidan boshqa, subpozitsiya izohida koʻrsatilgan chivinga qarshi toʻrlar…"
+ ],
+ "Furnishing articles; excluding those of heading no. 9404, n.e.c. in heading 6304, knitt…": [
+  "Изделия декоративные; кроме позиции 9404, не поименованные в позиции 6304, трикота…",
+  "Bezak buyumlari; 9404 pozitsiyasidan boshqa, 6304 pozitsiyasida nomlanmagan, trikot…"
+ ],
+ "Furnishing articles; of cotton, not knitted or crocheted (excluding bedspreads and arti…": [
+  "Изделия декоративные; хлопчатобумажные, нетрикотажные (кроме покрывал и изде…",
+  "Bezak buyumlari; paxtadan, trikotaj emas (karavot qoplamalaridan boshqa…"
+ ],
+ "Furnishing articles; of synthetic fibres, not knitted or crocheted (excluding bedspread…": [
+  "Изделия декоративные; из синтетических волокон, нетрикотажные (кроме покрывал…",
+  "Bezak buyumlari; sintetik tolalardan, trikotaj emas (karavot qoplamalaridan boshqa…"
+ ],
+ "Furnishing articles; of textile materials other than cotton or synthetic fibres, not kn…": [
+  "Изделия декоративные; из текстильных материалов, кроме хлопка и синтетических волокон, нетрико…",
+  "Bezak buyumlari; paxta va sintetik tolalardan boshqa toʻqimachilik materiallaridan, trikot…"
+ ],
+ "Furniture incorporating refrigerating or freezing equipment": [
+  "Мебель со встроенным холодильным или морозильным оборудованием",
+  "Sovitish yoki muzlatish uskunasi oʻrnatilgan mebel"
+ ],
+ "Furniture; for medical, surgical, veterinary use (e.g. operating tables, examination ta…": [
+  "Мебель; для медицинских, хирургических, ветеринарных целей (например, операционные столы, смотровые сто…",
+  "Mebel; tibbiy, jarrohlik, veterinariya maqsadlari uchun (masalan, operatsiya stollari, koʻrik sto…"
+ ],
+ "Furniture; metal, for office use": [
+  "Мебель; металлическая, для офисов",
+  "Mebel; metall, ofis uchun"
+ ],
+ "Furniture; metal, other than for office use": [
+  "Мебель; металлическая, кроме офисной",
+  "Mebel; metall, ofis uchun boʻlmagan"
+ ],
+ "Furniture; of bamboo": [
+  "Мебель; из бамбука",
+  "Mebel; bambukdan"
+ ],
+ "Furniture; of cane, osier, or similar materials (other than bamboo or rattan)": [
+  "Мебель; из тростника, ивы или аналогичных материалов (кроме бамбука и ротанга)",
+  "Mebel; qamish, tol yoki shunga oʻxshash materiallardan (bambuk va rotangdan boshqa)"
+ ],
+ "Furniture; of rattan": [
+  "Мебель; из ротанга",
+  "Mebel; rotangdan"
+ ],
+ "Furniture; parts": [
+  "Мебель; части",
+  "Mebel; qismlar"
+ ],
+ "Furniture; plastic": [
+  "Мебель; пластмассовая",
+  "Mebel; plastmassa"
+ ],
+ "Furniture; wooden, for bedroom use": [
+  "Мебель; деревянная, для спален",
+  "Mebel; yogʻoch, yotoqxona uchun"
+ ],
+ "Furniture; wooden, for kitchen use": [
+  "Мебель; деревянная, для кухонь",
+  "Mebel; yogʻoch, oshxona uchun"
+ ],
+ "Furniture; wooden, for office use": [
+  "Мебель; деревянная, для офисов",
+  "Mebel; yogʻoch, ofis uchun"
+ ],
+ "Furniture; wooden, other than for office, kitchen or bedroom use": [
+  "Мебель; деревянная, кроме офисной, кухонной или для спален",
+  "Mebel; yogʻoch, ofis, oshxona yoki yotoqxona uchun boʻlmagan"
+ ],
+ "Furskin articles; apparel and clothing accessories": [
+  "Изделия из меха; предметы одежды и принадлежности одежды",
+  "Moʻyna buyumlari; kiyim va kiyim aksessuarlari"
+ ],
+ "Furskin articles; other than apparel and clothing accessories": [
+  "Изделия из меха; кроме предметов одежды и принадлежностей одежды",
+  "Moʻyna buyumlari; kiyim va kiyim aksessuarlaridan boshqa"
+ ],
+ "Furskins; raw, of Astrakhan, Broadtail, Caracul, Persian and similar lamb, Indian, Chin…": [
+  "Шкурки меховые; необработанные, каракуля, брайтшванца, каракульчи, персидского и аналогичного ягнёнка, индийск…",
+  "Moʻyna terilari; ishlov berilmagan, qorakoʻl, braytshvants, forsiy va shunga oʻxshash qoʻzi, hind…"
+ ],
+ "Furskins; raw, of animals n.e.c. in heading no. 4301, whole, with or without head, tail…": [
+  "Шкурки меховые; необработанные, животных, не поименованных в позиции 4301, целые, с головой, хвостом…",
+  "Moʻyna terilari; ishlov berilmagan, 4301 pozitsiyasida nomlanmagan hayvonlarniki, butun, bosh, dum…"
+ ],
+ "Furskins; raw, of fox, whole, with or without head, tail or paws": [
+  "Шкурки меховые; необработанные, лисицы, целые, с головой, хвостом или лапами или без них",
+  "Moʻyna terilari; ishlov berilmagan, tulkiniki, butun, bosh, dum yoki panjalari bilan yoki usiz"
+ ],
+ "Furskins; raw, of mink, whole, with or without head, tail or paws": [
+  "Шкурки меховые; необработанные, норки, целые, с головой, хвостом или лапами или без них",
+  "Moʻyna terilari; ishlov berilmagan, norkaniki, butun, bosh, dum yoki panjalari bilan yoki usiz"
+ ],
+ "Furskins; tanned or dressed, of mink, whole, with or without head, tail or paws, not as…": [
+  "Шкурки меховые; дублёные или выделанные, норки, целые, с головой, хвостом или лапами или без, несобр…",
+  "Moʻyna terilari; oshlangan yoki ishlangan, norkaniki, butun, bosh, dum yoki panjalari bilan yoki usiz, yigʻilma…"
+ ],
+ "Furskins; tanned or dressed, whole skins and pieces or cuttings thereof, assembled, exc…": [
+  "Шкурки меховые; дублёные или выделанные, целые шкурки и куски или обрезки, собранные, кро…",
+  "Moʻyna terilari; oshlangan yoki ishlangan, butun terilar va boʻlaklar yoki qirqindilar, yigʻilgan, bosh…"
+ ],
+ "Furskins; tanned or dressed, whole, with or without head, tail or paws, not assembled,…": [
+  "Шкурки меховые; дублёные или выделанные, целые, с головой, хвостом или лапами или без, несобранные,…",
+  "Moʻyna terilari; oshlangan yoki ishlangan, butun, bosh, dum yoki panjalari bilan yoki usiz, yigʻilmagan,…"
+ ],
+ "Fuses and detonators; safety or detonating fuses, percussion or detonating caps, ignite…": [
+  "Шнуры огнепроводные и детонирующие; капсюли ударные или детонирующие, запалы…",
+  "Portlatish va oʻt oʻtkazuvchi shnurlar; zarbli yoki detonatsion kapsulalar, yondirgichlar…"
+ ],
+ "Gallium, germanium, hafnium, indium, niobium": [
+  "Галлий, германий, гафний, индий, ниобий",
+  "Galliy, germaniy, gafniy, indiy, niobiy"
+ ],
+ "Games; articles for funfair, table or parlour games, including pintables, special table…": [
+  "Игры; принадлежности для аттракционов, настольных или комнатных игр, включая пинболы, специальные сто…",
+  "Oʻyinlar; attraksion, stol yoki xona oʻyinlari uchun buyumlar, pinbollar, maxsus sto…"
+ ],
+ "Games; operated by coins, banknotes, bank cards, tokens or by other means of payment, o…": [
+  "Игры; приводимые в действие монетами, банкнотами, банковскими картами, жетонами или иными средствами платежа,…",
+  "Oʻyinlar; tanga, banknot, bank kartasi, jeton yoki boshqa toʻlov vositalari bilan ishga tushadigan,…"
+ ],
+ "Games; playing cards": [
+  "Игры; карты игральные",
+  "Oʻyinlar; oʻyin kartalari"
+ ],
+ "Games; video game consoles and machines, other than those of subheading 9504.30": [
+  "Игры; консоли и автоматы для видеоигр, кроме субпозиции 9504.30",
+  "Oʻyinlar; videooʻyin konsollari va avtomatlari, 9504.30 subpozitsiyasidan boshqa"
+ ],
+ "Garments and clothing accessories": [
+  "Предметы одежды и принадлежности одежды",
+  "Kiyim buyumlari va kiyim aksessuarlari"
+ ],
+ "Garments made up of knitted or crocheted fabrics of heading no. 5903, 5906 and 5907": [
+  "Предметы одежды из трикотажных полотен товарных позиций 5903, 5906 и 5907",
+  "5903, 5906 va 5907 tovar pozitsiyalaridagi trikotaj polotnolardan tayyorlangan kiyim buyumlari"
+ ],
+ "Garments; men's or boys', n.e.c. in item no. 6210.2, of the fabrics of heading no. 5602…": [
+  "Предметы одежды; мужские или для мальчиков, не поименованные в субпозиции 6210.2, из материалов позиции 5602…",
+  "Kiyim buyumlari; erkaklar yoki oʻgʻil bolalar uchun, 6210.2 subpozitsiyasida nomlanmagan, 5602 pozitsiyasidagi materiallardan…"
+ ],
+ "Garments; of cotton, knitted or crocheted, n.e.c. in chapter 61": [
+  "Предметы одежды; хлопчатобумажные, трикотажные, не поименованные в группе 61",
+  "Kiyim buyumlari; paxtadan, trikotaj, 61-guruhda nomlanmagan"
+ ],
+ "Garments; of felt or non-wovens (not knitted or crocheted)": [
+  "Предметы одежды; из войлока или нетканых материалов (нетрикотажные)",
+  "Kiyim buyumlari; kigiz yoki toʻqilmagan materiallardan (trikotaj emas)"
+ ],
+ "Garments; of man-made fibres, knitted or crocheted, n.e.c. in chapter 61": [
+  "Предметы одежды; из химических волокон, трикотажные, не поименованные в группе 61",
+  "Kiyim buyumlari; kimyoviy tolalardan, trikotaj, 61-guruhda nomlanmagan"
+ ],
+ "Garments; of textile materials (other than cotton or man-made fibres), knitted or croch…": [
+  "Предметы одежды; из текстильных материалов (кроме хлопка и химических волокон), трикота…",
+  "Kiyim buyumlari; toʻqimachilik materiallaridan (paxta va kimyoviy tolalardan boshqa), trikot…"
+ ],
+ "Garments; overcoats, raincoats, car-coats, capes, cloaks and similar articles, men's or…": [
+  "Предметы одежды; пальто, плащи, полупальто, накидки, плащи-накидки и аналогичные изделия, мужские или…",
+  "Kiyim buyumlari; palto, plash, yarim palto, yopinchiq va shunga oʻxshash buyumlar, erkaklar yoki…"
+ ],
+ "Garments; overcoats, raincoats, car-coats, capes, cloaks and similar articles, women's…": [
+  "Предметы одежды; пальто, плащи, полупальто, накидки, плащи-накидки и аналогичные изделия, женские…",
+  "Kiyim buyumlari; palto, plash, yarim palto, yopinchiq va shunga oʻxshash buyumlar, ayollar…"
+ ]
+}
