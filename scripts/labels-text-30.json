@@ -1,0 +1,482 @@
+{
+ "Sugar beet; fit for human consumption, fresh, chilled, frozen or dried, whether or not…": [
+  "Свёкла сахарная; пригодная для употребления в пищу, свежая, охлаждённая, замороженная или сушёная,…",
+  "Qand lavlagi; oziq-ovqatga yaroqli, yangi, sovutilgan, muzlatilgan yoki quritilgan,…"
+ ],
+ "Sugar confectionery; (excluding chewing gum, including white chocolate), not containing…": [
+  "Изделия кондитерские сахаристые; (кроме жевательной резинки, включая белый шоколад), не содержащие…",
+  "Shirinlik qandolat mahsulotlari; (saqichdan boshqa, oq shokolad bilan), saqlamaydigan…"
+ ],
+ "Sugar confectionery; chewing gum, whether or not sugar-coated, not containing cocoa": [
+  "Изделия кондитерские сахаристые; резинка жевательная, в сахарной оболочке или без, не содержащая какао",
+  "Shirinlik qandolat mahsulotlari; saqich, shakar qoplamali yoki qoplamasiz, kakao saqlamaydigan"
+ ],
+ "Sugars, chemically pure, other than sucrose, lactose, maltose, glucose and fructose": [
+  "Сахара химически чистые, кроме сахарозы, лактозы, мальтозы, глюкозы и фруктозы",
+  "Kimyoviy toza qandlar, saxaroza, laktoza, maltoza, glyukoza va fruktozadan boshqa"
+ ],
+ "Sugars; beet sugar, raw, in solid form, not containing added flavouring or colouring ma…": [
+  "Сахара; сахар свекловичный, сырец, в твёрдом состоянии, без вкусоароматических или красящих доб…",
+  "Qandlar; lavlagi shakari, xom, qattiq holatda, taʼm-hid yoki boʻyovchi qoʻsh…"
+ ],
+ "Sugars; cane sugar, raw, in solid form, as specified in Subheading Note 2 to this chapt…": [
+  "Сахара; сахар тростниковый, сырец, в твёрдом состоянии, как указано в примечании 2 к субпозициям данной груп…",
+  "Qandlar; qamish shakari, xom, qattiq holatda, ushbu guruh subpozitsiyalariga 2-izohda koʻrsatilgan…"
+ ],
+ "Sugars; cane sugar, raw, in solid form, other than as specified in Subheading Note 2 to…": [
+  "Сахара; сахар тростниковый, сырец, в твёрдом состоянии, кроме указанного в примечании 2 к…",
+  "Qandlar; qamish shakari, xom, qattiq holatda, 2-izohda koʻrsatilganidan boshqa…"
+ ],
+ "Sugars; fructose, chemically pure, in solid form": [
+  "Сахара; фруктоза химически чистая, в твёрдом состоянии",
+  "Qandlar; kimyoviy toza fruktoza, qattiq holatda"
+ ],
+ "Sugars; fructose, other than chemically pure fructose, and fructose syrup (containing i…": [
+  "Сахара; фруктоза, кроме химически чистой, и сироп фруктозы (содержащий в…",
+  "Qandlar; fruktoza, kimyoviy tozadan boshqa, va fruktoza siropi (tarkibida…"
+ ],
+ "Sugars; glucose and glucose syrup, containing in the dry state at least 20% but less th…": [
+  "Сахара; глюкоза и сироп глюкозы, содержащие в сухом состоянии не менее 20 %, но менее…",
+  "Qandlar; glyukoza va glyukoza siropi, quruq holatda kamida 20 %, ammo kam…"
+ ],
+ "Sugars; glucose and glucose syrup, not containing fructose or containing in the dry sta…": [
+  "Сахара; глюкоза и сироп глюкозы, не содержащие фруктозу или содержащие в сухом состо…",
+  "Qandlar; glyukoza va glyukoza siropi, fruktoza saqlamaydigan yoki quruq hola…"
+ ],
+ "Sugars; lactose and lactose syrup, containing by weight 99% or more lactose, expressed…": [
+  "Сахара; лактоза и сироп лактозы, содержащие 99 мас.% или более лактозы, выраженной…",
+  "Qandlar; laktoza va laktoza siropi, tarkibida 99 mass.% yoki undan ortiq laktoza, ifodalang…"
+ ],
+ "Sugars; lactose and lactose syrup, containing by weight less than 99% lactose, expresse…": [
+  "Сахара; лактоза и сироп лактозы, содержащие менее 99 мас.% лактозы, выраженной…",
+  "Qandlar; laktoza va laktoza siropi, tarkibida 99 mass.% dan kam laktoza, ifodalang…"
+ ],
+ "Sugars; maple sugar, chemically pure, in solid form; maple syrup, not containing added…": [
+  "Сахара; сахар кленовый, химически чистый, в твёрдом состоянии; сироп кленовый, без добавления…",
+  "Qandlar; zarangdan olingan shakar, kimyoviy toza, qattiq holatda; zarang siropi, qoʻshilmagan…"
+ ],
+ "Sugars; molasses, from sugar beet, resulting from the extraction or refining of sugar": [
+  "Сахара; меласса свекловичная, полученная при извлечении или рафинировании сахара",
+  "Qandlar; lavlagi melassasi, shakar olish yoki rafinatsiyalashdan olingan"
+ ],
+ "Sugars; molasses, from sugar cane, resulting from the extraction or refining of sugar": [
+  "Сахара; меласса тростниковая, полученная при извлечении или рафинировании сахара",
+  "Qandlar; qamish melassasi, shakar olish yoki rafinatsiyalashdan olingan"
+ ],
+ "Sugars; n.e.c. in heading no. 1702, including invert sugar and other sugar and sugar sy…": [
+  "Сахара; не поименованные в позиции 1702, включая сахар инвертный и прочие сахара и сахарные си…",
+  "Qandlar; 1702 pozitsiyasida nomlanmagan, invert shakar va boshqa qand hamda qand sirop…"
+ ],
+ "Sugars; sucrose, chemically pure, in solid form, containing added flavouring or colouri…": [
+  "Сахара; сахароза химически чистая, в твёрдом состоянии, с добавлением вкусоароматических или красящ…",
+  "Qandlar; kimyoviy toza saxaroza, qattiq holatda, taʼm-hid yoki boʻyovchi qoʻshim…"
+ ],
+ "Sugars; sucrose, chemically pure, in solid form, not containing added flavouring or col…": [
+  "Сахара; сахароза химически чистая, в твёрдом состоянии, без добавления вкусоароматических или крас…",
+  "Qandlar; kimyoviy toza saxaroza, qattiq holatda, taʼm-hid yoki boʻyovchi qoʻshilmagan…"
+ ],
+ "Suits; men's or boys', knitted or crocheted": [
+  "Костюмы; мужские или для мальчиков, трикотажные",
+  "Kostyumlar; erkaklar yoki oʻgʻil bolalar uchun, trikotaj"
+ ],
+ "Suits; men's or boys', of synthetic fibres (not knitted or crocheted)": [
+  "Костюмы; мужские или для мальчиков, из синтетических волокон (нетрикотажные)",
+  "Kostyumlar; erkaklar yoki oʻgʻil bolalar uchun, sintetik tolalardan (trikotaj emas)"
+ ],
+ "Suits; men's or boys', of textile materials n.e.c. in item no. 6203.1 (not knitted or c…": [
+  "Костюмы; мужские или для мальчиков, из текстильных материалов, не поименованных в субпозиции 6203.1 (нетрикота…",
+  "Kostyumlar; erkaklar yoki oʻgʻil bolalar uchun, 6203.1 subpozitsiyasida nomlanmagan materiallardan (trikotaj em…"
+ ],
+ "Suits; men's or boys', of wool or fine animal hair (not knitted or crocheted)": [
+  "Костюмы; мужские или для мальчиков, из шерсти или тонкого волоса животных (нетрикотажные)",
+  "Kostyumlar; erkaklar yoki oʻgʻil bolalar uchun, jun yoki hayvonlarning nozik junidan (trikotaj emas)"
+ ],
+ "Suits; women's or girls', of cotton (not knitted or crocheted)": [
+  "Костюмы; женские или для девочек, хлопчатобумажные (нетрикотажные)",
+  "Kostyumlar; ayollar yoki qizlar uchun, paxtadan (trikotaj emas)"
+ ],
+ "Suits; women's or girls', of synthetic fibres (not knitted or crocheted)": [
+  "Костюмы; женские или для девочек, из синтетических волокон (нетрикотажные)",
+  "Kostyumlar; ayollar yoki qizlar uchun, sintetik tolalardan (trikotaj emas)"
+ ],
+ "Suits; women's or girls', of synthetic fibres, knitted or crocheted": [
+  "Костюмы; женские или для девочек, из синтетических волокон, трикотажные",
+  "Kostyumlar; ayollar yoki qizlar uchun, sintetik tolalardan, trikotaj"
+ ],
+ "Suits; women's or girls', of textile materials (other than synthetic fibres), knitted o…": [
+  "Костюмы; женские или для девочек, из текстильных материалов (кроме синтетических волокон), трикотаж…",
+  "Kostyumlar; ayollar yoki qizlar uchun, toʻqimachilik materiallaridan (sintetik tolalardan boshqa), trikot…"
+ ],
+ "Suits; women's or girls', of textile materials n.e.c. in item no. 6204.1 (not knitted o…": [
+  "Костюмы; женские или для девочек, из текстильных материалов, не поименованных в субпозиции 6204.1 (нетрикотаж…",
+  "Kostyumlar; ayollar yoki qizlar uchun, 6204.1 subpozitsiyasida nomlanmagan materiallardan (trikotaj emas…"
+ ],
+ "Suits; women's or girls', of wool or fine animal hair (not knitted or crocheted)": [
+  "Костюмы; женские или для девочек, из шерсти или тонкого волоса животных (нетрикотажные)",
+  "Kostyumlar; ayollar yoki qizlar uchun, jun yoki hayvonlarning nozik junidan (trikotaj emas)"
+ ],
+ "Sulphates; n.e.c. in item no. 2833.2": [
+  "Сульфаты; не поименованные в субпозиции 2833.2",
+  "Sulfatlar; 2833.2 subpozitsiyasida nomlanmagan"
+ ],
+ "Sulphates; of aluminium": [
+  "Сульфаты; алюминия",
+  "Sulfatlar; alyuminiy"
+ ],
+ "Sulphates; of barium": [
+  "Сульфаты; бария",
+  "Sulfatlar; bariy"
+ ],
+ "Sulphates; of copper": [
+  "Сульфаты; меди",
+  "Sulfatlar; mis"
+ ],
+ "Sulphates; of magnesium": [
+  "Сульфаты; магния",
+  "Sulfatlar; magniy"
+ ],
+ "Sulphates; of nickel": [
+  "Сульфаты; никеля",
+  "Sulfatlar; nikel"
+ ],
+ "Sulphides and polysulphides": [
+  "Сульфиды и полисульфиды",
+  "Sulfidlar va polisulfidlar"
+ ],
+ "Sulphides of non-metals,": [
+  "Сульфиды неметаллов",
+  "Nometallar sulfidlari"
+ ],
+ "Sulphides; of sodium, whether or not chemically defined": [
+  "Сульфиды; натрия, определённого или неопределённого химического состава",
+  "Sulfidlar; natriy, kimyoviy tarkibi aniqlangan yoki aniqlanmagan"
+ ],
+ "Sulphites; of sodium": [
+  "Сульфиты; натрия",
+  "Sulfitlar; natriy"
+ ],
+ "Sulphites; other than of sodium": [
+  "Сульфиты; кроме натрия",
+  "Sulfitlar; natriynikidan boshqa"
+ ],
+ "Sulphonamides; N-(2-hydroxyethyl)-N-methylperfluorooctane sulphonamide": [
+  "Сульфонамиды; N-(2-гидроксиэтил)-N-метилперфтороктансульфонамид",
+  "Sulfonamidlar; N-(2-gidroksietil)-N-metilperftoroktansulfonamid"
+ ],
+ "Sulphonamides; N-ethyl-N-(2-hydroxyethyl) perfluorooctane sulphonamide": [
+  "Сульфонамиды; N-этил-N-(2-гидроксиэтил)перфтороктансульфонамид",
+  "Sulfonamidlar; N-etil-N-(2-gidroksietil)perftoroktansulfonamid"
+ ],
+ "Sulphonamides; N-ethylperfluorooctane sulphonamide": [
+  "Сульфонамиды; N-этилперфтороктансульфонамид",
+  "Sulfonamidlar; N-etilperftoroktansulfonamid"
+ ],
+ "Sulphonamides; N-methylperfluorooctane sulphonamide": [
+  "Сульфонамиды; N-метилперфтороктансульфонамид",
+  "Sulfonamidlar; N-metilperftoroktansulfonamid"
+ ],
+ "Sulphonamides; n.e.c. in heading no. 2935": [
+  "Сульфонамиды; не поименованные в позиции 2935",
+  "Sulfonamidlar; 2935 pozitsiyasida nomlanmagan"
+ ],
+ "Sulphonamides; other perfluorooctane sulphonamides": [
+  "Сульфонамиды; прочие перфтороктансульфонамиды",
+  "Sulfonamidlar; boshqa perftoroktansulfonamidlar"
+ ],
+ "Sulphur dichloride": [
+  "Дихлорид серы",
+  "Oltingugurt dixloridi"
+ ],
+ "Sulphur monochloride": [
+  "Монохлорид серы",
+  "Oltingugurt monoxloridi"
+ ],
+ "Sulphur of all kinds; other than sublimed, precipitated and colloidal sulphur": [
+  "Сера всех видов; кроме серы сублимированной, осаждённой и коллоидной",
+  "Har xil turdagi oltingugurt; sublimatlangan, choʻktirilgan va kolloid oltingugurtdan boshqa"
+ ],
+ "Sulphur; sublimed or precipitated, colloidal sulphur": [
+  "Сера; сублимированная или осаждённая, сера коллоидная",
+  "Oltingugurt; sublimatlangan yoki choʻktirilgan, kolloid oltingugurt"
+ ],
+ "Sulphuric acid; oleum": [
+  "Кислота серная; олеум",
+  "Sulfat kislota; oleum"
+ ],
+ "Sunglasses; corrective, protective or other": [
+  "Очки солнцезащитные; корригирующие, защитные или прочие",
+  "Quyoshdan saqlovchi koʻzoynaklar; korreksiyalovchi, himoya yoki boshqa"
+ ],
+ "Surveying equipment; articles n.e.c. in heading no. 9015, including hydrographic, ocean…": [
+  "Оборудование геодезическое; изделия, не поименованные в позиции 9015, включая гидрографические, океан…",
+  "Geodeziya uskunalari; 9015 pozitsiyasida nomlanmagan buyumlar, gidrografik, okean…"
+ ],
+ "Surveying equipment; levels": [
+  "Оборудование геодезическое; нивелиры",
+  "Geodeziya uskunalari; nivelirlar"
+ ],
+ "Surveying equipment; parts and accessories for articles of heading no. 9015": [
+  "Оборудование геодезическое; части и принадлежности для изделий позиции 9015",
+  "Geodeziya uskunalari; 9015 pozitsiyasidagi buyumlar uchun qismlar va butlovchilar"
+ ],
+ "Surveying equipment; photogrammetrical surveying instruments and appliances": [
+  "Оборудование геодезическое; приборы и устройства фотограмметрические",
+  "Geodeziya uskunalari; fotogrammetrik asbob va qurilmalar"
+ ],
+ "Surveying equipment; theodolites and tacheometers": [
+  "Оборудование геодезическое; теодолиты и тахеометры",
+  "Geodeziya uskunalari; teodolitlar va taxeometrlar"
+ ],
+ "Swimwear; men's or boys', (not knitted or crocheted)": [
+  "Одежда купальная; мужская или для мальчиков, (нетрикотажная)",
+  "Choʻmilish kiyimlari; erkaklar yoki oʻgʻil bolalar uchun, (trikotaj emas)"
+ ],
+ "Swimwear; men's or boys', of synthetic fibres, knitted or crocheted": [
+  "Одежда купальная; мужская или для мальчиков, из синтетических волокон, трикотажная",
+  "Choʻmilish kiyimlari; erkaklar yoki oʻgʻil bolalar uchun, sintetik tolalardan, trikotaj"
+ ],
+ "Swimwear; men's or boys', of textile materials (other than synthetic fibres), knitted o…": [
+  "Одежда купальная; мужская или для мальчиков, из текстильных материалов (кроме синтетических волокон), трикота…",
+  "Choʻmilish kiyimlari; erkaklar yoki oʻgʻil bolalar uchun, toʻqimachilik materiallaridan (sintetik tolalardan boshqa), trikot…"
+ ],
+ "Swimwear; women's or girls', (not knitted or crocheted)": [
+  "Одежда купальная; женская или для девочек, (нетрикотажная)",
+  "Choʻmilish kiyimlari; ayollar yoki qizlar uchun, (trikotaj emas)"
+ ],
+ "Swimwear; women's or girls', of synthetic fibres, knitted or crocheted": [
+  "Одежда купальная; женская или для девочек, из синтетических волокон, трикотажная",
+  "Choʻmilish kiyimlari; ayollar yoki qizlar uchun, sintetik tolalardan, trikotaj"
+ ],
+ "Swimwear; women's or girls', of textile materials (other than synthetic fibres), knitte…": [
+  "Одежда купальная; женская или для девочек, из текстильных материалов (кроме синтетических волокон), трико…",
+  "Choʻmilish kiyimlari; ayollar yoki qizlar uchun, toʻqimachilik materiallaridan (sintetik tolalardan boshqa), trik…"
+ ],
+ "Swine; live, other than pure-bred breeding animals, weighing 50kg or more": [
+  "Свиньи; живые, кроме чистопородных племенных животных, массой 50 кг или более",
+  "Choʻchqalar; tirik, sof zotli naslchilik hayvonlaridan boshqa, massasi 50 kg yoki undan ortiq"
+ ],
+ "Swine; live, other than pure-bred breeding animals, weighing less than 50kg": [
+  "Свиньи; живые, кроме чистопородных племенных животных, массой менее 50 кг",
+  "Choʻchqalar; tirik, sof zotli naslchilik hayvonlaridan boshqa, massasi 50 kg dan kam"
+ ],
+ "T-shirts, singlets and other vests": [
+  "Футболки, майки и прочие нательные фуфайки",
+  "Futbolkalar, maykalar va boshqa ich koʻylaklari"
+ ],
+ "Table linen; knitted or crocheted": [
+  "Бельё столовое; трикотажное",
+  "Dasturxon buyumlari; trikotaj"
+ ],
+ "Table linen; of cotton, not knitted or crocheted": [
+  "Бельё столовое; хлопчатобумажное, нетрикотажное",
+  "Dasturxon buyumlari; paxtadan, trikotaj emas"
+ ],
+ "Table linen; of man-made fibres, not knitted or crocheted": [
+  "Бельё столовое; из химических волокон, нетрикотажное",
+  "Dasturxon buyumlari; kimyoviy tolalardan, trikotaj emas"
+ ],
+ "Table linen; of textile materials (other than cotton or man-made fibres), not knitted o…": [
+  "Бельё столовое; из текстильных материалов (кроме хлопка или химических волокон), нетрикота…",
+  "Dasturxon buyumlari; toʻqimachilik materiallaridan (paxta yoki kimyoviy tolalardan boshqa), trikotaj em…"
+ ],
+ "Table-tennis articles and equipment": [
+  "Изделия и оборудование для настольного тенниса",
+  "Stol tennisi buyumlari va jihozlari"
+ ],
+ "Tableware and kitchenware": [
+  "Посуда столовая и кухонная",
+  "Stol va oshxona buyumlari"
+ ],
+ "Tableware and kitchenware, of wood": [
+  "Посуда столовая и кухонная, из древесины",
+  "Yogʻochdan stol va oshxona buyumlari"
+ ],
+ "Tailors' dummies and other lay figures": [
+  "Манекены портновские и прочие манекены",
+  "Tikuvchilik manekenlari va boshqa manekenlar"
+ ],
+ "Tallow; other than those of heading 1503": [
+  "Жир говяжий или бараний топлёный; кроме товарной позиции 1503",
+  "Erigan mol yoki qoʻy yogʻi; 1503 tovar pozitsiyasidan boshqa"
+ ],
+ "Tamping machines and road rollers": [
+  "Машины трамбовочные и катки дорожные",
+  "Zichlash mashinalari va yoʻl yumaloqlagichlari"
+ ],
+ "Tanker trailers and tanker semi-trailers": [
+  "Прицепы-цистерны и полуприцепы-цистерны",
+  "Sisterna tirkamalar va sisterna yarim tirkamalar"
+ ],
+ "Tanks and other armoured fighting vehicles": [
+  "Танки и прочие боевые бронированные машины",
+  "Tanklar va boshqa zirhli jangovar mashinalar"
+ ],
+ "Tanks, casks, drums, boxes and similar containers for any material": [
+  "Цистерны, бочки, барабаны, ящики и аналогичные ёмкости для любых материалов",
+  "Sisternalar, bochkalar, barabanlar, qutilar va har qanday material uchun shunga oʻxshash idishlar"
+ ],
+ "Tanks, casks, drums, cans, boxes and similar containers, for any material": [
+  "Цистерны, бочки, барабаны, банки, ящики и аналогичные ёмкости для любых материалов",
+  "Sisternalar, bochkalar, barabanlar, bankalar, qutilar va har qanday material uchun shunga oʻxshash idishlar"
+ ],
+ "Tanned or crust hides and skins": [
+  "Шкуры и кожи дублёные или в состоянии краст",
+  "Oshlangan yoki krast holatidagi teri va charmlar"
+ ],
+ "Tanned or crust skins of sheep or lambs, without wool on, whether or not split, but not…": [
+  "Кожи дублёные или в состоянии краст; овец или ягнят, без шёрстного покрова, двоёные или нет, но не…",
+  "Oshlangan yoki krast terilar; qoʻy yoki qoʻzi, jun qoplamisiz, qatlamlangan yoki yoʻq, ammo…"
+ ],
+ "Tanned or crust skins; of sheep or lambs, without wool on, whether or not split, but no…": [
+  "Кожи дублёные или в состоянии краст; овец или ягнят, без шёрстного покрова, расслоённые или нет, но…",
+  "Oshlangan yoki krast terilar; qoʻy yoki qoʻzi, jun qoplamisiz, boʻlingan yoki yoʻq, ammo…"
+ ],
+ "Tanning extracts of vegetable origin": [
+  "Экстракты дубильные растительного происхождения",
+  "Oʻsimlik kelib chiqishli oshlovchi ekstraktlar"
+ ],
+ "Tanning substances; inorganic tanning substances; tanning preparations, whether or not…": [
+  "Вещества дубильные; вещества дубильные неорганические; препараты дубильные, содержащие или…",
+  "Oshlovchi moddalar; noorganik oshlovchi moddalar; oshlash preparatlari, saqlovchi yoki…"
+ ],
+ "Tanning substances; synthetic organic tanning substances": [
+  "Вещества дубильные; вещества дубильные органические синтетические",
+  "Oshlovchi moddalar; sintetik organik oshlovchi moddalar"
+ ],
+ "Tantalum; articles n.e.c. in heading no. 8103": [
+  "Тантал; изделия, не поименованные в позиции 8103",
+  "Tantal; 8103 pozitsiyasida nomlanmagan buyumlar"
+ ],
+ "Tantalum; unwrought, including bars and rods obtained simply by sintering, powders": [
+  "Тантал; необработанный, включая прутки и стержни, полученные простым спеканием, порошки",
+  "Tantal; qayta ishlanmagan, oddiy pishirish yoʻli bilan olingan sterjen va tayoqchalar bilan, kukunlar"
+ ],
+ "Tantalum; waste and scrap": [
+  "Тантал; отходы и лом",
+  "Tantal; chiqindi va parchalari"
+ ],
+ "Tapestries; hand-woven, (Gobelins, Flanders, Aubusson, Beauvais and the like) and needl…": [
+  "Гобелены; ручной работы, (гобелены, фламандские, обюссон, бове и аналогичные) и вышит…",
+  "Gobelenlar; qoʻlda toʻqilgan, (gobelen, flamand, obyusson, bove va shunga oʻxshash) va kashta…"
+ ],
+ "Taps, cocks, valves and similar appliances": [
+  "Краны, клапаны, вентили и аналогичные устройства",
+  "Kranlar, klapanlar, ventillar va shunga oʻxshash qurilmalar"
+ ],
+ "Tar; distilled from coal, lignite or peat, and other mineral tars, whether or not dehyd…": [
+  "Смола; полученная перегонкой каменного угля, лигнита или торфа, и прочие минеральные смолы, обезвоженные или…",
+  "Smola; koʻmir, lignit yoki torfni haydashdan olingan, va boshqa mineral smolalar, suvsizlantirilgan yoki…"
+ ],
+ "Tarpaulins, awnings and sunblinds": [
+  "Брезенты, тенты и маркизы солнцезащитные",
+  "Brezentlar, tentlar va quyoshdan saqlovchi markizalar"
+ ],
+ "Tea, black; (fermented) and partly fermented tea, in immediate packings of a content ex…": [
+  "Чай чёрный; (ферментированный) и частично ферментированный, в первичных упаковках содержимым бол…",
+  "Qora choy; (fermentlangan) va qisman fermentlangan, birlamchi qadoqlarda, tarkibi ortiq…"
+ ],
+ "Tea, black; (fermented) and partly fermented tea, in immediate packings of a content no…": [
+  "Чай чёрный; (ферментированный) и частично ферментированный, в первичных упаковках содержимым не бол…",
+  "Qora choy; (fermentlangan) va qisman fermentlangan, birlamchi qadoqlarda, tarkibi oshmaydigan…"
+ ],
+ "Tea, green; (not fermented), in immediate packings of a content exceeding 3kg": [
+  "Чай зелёный; (неферментированный), в первичных упаковках содержимым более 3 кг",
+  "Koʻk choy; (fermentlanmagan), birlamchi qadoqlarda, tarkibi 3 kg dan ortiq"
+ ],
+ "Tea, green; (not fermented), in immediate packings of a content not exceeding 3kg": [
+  "Чай зелёный; (неферментированный), в первичных упаковках содержимым не более 3 кг",
+  "Koʻk choy; (fermentlanmagan), birlamchi qadoqlarda, tarkibi 3 kg dan oshmaydigan"
+ ],
+ "Teleferics, chair-lifts, ski-draglines, traction mechanisms for funiculars": [
+  "Канатные дороги, кресельные подъёмники, буксировочные устройства для лыжников, механизмы тяговые для фуникулёров",
+  "Osma yoʻllar, kreselli koʻtargichlar, changʻichilar uchun tortuvchi qurilmalar, funikulyor tortish mexanizmlari"
+ ],
+ "Telephone sets and other apparatus for the transmission or reception of voice, images o…": [
+  "Аппараты телефонные и прочие аппараты для передачи или приёма голоса, изображений или…",
+  "Telefon apparatlari va ovoz, tasvir yoki… uzatish yoki qabul qilish uchun boshqa apparatlar…"
+ ],
+ "Telephone sets n.e.c. in item no. 8517.1": [
+  "Аппараты телефонные; не поименованные в субпозиции 8517.1",
+  "Telefon apparatlari; 8517.1 subpozitsiyasida nomlanmagan"
+ ],
+ "Telephones for cellular networks or for other wireless networks": [
+  "Телефоны для сотовых сетей или для прочих беспроводных сетей",
+  "Uyali tarmoqlar yoki boshqa simsiz tarmoqlar uchun telefonlar"
+ ],
+ "Television cameras, digital cameras and video camera recorders": [
+  "Камеры телевизионные, камеры цифровые и видеокамеры записывающие",
+  "Televizion kameralar, raqamli kameralar va yozuvchi videokameralar"
+ ],
+ "Tennis, badminton and similar racquets": [
+  "Ракетки теннисные, бадминтонные и аналогичные",
+  "Tennis, badminton va shunga oʻxshash raketkalar"
+ ],
+ "Tents; of synthetic fibres": [
+  "Палатки; из синтетических волокон",
+  "Chodirlar; sintetik tolalardan"
+ ],
+ "Tents; of textile materials other than synthetic fibres": [
+  "Палатки; из текстильных материалов, кроме синтетических волокон",
+  "Chodirlar; sintetik tolalardan boshqa toʻqimachilik materiallaridan"
+ ],
+ "Terpenic oils; gum, wood or sulphate turpentine oils": [
+  "Масла терпеновые; скипидар живичный, древесный или сульфатный",
+  "Terpenli moylar; jivitsa, yogʻoch yoki sulfat skipidari"
+ ],
+ "Terpenic oils; produced by the treatment of coniferous woods, crude dipentene, sulphite…": [
+  "Масла терпеновые; полученные при обработке хвойной древесины, дипентен неочищенный, сульфитн…",
+  "Terpenli moylar; ignabargli yogʻochni ishlashdan olingan, tozalanmagan dipenten, sulfit…"
+ ],
+ "Test benches": [
+  "Стенды испытательные",
+  "Sinov stendlari"
+ ],
+ "Textile fabric, felt & felt-lined woven fabrics, coated/covered/laminated with rubber,…": [
+  "Материалы текстильные, войлок и ткани с войлочной подкладкой, с покрытием или дублированные резиной,…",
+  "Toʻqimachilik matolari, kigiz va kigiz astarli matolar, kauchuk bilan qoplangan yoki dublangan,…"
+ ],
+ "Textile fabrics, rubberised": [
+  "Материалы текстильные прорезиненные",
+  "Rezinalangan toʻqimachilik matolari"
+ ],
+ "Textile fabrics; coated with gum or amylaceous substances, of a kind used for the outer…": [
+  "Материалы текстильные; с покрытием из камеди или крахмалистых веществ, используемые для наружн…",
+  "Toʻqimachilik matolari; kamed yoki kraxmalli moddalar bilan qoplangan, tashqi…uchun ishlatiladigan…"
+ ],
+ "Textile fabrics; coated with gum or amylaceous substances, tracing cloth, prepared pain…": [
+  "Материалы текстильные; с покрытием из камеди или крахмалистых веществ, калька тканевая, холст грунтованный для живопис…",
+  "Toʻqimachilik matolari; kamed yoki kraxmalli moddalar bilan qoplangan, mato kalka, rassomlik uchun tayyorlangan…"
+ ],
+ "Textile fabrics; impregnated, coated, covered or laminated with plastics, (excluding po…": [
+  "Материалы текстильные; пропитанные, с покрытием или дублированные пластмассами, (кроме поли…",
+  "Toʻqimachilik matolari; plastmassa bilan shimdirilgan, qoplangan yoki dublangan, (poli…dan boshqa…"
+ ],
+ "Textile fabrics; impregnated, coated, covered or laminated with poly(vinyl chloride)": [
+  "Материалы текстильные; пропитанные, с покрытием или дублированные поливинилхлоридом",
+  "Toʻqimachilik matolari; polivinilxlorid bilan shimdirilgan, qoplangan yoki dublangan"
+ ],
+ "Textile fabrics; impregnated, coated, covered or laminated with polyurethane": [
+  "Материалы текстильные; пропитанные, с покрытием или дублированные полиуретаном",
+  "Toʻqimachilik matolari; poliuretan bilan shimdirilgan, qoplangan yoki dublangan"
+ ],
+ "Textile fabrics; otherwise impregnated, coated or covered, painted canvas being theatri…": [
+  "Материалы текстильные; пропитанные или с покрытием иным образом, холст расписной для театральн…",
+  "Toʻqimachilik matolari; boshqacha shimdirilgan yoki qoplangan, teatr… uchun boʻyalgan matolar…"
+ ],
+ "Textile fabrics; tyrecord of high tenacity yarn of nylon or other polyamides": [
+  "Материалы текстильные; корд шинный из высокопрочной нити нейлона или прочих полиамидов",
+  "Toʻqimachilik matolari; neylon yoki boshqa poliamidlarning yuqori mustahkam ipidan shina kordi"
+ ],
+ "Textile fabrics; tyrecord of high tenacity yarn of polyester": [
+  "Материалы текстильные; корд шинный из высокопрочной нити полиэфира",
+  "Toʻqimachilik matolari; poliefirning yuqori mustahkam ipidan shina kordi"
+ ],
+ "Textile fabrics; tyrecord of high tenacity yarn of viscose rayon": [
+  "Материалы текстильные; корд шинный из высокопрочной нити вискозного волокна",
+  "Toʻqimachilik matolari; viskoza tolasining yuqori mustahkam ipidan shina kordi"
+ ],
+ "Textile floor coverings; felt tiles, (not tufted or flocked), whether or not made up, h…": [
+  "Покрытия напольные текстильные; плитки войлочные, (нетафтинговые и нефлокированные), готовые или нет, и…",
+  "Toʻqimachilik pol qoplamalari; kigiz plitkalar, (taftingsiz va flokirlanmagan), tayyor yoki yoʻq, va…"
+ ]
+}
