@@ -34,6 +34,12 @@ import {
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
 
+/** Every whole percentage from 0 to the top of the documented band, like the filter bar. */
+const FREIGHT_SCENARIOS = (() => {
+  const hi = Math.round(meta.cif.high * 100);
+  return Array.from({ length: hi + 1 }, (_, i) => i / 100);
+})();
+
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
   if (sortedAsc.length === 0) return 0;
@@ -63,6 +69,7 @@ export default function QueueView() {
   const [granularity, setGranularity] = useState<Granularity>("year");
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
   const [months, setMonths] = useState<number[]>([]);
+  const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
   // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
   const detailVer = useMonthlyDetail(granularity === "month");
 
@@ -85,15 +92,16 @@ export default function QueueView() {
   );
 
   const filter = useMemo<Filter>(
-    () => ({ ...DEFAULT_FILTER, granularity, years, months }),
-    [granularity, years, months],
+    () => ({ ...DEFAULT_FILTER, granularity, years, months, cif }),
+    [granularity, years, months, cif],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const data = useMemo(() => aggregate(filter), [filter, detailVer]);
   const channels = levelChannels(data, level);
 
   const basisSuffix = granularity === "month" ? `-monthly${months.length ? `-m${months.join("_")}` : ""}` : "";
-  const suffix = `${years.length === yearsFor(granularity).length ? "" : `-${years.join("_")}`}${basisSuffix}`;
+  const cifSuffix = cif === DEFAULT_FILTER.cif ? "" : `-f${Math.round(cif * 100)}`;
+  const suffix = `${years.length === yearsFor(granularity).length ? "" : `-${years.join("_")}`}${basisSuffix}${cifSuffix}`;
   const exportCsv = () => downloadCsv(`discrepancy-risk-hs${level}${suffix}.csv`, channelsToCsv(channels, filter));
 
   const stats = useMemo(() => {
@@ -129,7 +137,7 @@ export default function QueueView() {
           <div className="space-y-1.5">
             <p className="text-[10.5px] font-medium text-faint">
               UN Comtrade · {yearsLabel(years)}
-              {granularity === "month" ? ` · ${t("gran.month").toLowerCase()}${months.length ? `: ${months.join(", ")}` : ""}` : ""} · {t("risk.header.screening")}
+              {granularity === "month" ? ` · ${t("gran.month").toLowerCase()}${months.length ? `: ${months.join(", ")}` : ""}` : ""} · {t("filter.freight").toLowerCase()} {Math.round(cif * 100)}% · {t("risk.header.screening")}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
             <p className="text-[13px] text-muted">
@@ -175,6 +183,24 @@ export default function QueueView() {
             searchable={false}
           />
         )}
+        {/* freight scenario moves the gap values and Gap % — never the score,
+            which stays fitted at the central rate (see Methodology) */}
+        <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+          <select
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            aria-label={t("filter.freight")}
+            value={cif}
+            onChange={(e) => setCif(+e.target.value)}
+          >
+            {FREIGHT_SCENARIOS.map((f) => (
+              <option key={f} value={f}>
+                {Math.round(f * 100)}%
+                {f === meta.cif.central ? ` (${t("filter.central")})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
       </section>
 
       {/* MTRS summary */}
