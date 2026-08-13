@@ -1,32 +1,54 @@
 "use client";
 
+import { useMemo } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PartnerGaps from "@/components/charts/PartnerGaps";
 import PartnerChannels, { type ChannelRow, type ChapterRow } from "@/app/partners/[iso]/PartnerChannels";
 import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag } from "@/components/ui";
 import {
-  aggregate, meta, DEFAULT_FILTER, partnerMetaOf, isResidualChapter, type Filter,
+  aggregate, meta, DEFAULT_FILTER, partnerMetaOf, isResidualChapter, type Aggregate, type Filter,
 } from "@/lib/dataset";
 import { channelsToCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
+import type { Lang } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 
 /**
- * Partner profile (spec §6.6) — one partner country in depth. Server component:
- * computes its own full-window aggregate with explicit filters (every year
- * ticked, no materiality floor) so the profile is stable regardless of the
- * visitor's interactive filter state elsewhere on the site.
+ * Partner profile (spec §6.6) — one partner country in depth. Computes its own
+ * full-window aggregate with explicit filters (every year ticked, no materiality
+ * floor) so the profile is stable regardless of the visitor's interactive filter
+ * state elsewhere on the site.
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
   years: [...meta.years],
   minGap: 0,
 };
-const FULL = aggregate(FULL_FILTER);
 /** Latest single year — the one-year callout inside the executive summary. */
-const SNAP = aggregate({ ...DEFAULT_FILTER, years: [meta.defaultYear], minGap: 0 });
+const SNAP_FILTER: Filter = { ...DEFAULT_FILTER, years: [meta.defaultYear], minGap: 0 };
 const WINDOW = meta.years;
+
+/**
+ * Names inside an aggregate are localised as it is built, so the profile keeps
+ * one aggregate per language — computed lazily on first use and shared by every
+ * profile page thereafter. Without this the module-level aggregate would be
+ * frozen in whatever language was active at first load.
+ */
+const AGG_CACHE = new Map<Lang, { full: Aggregate; snap: Aggregate }>();
+function aggFor(lang: Lang): { full: Aggregate; snap: Aggregate } {
+  let e = AGG_CACHE.get(lang);
+  if (!e) {
+    e = { full: aggregate(FULL_FILTER), snap: aggregate(SNAP_FILTER) };
+    AGG_CACHE.set(lang, e);
+  }
+  return e;
+}
+
+/** Fill {placeholders} in a translated string with dataset values. */
+const fill = (s: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
 const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
@@ -36,10 +58,9 @@ const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
   "cannot-assess": { label: "prof.status.cannotAssess", color: "#75847b" },
 };
 
-
-
 export default function PartnerProfileView({ iso }: { iso: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const { full: FULL, snap: SNAP } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
   const p = FULL.partners.find((x) => x.iso3 === iso.toUpperCase());
   if (!p) notFound();
   const pm = partnerMetaOf(p.iso3)!;
@@ -47,6 +68,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   const period = `${meta.window.start}–${meta.window.end}`;
   const cifPct = Math.round(meta.cif.central * 100);
+  const name = p.name; // localized by the aggregate
 
   const hs2 = FULL.channels.filter((c) => c.partnerIso === p.iso3);
   const hs6 = FULL.channels6.filter((c) => c.partnerIso === p.iso3);
@@ -70,27 +92,25 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   // positive channel-years only, so expected − imports = the positive discrepancy
   const expected = p.pePosT * (1 + meta.cif.central);
   const posShare = expected > 0 ? p.posT / expected : 0;
-  const trendWord = p.trend > 1_000_000 ? "rising" : p.trend < -1_000_000 ? "declining" : "broadly stable";
+  const trendWord = t(p.trend > 1_000_000 ? "prof.trend.rising" : p.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
   const topSector = structure[0];
 
   // ---- executive summary (spec §6.6.1) — standardized cautious template from measured fields ----
   const coverageSentence =
     pm.lapse
-      ? `${p.name} stopped reporting to UN Comtrade after ${pm.lastReportedYear} (${pm.reportedYears.length} of ${WINDOW.length} window years reported): later years have no mirror reference, no discrepancy is computed for them, and they are never treated as zero gaps.`
+      ? fill(t("prof.sum.covLapse"), { name, year: pm.lastReportedYear, k: pm.reportedYears.length, n: WINDOW.length })
       : pm.coverage < 1
-        ? `${p.name} reported to UN Comtrade in ${pm.reportedYears.length} of ${WINDOW.length} window years, so part of any apparent discrepancy may reflect missing reports rather than measured gaps.`
-        : `${p.name} reported to UN Comtrade in every year of the window, so reporting gaps are an unlikely driver of the discrepancy.`;
+        ? fill(t("prof.sum.covPartial"), { name, k: pm.reportedYears.length, n: WINDOW.length })
+        : fill(t("prof.sum.covFull"), { name });
   const summary = [
-    `Between ${meta.window.start} and ${meta.window.end}, ${p.name} reported exports to Uzbekistan of ${fmtUSD(p.observed.pe)} and Uzbekistan recorded ${fmtUSD(p.observed.ui)} of imports from ${p.name}.`,
-    `In the screened channel-years — both books reported and the partner side above Uzbekistan's record at the central ${cifPct}% freight adjustment — ${p.name} reported ${fmtUSD(p.pePosT)} (expected CIF ${fmtUSD(expected)}) against ${fmtUSD(p.uiPosT)} recorded by Uzbekistan, a positive discrepancy of ${fmtUSD(p.posT)}.`,
+    fill(t("prof.sum.observed"), { start: meta.window.start, end: meta.window.end, name, pe: fmtUSD(p.observed.pe), ui: fmtUSD(p.observed.ui) }),
+    fill(t("prof.sum.screened"), { name, cif: cifPct, pePos: fmtUSD(p.pePosT), expected: fmtUSD(expected), uiPos: fmtUSD(p.uiPosT), pos: fmtUSD(p.posT) }),
     topSector
-      ? `It concentrates in ${topSector.label.toLowerCase()} (HS ${topSector.chapter}, ${fmtUSD(topSector.posT)}) and is ${trendWord} over the window.`
-      : `No single HS2 chapter carries a positive discrepancy above the noise floor, and the series is ${trendWord} over the window.`,
-    snap ? `In ${meta.defaultYear} alone the positive discrepancy was ${fmtUSD(snap.posT)}.` : "",
+      ? fill(t("prof.sum.topSector"), { sector: topSector.label.toLowerCase(), chapter: topSector.chapter, value: fmtUSD(topSector.posT), trend: trendWord })
+      : fill(t("prof.sum.noSector"), { trend: trendWord }),
+    snap ? fill(t("prof.sum.snapYear"), { year: meta.defaultYear, value: fmtUSD(snap.posT) }) : "",
     coverageSentence,
-    pm.transit
-      ? `As a transit/re-export hub, part of the discrepancy can reflect goods routed through ${p.name} and attributed by Uzbekistan to their country of origin — a legitimate recording difference assessed in a separate track.`
-      : "",
+    pm.transit ? fill(t("prof.sum.transit"), { name }) : "",
   ].filter(Boolean).join(" ");
 
   // ---- alternative explanations (spec §6.6.8) — partner-level, statuses from measured fields ----
@@ -100,40 +120,41 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const weakReporter = pm.lapse || pm.coverage < 0.8;
   const alternatives: { title: string; status: AltStatus; note: string }[] = [
     {
-      title: "CIF/FOB valuation assumption",
+      title: t("prof.alt.cif.title"),
       status: flipShare >= 0.3 ? "material" : "possible",
-      note: `Partner exports are valued FOB while Uzbekistan records CIF; the comparison assumes a ${cifPct}% central freight wedge inside a 6–15% band. For ${p.name}, ${fmtPct(flipShare, 0)} of HS2 channels change the sign of their net discrepancy within that band${flipShare >= 0.3 ? " — the assumption materially affects the partner-level reading" : ""}.`,
+      note: fill(t("prof.alt.cif.note"), { cif: cifPct, name, pct: fmtPct(flipShare, 0) }) + (flipShare >= 0.3 ? ` ${t("prof.alt.cif.material")}` : ""),
     },
     {
-      title: "Transit / re-export routing",
+      title: t("prof.alt.transit.title"),
       status: pm.transit ? "material" : "unlikely",
-      note: pm.transit
-        ? `${p.name} is flagged as a transit/re-export hub: Uzbekistan attributes imports to country of origin while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies without any misreporting.`
-        : `${p.name} is not flagged as a transit/re-export hub, which weakens routing-based explanations for this partner.`,
+      note: pm.transit ? fill(t("prof.alt.transit.yes"), { name }) : fill(t("prof.alt.transit.no"), { name }),
     },
     {
-      title: "Partner reporting quality",
+      title: t("prof.alt.reporting.title"),
       status: weakReporter ? "material" : pm.coverage < 1 ? "possible" : "unlikely",
       note: weakReporter
-        ? `${p.name}'s Comtrade reporting is incomplete (${pm.reportedYears.length}/${WINDOW.length} years${pm.lapse ? `; last report ${pm.lastReportedYear}` : ""}). Part of the apparent discrepancy may be a reporting artifact rather than a measured gap.`
-        : `${p.name} reported in ${pm.reportedYears.length} of ${WINDOW.length} window years, so reporting gaps are ${pm.coverage < 1 ? "only a partial" : "an unlikely"} driver.`,
+        ? fill(t("prof.alt.reporting.weak"), {
+            name, k: pm.reportedYears.length, n: WINDOW.length,
+            lapse: pm.lapse ? fill(t("prof.alt.reporting.lastReport"), { year: pm.lastReportedYear }) : "",
+          })
+        : fill(t(pm.coverage < 1 ? "prof.alt.reporting.okPartial" : "prof.alt.reporting.okFull"), { name, k: pm.reportedYears.length, n: WINDOW.length }),
     },
     {
-      title: "Classification differences",
+      title: t("prof.alt.classification.title"),
       status: "cannot-assess",
-      note: "Both sides are extracted under a single HS revision, but no code-level concordance table is applied yet, so systematic reclassification between similar HS lines on the two sides can be neither confirmed nor excluded.",
+      note: t("prof.alt.classification.note"),
     },
     {
-      title: "Timing and lag effects",
+      title: t("prof.alt.timing.title"),
       status: "possible",
-      note: "Goods shipped late in one calendar year may be recorded by the importer in the next; such year-edge effects create small legitimate discrepancies in any country pair and partly wash out over the full window.",
+      note: t("prof.alt.timing.note"),
     },
     {
-      title: "Confidentiality / residual codes",
+      title: t("prof.alt.residual.title"),
       status: residualShare >= 0.1 ? "material" : residualShare > 0 ? "possible" : "unlikely",
       note: residualShare > 0
-        ? `${fmtPct(residualShare, 0)} of ${p.name}'s positive discrepancy sits in residual HS chapters (98/99) used for unallocated or confidential trade — that share is substantially a classification artifact by construction.`
-        : `None of ${p.name}'s positive discrepancy sits in residual HS chapters (98/99), so confidentiality bucketing is an unlikely driver.`,
+        ? fill(t("prof.alt.residual.some"), { pct: fmtPct(residualShare, 0), name })
+        : fill(t("prof.alt.residual.none"), { name }),
     },
   ];
 
@@ -145,10 +166,10 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
     <div className="space-y-8">
       {/* header */}
       <div>
-        <Link href="/partners" className="text-sm text-muted hover:text-foreground">← All partners</Link>
+        <Link href="/partners" className="text-sm text-muted hover:text-foreground">← {t("prof.back")}</Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{p.name}</h1>
-          <span className="text-sm text-faint">{p.region} · partner profile · full {period} window</span>
+          <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+          <span className="text-sm text-faint">{p.region} · {fill(t("prof.header.meta"), { period })}</span>
           <QualityTag tier={p.tier} />
           {p.transit && <TransitTag />}
         </div>
@@ -165,16 +186,16 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       {/* 2. key indicators */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
-          sub={`${fmtPct(posShare, 0)} of expected CIF imports`}
-          info={`Σ max(expected CIF − UZB imports, 0) per channel-year at the central ${cifPct}% freight adjustment — a screening signal. ${fmtUSDFull(p.posT)}.`} />
-        <Stat label={t("prof.stat.coverage")} value={`${pm.reportedYears.length}/${WINDOW.length} yrs`}
-          sub={pm.lapse ? `stopped after ${pm.lastReportedYear}` : `${fmtPct(pm.coverage, 0)} of window years`}
+          sub={fill(t("prof.stat.posShareSub"), { pct: fmtPct(posShare, 0) })}
+          info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(p.posT)}.`} />
+        <Stat label={t("prof.stat.coverage")} value={`${pm.reportedYears.length}/${WINDOW.length} ${t("prof.unit.yrs")}`}
+          sub={pm.lapse ? fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear }) : fill(t("prof.stat.coverageSub"), { pct: fmtPct(pm.coverage, 0) })}
           info={t("prof.stat.coverage.info")} />
         <Stat label={t("prof.stat.hs2Sectors")} value={String(hs2.length)}
-          sub={`${trendWord} trend`}
+          sub={fill(t("prof.stat.trendSub"), { trend: trendWord })}
           info={t("prof.stat.hs2Sectors.info")} />
         <Stat label={t("prof.stat.hs6Channels")} value={String(hs6.length)}
-          sub={`${p.flagged} in the Critical or High band (HS2)`}
+          sub={fill(t("prof.stat.flaggedSub"), { n: p.flagged })}
           info={t("prof.stat.hs6Channels.info")} />
       </section>
 
@@ -185,8 +206,8 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           desc={t("prof.quality.desc")}
           right={pm.lapse ? (
             <span className="rounded-md border px-2 py-1 text-xs font-medium" style={{ color: "#b45309", borderColor: "color-mix(in srgb, #b45309 40%, transparent)" }}
-              title={`No Comtrade report from ${p.name} after ${pm.lastReportedYear}. Later years have no mirror reference.`}>
-              stopped reporting after {pm.lastReportedYear}
+              title={fill(t("prof.quality.stopBadgeTip"), { name, year: pm.lastReportedYear })}>
+              {fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear })}
             </span>
           ) : undefined}
         />
@@ -200,7 +221,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
                   background: has ? "color-mix(in srgb, var(--color-ok, #15803d) 10%, transparent)" : "transparent",
                   color: has ? "var(--color-foreground)" : "var(--color-faint)",
                 }}
-                title={has ? `${p.name} reported in ${y}` : `${p.name} did not report in ${y} — partner data missing; not treated as a zero gap`}>
+                title={fill(t(has ? "prof.quality.cellReported" : "prof.quality.cellMissing"), { name, year: y })}>
                 <span>{`'${String(y).slice(2)}`}</span>
                 <span style={{ color: has ? "var(--color-ok, #15803d)" : "var(--color-faint)" }}>{has ? "●" : "○"}</span>
               </span>
@@ -208,12 +229,10 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           })}
         </div>
         <p className="mt-3 max-w-3xl text-sm text-muted">
-          {weightShare != null ? (
-            <>Net weight is reported on both sides for <strong className="text-foreground">{fmtPct(weightShare, 0)}</strong> of {p.name}&apos;s HS6 trade value (value-weighted), so quantity-based unit-value cross-checks are possible for that share of the trade.</>
-          ) : (
-            <>No HS6 channel of {p.name} has net weight reported on both sides — quantity-based cross-checks are unavailable for this partner. This is a data limitation, not a zero.</>
-          )}
-          {" "}Hollow years above mean the partner did not report: no discrepancy is computed there and cumulative figures understate rather than overstate.
+          {weightShare != null
+            ? fill(t("prof.quality.weightYes"), { pct: fmtPct(weightShare, 0), name })
+            : fill(t("prof.quality.weightNo"), { name })}
+          {" "}{t("prof.quality.hollow")}
         </p>
       </section>
 
@@ -221,15 +240,15 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       <section>
         <SectionTitle
           title={t("prof.byYear.title")}
-          desc={`Source: UN Comtrade mirror data, ${period}. Amber bars = ${p.name}'s reported exports (FOB); blue bars = Uzbekistan's recorded imports (CIF); the yearly positive discrepancy at the central ${cifPct}% freight adjustment is in the tooltip. Years without a partner report are skipped, never drawn as zero.`}
+          desc={fill(t("prof.byYear.desc"), { period, name, cif: cifPct })}
         />
-        <PartnerGaps byYear={p.byYear} partner={p.name} />
+        <PartnerGaps byYear={p.byYear} partner={name} />
       </section>
 
       {/* 5+6. product-code narrowing over the HS2 structure and HS6 signals */}
       <PartnerChannels
         iso={p.iso3}
-        partner={p.name}
+        partner={name}
         totalPos={p.posT}
         chapters={structure}
         rows={signalRows}
@@ -239,16 +258,10 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       {pm.transit && (
         <section className="card p-5" style={{ borderLeft: `2px solid ${COLORS.transit}` }}>
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider" style={{ color: COLORS.transit }}>
-            Transit &amp; attribution note
+            {t("prof.transit.title")}
           </h2>
           <p className="max-w-3xl text-sm leading-relaxed text-muted">
-            {p.name} is flagged as a transit/re-export hub. Uzbekistan records imports by
-            country of <em>origin</em>, while hubs report re-exports by <em>consignment</em>:
-            goods that merely pass through {p.name} can therefore appear as a discrepancy in
-            this pair — and as a matching one in the origin country&apos;s pair — without any
-            misreporting by either side. For this reason {p.name}&apos;s channels carry a transit tag; the risk score does
-            not correct for routing, so a substantive reading of any signal here requires
-            clarifying routing and origin attribution first.
+            {fill(t("prof.transit.body"), { name })}
           </p>
         </section>
       )}
@@ -281,10 +294,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         <div className="min-w-[240px] flex-1">
           <h2 className="text-sm font-semibold">{t("prof.downloads")}</h2>
           <p className="mt-1 text-xs text-muted">
-            All {hs6.length} of {p.name}&apos;s HS6 channels over the full {period} window
-            (every year, no materiality floor — not just the product codes selected above),
-            with raw and derived fields plus the calculation context, data version and
-            methodology version in the header block.
+            {fill(t("prof.dl.desc"), { n: hs6.length, name, period })}
           </p>
         </div>
         <a

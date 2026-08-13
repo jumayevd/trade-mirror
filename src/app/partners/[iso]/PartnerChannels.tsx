@@ -92,21 +92,21 @@ export default function PartnerChannels({
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS2</span>
             <select className={sel} value={hs2} onChange={(e) => pick("hs2", e.target.value)} aria-label={t("prof.aria.hs2")}>
-              <option value="all">All</option>
+              <option value="all">{t("filter.all")}</option>
               {hs2Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS4</span>
             <select className={sel} value={hs4} onChange={(e) => pick("hs4", e.target.value)} aria-label={t("prof.aria.hs4")}>
-              <option value="all">All</option>
+              <option value="all">{t("filter.all")}</option>
               {hs4Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS6</span>
             <select className={sel} value={hs6} onChange={(e) => pick("hs6", e.target.value)} aria-label={t("prof.aria.hs6")}>
-              <option value="all">All</option>
+              <option value="all">{t("filter.all")}</option>
               {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
