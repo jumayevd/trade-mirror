@@ -5,7 +5,8 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
-import { meta, DEFAULT_FILTER, availableOptions } from "@/lib/dataset";
+import { meta, DEFAULT_FILTER, availableOptions, partnerName, hsLabel, hs4Label, hs6Label } from "@/lib/dataset";
+import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
@@ -23,7 +24,7 @@ const FREIGHT_SCENARIOS = (() => {
 
 export default function FilterBar() {
   const { filter, patch, reset } = useFilter();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const isDefault = JSON.stringify(filter) === JSON.stringify(DEFAULT_FILTER);
 
   // Self-completing options: every list is narrowed to what the other filters
@@ -31,39 +32,42 @@ export default function FilterBar() {
   // resolves to an empty page.
   const avail = useMemo(() => availableOptions(filter), [filter]);
 
-  const countryOptions = useMemo<SearchOption[]>(() => {
+  // Option text is data-derived, so it goes through the label layer like every
+  // other partner and HS string on the page — and is sorted in the reader's own
+  // alphabet, not the English one.
+  const countryOptions = useMemo<SearchOption[]>(() => labelsFor(lang, () => {
     const reachable = new Set(avail.countries);
     return [...meta.partners]
       .filter((p) => reachable.has(p.iso3) || filter.country.includes(p.iso3))
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((p) => ({ value: p.iso3, code: p.iso3, label: p.name }));
-  }, [avail.countries, filter.country]);
+      .map((p) => ({ value: p.iso3, code: p.iso3, label: partnerName(p.iso3) }))
+      .sort((a, b) => a.label.localeCompare(b.label, lang));
+  }), [avail.countries, filter.country, lang]);
 
-  const hs2Options = useMemo<SearchOption[]>(() => {
+  const hs2Options = useMemo<SearchOption[]>(() => labelsFor(lang, () => {
     const reachable = new Set(avail.hs2);
     return meta.chapters
       .filter((c) => reachable.has(c.chapter) || filter.hs2.includes(c.chapter))
-      .map((c) => ({ value: c.chapter, code: c.chapter, label: c.label }));
-  }, [avail.hs2, filter.hs2]);
+      .map((c) => ({ value: c.chapter, code: c.chapter, label: hsLabel(c.chapter) }));
+  }), [avail.hs2, filter.hs2, lang]);
 
   // HS pickers cascade: HS4 follows the chosen chapters, HS6 follows the HS4 groups.
   // The monthly detail can carry codes the yearly books never shipped labels for,
   // so the option list is the union of both, with the bare code as fallback label.
-  const hs4Options = useMemo<SearchOption[]>(() => {
+  const hs4Options = useMemo<SearchOption[]>(() => labelsFor(lang, () => {
     const reachable = new Set(avail.hs4);
     return [...new Set([...Object.keys(meta.hs4labels), ...avail.hs4])]
       .filter((c) => reachable.has(c) || filter.hs4.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs4labels[c] ?? `HS ${c}` }));
-  }, [avail.hs4, filter.hs4]);
+      .map((c) => ({ value: c, code: c, label: hs4Label(c) }));
+  }), [avail.hs4, filter.hs4, lang]);
 
-  const hs6Options = useMemo<SearchOption[]>(() => {
+  const hs6Options = useMemo<SearchOption[]>(() => labelsFor(lang, () => {
     const reachable = new Set(avail.hs6);
     return [...new Set([...Object.keys(meta.hs6labels), ...avail.hs6])]
       .filter((c) => reachable.has(c) || filter.hs6.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: meta.hs6labels[c] ?? `HS ${c}` }));
-  }, [avail.hs6, filter.hs6]);
+      .map((c) => ({ value: c, code: c, label: hs6Label(c) }));
+  }), [avail.hs6, filter.hs6, lang]);
 
   /** Drop any narrower selection that no longer sits under the broader one. */
   const pickHs2 = (v: string[]) =>

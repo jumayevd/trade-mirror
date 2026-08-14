@@ -26,6 +26,13 @@ export const MAP_METRIC_KEYS: Record<MapMetric, string> = {
   channels: "ctry.map.metric.channels",
 };
 
+/** Reporting-quality tier, as a word the reader's language actually uses. */
+const TIER_KEYS = {
+  High: "tier.high",
+  Medium: "tier.medium",
+  Low: "tier.low",
+} as const;
+
 /**
  * ISO3 -> country name used in the bundled world GeoJSON (public/world.json).
  * The GeoJSON carries no ISO code (only `name`), so the table is explicit and
@@ -156,7 +163,7 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
             ? `<br/><span style="font-size:11px;color:${COLORS.transit}">${t("ctry.map.transitHub")}</span>`
             : "";
           return [
-            `<b>${pr.name}</b> · <span style="${small}">${t("ctry.map.dataQuality")}: ${pr.tier}</span>`,
+            `<b>${pr.name}</b> · <span style="${small}">${t("ctry.map.dataQuality")}: ${t(TIER_KEYS[pr.tier])}</span>`,
             metricLine,
             `${t("kpi.positive")}: <b style="color:${COLORS.positive}">${fmtUSD(pr.posT)}</b>`,
             // reported values come from the observed totals, not the paired subset the

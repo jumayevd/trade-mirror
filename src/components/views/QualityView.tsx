@@ -5,11 +5,11 @@ import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
-import { Stat, SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
+import { SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, RISK_CONFIG, type PartnerMeta } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
-import { fmtNum, fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
+import { fmtNum, fmtPct, fmtUSDFull, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /** Fill {placeholders} in a translated string with dataset values. */
@@ -107,13 +107,13 @@ function CoverageLegend() {
 
 /**
  * Data Quality — a description of the record itself: who reported when, how much
- * product detail exists, what weight data is available, and what is excluded.
+ * product detail exists, and what is excluded.
  * Deliberately unfiltered. These are the properties every other page's numbers
  * rest on, so narrowing them to a partner or a chapter would make the page argue
  * for a selection instead of describing the source.
  */
 export default function QualityView() {
-  const { series, filter } = useFilter();
+  const { series } = useFilter();
   const { t } = useI18n();
 
   const partnersByCoverage = useMemo(
@@ -182,15 +182,6 @@ export default function QualityView() {
       ],
     };
   }, [hs6ByYear, levelCode, t]);
-
-  // ---- 3. weight & quantity availability, from the full-window HS6 base ----
-  const hs6 = series.baseChannels6;
-  const withWeight = useMemo(() => hs6.filter((c) => c.uvYears > 0), [hs6]);
-  const withUvRatio = useMemo(() => hs6.filter((c) => c.uvRatio != null), [hs6]);
-  const peTotal = useMemo(() => hs6.reduce((s, c) => s + c.peT, 0), [hs6]);
-  const peWithWeight = useMemo(() => withWeight.reduce((s, c) => s + c.peT, 0), [withWeight]);
-  const weightShare = hs6.length > 0 ? withWeight.length / hs6.length : 0;
-  const weightValueShare = peTotal > 0 ? peWithWeight / peTotal : 0;
 
   return (
     <div className="space-y-8">
@@ -274,47 +265,7 @@ export default function QualityView() {
         )}
       </section>
 
-      {/* 3. weight & quantity */}
-      <section>
-        <SectionTitle
-          title={t("qual.weight.title")}
-          desc={t("qual.weight.desc")} right={<InfoTip text={t("qual.weight.tip")} />}
-        />
-        {/* the monthly books carry trade values only — no weight columns */}
-        {filter.granularity === "month" ? (
-          <p className="card p-4 text-[13px] text-muted">{t("qual.monthlyWeights")}</p>
-        ) : hs6.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Stat
-                label={t("qual.weight.dualLabel")}
-                value={fmtPct(weightShare, 0)}
-                sub={fill(t("qual.weight.dualSub"), { n: fmtNum(withWeight.length), total: fmtNum(hs6.length) })}
-                info={t("qual.weight.dualInfo")}
-              />
-              <Stat
-                label={t("qual.weight.valueLabel")}
-                value={fmtPct(weightValueShare, 0)}
-                sub={fill(t("qual.weight.valueSub"), { a: fmtUSD(peWithWeight), b: fmtUSD(peTotal) })}
-                info={t("qual.weight.valueInfo")}
-              />
-              <Stat
-                label={t("qual.weight.uvLabel")}
-                value={fmtNum(withUvRatio.length)}
-                sub={t("qual.weight.uvSub")}
-                info={t("qual.weight.uvInfo")}
-              />
-            </div>
-            <p className="mt-3 max-w-3xl text-xs text-faint">
-              {t("qual.weight.note")}
-            </p>
-          </>
-        )}
-      </section>
-
-      {/* 4. transit metadata */}
+      {/* 3. transit metadata */}
       <section>
         <SectionTitle
           title={t("qual.transit.title")}
@@ -370,7 +321,7 @@ export default function QualityView() {
         )}
       </section>
 
-      {/* 5. excluded observations */}
+      {/* 4. excluded observations */}
       <section>
         <SectionTitle
           title={t("qual.excl.title")}

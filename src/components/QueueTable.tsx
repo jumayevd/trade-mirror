@@ -107,6 +107,8 @@ export default function QueueTable({
   years: number[];
 }) {
   const { t } = useI18n();
+  /** Freight uplift from FOB to a CIF-comparable value, per the active scenario. */
+  const K = 1 + filter.cif;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("risk");
   const [dir, setDir] = useState<SortDir>("desc");
@@ -247,7 +249,7 @@ export default function QueueTable({
                 <th className={th}>{t("common.product")}</th>
                 <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
                 <th className={thNum} title={t("risk.tip.uzbImport")}>{t("risk.th.uzbImport")}</th>
-                <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
+                <th className={thNum} title={`${t("risk.tip.exportReported")} ${t("filter.freight")}: ${Math.round(filter.cif * 100)}%.`}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
                 <th className={thNum} title={t("risk.tip.gapPct")}>{t("risk.th.gapPct")}</th>
                 <th className={th} title={t("risk.tip.persistence")}>{t("common.persistence")}</th>
@@ -308,7 +310,9 @@ export default function QueueTable({
                       {/* no positive-year UZB record — a gap in the mirror, never a measured zero */}
                       {c.uiPosT > 0 ? fmtUSD(c.uiPosT) : <MissingValue />}
                     </td>
-                    <td className={tdNum} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
+                    {/* exports at the selected freight scenario, so the row reads as
+                        an identity: export − import = gap, at whatever rate is set */}
+                    <td className={tdNum} title={fmtUSDFull(c.pePosT * K)}>{fmtUSD(c.pePosT * K)}</td>
                     <td className={`${tdNum} font-semibold`} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                     <td className={tdNum}>
                       {pct == null ? <MissingValue kind="notComparable" /> : fmtPct(pct, 1)}
@@ -380,6 +384,7 @@ export default function QueueTable({
 /** Expanded row: per-year mini table + cautious auto-reading + alternative explanations. */
 function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: number[] }) {
   const { t } = useI18n();
+  const K = 1 + filter.cif;
   const byYear = new Map(c.years.map((yr) => [yr.y, yr]));
   const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint";
   const thNum = `${th} text-right`;
@@ -414,7 +419,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
                   <td className={`${td} tabular`}>{y}</td>
                   {yr ? (
                     <>
-                      <td className={tdNum} title={fmtUSDFull(yr.pe)}>{fmtUSD(yr.pe)}</td>
+                      <td className={tdNum} title={fmtUSDFull(yr.pe * K)}>{fmtUSD(yr.pe * K)}</td>
                       <td className={tdNum} title={fmtUSDFull(yr.ui)}>{fmtUSD(yr.ui)}</td>
                       <td className={tdNum} title={fmtUSDFull(gap)}>{fmtUSD(gap)}</td>
                     </>
