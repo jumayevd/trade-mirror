@@ -207,6 +207,36 @@ export default function OverviewView() {
   }, [data, t]);
 
   /**
+   * Which period the two-sided chart is drilled into, or null for the whole
+   * window. Clicking a period asks the obvious follow-up — which partners is
+   * this made of, and does the offsetting hold country by country?
+   */
+  const [drillYear, setDrillYear] = useState<number | null>(null);
+  /** Years the current period selection actually covers, for the drill-down chips. */
+  const drillPeriods = useMemo(
+    () => [...new Set(data.annual.filter((a) => a.comparablePartners > 0).map((a) => a.year))],
+    [data],
+  );
+  const drillRows = useMemo(() => {
+    if (drillYear == null) return [];
+    // Read the channels rather than the partner rollup: the rollup carries only
+    // the positive side per year, and the point here is to see both.
+    const byPartner = new Map<string, { name: string; iso3: string; positive: number; reverse: number }>();
+    for (const c of data.channels) {
+      for (const yr of c.years) {
+        if (yr.y !== drillYear) continue;
+        const e = byPartner.get(c.partnerIso)
+          ?? { name: c.partner, iso3: c.partnerIso, positive: 0, reverse: 0 };
+        if (yr.signed > 0) e.positive += yr.signed; else e.reverse += -yr.signed;
+        byPartner.set(c.partnerIso, e);
+      }
+    }
+    return [...byPartner.values()]
+      .sort((a, b) => (b.positive + b.reverse) - (a.positive + a.reverse))
+      .slice(0, TOP_N);
+  }, [data, drillYear]);
+
+  /**
    * Both directions in one frame. The rest of the dashboard screens the positive
    * side only, which leaves an obvious question unanswered: how big is the other
    * side, and do the two cancel? Diverging bars answer it directly — positive up,
@@ -286,6 +316,64 @@ export default function OverviewView() {
       ],
     };
   }, [data, t]);
+
+  /** The clicked period, opened up by partner: same two directions, same reading. */
+  const drillOption = useMemo<EChartsOption>(() => {
+    const positiveName = t("kpi.positive");
+    const reverseName = t("qual.heatmap.reverse");
+    return {
+      backgroundColor: "transparent",
+      textStyle: baseTextStyle,
+      grid: { ...baseGrid, top: 34, left: 8 },
+      legend: {
+        top: 2,
+        icon: "roundRect",
+        itemWidth: 14,
+        itemHeight: 8,
+        textStyle: { color: COLORS.text, fontSize: 11 },
+      },
+      tooltip: {
+        ...baseTooltip(),
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (raw: unknown) => {
+          const items = (Array.isArray(raw) ? raw : [raw]) as {
+            axisValue?: string; seriesName?: string; value?: number; marker?: string;
+          }[];
+          if (items.length === 0) return "";
+          const row = drillRows.find((r) => r.name === items[0]?.axisValue);
+          const net = row ? row.positive - row.reverse : null;
+          const lines = items.map((it) => {
+            const v = typeof it.value === "number" ? fmtUSDFull(Math.abs(it.value)) : t("common.notComparable");
+            return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
+          });
+          const netLine = net == null ? "" :
+            `<div style="margin-top:4px;color:${COLORS.axis}">${t("ovw.twoSided.net")}: <span style="font-weight:600">${fmtUSDFull(net)}</span></div>`;
+          return `<div style="font-weight:600;margin-bottom:4px">${items[0]?.axisValue ?? ""}</div>${lines.join("")}${netLine}`;
+        },
+      },
+      xAxis: catAxis(drillRows.map((r) => r.name)),
+      yAxis: valueAxis("USD"),
+      series: [
+        {
+          name: positiveName,
+          type: "bar",
+          stack: "gap",
+          data: drillRows.map((r) => Math.round(r.positive)),
+          barMaxWidth: 26,
+          itemStyle: { color: COLORS.positive, borderRadius: [3, 3, 0, 0] },
+        },
+        {
+          name: reverseName,
+          type: "bar",
+          stack: "gap",
+          data: drillRows.map((r) => -Math.round(r.reverse)),
+          barMaxWidth: 26,
+          itemStyle: { color: COLORS.goldDeep, borderRadius: [0, 0, 3, 3] },
+        },
+      ],
+    };
+  }, [drillRows, t]);
 
 
   return (
@@ -393,7 +481,62 @@ export default function OverviewView() {
           right={<InfoTip text={t("ovw.twoSided.info")} />}
         />
         <div className="card p-4">
-          <EChart option={twoSidedOption} style={{ height: 300 }} />
+          <EChart
+            option={twoSidedOption}
+            style={{ height: 300 }}
+            onEvents={{
+              click: (p) => {
+                // periods carry the year in the label ("2023" or "2023-05")
+                const label = (p as { name?: string }).name ?? "";
+                const year = Number(label.slice(0, 4));
+                setDrillYear((cur) => (Number.isFinite(year) && cur !== year ? year : null));
+              },
+            }}
+          />
+          {/* The chart itself is a canvas, so the click above is mouse-only. The same
+              drill-down is offered as buttons: keyboard-reachable, and it names the
+              periods rather than asking the reader to guess that bars are clickable. */}
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] text-faint">{t("ovw.twoSided.clickHint")}</span>
+            {drillPeriods.map((y) => (
+              <button
+                key={y}
+                onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
+                aria-pressed={drillYear === y}
+                className={`tabular rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${
+                  drillYear === y
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                    : "border-[var(--color-border)] text-muted hover:text-foreground"
+                }`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+
+          {/* the clicked period, by partner — same two directions, so the reader can
+              see whether the offsetting they just saw survives country by country */}
+          {drillYear != null && (
+            <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
+              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="text-[13px] font-semibold">
+                  {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
+                </h3>
+                <button
+                  onClick={() => setDrillYear(null)}
+                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-medium text-muted hover:text-foreground"
+                >
+                  {t("ovw.twoSided.close")} ✕
+                </button>
+              </div>
+              {drillRows.length === 0 ? (
+                <EmptyState />
+              ) : (
+                <EChart option={drillOption} style={{ height: 280 }} />
+              )}
+            </div>
+          )}
+
           <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
         </div>
       </section>

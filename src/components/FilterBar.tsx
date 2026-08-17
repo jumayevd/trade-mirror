@@ -5,7 +5,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
-import { meta, DEFAULT_FILTER, availableOptions, partnerName, hsLabel, hs4Label, hs6Label } from "@/lib/dataset";
+import { meta, DEFAULT_FILTER, availableOptions, partnerName, hsLabel, hs4Label, hs6Label, hsFullText } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
@@ -21,6 +21,22 @@ const FREIGHT_SCENARIOS = (() => {
   const hi = Math.round(meta.cif.high * 100);
   return Array.from({ length: hi + 1 }, (_, i) => i / 100);
 })();
+
+/**
+ * Product option text. Roughly 2,500 HS lines arrive from Comtrade cut at 90
+ * characters, and the tail is often what separates two neighbouring codes, so
+ * the complete description is fetched separately and attached here.
+ *
+ * English reads it inline, since the nomenclature is written in English and
+ * there is no translation to contradict. The other languages keep their
+ * translated label — a full English line would be worse than a short native one
+ * — and carry the complete text on hover.
+ */
+const optionText = (code: string, label: string, lang: string) => {
+  const full = hsFullText(code);
+  if (!full) return { label };
+  return lang === "en" ? { label: full } : { label, full };
+};
 
 export default function FilterBar() {
   const { filter, patch, reset } = useFilter();
@@ -47,7 +63,7 @@ export default function FilterBar() {
     const reachable = new Set(avail.hs2);
     return meta.chapters
       .filter((c) => reachable.has(c.chapter) || filter.hs2.includes(c.chapter))
-      .map((c) => ({ value: c.chapter, code: c.chapter, label: hsLabel(c.chapter) }));
+      .map((c) => ({ value: c.chapter, code: c.chapter, ...optionText(c.chapter, hsLabel(c.chapter), lang) }));
   }), [avail.hs2, filter.hs2, lang]);
 
   // HS pickers cascade: HS4 follows the chosen chapters, HS6 follows the HS4 groups.
@@ -58,7 +74,7 @@ export default function FilterBar() {
     return [...new Set([...Object.keys(meta.hs4labels), ...avail.hs4])]
       .filter((c) => reachable.has(c) || filter.hs4.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: hs4Label(c) }));
+      .map((c) => ({ value: c, code: c, ...optionText(c, hs4Label(c), lang) }));
   }), [avail.hs4, filter.hs4, lang]);
 
   const hs6Options = useMemo<SearchOption[]>(() => labelsFor(lang, () => {
@@ -66,7 +82,7 @@ export default function FilterBar() {
     return [...new Set([...Object.keys(meta.hs6labels), ...avail.hs6])]
       .filter((c) => reachable.has(c) || filter.hs6.includes(c))
       .sort()
-      .map((c) => ({ value: c, code: c, label: hs6Label(c) }));
+      .map((c) => ({ value: c, code: c, ...optionText(c, hs6Label(c), lang) }));
   }), [avail.hs6, filter.hs6, lang]);
 
   /** Drop any narrower selection that no longer sits under the broader one. */

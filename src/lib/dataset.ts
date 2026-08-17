@@ -14,6 +14,7 @@ import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
+import hsFullRaw from "@/data/hs-full.json";
 import { tCategory, tCountry, tRegion, tText } from "@/lib/labels";
 
 export const METHODOLOGY_VERSION = "3.1";
@@ -307,6 +308,14 @@ export const partnerName = (iso: string) => tCountry(iso, pMeta.get(iso)?.name ?
 export const regionLabel = (region: string) => tRegion(region);
 export const partnerMetaOf = (iso: string) => pMeta.get(iso);
 export const categoryLabel = (key: string) => tCategory(key, catLabel.get(key) ?? key);
+/**
+ * Complete Comtrade description for the codes whose shipped label is truncated
+ * at 90 characters (scripts/fetch-hs-descriptions.ts). English only — it is the
+ * nomenclature's own text — and null when the shipped label is already whole.
+ */
+const hsFull = hsFullRaw as Record<string, string>;
+export const hsFullText = (cmd: string): string | null => hsFull[cmd] ?? null;
+
 export const hs6Label = (cmd: string) => tText(meta.hs6labels[cmd] ?? `HS ${cmd}`);
 /** HS4 is derived from HS6; labels borrow the largest child's description. */
 export const hs4Label = (cmd: string) => tText(meta.hs4labels[cmd] ?? `HS ${cmd}`);

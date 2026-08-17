@@ -17,6 +17,11 @@ export interface SearchOption {
   /** Short leading token — an HS code or ISO3 — rendered in mono. */
   code?: string;
   label: string;
+  /**
+   * Complete source text, when the visible label is an abbreviation of it.
+   * Shown on hover so the full nomenclature line is always one gesture away.
+   */
+  full?: string;
 }
 
 export default function SearchSelect({
@@ -155,7 +160,7 @@ export default function SearchSelect({
                   aria-selected={o.value === value}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => commit(o.value)}
-                  title={o.label}
+                  title={o.full ?? o.label}
                   className={`flex w-full items-start gap-2 px-2.5 py-1 text-left text-[13px] ${
                     i === active ? "bg-[var(--color-panel-2)]" : ""
                   } ${o.value === value ? "font-semibold text-foreground" : "text-muted hover:text-foreground"}`}

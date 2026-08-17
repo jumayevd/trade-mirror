@@ -8,7 +8,7 @@ import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/com
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { productByCmd, type Channel, type Filter } from "@/lib/dataset";
+import { hsFullText, productByCmd, type Channel, type Filter } from "@/lib/dataset";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
@@ -290,17 +290,19 @@ export default function QueueTable({
                     </td>
                     <td className={`${td} tabular text-faint`}>{c.cmd}</td>
                     <td className={`${td} max-w-[280px]`}>
+                      {/* the column is narrow, so the cell abbreviates; hover carries the
+                          complete nomenclature line, not the extract's 90-char cut */}
                       {product ? (
                         <Link
                           href={`/products/${c.cmd}`}
                           onClick={(e) => e.stopPropagation()}
                           className="hover:underline"
-                          title={c.cmdLabel}
+                          title={hsFullText(c.cmd) ?? c.cmdLabel}
                         >
                           {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
                         </Link>
                       ) : (
-                        <span title={c.cmdLabel}>
+                        <span title={hsFullText(c.cmd) ?? c.cmdLabel}>
                           {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
                         </span>
                       )}

@@ -119,7 +119,7 @@ export default function MultiSelect({
                 return (
                   <li key={o.value}>
                     <label
-                      title={o.label}
+                      title={o.full ?? o.label}
                       className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 text-[13px] hover:bg-[var(--color-panel-2)] ${
                         on ? "font-medium text-foreground" : "text-muted"
                       }`}
