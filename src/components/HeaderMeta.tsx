@@ -2,16 +2,12 @@
 
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { DATA_VERSION } from "@/lib/dataset";
 import { LANGS } from "@/lib/locales";
 
 export default function HeaderMeta() {
   const { t, lang, setLang } = useI18n();
   return (
     <div className="flex items-center gap-2 text-xs">
-      <span className="hidden rounded-md bg-[var(--color-panel-2)] px-2 py-1 text-muted sm:inline" title={`${t("meta.dataVersion")}: ${DATA_VERSION}`}>
-        {t("header.dataAsOf")} {DATA_VERSION}
-      </span>
       <Link href="/methodology" className="rounded-md border border-[var(--color-primary)] px-2 py-1 font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]">
         {t("header.howto")}
       </Link>

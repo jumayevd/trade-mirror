@@ -8,10 +8,11 @@ import {
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
-  aggregate, products, meta, DEFAULT_FILTER, isResidualChapter, categoryLabel,
-  BAND_LABELS, type Filter, type RiskBand, type Tier,
+  aggregate, products, meta, DEFAULT_FILTER, isResidualChapter, categoryLabel, hsLabel,
+  type Filter, type RiskBand, type Tier,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS, BAND_COLORS } from "@/lib/format";
 
 /**
@@ -33,12 +34,19 @@ const BAND_ORDER: RiskBand[] = ["critical", "high", "elevated", "low"];
 
 
 
+/** Fill {placeholders} in a translated string with computed values. */
+const fill = (str: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), str);
+
 export default function ProductProfileView({ cmd }: { cmd: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const p = products.find((x) => x.cmd === cmd);
   if (!p) notFound();
 
   const period = `${meta.window.start}–${meta.window.end}`;
+  // product and chapter names are data-derived: translate them like everywhere else
+  const label = labelsFor(lang, () => hsLabel(p.cmd));
+  const chapterLabel = labelsFor(lang, () => hsLabel(p.chapter));
   const cifPct = Math.round(meta.cif.central * 100);
   const residual = isResidualChapter(p.chapter);
 
@@ -68,56 +76,59 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
   const half = Math.max(1, Math.floor(p.byYear.length / 2));
   const early = p.byYear.slice(0, half).reduce((s, y) => s + Math.max(0, y.gap), 0) / half;
   const recent = p.byYear.slice(-half).reduce((s, y) => s + Math.max(0, y.gap), 0) / half;
-  const trendWord = recent > early * 1.15 ? "rising" : recent < early * 0.85 ? "declining" : "broadly stable";
+  const rising = recent > early * 1.15;
+  const trendWord = t(rising ? "pprof.trend.rising" : recent < early * 0.85 ? "pprof.trend.declining" : "pprof.trend.stable");
 
   // ---- automatic interpretation template (facts + caveats, spec §10) ----
   const routingSentence = residual
-    ? `HS chapter ${p.chapter} is a residual category ("${p.chapterLabel.toLowerCase()}") used for unallocated or confidential trade, so a large mirror gap here is substantially a classification artifact by construction and carries no screening priority; it is tracked for transparency of the trade record only.`
+    ? fill(t("pprof.narr.routing.residual"), { chapter: p.chapter, label: chapterLabel.toLowerCase() })
     : p.transitShare >= 0.5
-      ? `A majority of the gap (${fmtPct(p.transitShare, 0)}) involves transit/re-export hubs, where origin-vs-consignment recording can create legitimate discrepancies — routing should be clarified before any substantive reading.`
+      ? fill(t("pprof.narr.routing.hubMajority"), { pct: fmtPct(p.transitShare, 0) })
       : p.transitShare >= 0.2
-        ? `${fmtPct(p.transitShare, 0)} of the gap runs through transit/re-export hubs; the remainder is direct-trade discrepancy.`
-        : `The gap is dominated by direct (non-hub) trade, which weakens re-export-based explanations but does not exclude valuation, timing or classification effects.`;
+        ? fill(t("pprof.narr.routing.hubSome"), { pct: fmtPct(p.transitShare, 0) })
+        : t("pprof.narr.routing.direct");
   const uvSentence = !p.uv
-    ? "No year has net weight reported on both sides, so price and volume effects cannot be separated — this absence is a data limitation, not a zero."
+    ? t("pprof.narr.uv.none")
     : p.uv.uvRatio < 0.85
-      ? `Where both sides report weight (${p.uv.years} year${p.uv.years === 1 ? "" : "s"}), Uzbekistan's declared unit value ($${p.uv.uvUzb.toFixed(2)}/kg) runs ${Math.round((1 - p.uv.uvRatio) * 100)}% below the partners' ($${p.uv.uvPtn.toFixed(2)}/kg) — a pattern consistent with under-valuation, but one that can also reflect product-mix or quality differences.`
+      ? fill(t("pprof.narr.uv.below"), {
+          years: p.uv.years, uzb: p.uv.uvUzb.toFixed(2), ptn: p.uv.uvPtn.toFixed(2),
+          pct: Math.round((1 - p.uv.uvRatio) * 100),
+        })
       : p.uv.uvRatio <= 1.2
-        ? `Where both sides report weight (${p.uv.years} year${p.uv.years === 1 ? "" : "s"}), declared unit values are broadly comparable, pointing more to volume or classification differences than to price under-declaration.`
-        : `Where both sides report weight (${p.uv.years} year${p.uv.years === 1 ? "" : "s"}), Uzbekistan's declared unit value is above the partners' — no under-valuation signal.`;
-  const confSentence =
-    confTier === "High"
-      ? `${fmtPct(p.highConfShare, 0)} of the gap comes from partners with complete, consistent reporting, so a pure reporting artifact is an unlikely driver.`
-      : confTier === "Medium"
-        ? `Only ${fmtPct(p.highConfShare, 0)} of the gap comes from consistently reporting partners — part of the discrepancy may be a reporting artifact and comparability should be verified first.`
-        : `Just ${fmtPct(p.highConfShare, 0)} of the gap comes from consistently reporting partners — data quality should be verified before any interpretation.`;
+        ? fill(t("pprof.narr.uv.similar"), { years: p.uv.years })
+        : fill(t("pprof.narr.uv.above"), { years: p.uv.years });
+  const confSentence = fill(
+    t(confTier === "High" ? "pprof.narr.conf.high" : confTier === "Medium" ? "pprof.narr.conf.medium" : "pprof.narr.conf.low"),
+    { pct: fmtPct(p.highConfShare, 0) },
+  );
+  const bandName = { critical: t("band.critical"), high: t("band.high") };
   const clsSentence =
     channels.length === 0
-      ? "No comparable country channels exist for this line in the screening set."
+      ? t("pprof.narr.cls.none")
       : flaggedCount > 0
-        ? `Of ${channels.length} country channels, ${flaggedCount} ${flaggedCount === 1 ? "falls" : "fall"} in the “${BAND_LABELS.critical.label}” or “${BAND_LABELS.high.label}” risk band — priorities for further statistical or customs review.`
-        : `None of the ${channels.length} country channels reaches the “${BAND_LABELS.high.label}” risk band under the current methodology.`;
+        ? fill(t("pprof.narr.cls.flagged"), { n: channels.length, k: flaggedCount, critical: bandName.critical, high: bandName.high })
+        : fill(t("pprof.narr.cls.clean"), { n: channels.length, high: bandName.high });
 
-  const narrative =
-    `Over ${period}, partners reported cumulative exports of ${p.label} (HS ${p.cmd}) to Uzbekistan worth ${fmtUSD(p.ptnExp)}, ` +
-    `while Uzbekistan recorded imports of ${fmtUSD(p.uzbImp)}. Under the central ${cifPct}% freight adjustment the cumulative ` +
-    `positive gap is ${fmtUSD(p.positiveGap)} (${fmtPct(gapShare, 0)} of expected CIF imports) and is ${trendWord} across the window. ` +
-    `${routingSentence} ${uvSentence} ${confSentence} ${clsSentence} These discrepancies are statistical screening signals — ` +
-    `legitimate causes such as freight valuation, transit routing, timing, classification and reporting differences typically act ` +
-    `together.`;
+  const narrative = [
+    fill(t("pprof.narr.lead"), {
+      period, label, cmd: p.cmd, ptnExp: fmtUSD(p.ptnExp), uzbImp: fmtUSD(p.uzbImp),
+      cif: cifPct, gap: fmtUSD(p.positiveGap), share: fmtPct(gapShare, 0), trend: trendWord,
+    }),
+    routingSentence, uvSentence, confSentence, clsSentence, t("pprof.narr.tail"),
+  ].join(" ");
 
   return (
     <div className="space-y-8">
       {/* 1. header */}
       <div>
-        <Link href="/products" className="text-sm text-muted hover:text-foreground">← All HS6 products</Link>
+        <Link href="/products" className="text-sm text-muted hover:text-foreground">{t("pprof.backAll")}</Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{p.label}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{label}</h1>
           <span className="tabular rounded bg-[var(--color-panel-2)] px-2 py-0.5 text-xs text-faint">HS {p.cmd}</span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-faint">
           <span className="tabular">{p.chapter}</span>
-          <span>{p.chapterLabel}</span>
+          <span>{chapterLabel}</span>
           <span>·</span>
           <span>{categoryLabel(p.category)}</span>
           {residual && (
@@ -126,10 +137,10 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
               style={{ color: COLORS.transit, background: "color-mix(in srgb, var(--color-transit) 10%, transparent)" }}
               title={t("pprof.residual.tip")}
             >
-              residual — transparency only
+              {t("pprof.residualBadge")}
             </span>
           )}
-          <span>· product profile · full {period} window · central {cifPct}% freight</span>
+          <span>· {fill(t("pprof.headerMeta"), { period, cif: cifPct })}</span>
         </div>
       </div>
 
@@ -138,19 +149,19 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
       {/* 2. cumulative KPIs */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <Stat label={t("pprof.stat.positiveGap")} value={fmtUSD(p.positiveGap)} accent={COLORS.positive}
-          sub={`${fmtPct(gapShare, 0)} of expected CIF imports`}
-          info={`Sum of positive yearly CIF-adjusted discrepancies across all partners, ${period}, at the central ${cifPct}% freight assumption. ${fmtUSDFull(p.positiveGap)}.`} />
+          sub={fill(t("pprof.stat.positiveGap.sub"), { pct: fmtPct(gapShare, 0) })}
+          info={fill(t("pprof.stat.positiveGap.info"), { period, cif: cifPct, full: fmtUSDFull(p.positiveGap) })} />
         <Stat label={t("pprof.stat.partnerExports")} value={fmtUSD(p.ptnExp)} accent={COLORS.partner}
-          sub={`vs ${fmtUSD(p.uzbImp)} UZB recorded (CIF)`}
-          info={`Cumulative partner-reported exports of HS ${p.cmd} to Uzbekistan vs Uzbekistan-recorded imports. ${fmtUSDFull(p.ptnExp)} vs ${fmtUSDFull(p.uzbImp)}.`} />
+          sub={fill(t("pprof.stat.partnerExports.sub"), { v: fmtUSD(p.uzbImp) })}
+          info={fill(t("pprof.stat.partnerExports.info"), { cmd: p.cmd, a: fmtUSDFull(p.ptnExp), b: fmtUSDFull(p.uzbImp) })} />
         <Stat label={t("pprof.stat.concentration")} value={topChannel && totalPos > 0 ? fmtPct(topShare, 0) : "n/a"}
-          sub={topChannel && totalPos > 0 ? `${topChannel.partner} holds the largest share` : "no positive-gap channels"}
+          sub={topChannel && totalPos > 0 ? fill(t("pprof.stat.concentration.sub"), { partner: topChannel.partner }) : t("pprof.stat.concentration.subNone")}
           info={t("pprof.stat.concentration.info")} />
-        <Stat label={t("pprof.stat.trend")} value={trendWord} accent={trendWord === "rising" ? COLORS.positive : undefined}
-          sub={`avg ${fmtUSD(recent)}/yr recent vs ${fmtUSD(early)}/yr early`}
+        <Stat label={t("pprof.stat.trend")} value={trendWord} accent={rising ? COLORS.positive : undefined}
+          sub={fill(t("pprof.stat.trend.sub"), { recent: fmtUSD(recent), early: fmtUSD(early) })}
           info={t("pprof.stat.trend.info")} />
-        <Stat label={t("pprof.stat.reporterQuality")} value={confTier}
-          sub={`${fmtPct(p.highConfShare, 0)} of gap from reliable reporters`}
+        <Stat label={t("pprof.stat.reporterQuality")} value={t(`tier.${confTier.toLowerCase()}` as never)}
+          sub={fill(t("pprof.stat.reporterQuality.sub"), { pct: fmtPct(p.highConfShare, 0) })}
           info={t("pprof.stat.reporterQuality.info")} />
       </section>
 
@@ -158,7 +169,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
       <section>
         <SectionTitle
           title={t("prof.byYear.title")}
-          desc={`Source: UN Comtrade mirror data, ${period}, all partners combined. Amber = partner-reported exports (FOB); blue = Uzbekistan-recorded imports (CIF); dashed line = signed CIF-adjusted gap at the central ${cifPct}% freight assumption. Years without data on either side are simply absent — never drawn as zero.`}
+          desc={fill(t("pprof.byYear.desc"), { period, cif: cifPct })}
         />
         <ProductChart product={p} />
       </section>
@@ -170,23 +181,19 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
           desc={t("pprof.bands.desc")}
         />
         {channels.length === 0 ? (
-          <p className="text-sm text-muted">
-            No comparable country channels for this line — both sides must report a country pair before it can be screened.
-            Missing partner reporting is a data limitation, not a zero gap.
-          </p>
+          <p className="text-sm text-muted">{t("pprof.bands.none")}</p>
         ) : (
           <div className="flex flex-wrap gap-3">
             {BAND_ORDER.filter((k) => (bandCounts.get(k) ?? 0) > 0).map((k) => (
               <div key={k} className="flex items-center gap-2 rounded-md border border-[var(--color-border-soft)] px-3 py-2"
-                title={BAND_LABELS[k].desc}>
+                title={t(`band.desc.${k}` as never)}>
                 <BandBadge band={k} />
                 <span className="tabular text-lg font-semibold" style={{ color: BAND_COLORS[k] }}>{bandCounts.get(k)}</span>
-                <span className="text-xs text-faint">channel{(bandCounts.get(k) ?? 0) === 1 ? "" : "s"}</span>
+                <span className="text-xs text-faint">{t("pprof.bands.channelsWord")}</span>
               </div>
             ))}
             <p className="basis-full text-xs text-faint">
-              {channels.length} comparable channel{channels.length === 1 ? "" : "s"} in total. The “{BAND_LABELS.critical.label}”
-              and “{BAND_LABELS.high.label}” bands mark a priority for further statistical or customs review.
+              {fill(t("pprof.bands.total"), { n: channels.length, critical: bandName.critical, high: bandName.high })}
             </p>
           </div>
         )}
@@ -199,24 +206,22 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
           desc={t("pprof.decomp.desc")}
         />
         {channels.length === 0 ? (
-          <p className="card p-8 text-center text-sm text-muted">
-            No comparable country channels for this line in the screening set.
-          </p>
+          <p className="card p-8 text-center text-sm text-muted">{t("pprof.decomp.empty")}</p>
         ) : (
           <div className="card overflow-x-auto">
             <table className="zebra w-full min-w-[900px] text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
-                  <th className="px-3 py-2 font-medium">Partner</th>
-                  <th className="px-3 py-2 font-medium">Risk</th>
-                  <th className="px-3 py-2 font-medium">Band · components</th>
-                  <th className="px-3 py-2 text-right font-medium">Partner exports (FOB)</th>
-                  <th className="px-3 py-2 text-right font-medium">UZB imports (CIF)</th>
-                  <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.positive }}>Positive discrepancy</th>
+                  <th className="px-3 py-2 font-medium">{t("pprof.th.partner")}</th>
+                  <th className="px-3 py-2 font-medium">{t("pprof.th.risk")}</th>
+                  <th className="px-3 py-2 font-medium">{t("pprof.th.band")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t("pprof.th.partnerExports")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t("pprof.th.uzbImports")}</th>
+                  <th className="px-3 py-2 text-right font-medium" style={{ color: COLORS.positive }}>{t("pprof.th.positiveGap")}</th>
                   <th className="px-3 py-2 text-right font-medium">
-                    Years <InfoTip text="Comparable years (both sides reported) out of the window. Missing partner-years are excluded, never zero-filled." />
+                    {t("pprof.th.years")} <InfoTip text={t("pprof.th.yearsTip")} />
                   </th>
-                  <th className="px-3 py-2 font-medium">Robustness</th>
+                  <th className="px-3 py-2 font-medium">{t("pprof.th.robustness")}</th>
                   <th className="px-3 py-2 font-medium" />
                 </tr>
               </thead>
@@ -248,7 +253,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
                     <td className="px-3 py-2"><RobustnessBadge r={c.robustness} /></td>
                     <td className="px-3 py-2 text-right">
                       <Link href={`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`} className="text-xs font-medium text-[var(--color-primary)] hover:underline">
-                        Channel →
+                        {t("pprof.link.channel")}
                       </Link>
                     </td>
                   </tr>
@@ -258,8 +263,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
           </div>
         )}
         <p className="mt-2 text-xs text-faint">
-          Source: UN Comtrade · full {period} window · nominal USD · central {cifPct}% freight. A country absent from this
-          table has no comparable observation for this line — partner data missing is not treated as a zero gap.
+          {fill(t("pprof.decomp.footnote"), { period, cif: cifPct })}
         </p>
       </section>
 
@@ -268,37 +272,34 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
         <SectionTitle
           title={t("pprof.uv.title")}
           desc={t("pprof.uv.desc")}
-          right={<QualityTag tier={confTier} tip={`${fmtPct(p.highConfShare, 0)} of the gap comes from partners with complete, consistent Comtrade reporting.`} />}
+          right={<QualityTag tier={confTier} tip={fill(t("pprof.uv.qualityTip"), { pct: fmtPct(p.highConfShare, 0) })} />}
         />
         {p.uv ? (
           <div className="flex flex-wrap items-start gap-8 text-sm">
             <div>
-              <div className="text-xs text-faint">Uzbekistan declared</div>
+              <div className="text-xs text-faint">{t("pprof.uv.uzbDeclared")}</div>
               <div className="tabular text-xl">${p.uv.uvUzb.toFixed(2)}/kg</div>
             </div>
             <div>
-              <div className="text-xs text-faint">Partners declared</div>
+              <div className="text-xs text-faint">{t("pprof.uv.partnersDeclared")}</div>
               <div className="tabular text-xl">${p.uv.uvPtn.toFixed(2)}/kg</div>
             </div>
             <div>
               <div className="flex items-center gap-1 text-xs text-faint">
-                UV ratio (UZB / partner) <InfoTip text="Below 1 = Uzbekistan declares a lower price per kilo than its partners where both report weight. Consistent with under-valuation but can also reflect product-mix or quality differences." />
+                {t("pprof.uv.ratioLabel")} <InfoTip text={t("pprof.uv.ratioTip")} />
               </div>
               <div className="tabular text-xl font-semibold" style={{ color: p.uv.uvRatio < 0.85 ? COLORS.positive : COLORS.ok }}>
                 {p.uv.uvRatio.toFixed(2)}
               </div>
             </div>
             <p className="max-w-sm text-xs leading-relaxed text-faint">
-              Based on {p.uv.years} dual-weight year{p.uv.years === 1 ? "" : "s"} across all partners;
-              {" "}{uvChannels} of {channels.length || "no"} country channel{channels.length === 1 ? " has" : "s have"} at least
-              one dual-weight year. Years without weight on both sides are excluded from the ratio, never zero-filled.
+              {fill(t("pprof.uv.basis"), { years: p.uv.years, uvChannels, channels: channels.length })}
             </p>
           </div>
         ) : (
           <p className="max-w-3xl text-sm text-muted">
-            No year in the window has net weight reported on <em>both</em> sides for this product, so unit values cannot be
-            compared and price vs volume effects cannot be separated. This absence is a data limitation —{" "}
-            <MissingValue kind="notComparable" /> — never a zero, and the value discrepancy above stands on its own.
+            {t("pprof.uv.noneA")} <em>{t("pprof.uv.noneEmph")}</em> {t("pprof.uv.noneB")}{" "}
+            <MissingValue kind="notComparable" /> {t("pprof.uv.noneC")}
           </p>
         )}
       </section>
@@ -307,20 +308,13 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
       <section className="card border-l-2 border-l-[var(--color-accent)] p-5">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">{t("pprof.interpretation")}</h2>
         <p className="text-[15px] leading-relaxed text-muted">{narrative}</p>
-        <p className="mt-3 text-xs text-faint">
-          A statistical screening assessment generated from measured mirror data (UN Comtrade, {period}). Establishing any
-          violation requires declarations, audit or inspection (evidence level 5), which open trade statistics cannot provide.
-          Profile totals include all partner channels for this product, including small ones excluded elsewhere by the
-          materiality floor.
-        </p>
+        <p className="mt-3 text-xs text-faint">{fill(t("pprof.interp.footnote"), { period })}</p>
       </section>
 
       {/* 8. HS revision note */}
       <section className="rounded-md border border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-3 text-xs text-faint">
-        <strong className="text-muted">HS comparability note.</strong> Both sides are extracted under a single HS revision, so
-        codes are broadly comparable; a code-level concordance table across revisions is planned but not yet applied, and
-        residual classification differences between similar HS6 lines cannot be excluded
-        {residual ? ` — chapter ${p.chapter} is additionally a residual/confidentiality category` : ""}.
+        <strong className="text-muted">{t("pprof.hsNote.title")}</strong> {t("pprof.hsNote.body")}
+        {residual ? fill(t("pprof.hsNote.residualTail"), { chapter: p.chapter }) : ""}.
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useI18n } from "@/lib/i18n";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { Product } from "@/lib/dataset";
@@ -17,6 +18,10 @@ import { BAR_SPEC, baseGrid, baseTooltip, baseTextStyle, catAxis, moneyAxisForma
  * product file has data.
  */
 export default function ProductChart({ product }: { product: Product }) {
+  const { t } = useI18n();
+  const ptnName = t("ctry.partnerExportsFob");
+  const uzbName = t("ctry.uzbImportsCif");
+  const gapName = t("pchart.gapSigned");
   const option = useMemo<EChartsOption>(() => {
     const gapByYear = new Map(product.byYear.map((y) => [String(y.y), y.gap]));
     return {
@@ -26,7 +31,7 @@ export default function ProductChart({ product }: { product: Product }) {
       legend: {
         top: 0,
         textStyle: { color: COLORS.text, fontSize: 11 },
-        data: ["Partner-reported exports (FOB)", "Uzbekistan-recorded imports (CIF)"],
+        data: [ptnName, uzbName],
       },
       tooltip: {
         ...baseTooltip(),
@@ -48,7 +53,7 @@ export default function ProductChart({ product }: { product: Product }) {
           const gap = gapByYear.get(year);
           const gapLine =
             gap !== undefined
-              ? `<div style="margin-top:4px;color:${COLORS.text}">CIF-adjusted gap (signed): <b style="color:${gap >= 0 ? COLORS.positive : COLORS.reverse}">${fmtUSDFull(Math.round(gap))}</b></div>`
+              ? `<div style="margin-top:4px;color:${COLORS.text}">${gapName}: <b style="color:${gap >= 0 ? COLORS.positive : COLORS.reverse}">${fmtUSDFull(Math.round(gap))}</b></div>`
               : "";
           return head + lines.join("") + gapLine;
         },
@@ -57,7 +62,7 @@ export default function ProductChart({ product }: { product: Product }) {
       yAxis: valueAxis("USD"),
       series: [
         {
-          name: "Partner-reported exports (FOB)",
+          name: ptnName,
           type: "bar",
           data: product.byYear.map((y) => Math.round(y.pe)),
           ...BAR_SPEC,
@@ -70,7 +75,7 @@ export default function ProductChart({ product }: { product: Product }) {
           barGap: "0%",
         },
         {
-          name: "Uzbekistan-recorded imports (CIF)",
+          name: uzbName,
           type: "bar",
           data: product.byYear.map((y) => Math.round(y.ui)),
           ...BAR_SPEC,
@@ -83,7 +88,7 @@ export default function ProductChart({ product }: { product: Product }) {
         },
       ],
     };
-  }, [product]);
+  }, [product, ptnName, uzbName, gapName]);
 
   const gapOption = useMemo<EChartsOption>(
     () => ({
@@ -99,7 +104,7 @@ export default function ProductChart({ product }: { product: Product }) {
           if (!Array.isArray(ps) || ps.length === 0) return "";
           const row = product.byYear[ps[0].dataIndex];
           if (!row) return "";
-          return `<strong>${row.y}</strong><br/>CIF-adjusted gap (signed): <span style="font-weight:600">${fmtUSDFull(Math.round(row.gap))}</span>`;
+          return `<strong>${row.y}</strong><br/>${gapName}: <span style="font-weight:600">${fmtUSDFull(Math.round(row.gap))}</span>`;
         },
       },
       xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 10 } },
@@ -131,7 +136,7 @@ export default function ProductChart({ product }: { product: Product }) {
         },
       ],
     }),
-    [product],
+    [product, gapName],
   );
 
   return (
@@ -143,8 +148,7 @@ export default function ProductChart({ product }: { product: Product }) {
         <EChart option={gapOption} />
       </div>
       <p className="px-1 text-[11px] text-faint">
-        CIF-adjusted gap (signed) per year — above zero the partner reports more than Uzbekistan
-        records; below zero the reverse.
+        {t("pchart.caption")}
       </p>
     </div>
   );
