@@ -46,7 +46,7 @@ export function MobileNav() {
   const links = [...ANALYSIS, ...REFERENCE];
   const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
-    <nav className="flex max-w-full items-center gap-1 overflow-x-auto lg:hidden" aria-label="Main navigation">
+    <nav className="flex max-w-full items-center gap-1 overflow-x-auto lg:hidden" aria-label={t("nav.aria.main")}>
       {links.map((l) => (
         <Link key={l.href} href={l.href}
           aria-current={isActive(l.href) ? "page" : undefined}

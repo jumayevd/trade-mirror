@@ -1,22 +1,25 @@
 "use client";
 
+import { useMemo } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ChannelChart from "@/components/charts/ChannelChart";
 import {
-  Stat, SectionTitle, ContextLine, BandBadge, ComponentChip,
+  Stat, SectionTitle, ContextLine, BandBadge,
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
   aggregate, meta, DEFAULT_FILTER, partnerMetaOf, productByCmd, isResidualChapter,
-  BAND_LABELS, type Filter, type RiskBand,
+  type Aggregate, type Filter, type RiskBand,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
+import type { Lang, LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 
 /**
- * Channel profile (spec §6.9) — one country × HS6 pair, the most detailed page of the site.
- * Server component: computes its own full-window aggregate with explicit filters so the
+ * Channel profile (spec §6.9) — one country × HS6 pair, the most detailed page of
+ * the site. Computes its own full-window aggregate with explicit filters so the
  * profile is stable regardless of the visitor's interactive filter state.
  */
 const FULL_FILTER: Filter = {
@@ -24,37 +27,52 @@ const FULL_FILTER: Filter = {
   years: [...meta.years],
   minGap: 0,
 };
-const FULL = aggregate(FULL_FILTER);
 const WINDOW = meta.years;
 
-const NEXT_STEP: Record<RiskBand, string> = {
-  critical: "further statistical reconciliation and, where appropriate, customs analytics review",
-  high: "verification of statistical comparability before interpretation",
-  elevated: "routine monitoring",
-  low: "no action",
+/**
+ * Partner and product names are localised as the aggregate is built, so the page
+ * keeps one aggregate per language — computed on first use and shared by every
+ * channel page. A single module-level aggregate would freeze the names in
+ * whatever language happened to be active at first load.
+ */
+const AGG_CACHE = new Map<Lang, Aggregate>();
+const aggFor = (lang: Lang): Aggregate => {
+  let a = AGG_CACHE.get(lang);
+  if (!a) { a = aggregate(FULL_FILTER); AGG_CACHE.set(lang, a); }
+  return a;
 };
 
-const FLAG_LABELS: Record<string, string> = {
-  transit: "transit/re-export exposure",
-  "residual-hs": "residual HS category (unallocated or confidential trade)",
-  "reporting-stop": "the partner stopped reporting within the window",
-  "sparse-reporter": "sparse partner reporting coverage",
-  "missing-weight": "no dual-sided weight data",
-  "freight-sensitive": "the sign is sensitive to the freight assumption",
+/** Fill {placeholders} in a translated string with dataset values. */
+const fill = (s: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
+
+const NEXT_STEP: Record<RiskBand, LocaleKey> = {
+  critical: "chan.next.critical",
+  high: "chan.next.high",
+  elevated: "chan.next.elevated",
+  low: "chan.next.low",
+};
+
+const FLAG_LABEL_KEYS: Record<string, LocaleKey> = {
+  transit: "chan.flag.transit",
+  "residual-hs": "chan.flag.residualHs",
+  "reporting-stop": "chan.flag.reportingStop",
+  "sparse-reporter": "chan.flag.sparseReporter",
+  "missing-weight": "chan.flag.missingWeight",
+  "freight-sensitive": "chan.flag.freightSensitive",
 };
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
-const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
-  unlikely: { label: "Unlikely", color: "#15803d" },
-  possible: { label: "Possible", color: "#b45309" },
-  material: { label: "Material", color: "#d97706" },
-  "cannot-assess": { label: "Cannot assess", color: "#75847b" },
+const ALT_STATUS: Record<AltStatus, { label: LocaleKey; color: string }> = {
+  unlikely: { label: "prof.status.unlikely", color: "#15803d" },
+  possible: { label: "prof.status.possible", color: "#b45309" },
+  material: { label: "prof.status.material", color: "#d97706" },
+  "cannot-assess": { label: "prof.status.cannotAssess", color: "#75847b" },
 };
 
-
-
 export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: string }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const FULL = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
   const channel = FULL.channels6.find((c) => c.partnerIso === iso.toUpperCase() && c.cmd === cmd);
   if (!channel) notFound();
 
@@ -64,6 +82,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
   const cifPct = Math.round(meta.cif.central * 100);
   const expectedLow = channel.peT * (1 + meta.cif.low);
   const expectedHigh = channel.peT * (1 + meta.cif.high);
+  const partner = channel.partner; // localised by the aggregate
 
   // sign reversals across comparable years (transitions between + and − among non-noise years)
   const NOISE = 100_000;
@@ -73,74 +92,82 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
   let reversals = 0;
   for (let i = 1; i < signSeq.length; i++) if (signSeq[i] !== signSeq[i - 1]) reversals++;
 
-  const trendWord = channel.trend > 1_000_000 ? "rising" : channel.trend < -1_000_000 ? "declining" : "broadly stable";
+  const rising = channel.trend > 1_000_000;
+  const trendWord = t(rising ? "prof.trend.rising" : channel.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
   const weakReporter = channel.flags.includes("reporting-stop") || channel.flags.includes("sparse-reporter");
   const residual = isResidualChapter(channel.chapter);
+  const yrUnit = (n: number) => `${n} ${t(n === 1 ? "chan.unit.year" : "chan.unit.years")}`;
 
   // alternative-explanations checklist (spec §6.9.7) — statuses derived from measured flags
   const alternatives: { title: string; status: AltStatus; note: string }[] = [
     {
-      title: "CIF/FOB valuation assumption",
+      title: t("prof.alt.cif.title"),
       status: "possible",
-      note: `Partner exports are valued FOB while Uzbekistan records CIF; the comparison assumes a ${cifPct}% central freight wedge inside a 6–15% band. ${channel.flipsAcrossFreight
-        ? "For this channel the sign of the net discrepancy changes within that band, so the assumption materially affects the reading."
-        : "For this channel the sign of the net discrepancy holds across the whole band."}`,
+      note: `${fill(t("chan.alt.cif.note"), { cif: cifPct })} ${t(channel.flipsAcrossFreight ? "chan.alt.cif.flips" : "chan.alt.cif.holds")}`,
     },
     {
-      title: "Transit / re-export routing",
+      title: t("prof.alt.transit.title"),
       status: channel.transit ? "material" : "unlikely",
-      note: channel.transit
-        ? `${channel.partner} is a transit/re-export hub: Uzbekistan attributes imports to country of origin while hubs report re-exports by consignment, so routed goods can create legitimate discrepancies here.`
-        : `${channel.partner} is not flagged as a transit/re-export hub, which weakens routing-based explanations for this pair.`,
+      note: fill(t(channel.transit ? "chan.alt.transit.yes" : "chan.alt.transit.no"), { name: partner }),
     },
     {
-      title: "Partner reporting quality",
+      title: t("prof.alt.reporting.title"),
       status: weakReporter ? "material" : "unlikely",
       note: weakReporter
-        ? `${channel.partner}'s Comtrade reporting is incomplete (${pm.reportedYears.length}/${WINDOW.length} years reported${pm.lapse ? `; last report ${pm.lastReportedYear}` : ""}). Part of the apparent discrepancy may be a reporting artifact rather than a measured gap.`
-        : `${channel.partner} reported consistently across the window (${pm.reportedYears.length}/${WINDOW.length} years), so reporting gaps are an unlikely driver.`,
+        ? fill(t("chan.alt.reporting.weak"), {
+            name: partner, k: pm.reportedYears.length, n: WINDOW.length,
+            lapse: pm.lapse ? fill(t("prof.alt.reporting.lastReport"), { year: pm.lastReportedYear }) : "",
+          })
+        : fill(t("chan.alt.reporting.ok"), { name: partner, k: pm.reportedYears.length, n: WINDOW.length }),
     },
     {
-      title: "Classification differences",
+      title: t("prof.alt.classification.title"),
       status: "cannot-assess",
-      note: "Both sides are extracted under a single HS revision, but no code-level concordance table is applied yet, so reclassification between similar HS6 lines on the two sides can be neither confirmed nor excluded.",
+      note: t("chan.alt.classification.note"),
     },
     {
-      title: "Timing and lag effects",
+      title: t("prof.alt.timing.title"),
       status: "possible",
-      note: "Goods shipped late in one calendar year may be recorded by the importer in the next; such year-edge effects create small legitimate discrepancies in any country pair.",
+      note: t("chan.alt.timing.note"),
     },
     {
-      title: "Confidentiality / residual codes",
+      title: t("prof.alt.residual.title"),
       status: residual ? "material" : "unlikely",
       note: residual
-        ? `HS chapter ${channel.chapter} is a residual category used for unallocated or confidential trade — a large mirror gap here is substantially a classification artifact by construction.`
-        : "This product sits in a regular HS chapter, not a residual/confidentiality bucket, so this explanation is an unlikely driver.",
+        ? fill(t("chan.alt.residual.yes"), { chapter: channel.chapter })
+        : t("chan.alt.residual.no"),
     },
   ];
 
   const limitations = channel.flags.length > 0
-    ? channel.flags.map((f) => FLAG_LABELS[f] ?? f).join("; ")
-    : "no material quality flags on this channel";
+    ? channel.flags.map((f) => (FLAG_LABEL_KEYS[f] ? t(FLAG_LABEL_KEYS[f]) : f)).join("; ")
+    : t("chan.flags.none");
 
-  const narrative =
-    `In ${period}, ${channel.partner} reported exports of HS ${channel.cmd} worth ${fmtUSD(channel.peT)}, ` +
-    `while Uzbekistan recorded imports of ${fmtUSD(channel.uiT)}. Under the central ${cifPct}% freight adjustment ` +
-    `the residual positive asymmetry is ${fmtUSD(channel.posT)} and ${channel.flipsAcrossFreight ? "does not hold" : "holds"} ` +
-    `across all three freight scenarios (6%, 10%, 15%). The channel has ${channel.comparableYears} of ${WINDOW.length} ` +
-    `comparable years. Main limitations: ${limitations}. ` +
-    `Its risk score is ${channel.mtrs.toFixed(0)}/100 — abnormal gap intensity ${channel.abnormalGap.toFixed(2)}, persistence ` +
-    `${channel.persistence.toFixed(2)} from ${channel.flaggedYears} flagged of ${channel.matchedYears} matched years — ` +
-    `placing it in the “${BAND_LABELS[channel.band].label}” band, which warrants ${NEXT_STEP[channel.band]}.`;
+  const narrative = [
+    fill(t("chan.narrative.trade"), {
+      period, name: partner, cmd: channel.cmd, pe: fmtUSD(channel.peT), ui: fmtUSD(channel.uiT),
+    }),
+    fill(t("chan.narrative.residualGap"), {
+      cif: cifPct, pos: fmtUSD(channel.posT),
+      holds: t(channel.flipsAcrossFreight ? "chan.narrative.doesNotHold" : "chan.narrative.holds"),
+    }),
+    fill(t("chan.narrative.years"), { k: channel.comparableYears, n: WINDOW.length }),
+    fill(t("chan.narrative.limitations"), { list: limitations }),
+    fill(t("chan.narrative.score"), {
+      score: channel.mtrs.toFixed(0), g: channel.abnormalGap.toFixed(2), p: channel.persistence.toFixed(2),
+      flagged: channel.flaggedYears, matched: channel.matchedYears,
+      band: t(`band.${channel.band}` as LocaleKey), next: t(NEXT_STEP[channel.band]),
+    }),
+  ].join(" ");
 
   return (
     <div className="space-y-8">
       {/* 1. header */}
       <div>
-        <Link href="/risk" className="text-sm text-muted hover:text-foreground">← Screening queue</Link>
+        <Link href="/risk" className="text-sm text-muted hover:text-foreground">← {t("nav.queue")}</Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">
-            <Link href={`/partners/${channel.partnerIso.toLowerCase()}`} className="hover:underline">{channel.partner}</Link>
+            <Link href={`/partners/${channel.partnerIso.toLowerCase()}`} className="hover:underline">{partner}</Link>
             <span className="text-faint"> × </span>
             {product ? (
               <Link href={`/products/${channel.cmd}`} className="hover:underline">{channel.cmdLabel}</Link>
@@ -152,11 +179,9 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <BandBadge band={channel.band} />
-          <ComponentChip kind="g" value={channel.abnormalGap} />
-          <ComponentChip kind="p" value={channel.persistence} />
           <RobustnessBadge r={channel.robustness} />
           {channel.transit && <TransitTag />}
-          <span className="text-xs text-faint">{channel.region} · channel profile · full {period} window</span>
+          <span className="text-xs text-faint">{channel.region} · {fill(t("chan.header.meta"), { period })}</span>
         </div>
       </div>
 
@@ -170,16 +195,18 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <Stat label={t("chan.stat.partnerExports")} value={fmtUSD(channel.peT)} accent={COLORS.partner}
-            sub={`${channel.partner} reported`} info={`Cumulative exports of HS ${channel.cmd} to Uzbekistan as reported by ${channel.partner}, FOB. ${fmtUSDFull(channel.peT)}.`} />
+            sub={fill(t("chan.sub.partnerReported"), { name: partner })}
+            info={`${fill(t("chan.info.peCumulative"), { cmd: channel.cmd, name: partner })} ${fmtUSDFull(channel.peT)}.`} />
           <Stat label={`${t("chan.stat.expectedCif")} (${cifPct}%)`} value={fmtUSD(channel.expectedT)}
-            sub={`band ${fmtUSD(expectedLow)} – ${fmtUSD(expectedHigh)}`}
-            info={`Partner exports × (1 + freight). Central ${cifPct}% scenario; the sub-line shows the 6% and 15% band endpoints.`} />
+            sub={`${t("chan.sub.band")} ${fmtUSD(expectedLow)} – ${fmtUSD(expectedHigh)}`}
+            info={fill(t("chan.info.expectedCif"), { cif: cifPct })} />
           <Stat label={t("chan.stat.uzbImports")} value={fmtUSD(channel.uiT)} accent={COLORS.uzb}
-            sub={t("chan.sub.uzbRecorded")} info={`Cumulative imports of HS ${channel.cmd} from ${channel.partner} as recorded by Uzbekistan. ${fmtUSDFull(channel.uiT)}.`} />
+            sub={t("chan.sub.uzbRecorded")}
+            info={`${fill(t("chan.info.uiCumulative"), { cmd: channel.cmd, name: partner })} ${fmtUSDFull(channel.uiT)}.`} />
           <Stat label={t("kpi.positive")} value={fmtUSD(channel.posT)} accent={COLORS.positive}
             sub={t("chan.sub.byYear")} info={t("chan.info.partnerExports")} />
           <Stat label={t("chan.stat.signed")} value={fmtUSD(channel.signedT, { sign: true })}
-            sub={`bounded asymmetry ${fmtPct(channel.boundedAsymmetry)}`}
+            sub={`${t("chan.sub.boundedAsymmetry")} ${fmtPct(channel.boundedAsymmetry)}`}
             info={t("chan.info.signed")} />
         </div>
       </section>
@@ -188,9 +215,9 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
       <section>
         <SectionTitle
           title={t("prof.byYear.title")}
-          desc={`Source: UN Comtrade mirror data, ${period}. Amber = ${channel.partner}'s reported exports (FOB); blue = Uzbekistan's recorded imports (CIF); dashed line = signed discrepancy at the central ${cifPct}% freight adjustment. Only years where both sides reported are drawn — hollow years mean there is no partner reference and no gap is computed.`}
+          desc={fill(t("chan.byYear.desc"), { period, name: partner, cif: cifPct })}
         />
-        <ChannelChart years={channel.years} windowYears={WINDOW} partner={channel.partner} />
+        <ChannelChart years={channel.years} windowYears={WINDOW} partner={partner} />
       </section>
 
       {/* 4. historical persistence */}
@@ -203,14 +230,14 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
           <Stat label={t("chan.stat.comparableYears")} value={`${channel.comparableYears}/${WINDOW.length}`}
             sub={t("chan.sub.bothReported")} info={t("chan.info.comparableYears")} />
           <Stat label={t("chan.stat.positiveYears")} value={String(channel.posYears)} accent={COLORS.positive}
-            sub={`of ${channel.comparableYears} comparable`}
+            sub={fill(t("chan.sub.ofComparable"), { n: channel.comparableYears })}
             info={t("chan.info.positiveYears")} />
-          <Stat label={t("chan.stat.longestStreak")} value={`${channel.longestPosStreak} yr${channel.longestPosStreak === 1 ? "" : "s"}`}
+          <Stat label={t("chan.stat.longestStreak")} value={yrUnit(channel.longestPosStreak)}
             sub={t("chan.sub.consecutive")} info={t("chan.info.longestStreak")} />
           <Stat label={t("chan.stat.signReversals")} value={String(reversals)}
             sub={t("chan.sub.signChanges")} info={t("chan.info.signReversals")} />
-          <Stat label={t("pprof.stat.trend")} value={trendWord} accent={trendWord === "rising" ? COLORS.positive : undefined}
-            sub={`${channel.trend >= 0 ? "+" : "−"}${fmtUSD(Math.abs(channel.trend))} recent vs early avg`}
+          <Stat label={t("pprof.stat.trend")} value={trendWord} accent={rising ? COLORS.positive : undefined}
+            sub={`${channel.trend >= 0 ? "+" : "−"}${fmtUSD(Math.abs(channel.trend))} ${t("chan.sub.recentVsEarly")}`}
             info={t("chan.info.trend")} />
         </div>
       </section>
@@ -224,34 +251,31 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         {channel.uvRatio != null ? (
           <div className="flex flex-wrap items-start gap-8 text-sm">
             <div>
-              <div className="flex items-center gap-1 text-xs text-faint">Channel UV ratio (UZB / partner) <InfoTip text="Ratio of Uzbekistan's implied unit value to the partner's for this specific channel, computed over years where BOTH sides reported net weight. Below 1 = Uzbekistan declares a lower price per kilo." /></div>
+              <div className="flex items-center gap-1 text-xs text-faint">
+                {t("chan.uv.ratioLabel")} <InfoTip text={t("chan.uv.ratioInfo")} />
+              </div>
               <div className="tabular text-xl font-semibold" style={{ color: channel.uvRatio < 0.85 ? COLORS.positive : COLORS.ok }}>
                 {channel.uvRatio.toFixed(2)}
               </div>
-              <div className="text-xs text-faint">from {channel.uvYears} dual-weight year{channel.uvYears === 1 ? "" : "s"} in this channel</div>
+              <div className="text-xs text-faint">{fill(t("chan.uv.fromYears"), { n: channel.uvYears })}</div>
             </div>
             <div>
-              <div className="text-xs text-faint">Uzbekistan declared (product-level)</div>
+              <div className="text-xs text-faint">{t("chan.uv.uzbDeclared")}</div>
               <div className="tabular text-xl">{product?.uv ? `$${product.uv.uvUzb.toFixed(2)}/kg` : <MissingValue kind="notComparable" />}</div>
             </div>
             <div>
-              <div className="text-xs text-faint">Partners declared (product-level)</div>
+              <div className="text-xs text-faint">{t("chan.uv.ptnDeclared")}</div>
               <div className="tabular text-xl">{product?.uv ? `$${product.uv.uvPtn.toFixed(2)}/kg` : <MissingValue kind="notComparable" />}</div>
             </div>
             <p className="max-w-sm text-xs leading-relaxed text-faint">
-              The $/kg figures are <strong className="text-muted">product-level</strong> — HS {channel.cmd} across all partners
-              {product?.uv ? `, over ${product.uv.years} dual-weight year${product.uv.years === 1 ? "" : "s"}` : ""} — not specific to
-              this channel. Only the ratio on the left is channel-specific. A ratio below 1 is consistent with under-valuation but can
-              also reflect product-mix or quality differences.
+              {fill(t("chan.uv.note"), {
+                cmd: channel.cmd,
+                years: product?.uv ? fill(t("chan.uv.noteYears"), { n: product.uv.years }) : "",
+              })}
             </p>
           </div>
         ) : (
-          <p className="max-w-3xl text-sm text-muted">
-            Unit-value decomposition is unavailable for this channel: fewer than two comparable years have net weight reported on
-            <em> both</em> sides ({channel.uvYears} dual-weight year{channel.uvYears === 1 ? "" : "s"}). Without a dual-sided weight
-            reference, price and volume effects cannot be separated — the value discrepancy above stands on its own and this absence
-            is a data limitation, not a zero.
-          </p>
+          <p className="max-w-3xl text-sm text-muted">{fill(t("chan.uv.unavailable"), { n: channel.uvYears })}</p>
         )}
       </section>
 
@@ -265,8 +289,12 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         <div className="space-y-4">
           <div>
             <div className="mb-2 text-xs font-medium uppercase tracking-wider text-faint">
-              Partner reporting coverage · {pm.reportedYears.length}/{WINDOW.length} years · {fmtPct(pm.coverage, 0)}
-              {pm.lapse && <span className="ml-2 normal-case" style={{ color: "#b45309" }}>stopped reporting after {pm.lastReportedYear}</span>}
+              {t("chan.quality.coverageLead")} · {fill(t("chan.quality.coverageYears"), { k: pm.reportedYears.length, n: WINDOW.length })} · {fmtPct(pm.coverage, 0)}
+              {pm.lapse && (
+                <span className="ml-2 normal-case" style={{ color: "#b45309" }}>
+                  {fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear })}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {WINDOW.map((y) => {
@@ -278,7 +306,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
                       background: has ? "color-mix(in srgb, var(--color-ok) 10%, transparent)" : "transparent",
                       color: has ? "var(--color-foreground)" : "var(--color-faint)",
                     }}
-                    title={has ? `${channel.partner} reported in ${y}` : `${channel.partner} did not report in ${y} — no mirror reference; not a zero gap`}>
+                    title={fill(t(has ? "prof.quality.cellReported" : "chan.quality.cellMissing"), { name: partner, year: y })}>
                     <span>{`'${String(y).slice(2)}`}</span>
                     <span style={{ color: has ? "var(--color-ok)" : "var(--color-faint)" }}>{has ? "●" : "○"}</span>
                   </span>
@@ -288,34 +316,26 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
           </div>
           <ul className="space-y-2 text-sm text-muted">
             <li className="flex gap-2">
-              <span className="shrink-0 text-faint">HS comparability</span>
+              <span className="shrink-0 text-faint">{t("chan.quality.hsLabel")}</span>
               <span>
-                Both sides extracted under a single HS revision — broadly comparable, but no code-level concordance table is applied
-                yet, so residual classification differences cannot be excluded{residual ? `; chapter ${channel.chapter} is additionally a residual/confidentiality category` : ""}.
+                {t("chan.quality.hsBody")}
+                {residual ? fill(t("chan.quality.hsResidual"), { chapter: channel.chapter }) : ""}
               </span>
             </li>
             <li className="flex gap-2">
-              <span className="shrink-0 text-faint">Transit exposure</span>
-              <span>
-                {channel.transit
-                  ? `${channel.partner} is a transit/re-export hub — origin-vs-consignment recording can create legitimate discrepancies. The risk score does not correct for this, so routing should be clarified before reading the signal.`
-                  : `${channel.partner} is not flagged as a transit/re-export hub.`}
-              </span>
+              <span className="shrink-0 text-faint">{t("chan.quality.transitLabel")}</span>
+              <span>{fill(t(channel.transit ? "chan.quality.transitYes" : "chan.quality.transitNo"), { name: partner })}</span>
             </li>
             <li className="flex gap-2">
-              <span className="shrink-0 text-faint">Freight sensitivity</span>
-              <span>
-                {channel.flipsAcrossFreight
-                  ? "The sign of the net discrepancy CHANGES within the 6–15% freight band — the direction of this signal depends on the freight assumption and should not be read as settled."
-                  : "The sign of the net discrepancy holds across the whole 6–15% freight band."}
-              </span>
+              <span className="shrink-0 text-faint">{t("chan.quality.freightLabel")}</span>
+              <span>{t(channel.flipsAcrossFreight ? "chan.quality.freightFlips" : "chan.quality.freightHolds")}</span>
             </li>
             <li className="flex gap-2">
-              <span className="shrink-0 text-faint">Weight data</span>
+              <span className="shrink-0 text-faint">{t("chan.quality.weightLabel")}</span>
               <span>
                 {channel.uvYears > 0
-                  ? `Net weight reported on both sides in ${channel.uvYears} of ${channel.comparableYears} comparable years.`
-                  : "No year has net weight on both sides — quantity-based checks are unavailable for this channel."}
+                  ? fill(t("chan.quality.weightSome"), { k: channel.uvYears, n: channel.comparableYears })
+                  : t("chan.quality.weightNone")}
               </span>
             </li>
           </ul>
@@ -335,7 +355,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
               <li key={a.title} className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
                 <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center text-[11px] font-medium"
                   style={{ color: s.color, borderColor: `color-mix(in srgb, ${s.color} 40%, transparent)`, background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
-                  {s.label}
+                  {t(s.label)}
                 </span>
                 <span className="min-w-[12rem] font-medium">{a.title}</span>
                 <span className="basis-full text-muted md:min-w-0 md:flex-1 md:basis-0">{a.note}</span>
@@ -347,13 +367,9 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
 
       {/* 8. interpretation narrative */}
       <section className="card border-l-2 border-l-[var(--color-accent)] p-5">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">Interpretation</h2>
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">{t("chan.interpretation")}</h2>
         <p className="text-[15px] leading-relaxed text-muted">{narrative}</p>
-        <p className="mt-3 text-xs text-faint">
-          A statistical screening assessment generated from measured mirror data (UN Comtrade, {period}). Discrepancies are screening
-          signals for reconciliation and review — establishing any violation requires declarations, audit or inspection, which open
-          trade statistics cannot provide.
-        </p>
+        <p className="mt-3 text-xs text-faint">{fill(t("chan.interpretation.note"), { period })}</p>
       </section>
     </div>
   );

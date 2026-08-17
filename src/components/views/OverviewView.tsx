@@ -669,7 +669,9 @@ function RankedBlock({
 }) {
   return (
     <div>
-      <p className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-medium text-faint">
+      {/* the HS tier is the reader's orientation inside the top-10 block, so it
+          carries ink weight rather than sitting as a faint micro-label */}
+      <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
         {title}
         <InfoTip text={hint} />
       </p>

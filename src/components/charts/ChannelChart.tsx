@@ -5,6 +5,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { YearRow } from "@/lib/dataset";
 import { COLORS, fmtUSDFull } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { BAR_SPEC, baseGrid, baseTooltip, catAxis, moneyAxisFormatter, valueAxis } from "@/lib/echartBase";
 
 interface Props {
@@ -25,13 +26,16 @@ interface Props {
  * never drawn as a zero flow.
  */
 export default function ChannelChart({ years, windowYears, partner }: Props) {
+  const { t } = useI18n();
+  const fill = (str: string, vals: Record<string, string>) =>
+    Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(v), str);
   const byYear = new Map(years.map((r) => [r.y, r]));
 
   const option = useMemo<EChartsOption>(() => {
     const pe = windowYears.map((y) => byYear.get(y)?.pe ?? null);
     const ui = windowYears.map((y) => byYear.get(y)?.ui ?? null);
-    const peName = `${partner} reported (exports, FOB)`;
-    const uiName = "Uzbekistan recorded (imports, CIF)";
+    const peName = fill(t("chart.partnerReportedExports"), { name: partner });
+    const uiName = t("chart.uzbRecordedImports");
     return {
       backgroundColor: "transparent",
       grid: baseGrid,
@@ -45,14 +49,14 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           const y = Number(ps[0].axisValue);
           const row = byYear.get(y);
           if (!row) {
-            return `<strong>${y}</strong><br/>Partner data missing — the pair is not comparable this year;<br/>not treated as a zero gap.`;
+            return `<strong>${y}</strong><br/>${t("chart.partnerMissing")}`;
           }
           const rows = ps
             .filter((p) => p.value != null)
             .map((p) => `${p.marker} ${p.seriesName}: <span style="font-family:ui-monospace,monospace">${fmtUSDFull(p.value as number)}</span>`);
           const signedColor = row.signed >= 0 ? COLORS.positive : COLORS.reverse;
           rows.push(
-            `Signed discrepancy (expected CIF − UZB): <b style="color:${signedColor}">${fmtUSDFull(row.signed)}</b>`,
+            `${t("chart.signedDiscrepancy")}: <b style="color:${signedColor}">${fmtUSDFull(row.signed)}</b>`,
           );
           return [`<strong>${y}</strong>`, ...rows].join("<br/>");
         },
@@ -91,7 +95,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
     };
     // byYear is derived from `years`; windowYears/partner are the remaining inputs
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [years, windowYears, partner]);
+  }, [years, windowYears, partner, t]);
 
   const gapOption = useMemo<EChartsOption>(() => {
     const signed = windowYears.map((y) => {
@@ -120,8 +124,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           if (!Array.isArray(ps) || ps.length === 0) return "";
           const y = Number(ps[0].axisValue);
           const row = byYear.get(y);
-          if (!row) return `<strong>${y}</strong><br/>Not comparable — no gap computed.`;
-          return `<strong>${y}</strong><br/>Signed discrepancy (expected CIF − UZB): <span style="font-weight:600">${fmtUSDFull(row.signed)}</span>`;
+          if (!row) return `<strong>${y}</strong><br/>${t("common.notComparable")}`;
+          return `<strong>${y}</strong><br/>${t("chart.signedDiscrepancy")}: <span style="font-weight:600">${fmtUSDFull(row.signed)}</span>`;
         },
       },
       xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 10 } },
@@ -143,7 +147,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
       ],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [years, windowYears]);
+  }, [years, windowYears, t]);
 
   return (
     <div className="card p-3">
@@ -153,10 +157,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
       <div className="mt-1" style={{ height: 110 }}>
         <EChart option={gapOption} />
       </div>
-      <p className="px-1 text-[11px] text-faint">
-        Signed discrepancy (expected CIF − UZB) per year — above zero the partner reports more than
-        Uzbekistan records; below zero the reverse.
-      </p>
+      <p className="px-1 text-[11px] text-faint">{t("chart.signedCaption")}</p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border-soft)] px-1 pt-2 text-[11px]">
         {windowYears.map((y) => {
           const has = byYear.has(y);
@@ -170,15 +171,13 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
                 color: has ? "var(--color-foreground)" : "var(--color-faint)",
                 background: has ? "color-mix(in srgb, var(--color-ok) 8%, transparent)" : "transparent",
               }}
-              title={has ? `${y}: both sides reported — comparable` : `${y}: partner data missing — not comparable, no gap computed`}
+              title={`${y}: ${t(has ? "chart.yearComparable" : "chart.yearMissing")}`}
             >
               {has ? "●" : "○"} {y}
             </span>
           );
         })}
-        <span className="ml-2 text-faint">
-          Hollow years have no partner reference: the pair is not comparable there and no discrepancy is computed — missing data is never treated as a zero gap.
-        </span>
+        <span className="ml-2 text-faint">{t("chart.hollowNote")}</span>
       </div>
     </div>
   );
