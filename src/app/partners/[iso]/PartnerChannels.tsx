@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  SectionTitle, BandBadge, ComponentChip, RiskScore, RobustnessBadge,
+  SectionTitle, BandBadge, RiskScore, RobustnessBadge,
 } from "@/components/ui";
 import { hs4Label, hsLabel, type RiskBand, type Robustness } from "@/lib/dataset";
 import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
@@ -170,8 +170,6 @@ export default function PartnerChannels({
                 <div key={c.cmd} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
                   <RiskScore score={c.mtrs} band={c.band} />
                   <BandBadge band={c.band} />
-                  <ComponentChip kind="g" value={c.abnormalGap} />
-                  <ComponentChip kind="p" value={c.persistence} />
                   <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline" title={c.label}>
                     {c.label} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
                   </Link>

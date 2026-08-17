@@ -248,11 +248,16 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
 
   const header = (
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-        {t("risk.profile.introA")} <strong className="text-foreground">{t("risk.profile.baseWord")}</strong>{" "}
-        {t("risk.profile.introB")} {t("risk.profile.channelDef")} {t(LEVEL_LABEL_KEYS[level])} ·{" "}
-        {yearsLabel(filter.years)}.
-      </p>
+      <div className="max-w-3xl space-y-1.5">
+        <p className="text-[13px] leading-relaxed text-muted">
+          {t("risk.profile.introA")} <strong className="text-foreground">{t("risk.profile.baseWord")}</strong>{" "}
+          {t("risk.profile.introB")} {t("risk.profile.channelDef")} {t(LEVEL_LABEL_KEYS[level])} ·{" "}
+          {yearsLabel(filter.years)} · {fmtNum(n)} {t("risk.channelsCount")}.
+        </p>
+        {/* the level tabs and the page filters both change WHICH channels these
+            statistics describe, which is the usual source of confusion here */}
+        <p className="text-[11.5px] leading-relaxed text-faint">{t("risk.profile.whyChanges")}</p>
+      </div>
       <LevelTabs level={level} onChange={setLevel} label={null} />
     </div>
   );

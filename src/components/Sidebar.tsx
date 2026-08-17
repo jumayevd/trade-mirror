@@ -17,14 +17,11 @@ const REFERENCE: { href: string; label: LocaleKey }[] = [
   { href: "/quality", label: "nav.quality" },
 ];
 
-function Section({ title, links, path }: { title?: string; links: { href: string; label: LocaleKey }[]; path: string }) {
+function Section({ links, path }: { links: { href: string; label: LocaleKey }[]; path: string }) {
   const { t } = useI18n();
   const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
   return (
     <div className="mb-6">
-      {title && (
-        <div className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[rgba(255,255,255,0.45)]">{title}</div>
-      )}
       <nav className="space-y-0.5">
         {links.map((l) => {
           const active = isActive(l.href);
@@ -75,15 +72,9 @@ export default function Sidebar() {
             <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
           </span>
         </Link>
-        {/* One list: the reference pages read as the tail rather than a stranded group. */}
-        <Section title={t("nav.analysisGroup")} links={[...ANALYSIS, ...REFERENCE]} path={path} />
-        <div className="mt-auto space-y-1.5 border-t border-[rgba(255,255,255,0.12)] px-3 pt-4 text-[10px] leading-relaxed text-[rgba(255,255,255,0.45)]">
-          <div className="text-[13px] font-bold text-[var(--color-gold)]">M − X <span className="text-[9.5px] font-semibold uppercase tracking-wider text-[rgba(255,255,255,0.45)]">{t("nav.signConvention")}</span></div>
-          <div>{t("nav.attribution")}</div>
-          <div title="Tariff & behavioural evidence (econometric tests) will be published after a reliable HS6-level tariff dataset is added.">
-            {t("nav.evidence")} · {t("nav.planned")}
-          </div>
-        </div>
+        {/* One list, no group heading: with every page in it the heading only
+            repeated what the list already showed. */}
+        <Section links={[...ANALYSIS, ...REFERENCE]} path={path} />
       </div>
     </aside>
   );

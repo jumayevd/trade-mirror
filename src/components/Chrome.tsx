@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { DATA_VERSION, METHODOLOGY_VERSION } from "@/lib/dataset";
 import { meta } from "@/lib/dataset";
 
 /**
@@ -23,16 +21,10 @@ export function SiteFooter() {
   const { t } = useI18n();
   return (
     <footer className="border-t border-[var(--color-border)] px-5 py-5 text-xs text-faint">
-      <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          {t("common.source")} · {t("chrome.mirrorStatistics")} ·{" "}
-          <Link href="/methodology" className="underline hover:text-foreground">
-            {t("nav.methodology")} v{METHODOLOGY_VERSION}
-          </Link>
-        </span>
-        <span>
-          {t("meta.dataVersion")} {DATA_VERSION}
-        </span>
+      {/* Source attribution only. The data and methodology versions live in the
+          CSV export header, where they travel with the numbers themselves. */}
+      <div className="mx-auto w-full max-w-[var(--shell-max)]">
+        <span>{t("common.source")}</span>
       </div>
     </footer>
   );
