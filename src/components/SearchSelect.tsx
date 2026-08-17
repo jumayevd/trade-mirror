@@ -131,7 +131,7 @@ export default function SearchSelect({
       </button>
 
       {open && (
-        <div className={`absolute z-40 mt-1 w-[min(22rem,80vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
+        <div className={`absolute z-40 mt-1 w-[min(32rem,90vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
           <input
             ref={input}
             type="search"
@@ -155,12 +155,14 @@ export default function SearchSelect({
                   aria-selected={o.value === value}
                   onMouseEnter={() => setActive(i)}
                   onClick={() => commit(o.value)}
-                  className={`flex w-full items-baseline gap-2 px-2.5 py-1 text-left text-[13px] ${
+                  title={o.label}
+                  className={`flex w-full items-start gap-2 px-2.5 py-1 text-left text-[13px] ${
                     i === active ? "bg-[var(--color-panel-2)]" : ""
                   } ${o.value === value ? "font-semibold text-foreground" : "text-muted hover:text-foreground"}`}
                 >
-                  {o.code && <span className="tabular shrink-0 text-[11px] text-faint">{o.code}</span>}
-                  <span className="truncate">{o.label}</span>
+                  {o.code && <span className="tabular mt-px shrink-0 text-[11px] text-faint">{o.code}</span>}
+                  {/* long HS descriptions wrap instead of losing their tail */}
+                  <span className="min-w-0 leading-snug break-words">{o.label}</span>
                 </button>
               </li>
             ))}

@@ -7,7 +7,8 @@ import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
 import { SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, RISK_CONFIG, type PartnerMeta } from "@/lib/dataset";
+import { meta, partnerName, regionLabel, RISK_CONFIG, type PartnerMeta } from "@/lib/dataset";
+import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSDFull, COLORS } from "@/lib/format";
 import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
@@ -41,7 +42,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-full"
         style={{ background: COLORS.good }}
-        title={fill(t("qual.cell.reported"), { name: p.name, year: y })}
+        title={fill(t("qual.cell.reported"), { name: partnerName(p.iso3), year: y })}
       />
     );
   }
@@ -50,7 +51,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
       <span
         className="mx-auto block h-2.5 w-2.5 rounded-sm border-2"
         style={{ borderColor: "var(--color-serious)" }}
-        title={fill(t("qual.cell.stopMarker"), { name: p.name, year: p.lastReportedYear })}
+        title={fill(t("qual.cell.stopMarker"), { name: partnerName(p.iso3), year: p.lastReportedYear })}
       />
     );
   }
@@ -58,7 +59,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     return (
       <span
         className="mx-auto block h-[3px] w-2.5 rounded-full bg-[var(--color-border)]"
-        title={fill(t("qual.cell.stopped"), { name: p.name, year: p.lastReportedYear })}
+        title={fill(t("qual.cell.stopped"), { name: partnerName(p.iso3), year: p.lastReportedYear })}
       />
     );
   }
@@ -66,7 +67,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
     <span
       className="mx-auto block h-2.5 w-2.5 rounded-full border"
       style={{ borderColor: COLORS.baseline }}
-      title={fill(t("qual.cell.missing"), { name: p.name, year: y })}
+      title={fill(t("qual.cell.missing"), { name: partnerName(p.iso3), year: y })}
     />
   );
 }
@@ -114,11 +115,16 @@ function CoverageLegend() {
  */
 export default function QualityView() {
   const { series } = useFilter();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
+  // Partner names are data-derived: translate them, and break coverage ties in
+  // the reader's own alphabet rather than the English one.
   const partnersByCoverage = useMemo(
-    () => [...meta.partners].sort((a, b) => b.coverage - a.coverage || a.name.localeCompare(b.name)),
-    [],
+    () => labelsFor(lang, () =>
+      [...meta.partners]
+        .map((p) => ({ ...p, name: partnerName(p.iso3) }))
+        .sort((a, b) => b.coverage - a.coverage || a.name.localeCompare(b.name, lang))),
+    [lang],
   );
   const transitPartners = useMemo(() => partnersByCoverage.filter((p) => p.transit), [partnersByCoverage]);
 
@@ -302,7 +308,7 @@ export default function QualityView() {
                         <TransitTag />
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-muted">{p.region}</td>
+                    <td className="px-3 py-2 text-muted">{regionLabel(p.region)}</td>
                     <td className="px-3 py-2">
                       <span className="flex flex-wrap items-center gap-1.5">
                         <QualityTag tier={p.tier} />

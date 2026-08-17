@@ -98,7 +98,7 @@ export default function MultiSelect({
         </button>
 
         {open && (
-          <div className={`absolute z-40 mt-1 w-[min(24rem,85vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
+          <div className={`absolute z-40 mt-1 w-[min(34rem,92vw)] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] shadow-lg ${alignRight ? "right-0" : "left-0"}`}>
             {searchable && (
               <input
                 ref={input}
@@ -119,7 +119,8 @@ export default function MultiSelect({
                 return (
                   <li key={o.value}>
                     <label
-                      className={`flex cursor-pointer items-baseline gap-2 px-2.5 py-1 text-[13px] hover:bg-[var(--color-panel-2)] ${
+                      title={o.label}
+                      className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 text-[13px] hover:bg-[var(--color-panel-2)] ${
                         on ? "font-medium text-foreground" : "text-muted"
                       }`}
                     >
@@ -127,10 +128,13 @@ export default function MultiSelect({
                         type="checkbox"
                         checked={on}
                         onChange={() => toggle(o.value)}
-                        className="h-3 w-3 shrink-0 accent-[var(--color-primary)]"
+                        className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
                       />
-                      {o.code && <span className="tabular shrink-0 text-[11px] text-faint">{o.code}</span>}
-                      <span className="truncate">{o.label}</span>
+                      {o.code && <span className="tabular mt-px shrink-0 text-[11px] text-faint">{o.code}</span>}
+                      {/* HS descriptions run long: wrap them rather than cutting the
+                          distinguishing tail, which is often the whole difference
+                          between two neighbouring codes */}
+                      <span className="min-w-0 leading-snug break-words">{o.label}</span>
                     </label>
                   </li>
                 );

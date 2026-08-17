@@ -206,6 +206,87 @@ export default function OverviewView() {
     };
   }, [data, t]);
 
+  /**
+   * Both directions in one frame. The rest of the dashboard screens the positive
+   * side only, which leaves an obvious question unanswered: how big is the other
+   * side, and do the two cancel? Diverging bars answer it directly — positive up,
+   * reverse down, on a shared axis so their heights are comparable — and the net
+   * line says whether what is left over is the whole of one side or the residue
+   * of two that nearly matched.
+   */
+  const twoSidedOption = useMemo<EChartsOption>(() => {
+    const firstLive = data.annual.findIndex((a) => a.comparablePartners > 0);
+    const rows = firstLive > 0 ? data.annual.slice(firstLive) : data.annual;
+    const periods = rows.map((a) => a.label ?? String(a.year));
+    const positiveName = t("kpi.positive");
+    const reverseName = t("qual.heatmap.reverse");
+    const netName = t("ovw.twoSided.net");
+    const dots = rows.length > 24 ? 0 : 7;
+    return {
+      backgroundColor: "transparent",
+      textStyle: baseTextStyle,
+      grid: { ...baseGrid, top: 40 },
+      legend: {
+        top: 4,
+        icon: "roundRect",
+        itemWidth: 14,
+        itemHeight: 8,
+        textStyle: { color: COLORS.text, fontSize: 11 },
+      },
+      tooltip: {
+        ...baseTooltip(),
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (raw: unknown) => {
+          const items = (Array.isArray(raw) ? raw : [raw]) as {
+            axisValue?: string | number; seriesName?: string; value?: number; marker?: string;
+          }[];
+          if (items.length === 0) return "";
+          const period = String(items[0]?.axisValue ?? "");
+          // the reverse side is plotted negative to make it diverge; report it as a magnitude
+          const lines = items.map((it) => {
+            const v = typeof it.value === "number" ? fmtUSDFull(Math.abs(it.value)) : t("common.notComparable");
+            return `<div style="margin-top:2px">${it.marker ?? ""}${it.seriesName}: <span style="font-weight:600">${v}</span></div>`;
+          });
+          return `<div style="font-weight:600;margin-bottom:4px">${period}</div>${lines.join("")}`;
+        },
+      },
+      xAxis: catAxis(periods),
+      yAxis: valueAxis("USD"),
+      series: [
+        {
+          name: positiveName,
+          type: "bar",
+          stack: "gap",
+          data: rows.map((a) => Math.round(a.positive)),
+          barMaxWidth: 24,
+          itemStyle: { color: COLORS.positive, borderRadius: [3, 3, 0, 0] },
+          z: 2,
+        },
+        {
+          name: reverseName,
+          type: "bar",
+          stack: "gap",
+          data: rows.map((a) => -Math.round(a.reverse)),
+          barMaxWidth: 24,
+          itemStyle: { color: COLORS.goldDeep, borderRadius: [0, 0, 3, 3] },
+          z: 2,
+        },
+        {
+          name: netName,
+          type: "line",
+          data: rows.map((a) => Math.round(a.positive - a.reverse)),
+          smooth: 0.3,
+          symbol: "circle",
+          symbolSize: dots,
+          lineStyle: { width: 2, color: COLORS.transit },
+          itemStyle: { color: COLORS.transit, borderColor: COLORS.surface, borderWidth: 2 },
+          z: 3,
+        },
+      ],
+    };
+  }, [data, t]);
+
 
   return (
     <div className="space-y-6">
@@ -301,6 +382,19 @@ export default function OverviewView() {
         />
         <div className="card p-4">
           <EChart option={annualOption} style={{ height: 300 }} />
+        </div>
+      </section>
+
+      {/* 3b. the same window, both directions — the one place the reverse side is shown */}
+      <section>
+        <SectionTitle
+          title={t("ovw.twoSided.title")}
+          desc={t("ovw.twoSided.desc")}
+          right={<InfoTip text={t("ovw.twoSided.info")} />}
+        />
+        <div className="card p-4">
+          <EChart option={twoSidedOption} style={{ height: 300 }} />
+          <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
         </div>
       </section>
 

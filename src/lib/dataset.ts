@@ -614,7 +614,14 @@ export interface Aggregate {
     pe: number; ui: number;
     /** Positive channel-years only: pePos × (1 + f) − uiPos = positive exactly. */
     pePos: number; uiPos: number;
-    positive: number; comparablePartners: number;
+    positive: number;
+    /**
+     * The other direction, summed the same way: channel-years where Uzbekistan
+     * recorded MORE than the partner's freight-adjusted exports. Reported so the
+     * two sides can be seen against each other; positive is what gets screened.
+     */
+    reverse: number;
+    comparablePartners: number;
   }[];
   concentration: { name: string; partner: string; iso3: string; cmd: string; value: number; share: number; cumShare: number }[];
   movers: {
@@ -842,16 +849,19 @@ export function aggregate(f: Filter): Aggregate {
     .filter((c) => c.value > 0).sort((a, b) => b.value - a.value);
 
   // ---- annual (positive discrepancy, plus comparable partner count) ----
-  const yAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; partners: Set<string> }>();
+  const yAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; reverse: number; partners: Set<string> }>();
+  const emptyYear = () => ({ pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, reverse: 0, partners: new Set<string>() });
   for (const c of rollupBase) for (const yr of c.years) {
-    const e = yAgg.get(yr.y) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
-    e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed); e.partners.add(c.partnerIso);
+    const e = yAgg.get(yr.y) ?? emptyYear();
+    e.pe += yr.pe; e.ui += yr.ui;
+    e.positive += pos(yr.signed); e.reverse += pos(-yr.signed);
+    e.partners.add(c.partnerIso);
     if (yr.signed > 0) { e.pePos += yr.pe; e.uiPos += yr.ui; }
     yAgg.set(yr.y, e);
   }
   const annual: Aggregate["annual"] = years.map((y) => {
-    const e = yAgg.get(y) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
-    return { year: y, pe: e.pe, ui: e.ui, pePos: e.pePos, uiPos: e.uiPos, positive: e.positive, comparablePartners: e.partners.size };
+    const e = yAgg.get(y) ?? emptyYear();
+    return { year: y, pe: e.pe, ui: e.ui, pePos: e.pePos, uiPos: e.uiPos, positive: e.positive, reverse: e.reverse, comparablePartners: e.partners.size };
   });
 
   /*
@@ -864,13 +874,14 @@ export function aggregate(f: Filter): Aggregate {
   if (f.granularity === "month") {
     const K = 1 + f.cif;
     const wantM = f.months.length ? new Set(f.months) : null;
-    const mAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; partners: Set<string> }>();
+    const mAgg = new Map<number, { pe: number; ui: number; pePos: number; uiPos: number; positive: number; reverse: number; partners: Set<string> }>();
     const bump = (key: number, p: string, pe: number, ui: number) => {
-      const e = mAgg.get(key) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, partners: new Set<string>() };
+      const e = mAgg.get(key) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, reverse: 0, partners: new Set<string>() };
       e.pe += pe; e.ui += ui;
       if (pe > NOISE && ui > NOISE) {
         const signed = pe * K - ui;
         e.positive += pos(signed);
+        e.reverse += pos(-signed);
         if (signed > 0) { e.pePos += pe; e.uiPos += ui; }
         e.partners.add(p);
       }
@@ -921,7 +932,7 @@ export function aggregate(f: Filter): Aggregate {
         year, month,
         label: `${year}-${String(month).padStart(2, "0")}`,
         pe: e.pe, ui: e.ui, pePos: e.pePos, uiPos: e.uiPos,
-        positive: e.positive, comparablePartners: e.partners.size,
+        positive: e.positive, reverse: e.reverse, comparablePartners: e.partners.size,
       });
     }
   }
