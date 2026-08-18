@@ -14,6 +14,13 @@ import {
   type QuantityBasis, type QuantityRow,
 } from "@/lib/quantity";
 
+/** Series-identity dot for column headers — the text itself stays ink (rule 5). */
+function HeadDot({ color }: { color: string }) {
+  return (
+    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
+  );
+}
+
 /**
  * Quantity & Price Analysis — HS6 only, and only where both books report the
  * same line, month, partner and quantity unit. Unit price is Σ value ÷ Σ
@@ -110,20 +117,21 @@ export default function QuantityView() {
     reset(() => { setBasis(b); setMonths([]); });
   };
 
-  const th = "px-3 py-2 text-left text-[12px] font-semibold text-faint whitespace-nowrap";
+  // same cell scale as the ranked-components table, so the two read as one system
+  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
-  const td = "px-3 py-2 align-middle text-[15px]";
+  const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
 
   return (
     <div className="space-y-6">
       {/* header */}
       <section className="space-y-1.5">
-        <p className="text-[11px] font-medium text-faint">
+        <p className="text-[10.5px] font-medium text-faint">
           UN Comtrade · {t("qty.header.kicker")}
         </p>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.quantity")}</h1>
-        <p className="max-w-3xl text-[14px] leading-relaxed text-muted">
+        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
           {t("qty.intro")}{" "}
           <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">
             {t("nav.methodology")} →
@@ -134,7 +142,7 @@ export default function QuantityView() {
       {/* controls */}
       <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-3">
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
           <Segmented<QuantityBasis>
             ariaLabel={t("filter.granularity")}
             value={basis}
@@ -172,19 +180,19 @@ export default function QuantityView() {
           allLabel={t("filter.all")}
         />
 
-        <label className="flex items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex items-center gap-1.5 text-[12px] text-muted">
           {t("qty.sortLabel")}
           <select
             value={dir}
             onChange={(e) => reset(() => setDir(e.target.value as SortDir))}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
             <option value="asc">{t("risk.sortAsc")}</option>
           </select>
         </label>
 
-        <span className="tabular text-[13px] text-faint">
+        <span className="tabular text-[12px] text-faint">
           {rows.length === 0
             ? `0 ${t("qty.rowsCount")}`
             : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} / ${rows.length.toLocaleString()} ${t("qty.rowsCount")}`}
@@ -202,7 +210,7 @@ export default function QuantityView() {
         {failed ? (
           <EmptyState text={t("qty.loadFailed")} />
         ) : !ready ? (
-          <p className="card p-4 text-[14px] text-muted">{t("qty.loading")}</p>
+          <p className="card p-4 text-[13px] text-muted">{t("qty.loading")}</p>
         ) : rows.length === 0 ? (
           <EmptyState />
         ) : (
@@ -218,7 +226,7 @@ export default function QuantityView() {
                   <th className={th}>{t("qty.th.unit")}</th>
                   <th className={thNum}>{t("qty.th.importPrice")}</th>
                   <th className={thNum}>{t("qty.th.exportPrice")}</th>
-                  <th className={thNum}>{t("qty.th.diff")}</th>
+                  <th className={thNum}><HeadDot color={COLORS.positive} />{t("qty.th.diff")}</th>
                 </tr>
               </thead>
               <tbody className="zebra">
@@ -232,7 +240,7 @@ export default function QuantityView() {
                     <td className={`${td} tabular text-faint`}>{r.cmd}</td>
                     <td className={`${td} max-w-[300px]`}>
                       <span title={r.product}>
-                        {r.product.length > 46 ? `${r.product.slice(0, 46)}…` : r.product}
+                        {r.product.length > 44 ? `${r.product.slice(0, 44)}…` : r.product}
                       </span>
                     </td>
                     <td className={tdNum} title={fmtUSDFull(r.impValue)}>{fmtQty(r.impQty)}</td>
@@ -242,7 +250,7 @@ export default function QuantityView() {
                     <td className={tdNum}>{fmtPrice(r.expPrice)}</td>
                     <td
                       className={`${tdNum} font-semibold`}
-                      style={{ color: r.diff > 0 ? COLORS.positive : r.diff < 0 ? COLORS.navy2 : undefined }}
+                      style={{ color: r.diff > 0 ? COLORS.positive : r.diff < 0 ? COLORS.reverse : undefined }}
                     >
                       {fmtSignedPrice(r.diff)}
                     </td>
@@ -256,12 +264,12 @@ export default function QuantityView() {
         {/* pagination */}
         {rows.length > 0 && (
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-1.5 text-[13px] text-muted">
+            <label className="flex items-center gap-1.5 text-[12px] text-muted">
               {t("risk.rowsPerPage")}
               <select
                 value={pageSize}
                 onChange={(e) => reset(() => setPageSize(+e.target.value))}
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
               >
                 {PAGE_SIZES.map((n) => (
                   <option key={n} value={n}>{n}</option>
