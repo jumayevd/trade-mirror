@@ -594,6 +594,11 @@ export interface PartnerAgg {
   observed: ObservedTotals;
   /** Channels in the Critical or High MTRS band. */
   channels: number; flagged: number; mtrs: number;
+  /**
+   * Per-year totals over every COMPARABLE channel-year (both books reported),
+   * before the screening filters — so the yearly positive figures sum to the
+   * headline total, while `posT` above covers the ranked channels only.
+   */
   byYear: { year: number; pe: number; ui: number; positive: number; reported: boolean }[];
   topChapters: { chapter: string; label: string; value: number; share: number }[];
   trend: number;
@@ -790,6 +795,16 @@ export function aggregate(f: Filter): Aggregate {
   // ---- partner rollups ----
   const pMap = new Map<string, Channel[]>();
   for (const c of rollup) (pMap.get(c.partnerIso) ?? pMap.set(c.partnerIso, []).get(c.partnerIso)!).push(c);
+  /*
+   * The per-year series is built from the PRE-SCREEN channels, not the ranked
+   * ones. It feeds the reported-vs-recorded comparison, whose job is to show
+   * what each book holds; restricting it to channels that happen to carry a
+   * positive gap somewhere in the window would silently drop the chapters
+   * where Uzbekistan recorded more — exactly the context the comparison needs.
+   * Its yearly positive figures therefore tie to the headline total.
+   */
+  const pBaseMap = new Map<string, Channel[]>();
+  for (const c of rollupBase) (pBaseMap.get(c.partnerIso) ?? pBaseMap.set(c.partnerIso, []).get(c.partnerIso)!).push(c);
   // as-reported totals per partner, read from the cells rather than the paired channels
   const obsByPartner = new Map<string, Cell[]>();
   for (const r of fc) (obsByPartner.get(r.p) ?? obsByPartner.set(r.p, []).get(r.p)!).push(r);
@@ -797,7 +812,7 @@ export function aggregate(f: Filter): Aggregate {
   for (const [iso, cs] of pMap) {
     const pm = pMeta.get(iso)!;
     const byYearMap = new Map<number, { pe: number; ui: number; positive: number }>();
-    for (const c of cs) for (const yr of c.years) {
+    for (const c of pBaseMap.get(iso) ?? []) for (const yr of c.years) {
       const e = byYearMap.get(yr.y) ?? { pe: 0, ui: 0, positive: 0 };
       e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed);
       byYearMap.set(yr.y, e);
