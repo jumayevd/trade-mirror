@@ -11,7 +11,8 @@
     "data:risk": "tsx scripts/build-risk-index.ts",
     "data:labels": "tsx scripts/build-labels.ts && python scripts/check-labels.py",
     "data:verify": "tsx scripts/verify-against-source.ts",
-    "data:monthly": "python scripts/extract-monthly.py && tsx scripts/build-monthly.ts"
+    "data:monthly": "python scripts/extract-monthly.py && tsx scripts/build-monthly.ts",
+    "data:quantity": "python scripts/extract-quantity.py && tsx scripts/verify-quantity.ts"
   },
   "dependencies": {
     "echarts": "^5.6.0",

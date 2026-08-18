@@ -9,3 +9,4 @@
 .claude
 node_modules
 .next
+/comtrade_monthly_chunks
