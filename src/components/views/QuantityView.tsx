@@ -12,7 +12,7 @@ import { hsFullText } from "@/lib/dataset";
 import { fmtNum } from "@/lib/format";
 import {
   ensureQuantity, quantityFailed, quantityMonths, quantityPartners, quantityReady,
-  quantityRows, quantityVer, quantityYears, subscribeQuantity,
+  quantityCoverage, quantityRows, quantityVer, quantityYears, subscribeQuantity,
   QUANTITY_FLOOR, QUANTITY_FREIGHT,
   type QuantityBasis, type QuantityRow,
 } from "@/lib/quantity";
@@ -49,6 +49,20 @@ function fmtPrice(v: number): string {
   const abs = Math.abs(v);
   const digits = abs >= 1000 ? 0 : abs >= 1 ? 2 : 4;
   return `$${new Intl.NumberFormat("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v)}`;
+}
+
+/** Month numbers as contiguous named runs: [1..10] -> "January–October". */
+function monthRuns(months: number[], name: (m: number) => string): string {
+  const runs: string[] = [];
+  let start = months[0];
+  let prev = months[0];
+  for (const m of months.slice(1)) {
+    if (m === prev + 1) { prev = m; continue; }
+    runs.push(start === prev ? name(start) : `${name(start)}–${name(prev)}`);
+    start = prev = m;
+  }
+  runs.push(start === prev ? name(start) : `${name(start)}–${name(prev)}`);
+  return runs.join(", ");
 }
 
 function fmtSignedPrice(v: number): string {
@@ -98,6 +112,21 @@ export default function QuantityView() {
     () => availableMonths.map((m) => ({ value: String(m), label: t(`month.${m}` as never) })),
     [availableMonths, t],
   );
+
+  /**
+   * Years in the selection that do not carry twelve months. A yearly total for
+   * one of these covers less of the year, so the view says so rather than
+   * letting it read as a full-year figure beside the complete ones.
+   */
+  const partialYears = useMemo(() => {
+    if (basis !== "year" || !ready) return [];
+    const cover = quantityCoverage();
+    return years
+      .map((y) => ({ year: y, months: cover.get(y) ?? [] }))
+      .filter((e) => e.months.length > 0 && e.months.length < 12)
+      .sort((a, b) => a.year - b.year);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basis, years, ready, ver]);
 
   const rows = useMemo<QuantityRow[]>(() => {
     if (!ready || years.length === 0) return [];
@@ -211,6 +240,16 @@ export default function QuantityView() {
           desc={t("qty.table.desc")}
           right={<InfoTip text={t("qty.table.info")} />}
         />
+
+        {partialYears.length > 0 && (
+          <p className="max-w-3xl text-xs leading-relaxed text-faint">
+            <span className="font-medium text-muted">{t("qty.partial.lead")}</span>{" "}
+            {partialYears
+              .map((e) => `${e.year} — ${e.months.length}/12 (${monthRuns(e.months, (m) => t(`month.${m}` as never))})`)
+              .join("; ")}
+            . {t("qty.partial.note")}
+          </p>
+        )}
 
         {failed ? (
           <EmptyState text={t("qty.loadFailed")} />

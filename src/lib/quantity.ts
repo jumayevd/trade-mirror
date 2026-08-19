@@ -108,6 +108,29 @@ export function ensureQuantity(): void {
 /** Years the layer carries, ascending. Empty until the payload lands. */
 export const quantityYears = (): number[] => payload?.years ?? [];
 
+/**
+ * Months each year actually carries, measured from the rows rather than assumed.
+ * Uzbekistan's import book stops after October 2025 and the chunks reach only
+ * April 2026, so a yearly total is not always a full year and the view has to
+ * be able to say which ones are short. Cached per payload version — this walks
+ * every row.
+ */
+let coverageCache: { ver: number; map: Map<number, number[]> } | null = null;
+export function quantityCoverage(): Map<number, number[]> {
+  if (!payload) return new Map();
+  if (coverageCache && coverageCache.ver === version) return coverageCache.map;
+  const seen = new Map<number, Set<number>>();
+  for (const row of payload.r) {
+    const y = payload.y0 + Math.floor(row[2] / 12);
+    let set = seen.get(y);
+    if (!set) { set = new Set<number>(); seen.set(y, set); }
+    set.add((row[2] % 12) + 1);
+  }
+  const map = new Map([...seen].map(([y, set]) => [y, [...set].sort((a, b) => a - b)] as const));
+  coverageCache = { ver: version, map: map as Map<number, number[]> };
+  return coverageCache.map;
+}
+
 /** Months present for the given years — the book has gaps, so this is measured, not assumed. */
 export function quantityMonths(years: number[]): number[] {
   if (!payload) return [];
