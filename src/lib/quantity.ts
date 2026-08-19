@@ -11,7 +11,7 @@
  * opened, following the same store pattern as the monthly HS6 detail.
  */
 import { tCountry, tText } from "@/lib/labels";
-import { hs6Label, partnerMetaOf, partnerName as datasetPartnerName } from "@/lib/dataset";
+import { hs6Label, meta, partnerMetaOf, partnerName as datasetPartnerName, RISK_CONFIG } from "@/lib/dataset";
 
 export interface PackedQuantity {
   v: number;
@@ -28,6 +28,22 @@ export interface PackedQuantity {
 
 export type QuantityBasis = "year" | "month";
 
+/**
+ * Freight uplift from the partner's FOB value to a CIF-comparable one, at the
+ * dashboard's central scenario. Uzbekistan records imports CIF and partners
+ * record exports FOB, so without this the price difference would carry the
+ * freight margin before any misinvoicing.
+ */
+export const QUANTITY_FREIGHT = meta.cif.central;
+
+/**
+ * Both sides must clear this over the selected periods. Unit price divides by
+ * quantity, so a consignment of a few units or a few grams produces a price in
+ * the millions that says nothing about valuation; the same floor the screening
+ * engine applies keeps those out of the ranking.
+ */
+export const QUANTITY_FLOOR = RISK_CONFIG.materialityFloor;
+
 export interface QuantityRow {
   key: string;
   partnerIso: string;
@@ -41,6 +57,7 @@ export interface QuantityRow {
   expValue: number;
   /** Σ value ÷ Σ quantity over the selected periods — a weighted average, never a mean of ratios. */
   impPrice: number;
+  /** Freight-adjusted: (Σ FOB value × (1 + f)) ÷ Σ quantity, so both sides are CIF-comparable. */
   expPrice: number;
   /** Import unit price − export unit price. */
   diff: number;
@@ -166,12 +183,15 @@ export function quantityRows(q: QuantityQuery): QuantityRow[] {
   }
 
   const out: QuantityRow[] = [];
+  const K = 1 + QUANTITY_FREIGHT;
   for (const [key, e] of acc) {
     if (e.iq <= 0 || e.eq <= 0) continue;
+    // both books must have moved something material over the selection
+    if (e.iv < QUANTITY_FLOOR || e.ev < QUANTITY_FLOOR) continue;
     const iso = payload.p[e.p];
     const cmd = payload.k[e.k];
     const impPrice = e.iv / e.iq;
-    const expPrice = e.ev / e.eq;
+    const expPrice = (e.ev * K) / e.eq;
     out.push({
       key,
       partnerIso: iso,

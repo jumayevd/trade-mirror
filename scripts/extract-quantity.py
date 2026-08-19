@@ -15,7 +15,7 @@ price is a weighted average and never an average of monthly ratios.
 Output: public/data/quantity-hs6.json (columnar, fetched on demand).
 Run with: npm run data:quantity
 """
-import csv, glob, io, json, os, sys
+import csv, glob, io, json, math, os, sys
 from collections import defaultdict
 
 ROOT = os.getcwd()
@@ -63,9 +63,25 @@ def read_side(path, is_import):
     return out, names, descs
 
 
-def num(x, big):
-    """Integers where the magnitude makes decimals noise, 2dp below that."""
-    return int(round(x)) if x >= big else round(x, 2)
+def qty(x):
+    """
+    Quantities to six significant figures.
+
+    A flat 2dp rule destroyed the small end: a 0.0050 kg consignment became 0.01
+    and a 0.0040 kg one became 0.00, and since unit price divides by this number
+    the error lands squarely on the rows that sort to the top. Significant
+    figures keep 129200 and 0.005 equally faithful.
+    """
+    if x == 0:
+        return 0
+    d = 6 - 1 - math.floor(math.log10(abs(x)))
+    r = round(x, d) if d > 0 else float(round(x, d))
+    return int(r) if r == int(r) else r
+
+
+def val(x):
+    """USD to the cent below $1000, whole dollars above — the ratio is what matters."""
+    return int(round(x)) if x >= 1000 else round(x, 2)
 
 
 def main():
@@ -121,7 +137,7 @@ def main():
     for (y, m, iso, code, unit), iv, iq, ev, eq in rows:
         packed.append([
             pIdx[iso], kIdx[code], (y - y0) * 12 + (m - 1), uIdx[unit],
-            num(iv, 1), num(iq, 100), num(ev, 1), num(eq, 100),
+            val(iv), qty(iq), val(ev), qty(eq),
         ])
     packed.sort(key=lambda r: (r[2], r[0], r[1]))
 

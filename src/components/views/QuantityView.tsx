@@ -9,9 +9,11 @@ import { EmptyState, InfoTip, SectionTitle, Segmented } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { fmtUSDFull, COLORS } from "@/lib/format";
 import { hsFullText } from "@/lib/dataset";
+import { fmtNum } from "@/lib/format";
 import {
   ensureQuantity, quantityFailed, quantityMonths, quantityPartners, quantityReady,
   quantityRows, quantityVer, quantityYears, subscribeQuantity,
+  QUANTITY_FLOOR, QUANTITY_FREIGHT,
   type QuantityBasis, type QuantityRow,
 } from "@/lib/quantity";
 
@@ -195,7 +197,7 @@ export default function QuantityView() {
           </select>
         </label>
 
-        <span className="tabular text-[12px] text-faint">
+        <span className="tabular text-[12px] text-faint" title={`${t("qty.floor.tip")} $${fmtNum(QUANTITY_FLOOR)}.`}>
           {rows.length === 0
             ? `0 ${t("qty.rowsCount")}`
             : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} / ${rows.length.toLocaleString()} ${t("qty.rowsCount")}`}
@@ -228,7 +230,7 @@ export default function QuantityView() {
                   <th className={thNum}>{t("qty.th.exportQty")}</th>
                   <th className={th}>{t("qty.th.unit")}</th>
                   <th className={thNum}>{t("qty.th.importPrice")}</th>
-                  <th className={thNum}>{t("qty.th.exportPrice")}</th>
+                  <th className={thNum} title={`${t("qty.tip.exportPrice")} ${Math.round(QUANTITY_FREIGHT * 100)}%.`}>{t("qty.th.exportPrice")}</th>
                   <th className={thNum}><HeadDot color={COLORS.positive} />{t("qty.th.diff")}</th>
                 </tr>
               </thead>
