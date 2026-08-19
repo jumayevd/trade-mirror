@@ -8,6 +8,7 @@ import YearSelect from "@/components/YearSelect";
 import { EmptyState, InfoTip, SectionTitle, Segmented } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { fmtUSDFull, COLORS } from "@/lib/format";
+import { hsFullText } from "@/lib/dataset";
 import {
   ensureQuantity, quantityFailed, quantityMonths, quantityPartners, quantityReady,
   quantityRows, quantityVer, quantityYears, subscribeQuantity,
@@ -185,6 +186,8 @@ export default function QuantityView() {
           <select
             value={dir}
             onChange={(e) => reset(() => setDir(e.target.value as SortDir))}
+            aria-label={t("risk.sortDir")}
+            title={t("risk.sortDir")}
             className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
@@ -231,15 +234,17 @@ export default function QuantityView() {
               </thead>
               <tbody className="zebra">
                 {pageRows.map((r) => (
-                  <tr key={r.key} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <tr key={r.key} className="border-b border-[var(--color-border-soft)] last:border-0 hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]">
                     <td className={`${td} whitespace-nowrap`}>
                       <Link href={`/partners/${r.partnerIso.toLowerCase()}`} className="font-medium hover:underline">
                         {r.partner}
                       </Link>
                     </td>
                     <td className={`${td} tabular text-faint`}>{r.cmd}</td>
-                    <td className={`${td} max-w-[300px]`}>
-                      <span title={r.product}>
+                    <td className={`${td} max-w-[280px]`}>
+                      {/* the column is narrow, so the cell abbreviates; hover carries the
+                          complete nomenclature line, not the extract's truncated description */}
+                      <span title={hsFullText(r.cmd) ?? r.product}>
                         {r.product.length > 44 ? `${r.product.slice(0, 44)}…` : r.product}
                       </span>
                     </td>
@@ -298,7 +303,7 @@ export default function QuantityView() {
           </div>
         )}
 
-        <p className="max-w-3xl text-[12.5px] leading-relaxed text-faint">{t("qty.footnote")}</p>
+        <p className="max-w-3xl text-xs leading-relaxed text-faint">{t("qty.footnote")}</p>
       </section>
     </div>
   );
