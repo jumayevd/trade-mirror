@@ -13,7 +13,7 @@ console.log("years:", years.join(", "));
 console.log("latest (yearly default):", latest);
 console.log("partners:", quantityPartners().length, "| months in latest:", quantityMonths([latest]).join(","));
 
-const yearly = quantityRows({ basis: "year", years: [latest], months: [], partners: [] });
+const yearly = quantityRows({ level: 6, basis: "year", years: [latest], months: [], partners: [] });
 console.log(`\nYEARLY ${latest}: ${yearly.length.toLocaleString()} rows`);
 const byDiff = [...yearly].sort((a, b) => b.diff - a.diff);
 console.log("top 3 by difference (desc):");
@@ -25,18 +25,27 @@ for (const r of byDiff.slice(0, 3)) {
 const bad = yearly.filter((r) => Math.abs(r.impPrice - r.impValue / r.impQty) > 1e-9 || r.impQty <= 0 || r.expQty <= 0);
 console.log("rows failing the price identity or with non-positive quantity:", bad.length);
 
-const monthly = quantityRows({ basis: "month", years: [latest], months: [1], partners: [] });
+const monthly = quantityRows({ level: 6, basis: "month", years: [latest], months: [1], partners: [] });
 console.log(`\nMONTHLY ${latest}-01: ${monthly.length.toLocaleString()} rows`);
 
-const chn = quantityRows({ basis: "year", years: [latest], months: [], partners: ["CHN"] });
+const chn = quantityRows({ level: 6, basis: "year", years: [latest], months: [], partners: ["CHN"] });
 console.log(`Filtered to CHN, ${latest}: ${chn.length.toLocaleString()} rows`);
 
 // yearly must aggregate the months, not average them
 const one = byDiff.find((r) => r.impQty > 1000)!;
-const [pi, ki, ui] = one.key.split("|").map(Number);
+/*
+ * Resolve by partner, code and unit rather than by parsing the render key: that
+ * key is opaque and its shape follows the view's grouping, so reading indices out
+ * of it broke the moment the HS4 fold landed.
+ */
+const onePartner = payload.p.indexOf(one.partnerIso);
+const oneUnit = payload.u.indexOf(one.unit);
 let iv = 0, iq = 0;
 for (const row of payload.r) {
-  if (row[0] === pi && row[1] === ki && row[3] === ui && payload.y0 + Math.floor(row[2] / 12) === latest) { iv += row[4]; iq += row[5]; }
+  if (row[0] !== onePartner || row[3] !== oneUnit) continue;
+  if (payload.k[row[1]] !== one.cmd) continue;
+  if (payload.y0 + Math.floor(row[2] / 12) !== latest) continue;
+  iv += row[4]; iq += row[5];
 }
 console.log(`\nweighted-average check for ${one.partner} HS${one.cmd}:`);
 console.log(`  page price ${one.impPrice.toFixed(4)} vs recomputed ${(iv / iq).toFixed(4)} -> ${Math.abs(one.impPrice - iv / iq) < 1e-9 ? "MATCH" : "MISMATCH"}`);

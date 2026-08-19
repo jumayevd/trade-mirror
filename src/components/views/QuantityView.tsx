@@ -14,7 +14,7 @@ import {
   ensureQuantity, quantityFailed, quantityMonths, quantityPartners, quantityReady,
   quantityCoverage, quantityRows, quantityVer, quantityYears, subscribeQuantity,
   QUANTITY_FLOOR, QUANTITY_FREIGHT,
-  type QuantityBasis, type QuantityRow,
+  type QuantityBasis, type QuantityLevel, type QuantityRow,
 } from "@/lib/quantity";
 
 /** Series-identity dot for column headers — the text itself stays ink (rule 5). */
@@ -75,6 +75,14 @@ export default function QuantityView() {
   useEffect(() => { ensureQuantity(); }, []);
 
   const [basis, setBasis] = useState<QuantityBasis>("year");
+  /*
+   * HS4 by default. Both books have to agree on a code before their unit prices
+   * can be compared, and the 6-digit line is where they most often disagree —
+   * one side booking a consignment a rung over from the other leaves two prices
+   * that were never measuring the same goods. The heading absorbs that; HS6 stays
+   * one click away for the detail.
+   */
+  const [level, setLevel] = useState<QuantityLevel>(4);
   const [years, setYears] = useState<number[]>([]);
   const [months, setMonths] = useState<number[]>([]);
   const [partners, setPartners] = useState<string[]>([]);
@@ -130,12 +138,12 @@ export default function QuantityView() {
 
   const rows = useMemo<QuantityRow[]>(() => {
     if (!ready || years.length === 0) return [];
-    const out = quantityRows({ basis, years, months, partners });
+    const out = quantityRows({ basis, level, years, months, partners });
     out.sort((a, b) => (dir === "desc" ? b.diff - a.diff : a.diff - b.diff));
     return out;
     // Language is a real input: partner and product names are resolved here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, ver, basis, years, months, partners, dir, lang]);
+  }, [ready, ver, basis, level, years, months, partners, dir, lang]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -211,6 +219,19 @@ export default function QuantityView() {
           label={t("common.partner")}
           allLabel={t("filter.all")}
         />
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("qty.filter.level")}</span>
+          <Segmented<"4" | "6">
+            ariaLabel={t("qty.filter.level")}
+            value={String(level) as "4" | "6"}
+            onChange={(v) => reset(() => setLevel(Number(v) as QuantityLevel))}
+            options={[
+              { key: "4", label: t("risk.level.hs4"), tip: t("qty.level.hs4Tip") },
+              { key: "6", label: t("filter.hs6"), tip: t("qty.level.hs6Tip") },
+            ]}
+          />
+        </div>
 
         <label className="flex items-center gap-1.5 text-[12px] text-muted">
           {t("qty.sortLabel")}

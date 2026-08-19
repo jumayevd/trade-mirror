@@ -11,7 +11,7 @@
  * opened, following the same store pattern as the monthly HS6 detail.
  */
 import { tCountry, tText } from "@/lib/labels";
-import { hs6Label, meta, partnerMetaOf, partnerName as datasetPartnerName, RISK_CONFIG } from "@/lib/dataset";
+import { hsLabel, hs6Label, meta, partnerMetaOf, partnerName as datasetPartnerName, RISK_CONFIG } from "@/lib/dataset";
 
 export interface PackedQuantity {
   v: number;
@@ -161,6 +161,12 @@ function partnerName(iso: string): string {
 }
 
 function productName(cmd: string): string {
+  // only HS6 descriptions ship with the chunks, so a 4-digit code resolves
+  // through the dashboard's own label table
+  if (cmd.length !== 6) {
+    const label = hsLabel(cmd);
+    return label && label !== `HS ${cmd}` ? label : `HS ${cmd}`;
+  }
   // Prefer the dashboard's own translated HS6 label; the chunks reach codes and
   // years the annual workbook never carried, so fall back to their description.
   const label = hs6Label(cmd);
@@ -169,8 +175,18 @@ function productName(cmd: string): string {
   return english ? tText(english) : `HS ${cmd}`;
 }
 
+export type QuantityLevel = 4 | 6;
+
 export interface QuantityQuery {
   basis: QuantityBasis;
+  /**
+   * HS digits to compare on. The file stores HS6; HS4 folds from it by truncating
+   * the code, the same way the annual dataset derives its HS4 layer. A unit price
+   * is a ratio, so the finer the code the more one small or oddly-scaled shipment
+   * distorts it — pooling the heading before dividing is steadier, at the cost of
+   * mixing more goods inside one price.
+   */
+  level: QuantityLevel;
   years: number[];
   /** Month basis only; empty means every month the years carry. */
   months: number[];
@@ -189,19 +205,21 @@ export function quantityRows(q: QuantityQuery): QuantityRow[] {
   const wantM = q.basis === "month" && q.months.length ? new Set(q.months) : null;
   const wantP = q.partners.length ? new Set(q.partners) : null;
 
-  const acc = new Map<string, { p: number; k: number; u: number; iv: number; iq: number; ev: number; eq: number }>();
+  const acc = new Map<string, { p: number; cmd: string; u: number; iv: number; iq: number; ev: number; eq: number }>();
   for (const row of payload.r) {
     const [pi, ki, off, ui, iv, iq, ev, eq] = row;
     const year = payload.y0 + Math.floor(off / 12);
     if (wantY && !wantY.has(year)) continue;
     if (wantM && !wantM.has((off % 12) + 1)) continue;
     if (wantP && !wantP.has(payload.p[pi])) continue;
-    const key = `${pi}|${ki}|${ui}`;
+    // the unit stays in the key at every level: $/kg against $/item is no comparison
+    const code = q.level === 6 ? payload.k[ki] : payload.k[ki].slice(0, q.level);
+    const key = `${pi}|${code}|${ui}`;
     const e = acc.get(key);
     if (e) {
       e.iv += iv; e.iq += iq; e.ev += ev; e.eq += eq;
     } else {
-      acc.set(key, { p: pi, k: ki, u: ui, iv, iq, ev, eq });
+      acc.set(key, { p: pi, cmd: code, u: ui, iv, iq, ev, eq });
     }
   }
 
@@ -212,7 +230,7 @@ export function quantityRows(q: QuantityQuery): QuantityRow[] {
     // both books must have moved something material over the selection
     if (e.iv < QUANTITY_FLOOR || e.ev < QUANTITY_FLOOR) continue;
     const iso = payload.p[e.p];
-    const cmd = payload.k[e.k];
+    const cmd = e.cmd;
     const impPrice = e.iv / e.iq;
     const expPrice = (e.ev * K) / e.eq;
     out.push({
