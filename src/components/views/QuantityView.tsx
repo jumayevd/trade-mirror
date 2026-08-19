@@ -240,7 +240,7 @@ export default function QuantityView() {
                         {r.partner}
                       </Link>
                     </td>
-                    <td className={`${td} tabular text-faint`}>{r.cmd}</td>
+                    <td className={`${td} tabular`}>{r.cmd}</td>
                     <td className={`${td} max-w-[280px]`}>
                       {/* the column is narrow, so the cell abbreviates; hover carries the
                           complete nomenclature line, not the extract's truncated description */}
@@ -250,7 +250,7 @@ export default function QuantityView() {
                     </td>
                     <td className={tdNum} title={fmtUSDFull(r.impValue)}>{fmtQty(r.impQty)}</td>
                     <td className={tdNum} title={fmtUSDFull(r.expValue)}>{fmtQty(r.expQty)}</td>
-                    <td className={`${td} whitespace-nowrap text-muted`}>{r.unit}</td>
+                    <td className={`${td} whitespace-nowrap`}>{r.unit}</td>
                     <td className={tdNum}>{fmtPrice(r.impPrice)}</td>
                     <td className={tdNum}>{fmtPrice(r.expPrice)}</td>
                     <td

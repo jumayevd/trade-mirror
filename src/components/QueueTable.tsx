@@ -288,7 +288,7 @@ export default function QueueTable({
                         {c.partner}
                       </Link>
                     </td>
-                    <td className={`${td} tabular text-faint`}>{c.cmd}</td>
+                    <td className={`${td} tabular`}>{c.cmd}</td>
                     <td className={`${td} max-w-[280px]`}>
                       {/* the column is narrow, so the cell abbreviates; hover carries the
                           complete nomenclature line, not the extract's 90-char cut */}
