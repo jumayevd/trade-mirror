@@ -37,7 +37,7 @@ export default function PartnerGaps({
       grid: { ...baseGrid, top: 44 },
       legend: {
         top: 0,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
         itemWidth: 14,
         data: [ptnLabel, uzbLabel],
       },

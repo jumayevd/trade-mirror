@@ -33,7 +33,7 @@ export default function HeaderMeta() {
           value={zoom}
           onChange={(e) => writeZoom(Number(e.target.value) as ZoomStep)}
           aria-label={t("header.textSize")}
-          className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-1 text-[11px] text-foreground outline-none focus:border-[var(--color-primary)]"
+          className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
         >
           {ZOOM_STEPS.map((z, i) => (
             <option key={z} value={z}>{t(ZOOM_LABEL_KEYS[i])}</option>
@@ -44,7 +44,7 @@ export default function HeaderMeta() {
       <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("nav.language")}>
         {LANGS.map((l) => (
           <button key={l} onClick={() => setLang(l)}
-            className={`px-2 py-1 text-[11px] font-semibold uppercase ${lang === l ? "bg-[var(--color-primary)] text-white" : "text-muted hover:bg-[var(--color-panel-2)]"}`}
+            className={`px-2 py-1 text-[12px] font-semibold uppercase ${lang === l ? "bg-[var(--color-primary)] text-white" : "text-muted hover:bg-[var(--color-panel-2)]"}`}
             aria-pressed={lang === l}>
             {l}
           </button>

@@ -21,19 +21,19 @@ import { BAR_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 const cat = (data: (string | number)[]) => ({
   ...catAxis(data),
-  axisLabel: { color: COLORS.axis, fontSize: 11 },
+  axisLabel: { color: COLORS.axis, fontSize: 13 },
 });
 const moneyAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-  axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtUSD(v) },
+  nameTextStyle: { color: COLORS.axis, fontSize: 13 },
+  axisLabel: { color: COLORS.axis, fontSize: 13, formatter: (v: number) => fmtUSD(v) },
   splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
 const countAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-  axisLabel: { color: COLORS.axis, fontSize: 11 },
+  nameTextStyle: { color: COLORS.axis, fontSize: 13 },
+  axisLabel: { color: COLORS.axis, fontSize: 13 },
   splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
@@ -58,7 +58,7 @@ function quantile(sortedAsc: number[], q: number): number {
   return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
 }
 
-const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+const TH = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
 const TH_NUM = `${TH} text-right`;
 const TD = "px-3 py-1.5 align-middle text-[13px]";
 const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
@@ -114,7 +114,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
           return `${HIST_LABELS[p.dataIndex]}<br/>${fmtNum(p.value)} ${t("risk.channelsCount")}`;
         },
       },
-      xAxis: { ...cat(HIST_LABELS), axisLabel: { color: COLORS.axis, rotate: 35, fontSize: 11, interval: 0 } },
+      xAxis: { ...cat(HIST_LABELS), axisLabel: { color: COLORS.axis, rotate: 35, fontSize: 13, interval: 0 } },
       yAxis: countAxis(t("risk.channelsCount")),
       series: [{
         name: t("risk.channelsCount"),
@@ -212,7 +212,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
     },
     xAxis: {
       ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
-      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 11, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
+      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 13, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
     },
     // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
     yAxis: moneyAxis(),
@@ -256,7 +256,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
         </p>
         {/* the level tabs and the page filters both change WHICH channels these
             statistics describe, which is the usual source of confusion here */}
-        <p className="text-[11.5px] leading-relaxed text-faint">{t("risk.profile.whyChanges")}</p>
+        <p className="text-[12.5px] leading-relaxed text-faint">{t("risk.profile.whyChanges")}</p>
       </div>
       <LevelTabs level={level} onChange={setLevel} label={null} />
     </div>

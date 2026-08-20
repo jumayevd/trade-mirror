@@ -132,7 +132,7 @@ export default function SearchSelect({
           {current?.code && <span className="tabular mr-1 text-faint">{current.code}</span>}
           {current?.label ?? allLabel}
         </span>
-        <span aria-hidden className="shrink-0 text-[10px] text-faint">▾</span>
+        <span aria-hidden className="shrink-0 text-[11.5px] text-faint">▾</span>
       </button>
 
       {open && (
@@ -149,7 +149,7 @@ export default function SearchSelect({
           />
           <ul ref={listRef} role="listbox" aria-label={ariaLabel} className="max-h-64 overflow-y-auto py-1">
             {matches.length === 0 && (
-              <li className="px-2.5 py-2 text-[12px] text-faint">{t("filter.noMatches")}</li>
+              <li className="px-2.5 py-2 text-[13px] text-faint">{t("filter.noMatches")}</li>
             )}
             {matches.map((o, i) => (
               <li key={o.value} role="presentation">
@@ -165,7 +165,7 @@ export default function SearchSelect({
                     i === active ? "bg-[var(--color-panel-2)]" : ""
                   } ${o.value === value ? "font-semibold text-foreground" : "text-muted hover:text-foreground"}`}
                 >
-                  {o.code && <span className="tabular mt-px shrink-0 text-[11px] text-faint">{o.code}</span>}
+                  {o.code && <span className="tabular mt-px shrink-0 text-[12px] text-faint">{o.code}</span>}
                   {/* long HS descriptions wrap instead of losing their tail */}
                   <span className="min-w-0 leading-snug break-words">{o.label}</span>
                 </button>

@@ -41,7 +41,7 @@ function quantile(sortedAsc: number[], q: number): number {
   return sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
 }
 
-const TH = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+const TH = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
 const TH_NUM = `${TH} text-right`;
 const TD = "px-3 py-1.5 align-middle text-[13px]";
 const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
@@ -126,7 +126,7 @@ export default function QueueView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[10.5px] font-medium text-faint">
+            <p className="text-[12px] font-medium text-faint">
               UN Comtrade · {yearsLabel(years)}
               {granularity === "month" ? ` · ${t("gran.month").toLowerCase()}${months.length ? `: ${months.join(", ")}` : ""}` : ""} · {t("filter.freight").toLowerCase()} {Math.round(cif * 100)}% · {t("risk.header.screening")}
             </p>
@@ -138,7 +138,7 @@ export default function QueueView() {
           <button
             onClick={exportCsv}
             disabled={channels.length === 0}
-            className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={`${t("risk.export.tip")} (${t(LEVEL_LABEL_KEYS[level])})`}
           >
             {t("common.exportCsv")} ↓
@@ -149,14 +149,14 @@ export default function QueueView() {
       {/* time basis + period selection — the whole page follows these ticks */}
       <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-2">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
           <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
             {(["year", "month"] as const).map((g) => (
               <button
                 key={g}
                 onClick={() => pickGranularity(g)}
                 aria-pressed={granularity === g}
-                className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                className={`px-2.5 py-1.5 text-[13px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               >
                 {t(g === "year" ? "gran.year" : "gran.month")}
               </button>
@@ -177,7 +177,7 @@ export default function QueueView() {
         {/* freight scenario moves the gap values and Gap % — never the score,
             which stays fitted at the central rate (see Methodology) */}
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
           <select
             className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
             aria-label={t("filter.freight")}

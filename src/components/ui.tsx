@@ -30,7 +30,7 @@ export function Stat({
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[10.5px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="text-[12px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
@@ -38,19 +38,19 @@ export function Stat({
           {value}
         </span>
         {delta && (
-          <span className="text-[11px] font-medium" style={{ color: deltaGood ? "var(--color-ok)" : "var(--color-serious)" }}>
+          <span className="text-[12px] font-medium" style={{ color: deltaGood ? "var(--color-ok)" : "var(--color-serious)" }}>
             {delta}
           </span>
         )}
       </div>
-      {sub && <div className="mt-1.5 text-[11.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
 
 export function InfoTip({ text }: { text: string }) {
   return (
-    <span className="inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--color-border)] text-[9px] leading-none text-faint" title={text}>
+    <span className="inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--color-border)] text-[11px] leading-none text-faint" title={text}>
       i
     </span>
   );
@@ -61,7 +61,7 @@ export function SectionTitle({ title, desc, right }: { title: string; desc?: str
     <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
         <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
-        {desc && <p className="mt-0.5 max-w-2xl text-[12.5px] leading-relaxed text-muted">{desc}</p>}
+        {desc && <p className="mt-0.5 max-w-2xl text-[13.5px] leading-relaxed text-muted">{desc}</p>}
       </div>
       {right}
     </div>
@@ -84,7 +84,7 @@ export function ContextLine({ filter }: { filter: Filter }) {
   else if (filter.hs2.length > 0) parts.push(codes(filter.hs2));
   parts.push(`${t("filter.freight").toLowerCase()} ${Math.round(filter.cif * 100)}%`);
   return (
-    <p className="mb-3 truncate font-mono text-[10.5px] text-faint" title={t("qual.ui.contextTip")}>
+    <p className="mb-3 truncate font-mono text-[12px] text-faint" title={t("qual.ui.contextTip")}>
       {parts.join(" · ")}
     </p>
   );
@@ -94,7 +94,7 @@ export function ContextLine({ filter }: { filter: Filter }) {
 
 function DotChip({ dot, children, title, className = "" }: { dot?: string; children: React.ReactNode; title?: string; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted ${className}`} title={title}>
+    <span className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[12px] font-medium leading-4 text-muted ${className}`} title={title}>
       {dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dot }} />}
       {children}
     </span>
@@ -171,7 +171,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.key)}
             aria-pressed={on}
             title={o.tip}
-            className={`whitespace-nowrap px-2.5 py-1 text-[12px] ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
+            className={`whitespace-nowrap px-2.5 py-1 text-[13px] ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
               on
                 ? "bg-[var(--color-primary)] font-semibold text-white"
                 : "bg-[var(--color-panel)] font-medium text-muted hover:bg-[var(--color-panel-2)] hover:text-foreground"
@@ -235,21 +235,21 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-center gap-1">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1">
-            <span className={`rounded-md border px-1.5 py-0.5 text-[11px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
+            <span className={`rounded-md border px-1.5 py-0.5 text-[12px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
               title={s.active ? t("qual.ui.ladder.tipOpen") : s.n === 4 ? t("qual.ui.ladder.tipBehavioural") : t("qual.ui.ladder.tipVerified")}>
               {s.n} · {t(s.key as never)}
             </span>
-            {i < steps.length - 1 && <span className="text-[10px] text-faint">›</span>}
+            {i < steps.length - 1 && <span className="text-[11.5px] text-faint">›</span>}
           </div>
         ))}
       </div>
-      {!compact && <p className="mt-1.5 max-w-3xl text-[11px] text-faint">{t("ov.ladder.note")}</p>}
+      {!compact && <p className="mt-1.5 max-w-3xl text-[12px] text-faint">{t("ov.ladder.note")}</p>}
     </div>
   );
 }
 
 export function Pill({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[10.5px] font-medium text-muted">{children}</span>;
+  return <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[12px] font-medium text-muted">{children}</span>;
 }
 
 export function EmptyState({ text }: { text?: string }) {

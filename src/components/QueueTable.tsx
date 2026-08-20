@@ -166,7 +166,7 @@ export default function QueueTable({
     setExpanded(null);
   };
 
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
   const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
@@ -206,12 +206,12 @@ export default function QueueTable({
           allLabel={t("filter.all")}
         />
 
-        <label className="flex items-center gap-1.5 text-[12px] text-muted">
+        <label className="flex items-center gap-1.5 text-[13px] text-muted">
           {t("risk.sortLabel")}
           <select
             value={sort}
             onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
@@ -222,14 +222,14 @@ export default function QueueTable({
             onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
             aria-label={t("risk.sortDir")}
             title={t("risk.sortDir")}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
             <option value="asc">{t("risk.sortAsc")}</option>
           </select>
         </label>
 
-        <span className="tabular text-[12px] text-faint">
+        <span className="tabular text-[13px] text-faint">
           {rows.length === 0
             ? `0 ${t("risk.combinationsCount")}`
             : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} / ${rows.length.toLocaleString()} ${t("risk.combinationsCount")}`}
@@ -341,12 +341,12 @@ export default function QueueTable({
       {/* pagination */}
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 text-[12px] text-muted">
+          <label className="flex items-center gap-1.5 text-[13px] text-muted">
             {t("risk.rowsPerPage")}
             <select
               value={pageSize}
               onChange={(e) => controls(() => setPageSize(+e.target.value))}
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
             >
               {PAGE_SIZES.map((n) => (
                 <option key={n} value={n}>{n}</option>
@@ -357,17 +357,17 @@ export default function QueueTable({
             <button
               onClick={() => { setPageRaw(Math.max(0, page - 1)); setExpanded(null); }}
               disabled={page === 0}
-              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               ← {t("risk.prev")}
             </button>
-            <span className="tabular text-[12px] text-muted">
+            <span className="tabular text-[13px] text-muted">
               {t("risk.page")} {page + 1} / {pageCount}
             </span>
             <button
               onClick={() => { setPageRaw(Math.min(pageCount - 1, page + 1)); setExpanded(null); }}
               disabled={page >= pageCount - 1}
-              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t("risk.next")} →
             </button>
@@ -388,9 +388,9 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
   const { t } = useI18n();
   const K = 1 + filter.cif;
   const byYear = new Map(c.years.map((yr) => [yr.y, yr]));
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint";
+  const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint";
   const thNum = `${th} text-right`;
-  const td = "px-3 py-1.5 text-[12px]";
+  const td = "px-3 py-1.5 text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
   const hints = c.flags
     .map((f) => FLAG_HINT_KEYS[f])
@@ -400,7 +400,7 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
       <div>
-        <h4 className="mb-1 text-[10.5px] font-medium text-faint">
+        <h4 className="mb-1 text-[12px] font-medium text-faint">
           {t("risk.detail.perYear")} · {c.partner} × HS <span className="tabular">{c.cmd}</span>
         </h4>
         <table className="w-full border-collapse">
@@ -437,18 +437,18 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
             })}
           </tbody>
         </table>
-        <p className="mt-1 text-[11px] text-faint">
+        <p className="mt-1 text-[12px] text-faint">
           “{t("common.notReported")}” — {t("risk.detail.notReportedNote")}
         </p>
       </div>
 
       <div className="space-y-3 text-[13px] leading-relaxed">
         <div>
-          <h4 className="mb-1 text-[10.5px] font-medium text-faint">{t("risk.detail.reading")}</h4>
+          <h4 className="mb-1 text-[12px] font-medium text-faint">{t("risk.detail.reading")}</h4>
           <p className="text-muted">{interpretation(c, filter, t)}</p>
         </div>
         <div>
-          <h4 className="mb-1 text-[10.5px] font-medium text-faint">
+          <h4 className="mb-1 text-[12px] font-medium text-faint">
             {t("risk.detail.alternatives")}
           </h4>
           {hints.length > 0 ? (

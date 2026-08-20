@@ -60,10 +60,10 @@ function Pager({
   const pages = Math.ceil(total / PAGE_SIZE);
   const from = page * PAGE_SIZE + 1;
   const to = Math.min((page + 1) * PAGE_SIZE, total);
-  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
   return (
     <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border-soft)] px-3 py-2">
-      <span className="tabular text-[12px] text-faint">
+      <span className="tabular text-[13px] text-faint">
         {from}–{to} {t("ctry.pager.of")} {total}
       </span>
       <button className={btn} onClick={() => onPage(page - 1)} disabled={page === 0} aria-label={t("ctry.pager.prev")}>‹</button>
@@ -90,9 +90,9 @@ function MoverColumn({
   const { t } = useI18n();
   return (
     <div className="card p-3.5">
-      <div className="mb-2 text-[10.5px] font-medium text-faint">{title}</div>
+      <div className="mb-2 text-[12px] font-medium text-faint">{title}</div>
       {rows.length === 0 ? (
-        <p className="py-4 text-center text-[12px] text-faint">{t("ctry.movers.empty")}</p>
+        <p className="py-4 text-center text-[13px] text-faint">{t("ctry.movers.empty")}</p>
       ) : (
         <ul className="divide-y divide-[var(--color-border-soft)]">
           {rows.map((m) => (
@@ -100,7 +100,7 @@ function MoverColumn({
               <Link href={`/partners/${m.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-[13px] font-medium hover:underline">
                 {m.label}
               </Link>
-              <span className="tabular w-16 shrink-0 text-right text-[12px] text-muted"
+              <span className="tabular w-16 shrink-0 text-right text-[13px] text-muted"
                 title={`${t("ctry.movers.totalTip")}: ${fmtUSDFull(m.total)}`}>
                 {fmtUSD(m.total)}
               </span>
@@ -108,10 +108,10 @@ function MoverColumn({
                 {m.series.length >= 2 ? (
                   <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={88} height={26} />
                 ) : (
-                  <span className="inline-block w-[88px] text-center text-[10.5px] text-faint" title={t("ctry.fewYears")}>—</span>
+                  <span className="inline-block w-[88px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
                 )}
               </span>
-              <span className="tabular w-16 shrink-0 text-right text-[12px] font-medium" style={{ color: deltaColor }}
+              <span className="tabular w-16 shrink-0 text-right text-[13px] font-medium" style={{ color: deltaColor }}
                 title={`${t("ctry.movers.trendTip")}: ${fmtUSDFull(m.trend)}`}>
                 {fmtUSD(m.trend, { sign: true })}
               </span>
@@ -193,7 +193,7 @@ export default function PartnersView() {
 
   const K = 1 + filter.cif;
 
-  const th = "px-3 py-1.5 text-left text-[10.5px] font-medium text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
   const td = "px-3 py-1.5 align-middle text-[13px]";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
@@ -265,9 +265,9 @@ export default function PartnersView() {
                       {spark.length >= 2 ? (
                         <Sparkline type="line" data={spark} color={COLORS.positive} width={72} height={22} />
                       ) : (
-                        <span className="inline-block w-[72px] text-center text-[10.5px] text-faint" title={t("ctry.fewYears")}>—</span>
+                        <span className="inline-block w-[72px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
                       )}
-                      <span className="tabular w-14 text-right text-[12px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(p.trend)}`}>
+                      <span className="tabular w-14 text-right text-[13px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(p.trend)}`}>
                         {fmtUSD(p.trend, { sign: true })}
                       </span>
                     </span>
@@ -300,7 +300,7 @@ export default function PartnersView() {
           </tfoot>
         </table>
         {/* why a partner row can fall short of the total row below it */}
-        <p className="border-t border-[var(--color-border-soft)] px-3 py-2 text-[11px] leading-relaxed text-faint">
+        <p className="border-t border-[var(--color-border-soft)] px-3 py-2 text-[12px] leading-relaxed text-faint">
           {fill(t("ctry.rank.floorNote"), { floor: fmtNum(NOISE_FLOOR) })}
         </p>
         <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
@@ -313,18 +313,18 @@ export default function PartnersView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[10.5px] font-medium text-faint">
+            <p className="text-[12px] font-medium text-faint">
               {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {meta.window.start}–{meta.window.end}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-            <p className="text-[12px] text-muted">
+            <p className="text-[13px] text-muted">
               <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
             </p>
           </div>
           <button
             onClick={exportCsv}
             disabled={data.channels.length === 0}
-            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={t("ctry.exportTip")}
           >
             {t("common.exportCsv")} ↓
@@ -366,7 +366,7 @@ export default function PartnersView() {
             </div>
           }
         />
-        <p className="max-w-3xl text-[12px] text-muted">
+        <p className="max-w-3xl text-[13px] text-muted">
           <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
@@ -393,7 +393,7 @@ export default function PartnersView() {
                 <InfoTip text={`${t("ctry.compare.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.compare.infoPost")}`} />
                 <button
                   onClick={() => setSel([])}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] text-muted hover:text-foreground"
+                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground"
                 >
                   {t("ctry.compare.clear")} ✕
                 </button>
@@ -418,11 +418,11 @@ export default function PartnersView() {
                   {spark.length >= 2 ? (
                     <Sparkline data={spark} color={COLORS.positive} width={180} height={38} />
                   ) : (
-                    <p className="text-[11px] text-faint">
+                    <p className="text-[12px] text-faint">
                       {t("ctry.fewYears")}
                     </p>
                   )}
-                  <dl className="mt-2 space-y-1 text-[12px]">
+                  <dl className="mt-2 space-y-1 text-[13px]">
                     <div className="flex justify-between gap-2">
                       <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
                       <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>

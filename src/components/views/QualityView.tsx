@@ -75,7 +75,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
 /** Legend chips — DotChip pattern: identity via a small mark beside ink text. */
 function LegendChip({ marker, children }: { marker: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[10.5px] font-medium leading-4 text-muted">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[12px] font-medium leading-4 text-muted">
       {marker}
       {children}
     </span>
@@ -172,8 +172,8 @@ export default function QualityView() {
       yAxis: {
         type: "value",
         name: fill(t("qual.level.axis"), { level: levelCode }),
-        nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-        axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
+        nameTextStyle: { color: COLORS.axis, fontSize: 13 },
+        axisLabel: { color: COLORS.axis, fontSize: 13, formatter: (v: number) => fmtNum(v) },
         splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
         axisLine: { show: false },
       },
@@ -193,7 +193,7 @@ export default function QualityView() {
     <div className="space-y-8">
       {/* header */}
       <section className="space-y-2">
-        <p className="text-[11px] text-faint">
+        <p className="text-[12px] text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · {t("qual.header.kicker")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
@@ -209,7 +209,7 @@ export default function QualityView() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[820px] text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+              <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-faint">
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 {meta.years.map((y) => (
                   <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
@@ -289,7 +289,7 @@ export default function QualityView() {
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] text-faint">
+                <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-faint">
                   <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                   <th className="px-3 py-2 font-medium">{t("qual.transit.region")}</th>
                   <th className="px-3 py-2 font-medium">{t("qual.transit.reporting")}</th>

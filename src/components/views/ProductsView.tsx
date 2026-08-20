@@ -179,14 +179,14 @@ function MoverList({
   const { t } = useI18n();
   return (
     <div>
-      <p className="mb-1.5 text-[10.5px] font-medium text-faint">{title}</p>
+      <p className="mb-1.5 text-[12px] font-medium text-faint">{title}</p>
       {rows.length === 0 ? (
-        <p className="text-[12px] text-faint">{t("prod.movers.empty")}</p>
+        <p className="text-[13px] text-faint">{t("prod.movers.empty")}</p>
       ) : (
         <div className="space-y-1">
           {rows.map((g) => (
             <div key={g.key} className="flex items-center gap-3 text-[13px]">
-              <span className="tabular w-6 shrink-0 text-[11px] text-faint">{g.key}</span>
+              <span className="tabular w-6 shrink-0 text-[12px] text-faint">{g.key}</span>
               <button
                 onClick={() => onDrill(g.key)}
                 className="min-w-0 flex-1 truncate text-left hover:underline"
@@ -413,7 +413,7 @@ export default function ProductsView() {
     <div className="space-y-6">
       {/* 1. header + export */}
       <section className="space-y-2">
-        <p className="text-[10.5px] font-medium text-faint">
+        <p className="text-[12px] font-medium text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · {t("prod.eyebrow.hierarchy")}
         </p>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -423,7 +423,7 @@ export default function ProductsView() {
           <button
             onClick={exportCsv}
             disabled={activeChannels.length === 0}
-            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[12px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={`HS${level} · ${t("prod.export.tip")}`}
           >
             {t("common.exportCsv")}
@@ -522,7 +522,7 @@ export default function ProductsView() {
           <div className="card space-y-1.5 p-4">
             {composition.map((r) => (
               <div key={r.cmd} className="flex items-center gap-3 text-[13px]">
-                <span className="tabular w-14 shrink-0 text-[11px] text-faint">{r.cmd}</span>
+                <span className="tabular w-14 shrink-0 text-[12px] text-faint">{r.cmd}</span>
                 <span className="w-48 shrink-0 truncate" title={r.label}>
                   {r.label}
                 </span>
@@ -542,7 +542,7 @@ export default function ProductsView() {
                 <span className="tabular w-20 shrink-0 text-right font-medium" title={fmtUSDFull(r.posT)}>
                   {fmtUSD(r.posT)}
                 </span>
-                <span className="tabular w-12 shrink-0 text-right text-[11px] text-faint" title={t("prod.tip.shareOfNode")}>
+                <span className="tabular w-12 shrink-0 text-right text-[12px] text-faint" title={t("prod.tip.shareOfNode")}>
                   {node.posT > 0 ? fmtPct(r.posT / node.posT, 0) : "—"}
                 </span>
               </div>
@@ -570,7 +570,7 @@ export default function ProductsView() {
             <div className="card overflow-x-auto">
               <table className="w-full min-w-[840px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] font-medium text-faint">
+                  <tr className="border-b border-[var(--color-border)] text-left text-[12px] font-medium text-faint">
                     <th className="px-3 py-1.5 font-medium">{t("prod.col.code")}</th>
                     <th className="px-3 py-1.5 font-medium">{t("prod.chapter")}</th>
                     <SortableTh label={t("kpi.positive")} k="posT" sort={sort} onSort={onSort} color={COLORS.positive} title={t("prod.tip.positive")} />
@@ -583,7 +583,7 @@ export default function ProductsView() {
                 <tbody className="zebra">
                   {pageChapters.map((c) => (
                     <tr key={c.chapter} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                      <td className="tabular px-3 py-1.5 text-[11px] text-faint">{c.chapter}</td>
+                      <td className="tabular px-3 py-1.5 text-[12px] text-faint">{c.chapter}</td>
                       <td className="max-w-[300px] px-3 py-1.5">
                         <button
                           onClick={() => drillChapter(c.chapter)}
@@ -629,7 +629,7 @@ export default function ProductsView() {
             <div className="card overflow-x-auto">
               <table className="w-full min-w-[960px] text-[13px]">
                 <thead>
-                  <tr className="border-b border-[var(--color-border)] text-left text-[10.5px] font-medium text-faint">
+                  <tr className="border-b border-[var(--color-border)] text-left text-[12px] font-medium text-faint">
                     <th className="px-3 py-1.5 font-medium">{t("prod.col.code")}</th>
                     <th className="px-3 py-1.5 font-medium">{t("common.product")}</th>
                     <SortableTh label={t("prod.col.reportedExports")} k="peT" sort={sort} onSort={onSort} title={t("prod.tip.reportedExports")} />
@@ -644,7 +644,7 @@ export default function ProductsView() {
                     const profiled = r.cmd.length === 6 ? productByCmd(r.cmd) : undefined;
                     return (
                       <tr key={r.cmd} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                        <td className="tabular px-3 py-1.5 text-[11px] text-faint">{r.cmd}</td>
+                        <td className="tabular px-3 py-1.5 text-[12px] text-faint">{r.cmd}</td>
                         <td className="max-w-[300px] px-3 py-1.5">
                           {level === 4 ? (
                             <button
@@ -715,7 +715,7 @@ export default function ProductsView() {
               onDrill={drillChapter}
             />
           </div>
-          <p className="mt-2 max-w-3xl text-[11px] text-faint">{t("prod.dynamics.note")}</p>
+          <p className="mt-2 max-w-3xl text-[12px] text-faint">{t("prod.dynamics.note")}</p>
         </section>
       )}
 

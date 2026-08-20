@@ -216,7 +216,7 @@ export function Cite({ ids }: { ids: string[] }) {
   if (refs.length === 0) return null;
   return (
     <span
-      className="cursor-help whitespace-nowrap text-[11px] text-faint"
+      className="cursor-help whitespace-nowrap text-[12px] text-faint"
       title={refs.map((r) => `${r.authors} (${r.year}). ${r.title}. ${r.source}.`).join("\n")}
     >
       {" "}({refs.map(short).join("; ")})

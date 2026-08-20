@@ -50,7 +50,7 @@ export function MobileNav() {
       {links.map((l) => (
         <Link key={l.href} href={l.href}
           aria-current={isActive(l.href) ? "page" : undefined}
-          className={`shrink-0 rounded-md px-2 py-1 text-[12px] ${isActive(l.href) ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "font-medium text-muted"}`}>
+          className={`shrink-0 rounded-md px-2 py-1 text-[13px] ${isActive(l.href) ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "font-medium text-muted"}`}>
           {t(l.label)}
         </Link>
       ))}
@@ -69,7 +69,7 @@ export default function Sidebar() {
           <img src="/cbu-logo.png" alt="Central Bank of the Republic of Uzbekistan" className="h-10 w-10 shrink-0 object-contain" />
           <span className="leading-tight">
             <span className="block text-[15px] font-semibold tracking-tight text-white">{t("brand.title")}</span>
-            <span className="block text-[10px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
+            <span className="block text-[11.5px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
           </span>
         </Link>
         {/* One list, no group heading: with every page in it the heading only

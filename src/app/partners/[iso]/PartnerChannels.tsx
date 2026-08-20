@@ -24,7 +24,7 @@ export interface ChannelRow {
 }
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
-const lbl = "text-[10px] font-semibold uppercase tracking-wider text-faint";
+const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
 const PAGE = 12;
 
 /** Sorted unique values, preserving the first label seen for each key. */
@@ -110,7 +110,7 @@ export default function PartnerChannels({
               {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
-          <span className="tabular text-[12px] text-faint">
+          <span className="tabular text-[13px] text-faint">
             {filtered.length} of {rows.length} HS6 channels
           </span>
           {narrowed && (

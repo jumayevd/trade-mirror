@@ -76,7 +76,7 @@ export default function MultiSelect({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{label}</span>
+      <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{label}</span>
       <div ref={wrap} className="relative">
         <button
           ref={trigger}
@@ -94,7 +94,7 @@ export default function MultiSelect({
           }`}
         >
           <span className="truncate">{summary()}</span>
-          <span aria-hidden className="shrink-0 text-[10px] text-faint">▾</span>
+          <span aria-hidden className="shrink-0 text-[11.5px] text-faint">▾</span>
         </button>
 
         {open && (
@@ -112,7 +112,7 @@ export default function MultiSelect({
             )}
             <ul role="group" aria-label={label} className="max-h-64 overflow-y-auto py-1">
               {matches.length === 0 && (
-                <li className="px-2.5 py-2 text-[12px] text-faint">{t("filter.noMatches")}</li>
+                <li className="px-2.5 py-2 text-[13px] text-faint">{t("filter.noMatches")}</li>
               )}
               {matches.map((o) => {
                 const on = picked.has(o.value);
@@ -130,7 +130,7 @@ export default function MultiSelect({
                         onChange={() => toggle(o.value)}
                         className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
                       />
-                      {o.code && <span className="tabular mt-px shrink-0 text-[11px] text-faint">{o.code}</span>}
+                      {o.code && <span className="tabular mt-px shrink-0 text-[12px] text-faint">{o.code}</span>}
                       {/* HS descriptions run long: wrap them rather than cutting the
                           distinguishing tail, which is often the whole difference
                           between two neighbouring codes */}
@@ -144,7 +144,7 @@ export default function MultiSelect({
               <button
                 type="button"
                 onClick={() => onChange([])}
-                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left text-[11px] font-medium text-muted hover:text-foreground"
+                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left text-[12px] font-medium text-muted hover:text-foreground"
               >
                 {t("filter.clearSelection")}
               </button>

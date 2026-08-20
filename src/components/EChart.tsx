@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as echarts from "echarts";
 import { readZoom, serverZoom, subscribeZoom } from "@/lib/zoom-store";
-import { scaleFonts } from "@/lib/echartBase";
+import { CHART_TEXT_BOOST, scaleFonts } from "@/lib/echartBase";
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -39,7 +39,7 @@ const POINTER_EVENTS = ["click", "dblclick", "mousedown", "mouseup", "mousemove"
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
   const zoom = useSyncExternalStore(subscribeZoom, readZoom, serverZoom);
-  const scaled = useMemo(() => scaleFonts(option, zoom), [option, zoom]);
+  const scaled = useMemo(() => scaleFonts(option, zoom * CHART_TEXT_BOOST), [option, zoom]);
   const ref = useRef<HTMLDivElement>(null);
   const outer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);

@@ -39,7 +39,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
     return {
       backgroundColor: "transparent",
       grid: baseGrid,
-      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: 11 }, data: [peName, uiName] },
+      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: 13 }, data: [peName, uiName] },
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
@@ -128,8 +128,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           return `<strong>${y}</strong><br/>${t("chart.signedDiscrepancy")}: <span style="font-weight:600">${fmtUSDFull(row.signed)}</span>`;
         },
       },
-      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 11 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 11, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 13 } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 13, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",
@@ -157,8 +157,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
       <div className="mt-1" style={{ height: 110 }}>
         <EChart option={gapOption} />
       </div>
-      <p className="px-1 text-[11px] text-faint">{t("chart.signedCaption")}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border-soft)] px-1 pt-2 text-[11px]">
+      <p className="px-1 text-[12px] text-faint">{t("chart.signedCaption")}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border-soft)] px-1 pt-2 text-[12px]">
         {windowYears.map((y) => {
           const has = byYear.has(y);
           return (

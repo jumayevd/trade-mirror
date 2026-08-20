@@ -144,7 +144,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 3,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
       },
       tooltip: {
         ...baseTooltip(),
@@ -171,8 +171,8 @@ export default function OverviewView() {
         {
           type: "value",
           name: shareName,
-          nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-          axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtPct(v, 0) },
+          nameTextStyle: { color: COLORS.axis, fontSize: 13 },
+          axisLabel: { color: COLORS.axis, fontSize: 13, formatter: (v: number) => fmtPct(v, 0) },
           splitLine: { show: false },
           axisLine: { show: false },
         },
@@ -261,7 +261,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 8,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
       },
       tooltip: {
         ...baseTooltip(),
@@ -330,7 +330,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 8,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
       },
       tooltip: {
         ...baseTooltip(),
@@ -394,14 +394,14 @@ export default function OverviewView() {
       <section className="no-print flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+            <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
             <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
               {(["year", "month"] as const).map((g) => (
                 <button
                   key={g}
                   onClick={() => pickGranularity(g)}
                   aria-pressed={granularity === g}
-                  className={`px-2.5 py-1.5 text-[12px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                  className={`px-2.5 py-1.5 text-[13px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
                 >
                   {t(g === "year" ? "gran.year" : "gran.month")}
                 </button>
@@ -497,13 +497,13 @@ export default function OverviewView() {
               drill-down is offered as buttons: keyboard-reachable, and it names the
               periods rather than asking the reader to guess that bars are clickable. */}
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-faint">{t("ovw.twoSided.clickHint")}</span>
+            <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
             {drillPeriods.map((y) => (
               <button
                 key={y}
                 onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
                 aria-pressed={drillYear === y}
-                className={`tabular rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${
+                className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
                   drillYear === y
                     ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                     : "border-[var(--color-border)] text-muted hover:text-foreground"
@@ -524,7 +524,7 @@ export default function OverviewView() {
                 </h3>
                 <button
                   onClick={() => setDrillYear(null)}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[11px] font-medium text-muted hover:text-foreground"
+                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
                 >
                   {t("ovw.twoSided.close")} ✕
                 </button>
@@ -537,7 +537,7 @@ export default function OverviewView() {
             </div>
           )}
 
-          <p className="mt-2 max-w-3xl text-[11px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
+          <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
         </div>
       </section>
 
@@ -597,7 +597,7 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
   return (
     <div className="stat-card stat-card-hero" style={{ ["--stat-rail" as string]: COLORS.positive }}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[10.5px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="text-[12px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
@@ -605,7 +605,7 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
           {value}
         </span>
       </div>
-      {sub && <div className="mt-1.5 text-[11.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
@@ -622,8 +622,8 @@ function RankedList({ rows, total, codeWidth }: { rows: RankRow[]; total: number
     <div className="card space-y-1.5 p-4">
       {rows.map((r, i) => (
         <div key={r.key} className="flex items-center gap-3 text-[13px]">
-          <span className="tabular w-4 shrink-0 text-right text-[11px] text-faint">{i + 1}</span>
-          <span className={`tabular ${codeWidth} shrink-0 text-[11px] text-faint`}>{r.code}</span>
+          <span className="tabular w-4 shrink-0 text-right text-[12px] text-faint">{i + 1}</span>
+          <span className={`tabular ${codeWidth} shrink-0 text-[12px] text-faint`}>{r.code}</span>
           <span className="w-52 shrink-0 truncate" title={r.label}>
             {r.href ? (
               <Link href={r.href} className="font-medium hover:underline">
@@ -650,12 +650,12 @@ function RankedList({ rows, total, codeWidth }: { rows: RankRow[]; total: number
             {fmtUSD(r.value)}
           </span>
           <span
-            className="tabular w-12 shrink-0 text-right text-[11px] text-faint"
+            className="tabular w-12 shrink-0 text-right text-[12px] text-faint"
             title={t("ovw.share.tip")}
           >
             {total > 0 ? fmtPct(r.value / total, 0) : "—"}
           </span>
-          <span className="hidden w-20 shrink-0 text-right text-[11px] text-faint sm:block">{r.note}</span>
+          <span className="hidden w-20 shrink-0 text-right text-[12px] text-faint sm:block">{r.note}</span>
         </div>
       ))}
     </div>

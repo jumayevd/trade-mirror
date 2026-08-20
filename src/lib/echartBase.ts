@@ -8,9 +8,9 @@ import { COLORS, fmtUSD } from "./format";
 /**
  * Chart base per the dataviz mark specs, in CBU house colours (navy + gold):
  *  - gridlines: hairline (1px), SOLID, one step off the surface, recessive
- *  - axis text: neutral grey, 12px; baseline in the baseline grey
+ *  - axis text: neutral grey, 13.5px before the reading scale; baseline in the baseline grey
  *  - tooltip: card surface, navy-tinted hairline border, dark ink
- *  - legends: 12px, top; present only for >= 2 series
+ *  - legends: 13px, top; present only for >= 2 series
  *  - bars <= 24px with 4px rounded data-end (square at baseline); lines 2px;
  *    markers >= 8px with a 2px surface ring — applied per chart
  *  - fills are SOLID: never washed out with an alpha suffix
@@ -28,7 +28,14 @@ import { COLORS, fmtUSD } from "./format";
  *
  * Formatters and other functions are passed through by reference: `typeof fn`
  * is neither "object" nor an array, so they fall straight through.
+ *
+ * CHART_TEXT_BOOST sets chart text a step ABOVE the surrounding prose rather
+ * than level with it: axis labels and legends are scanned at a glance, from
+ * further back than body copy, and they sit on a busy field of marks and
+ * gridlines rather than on clean paper.
  */
+export const CHART_TEXT_BOOST = 1.15;
+
 export function scaleFonts<T>(node: T, k: number): T {
   if (Array.isArray(node)) return node.map((v) => scaleFonts(v, k)) as unknown as T;
   if (node !== null && typeof node === "object") {
@@ -50,7 +57,7 @@ export function baseTooltip(): TooltipComponentOption {
     backgroundColor: COLORS.surface,
     borderColor: "rgba(22,35,59,0.16)",
     borderWidth: 1,
-    textStyle: { color: "#141a26", fontSize: 13 },
+    textStyle: { color: "#141a26", fontSize: 13.5 },
     padding: [8, 12],
     // no glide: the default 0.4s easing makes the tooltip trail the cursor,
     // which reads as lag and as pointing at the previous mark
@@ -63,8 +70,8 @@ export function valueAxis(name?: string): YAXisComponentOption {
   return {
     type: "value",
     name,
-    nameTextStyle: { color: COLORS.axis, fontSize: 11 },
-    axisLabel: { color: COLORS.axis, fontSize: 12, formatter: (v: number) => fmtUSD(v) },
+    nameTextStyle: { color: COLORS.axis, fontSize: 12.5 },
+    axisLabel: { color: COLORS.axis, fontSize: 13.5, formatter: (v: number) => fmtUSD(v) },
     splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
     axisLine: { show: false },
   };
@@ -74,7 +81,7 @@ export function catAxis(data: (string | number)[]): XAXisComponentOption {
   return {
     type: "category",
     data,
-    axisLabel: { color: COLORS.axis, fontSize: 12 },
+    axisLabel: { color: COLORS.axis, fontSize: 13.5 },
     axisLine: { lineStyle: { color: COLORS.baseline, width: 1 } },
     axisTick: { show: false },
   };

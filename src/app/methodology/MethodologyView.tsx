@@ -34,7 +34,7 @@ const HS6 = "6";
 
 const H2 = "text-[15px] font-semibold tracking-tight";
 const P = "max-w-3xl text-[13px] leading-relaxed text-muted";
-const TH = "px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.1em] text-faint";
+const TH = "px-4 py-2 text-left text-[11.5px] font-semibold uppercase tracking-[0.1em] text-faint";
 const TD = "px-4 py-2 align-top text-[13px] text-muted";
 
 /** A formula on its own line — monospace, quiet, never inside a sentence. */
@@ -49,7 +49,7 @@ function Formula({ children }: { children: React.ReactNode }) {
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[11px] font-semibold text-muted">
+      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[12px] font-semibold text-muted">
         {n}
       </span>
       <div className="min-w-0 flex-1">
@@ -112,7 +112,7 @@ export default function MethodologyView() {
     <div className="space-y-9">
       {/* ---------------------------------------------------------------- */}
       <section className="space-y-1.5">
-        <p className="text-[10.5px] font-medium text-faint">
+        <p className="text-[12px] font-medium text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
         </p>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
@@ -191,11 +191,11 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-        <p className="max-w-3xl text-[11.5px] text-faint">
+        <p className="max-w-3xl text-[12.5px] text-faint">
           {tr("meth.measures.note")}
           <Cite ids={["hummels2006", "gaulier2010"]} />
         </p>
-        <p className="tabular max-w-3xl text-[11.5px] text-faint">
+        <p className="tabular max-w-3xl text-[12.5px] text-faint">
           {meta.window.start}–{meta.window.end}: {tr("meth.measures.headline")} {fmtUSD(k.positive.central)}{" "}
           ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · {tr("meth.measures.coverage")} {fmtPct(k.coveragePct, 0)}
         </p>
@@ -285,7 +285,7 @@ export default function MethodologyView() {
             note={`${tr("meth.diag.gapRateNote")} p90 ${fmtPct(rates.p90, 0)} · p99 ${fmtPct(rates.p99, 0)}`}
           />
         </div>
-        <p className="tabular max-w-3xl text-[11.5px] text-faint">
+        <p className="tabular max-w-3xl text-[12.5px] text-faint">
           {tr("meth.diag.bands")}: {tr("band.critical")} ≥ {cuts.critical.toFixed(1)} · {tr("band.high")} ≥ {cuts.high.toFixed(1)} · {tr("band.elevated")} ≥ {cuts.elevated.toFixed(1)} (HS6)
         </p>
       </section>
@@ -303,7 +303,7 @@ export default function MethodologyView() {
       {/* 7. references ------------------------------------------------------ */}
       <section className="max-w-4xl space-y-2">
         <h2 className={H2}>{tr("meth.refs.title")}</h2>
-        <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-muted">
+        <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted">
           {/* the annotated readings live in the Literature findings table — the
               list here is the bare citation, only for sources actually used */}
           {REFERENCES.map((r) => (
@@ -320,7 +320,7 @@ export default function MethodologyView() {
             </li>
           ))}
         </ol>
-        <p className="text-[11.5px] text-faint">{tr("meth.refs.note")}</p>
+        <p className="text-[12.5px] text-faint">{tr("meth.refs.note")}</p>
       </section>
     </div>
   );
@@ -330,11 +330,11 @@ function Diag({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="card p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
         <InfoTip text={note} />
       </div>
       <div className="tabular mt-1.5 text-[22px] font-semibold leading-none">{value}</div>
-      <p className="mt-1.5 text-[11px] leading-snug text-faint">{note}</p>
+      <p className="mt-1.5 text-[12px] leading-snug text-faint">{note}</p>
     </div>
   );
 }

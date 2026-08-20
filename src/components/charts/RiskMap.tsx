@@ -178,7 +178,7 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
         pieces,
         left: 8,
         bottom: 16,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
         itemWidth: 14,
         itemHeight: 10,
       },

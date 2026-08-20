@@ -301,7 +301,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
               {WINDOW.map((y) => {
                 const has = pm.reportedYears.includes(y);
                 return (
-                  <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-[11px]"
+                  <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-[12px]"
                     style={{
                       borderColor: has ? "color-mix(in srgb, var(--color-ok) 45%, transparent)" : "var(--color-border)",
                       background: has ? "color-mix(in srgb, var(--color-ok) 10%, transparent)" : "transparent",
@@ -354,7 +354,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
             const s = ALT_STATUS[a.status];
             return (
               <li key={a.title} className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
-                <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center text-[11px] font-medium"
+                <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center text-[12px] font-medium"
                   style={{ color: s.color, borderColor: `color-mix(in srgb, ${s.color} 40%, transparent)`, background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
                   {t(s.label)}
                 </span>

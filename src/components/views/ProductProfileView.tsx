@@ -132,7 +132,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
           <span>{categoryLabel(p.category)}</span>
           {residual && (
             <span
-              className="rounded-md px-2 py-0.5 text-[11px] font-medium"
+              className="rounded-md px-2 py-0.5 text-[12px] font-medium"
               style={{ color: COLORS.transit, background: "color-mix(in srgb, var(--color-transit) 10%, transparent)" }}
               title={t("pprof.residual.tip")}
             >
@@ -210,7 +210,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
           <div className="card overflow-x-auto">
             <table className="zebra w-full min-w-[900px] text-sm">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[11px] uppercase tracking-wider text-faint">
+                <tr className="border-b border-[var(--color-border)] text-left text-[12px] uppercase tracking-wider text-faint">
                   <th className="px-3 py-2 font-medium">{t("pprof.th.partner")}</th>
                   <th className="px-3 py-2 font-medium">{t("pprof.th.risk")}</th>
                   <th className="px-3 py-2 font-medium">{t("pprof.th.band")}</th>

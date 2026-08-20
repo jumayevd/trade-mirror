@@ -46,7 +46,7 @@ export default function LevelTabs({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {caption !== null && (
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{caption}</span>
+        <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{caption}</span>
       )}
       <div
         role="group"
@@ -62,7 +62,7 @@ export default function LevelTabs({
               onClick={() => onChange(l)}
               aria-pressed={on}
               title={tips ? tips[l] : t(LEVEL_TIP_KEYS[l])}
-              className={`whitespace-nowrap px-2.5 py-1 text-[12px] ${
+              className={`whitespace-nowrap px-2.5 py-1 text-[13px] ${
                 i > 0 ? "border-l border-[var(--color-border)]" : ""
               } ${
                 on

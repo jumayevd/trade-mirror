@@ -30,7 +30,7 @@ export default function ProductChart({ product }: { product: Product }) {
       grid: baseGrid,
       legend: {
         top: 0,
-        textStyle: { color: COLORS.text, fontSize: 11 },
+        textStyle: { color: COLORS.text, fontSize: 13 },
         data: [ptnName, uzbName],
       },
       tooltip: {
@@ -107,8 +107,8 @@ export default function ProductChart({ product }: { product: Product }) {
           return `<strong>${row.y}</strong><br/>${gapName}: <span style="font-weight:600">${fmtUSDFull(Math.round(row.gap))}</span>`;
         },
       },
-      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 11 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 11, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 13 } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 13, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",
@@ -147,7 +147,7 @@ export default function ProductChart({ product }: { product: Product }) {
       <div className="mt-1" style={{ height: 110 }}>
         <EChart option={gapOption} />
       </div>
-      <p className="px-1 text-[11px] text-faint">
+      <p className="px-1 text-[12px] text-faint">
         {t("pchart.caption")}
       </p>
     </div>
