@@ -1,13 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PartnerGaps from "@/components/charts/PartnerGaps";
 import PartnerChannels, { type ChannelRow, type ChapterRow } from "@/app/partners/[iso]/PartnerChannels";
-import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag } from "@/components/ui";
+import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, Segmented } from "@/components/ui";
+import MultiSelect from "@/components/MultiSelect";
+import type { SearchOption } from "@/components/SearchSelect";
+import YearSelect from "@/components/YearSelect";
+import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import {
-  aggregate, meta, DEFAULT_FILTER, partnerMetaOf, isResidualChapter, type Aggregate, type Filter,
+  aggregate, meta, DEFAULT_FILTER, isDerivedYear, partnerMetaOf, isResidualChapter,
+  yearsFor, yearsLabel, type Aggregate, type Filter, type Granularity,
 } from "@/lib/dataset";
 import { channelsToCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
@@ -35,6 +40,11 @@ const WINDOW = meta.years;
  * one aggregate per language — computed lazily on first use and shared by every
  * profile page thereafter. Without this the module-level aggregate would be
  * frozen in whatever language was active at first load.
+ *
+ * This one spans the whole window with no product filter: it is what the
+ * pickers offer, so narrowing the page never removes the option that would
+ * widen it again. The figures come from a second aggregate built from the
+ * live controls.
  */
 const AGG_CACHE = new Map<Lang, { full: Aggregate; snap: Aggregate }>();
 function aggFor(lang: Lang): { full: Aggregate; snap: Aggregate } {
@@ -44,6 +54,14 @@ function aggFor(lang: Lang): { full: Aggregate; snap: Aggregate } {
     AGG_CACHE.set(lang, e);
   }
   return e;
+}
+
+/** Distinct codes as picker options, ascending, labelled with their description. */
+function codeOptions(rows: { cmd: string; cmdLabel: string }[]): SearchOption[] {
+  const m = new Map<string, string>();
+  for (const r of rows) m.set(r.cmd, r.cmdLabel);
+  return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([cmd, label]) => ({ value: cmd, code: cmd, label }));
 }
 
 /** Fill {placeholders} in a translated string with dataset values. */
@@ -60,15 +78,125 @@ const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
 
 export default function PartnerProfileView({ iso }: { iso: string }) {
   const { t, lang } = useI18n();
-  const { full: FULL, snap: SNAP } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
-  const p = FULL.partners.find((x) => x.iso3 === iso.toUpperCase());
-  if (!p) notFound();
-  const pm = partnerMetaOf(p.iso3)!;
-  const snap = SNAP.partners.find((x) => x.iso3 === p.iso3);
+  const ISO = useMemo(() => iso.toUpperCase(), [iso]);
+  const pm0 = partnerMetaOf(ISO);
 
-  const period = `${meta.window.start}–${meta.window.end}`;
+  /** The page's own controls, mirroring the Executive Overview's. */
+  const [granularity, setGranularity] = useState<Granularity>("year");
+  const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [months, setMonths] = useState<number[]>([]);
+  const [hs2Sel, setHs2Sel] = useState<string[]>([]);
+  const [hs4Sel, setHs4Sel] = useState<string[]>([]);
+  const [hs6Sel, setHs6Sel] = useState<string[]>([]);
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
+
+  const { full: BASE, snap: SNAP } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
+
+  /** Everything the page shows follows these ticks, scoped to this partner. */
+  const viewFilter = useMemo<Filter>(() => ({
+    ...DEFAULT_FILTER,
+    minGap: 0,
+    country: [ISO],
+    granularity,
+    years,
+    months,
+    hs2: hs2Sel,
+    hs4: hs4Sel,
+    hs6: hs6Sel,
+  }), [ISO, granularity, years, months, hs2Sel, hs4Sel, hs6Sel]);
+
+  const FULL = useMemo(
+    () => labelsFor(lang, () => aggregate(viewFilter)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewFilter, lang, detailVer],
+  );
+
+  const pickGranularity = (g: Granularity) => {
+    if (g === granularity) return;
+    setGranularity(g);
+    setMonths([]);
+    const window = yearsFor(g);
+    const kept = years.filter((y) => window.includes(y));
+    setYears(kept.length ? kept : [...window]);
+  };
+
+  const monthOptions = useMemo<SearchOption[]>(
+    () => Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: t(`month.${i + 1}` as never) })),
+    [t],
+  );
+
+  // the pickers offer only what this partner actually trades, drawn from the
+  // unfiltered aggregate so narrowing never hides the way back
+  const baseHs2 = useMemo(() => BASE.channels.filter((c) => c.partnerIso === ISO), [BASE, ISO]);
+  const baseHs4 = useMemo(() => BASE.channels4.filter((c) => c.partnerIso === ISO), [BASE, ISO]);
+  const baseHs6 = useMemo(() => BASE.channels6.filter((c) => c.partnerIso === ISO), [BASE, ISO]);
+  const hs2Options = useMemo(() => codeOptions(baseHs2), [baseHs2]);
+  const hs4Options = useMemo(
+    () => codeOptions(baseHs4.filter((c) => hs2Sel.length === 0 || hs2Sel.includes(c.chapter))),
+    [baseHs4, hs2Sel],
+  );
+  const hs6Options = useMemo(
+    () => codeOptions(baseHs6.filter((c) =>
+      (hs2Sel.length === 0 || hs2Sel.includes(c.chapter)) &&
+      (hs4Sel.length === 0 || hs4Sel.includes(c.cmd.slice(0, 4))))),
+    [baseHs6, hs2Sel, hs4Sel],
+  );
+
+  const controls = (
+    <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-3">
+      <div className="flex flex-col gap-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+        <Segmented<Granularity>
+          ariaLabel={t("filter.granularity")}
+          value={granularity}
+          onChange={pickGranularity}
+          options={[{ key: "year", label: t("gran.year") }, { key: "month", label: t("gran.month") }]}
+        />
+      </div>
+      <YearSelect years={years} onChange={setYears} available={yearsFor(granularity)} />
+      {granularity === "month" && (
+        <MultiSelect
+          values={months.map(String)}
+          onChange={(v) => setMonths(v.map(Number).sort((a, b) => a - b))}
+          options={monthOptions}
+          label={t("filter.months")}
+          allLabel={t("filter.allMonths")}
+          searchable={false}
+        />
+      )}
+      <MultiSelect values={hs2Sel} onChange={setHs2Sel} options={hs2Options} label={t("filter.hs2")} allLabel={t("filter.all")} />
+      <MultiSelect values={hs4Sel} onChange={setHs4Sel} options={hs4Options} label={t("filter.hs4")} allLabel={t("filter.all")} />
+      <MultiSelect values={hs6Sel} onChange={setHs6Sel} options={hs6Options} label={t("filter.hs6")} allLabel={t("filter.all")} />
+    </section>
+  );
+
+  if (!pm0) notFound();
+
+  const p = FULL.partners.find((x) => x.iso3 === ISO);
+  const name = labelsFor(lang, () => pm0.name);
+  const period = yearsLabel(years);
+
+  // a narrow enough selection can leave this partner with nothing comparable —
+  // that is an empty result, not a missing page
+  if (!p) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link href="/partners" className="text-sm text-muted hover:text-foreground">&larr; {t("prof.back")}</Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+            <span className="text-sm text-faint">{pm0.region} &middot; {fill(t("prof.header.meta"), { period })}</span>
+          </div>
+        </div>
+        {controls}
+        <EmptyState />
+      </div>
+    );
+  }
+
+  const pm = pm0;
+  const snap = SNAP.partners.find((x) => x.iso3 === p.iso3);
   const cifPct = Math.round(meta.cif.central * 100);
-  const name = p.name; // localized by the aggregate
 
   const hs2 = FULL.channels.filter((c) => c.partnerIso === p.iso3);
   const hs6 = FULL.channels6.filter((c) => c.partnerIso === p.iso3);
@@ -159,7 +287,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   ];
 
   // ---- downloads (spec §6.6.9): server-rendered data-URI link, no client JS needed ----
-  const csv = channelsToCsv(hs6, FULL_FILTER);
+  const csv = channelsToCsv(hs6, viewFilter);
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${csv}`)}`;
 
   return (
@@ -175,7 +303,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         </div>
       </div>
 
-      <ContextLine filter={FULL_FILTER} />
+      {controls}
+
+      <ContextLine filter={viewFilter} />
 
       {/* 1. executive summary */}
       <section className="card border-l-2 border-l-[var(--color-primary)] p-5">

@@ -109,9 +109,14 @@ body {
  * capped so table rows never become an uncomfortably long scan line.
  */
 :root {
-  /* the two must stay in step: unzoom = 1 / zoom (see .chart-frame) */
-  --page-zoom: 1.1;
-  --page-unzoom: 0.909091;
+  /*
+   * Reading scale. The two must stay in step: unzoom = 1 / zoom (see
+   * .chart-frame). These are the defaults; the header's text-size control
+   * overrides both on the document element, so any change here must also change
+   * DEFAULT_ZOOM in src/lib/zoom-store.ts or the first paint will jump.
+   */
+  --page-zoom: 1.25;
+  --page-unzoom: 0.8;
 
   --shell-max: 1200px;
   /* header: 0.5rem padding top+bottom around a 2rem control row, plus its border */
