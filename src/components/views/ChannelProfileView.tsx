@@ -79,7 +79,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
   const pm = partnerMetaOf(channel.partnerIso)!;
   const product = productByCmd(channel.cmd);
   const period = `${meta.window.start}–${meta.window.end}`;
-  const cifPct = Math.round(meta.cif.central * 100);
+  const cifPct = Math.round(FULL_FILTER.cif * 100);
   // a smaller freight factor deflates less, so it yields the LARGER adjusted import
   const adjLow = channel.uiT / (1 + meta.cif.high);
   const adjHigh = channel.uiT / (1 + meta.cif.low);

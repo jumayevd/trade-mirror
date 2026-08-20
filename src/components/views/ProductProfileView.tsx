@@ -47,7 +47,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
   // product and chapter names are data-derived: translate them like everywhere else
   const label = labelsFor(lang, () => hsLabel(p.cmd));
   const chapterLabel = labelsFor(lang, () => hsLabel(p.chapter));
-  const cifPct = Math.round(meta.cif.central * 100);
+  const cifPct = Math.round(FULL_FILTER.cif * 100);
   const residual = isResidualChapter(p.chapter);
 
   const gapShare = p.ptnExp > 0 ? p.positiveGap / p.ptnExp : 0;

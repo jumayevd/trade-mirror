@@ -463,7 +463,12 @@ export const DEFAULT_FILTER: Filter = {
   granularity: "year",
   years: [...meta.years],
   months: [],
-  cif: meta.cif.central,
+  /*
+   * No freight adjustment by default: the dashboard opens on the two books
+   * exactly as reported. Every other scenario is one selection away, and the
+   * documented band still frames the sensitivity.
+   */
+  cif: 0,
   country: [],
   hs2: [],
   hs4: [],
@@ -1066,8 +1071,11 @@ export function aggregate(f: Filter): Aggregate {
   };
   const Klo = 1 + meta.cif.low;
   const Khi = 1 + meta.cif.high;
+  // FOB basis on both sides, matching the live identity: the CIF import is
+  // divided down to FOB, never the export raised. Endpoints computed any other
+  // way do not bracket the figure the filter produces.
   const posAt = (mult: number) =>
-    rollupBase.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe * mult - yr.ui), 0), 0);
+    rollupBase.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe - yr.ui / mult), 0), 0);
   const activePartners = meta.partners.filter((p) => allowPartner(p.iso3));
   const possiblePY = activePartners.length * yearsInRange || 1;
   const comparablePY = activePartners.reduce((s, p) => s + p.reportedYears.filter((y) => picked.has(y)).length, 0);

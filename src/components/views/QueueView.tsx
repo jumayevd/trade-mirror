@@ -186,8 +186,7 @@ export default function QueueView() {
           >
             {FREIGHT_SCENARIOS.map((f) => (
               <option key={f} value={f}>
-                {Math.round(f * 100)}%
-                {f === meta.cif.central ? ` (${t("filter.central")})` : ""}
+                {f === 0 ? t("filter.freightNone") : `${Math.round(f * 100)}%`}
               </option>
             ))}
           </select>

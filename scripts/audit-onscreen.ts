@@ -14,7 +14,8 @@
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
 
-const K = 1 + meta.cif.central;
+/* the identity holds at whatever rate the default filter carries */
+const K = 1 + DEFAULT_FILTER.cif;
 const FULL: Filter = { ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 };
 
 let pass = 0;
@@ -152,6 +153,25 @@ for (const f of [0, 0.03, 0.06, 0.1, 0.15]) {
   check(`positive rises with freight (${Math.round(f * 100)}%)`, v >= prev, `${Math.round(v)} < ${Math.round(prev)}`);
   prev = v;
 }
+
+/* ---------------------------------------------------------------- */
+/* 10. the sensitivity band printed beside the headline               */
+/* ---------------------------------------------------------------- */
+/* Overview, Methodology and the country ranking all print a low-high
+ * range next to the positive total. Those endpoints have to be the SAME
+ * identity evaluated at the band rates — computed any other way they stop
+ * bracketing the figure they annotate. */
+for (const [tag, rate, shown] of [
+  ["low", meta.cif.low, full.kpis.positive.low],
+  ["high", meta.cif.high, full.kpis.positive.high],
+] as const) {
+  const recomputed = aggregate({ ...FULL, cif: rate }).kpis.positive.central;
+  check(`band ${tag} endpoint = positive at ${Math.round(rate * 100)}%`,
+    near(shown, recomputed, 5), `shown ${Math.round(shown)} vs ${Math.round(recomputed)}`);
+}
+check("band brackets the central rate",
+  full.kpis.positive.low <= aggregate({ ...FULL, cif: meta.cif.central }).kpis.positive.central + 1
+  && aggregate({ ...FULL, cif: meta.cif.central }).kpis.positive.central <= full.kpis.positive.high + 1);
 
 /* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);

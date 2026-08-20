@@ -196,7 +196,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   const pm = pm0;
   const snap = SNAP.partners.find((x) => x.iso3 === p.iso3);
-  const cifPct = Math.round(meta.cif.central * 100);
+  const cifPct = Math.round(FULL_FILTER.cif * 100);
 
   const hs2 = FULL.channels.filter((c) => c.partnerIso === p.iso3);
   const hs6 = FULL.channels6.filter((c) => c.partnerIso === p.iso3);
@@ -218,7 +218,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const weightShare = pe6 > 0 ? pe6w / pe6 : null;
 
   // positive channel-years only, so exports − adjusted imports = the positive discrepancy
-  const adjImport = p.uiPosT / (1 + meta.cif.central);
+  const adjImport = p.uiPosT / (1 + FULL_FILTER.cif);
   const posShare = p.pePosT > 0 ? p.posT / p.pePosT : 0;
   const trendWord = t(p.trend > 1_000_000 ? "prof.trend.rising" : p.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
   const topSector = structure[0];
