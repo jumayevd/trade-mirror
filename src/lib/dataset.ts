@@ -208,6 +208,13 @@ const comparableMonths = (() => {
 })();
 export const comparableMonthsOfYear = (y: number): number[] => comparableMonths.get(y) ?? [];
 
+/**
+ * Freight scenarios the interface offers. Discrete steps rather than every whole
+ * percent: the figure is an assumption, and offering 0.01 increments implied a
+ * precision the CIF/FOB margin does not have.
+ */
+export const FREIGHT_SCENARIOS: number[] = [0, 0.05, 0.10, 0.15, 0.20, 0.25];
+
 /** Years the active granularity offers. */
 export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : yearlyYears);
 
@@ -478,7 +485,9 @@ export interface Channel {
   partner: string; partnerIso: string; region: string; transit: boolean; tier: Tier;
   chapter: string; cmd: string; cmdLabel: string; level: number; category: string;
   years: YearRow[];
-  peT: number; uiT: number; expectedT: number;
+  peT: number; uiT: number;
+  /** Uzbekistan's CIF imports divided down to an FOB basis: uiT / (1 + f). */
+  adjUiT: number;
   /**
    * Totals over the positive channel-years only — both books reported and the
    * partner side exceeds Uzbekistan's after freight. Wherever these sit beside
@@ -539,7 +548,11 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       // booked as a gap, which is a false positive, not a signal. Such years are
       // dropped here and surface instead as one-sided flows on Data Quality.
       if (r.pe <= NOISE || r.ui <= NOISE) continue;
-      const signed = r.pe * K - r.ui;
+      // Both books on an FOB basis: the partner's export is already FOB, so it is
+      // Uzbekistan's CIF import that is divided down by the freight factor. The
+      // earlier form raised the export to CIF instead, which stated the same gap
+      // in CIF money — the same sign and ordering, a factor of (1 + f) larger.
+      const signed = r.pe - r.ui / K;
       years.push({ y: r.y, pe: r.pe, ui: r.ui, signed, uvOk: !!(r.uw && r.pw) });
       peT += r.pe; uiT += r.ui;
       posT += pos(signed); revT += pos(-signed);
@@ -549,17 +562,19 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
     }
     if (years.length === 0) continue; // no year with both books reporting
-    const expectedT = peT * K;
-    const signedT = expectedT - uiT;
+    const adjUiT = uiT / K;
+    const signedT = peT - adjUiT;
     const absT = posT + revT;
     const n = years.length;
 
-    const boundedAsymmetry = Math.max(expectedT, uiT) > 0 ? clamp(absT / Math.max(expectedT, uiT)) : 0;
-    const positiveShare = expectedT > 0 ? clamp(posT / expectedT) : 0;
+    const boundedAsymmetry = Math.max(peT, adjUiT) > 0 ? clamp(absT / Math.max(peT, adjUiT)) : 0;
+    const positiveShare = peT > 0 ? clamp(posT / peT) : 0;
     const uvRatio = uvYears >= 2 && uw > 0 && pw > 0 && pwv > 0 ? (uwv / uw) / (pwv / pw) : null;
 
     // scenario robustness: does the direction-relevant sign hold across 6/10/15%?
-    const netSigns = [sgn(peT * Klo - uiT), sgn(signedT), sgn(peT * Khi - uiT)];
+    // a lower freight factor deflates the import less, so it shrinks the gap —
+    // the same direction the old form moved in, so lo/hi still bracket the middle
+    const netSigns = [sgn(peT - uiT / Klo), sgn(signedT), sgn(peT - uiT / Khi)];
     const flipsAcrossFreight = new Set(netSigns.filter((s) => s !== 0)).size > 1 || netSigns.includes(0);
 
     // flags
@@ -595,7 +610,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       partner: partnerName(pm.iso3), partnerIso: pm.iso3, region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
       chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
       level, category: r0.cat,
-      years, peT, uiT, expectedT, pePosT, uiPosT, signedT, posT, revT, absT,
+      years, peT, uiT, adjUiT, pePosT, uiPosT, signedT, posT, revT, absT,
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
@@ -669,7 +684,7 @@ export interface Aggregate {
   annual: {
     year: number; month?: number; label?: string;
     pe: number; ui: number;
-    /** Positive channel-years only: pePos × (1 + f) − uiPos = positive exactly. */
+    /** Positive channel-years only: pePos − uiPos / (1 + f) = positive exactly. */
     pePos: number; uiPos: number;
     positive: number;
     /**
@@ -909,7 +924,7 @@ export function aggregate(f: Filter): Aggregate {
       chapter, label: hsLabel(chapter), category: cs[0].category, residual: isResidualChapter(chapter),
       peT, uiT: cs.reduce((s, c) => s + c.uiT, 0),
       posT, signedT: cs.reduce((s, c) => s + c.signedT, 0),
-      gapRate: peT > 0 ? posT / (peT * (1 + f.cif)) : 0, channels: cs.length,
+      gapRate: peT > 0 ? posT / peT : 0, channels: cs.length,
       topPartner: top ? { name: top.partner, iso3: top.partnerIso, value: Math.round(dirVal(top)) } : null,
       trend: trendOf(series),
     });
@@ -954,7 +969,7 @@ export function aggregate(f: Filter): Aggregate {
       const e = mAgg.get(key) ?? { pe: 0, ui: 0, pePos: 0, uiPos: 0, positive: 0, reverse: 0, partners: new Set<string>() };
       e.pe += pe; e.ui += ui;
       if (pe > NOISE && ui > NOISE) {
-        const signed = pe * K - ui;
+        const signed = pe - ui / K;
         e.positive += pos(signed);
         e.reverse += pos(-signed);
         if (signed > 0) { e.pePos += pe; e.uiPos += ui; }

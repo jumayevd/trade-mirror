@@ -89,9 +89,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const pe6w = hs6.reduce((s, c) => s + (c.uvYears > 0 ? c.peT : 0), 0);
   const weightShare = pe6 > 0 ? pe6w / pe6 : null;
 
-  // positive channel-years only, so expected − imports = the positive discrepancy
-  const expected = p.pePosT * (1 + meta.cif.central);
-  const posShare = expected > 0 ? p.posT / expected : 0;
+  // positive channel-years only, so exports − adjusted imports = the positive discrepancy
+  const adjImport = p.uiPosT / (1 + meta.cif.central);
+  const posShare = p.pePosT > 0 ? p.posT / p.pePosT : 0;
   const trendWord = t(p.trend > 1_000_000 ? "prof.trend.rising" : p.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
   const topSector = structure[0];
 
@@ -104,7 +104,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         : fill(t("prof.sum.covFull"), { name });
   const summary = [
     fill(t("prof.sum.observed"), { start: meta.window.start, end: meta.window.end, name, pe: fmtUSD(p.observed.pe), ui: fmtUSD(p.observed.ui) }),
-    fill(t("prof.sum.screened"), { name, cif: cifPct, pePos: fmtUSD(p.pePosT), expected: fmtUSD(expected), uiPos: fmtUSD(p.uiPosT), pos: fmtUSD(p.posT) }),
+    fill(t("prof.sum.screened"), { name, cif: cifPct, pePos: fmtUSD(p.pePosT), expected: fmtUSD(adjImport), uiPos: fmtUSD(p.uiPosT), pos: fmtUSD(p.posT) }),
     topSector
       ? fill(t("prof.sum.topSector"), { sector: topSector.label.toLowerCase(), chapter: topSector.chapter, value: fmtUSD(topSector.posT), trend: trendWord })
       : fill(t("prof.sum.noSector"), { trend: trendWord }),

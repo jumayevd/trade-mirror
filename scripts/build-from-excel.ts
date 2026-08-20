@@ -236,7 +236,7 @@ async function main() {
   for (const [cmd, agg] of prodAgg) {
     const byYear = ANALYSIS_YEARS.filter((y) => agg.byYear.has(y)).map((y) => {
       const e = agg.byYear.get(y)!;
-      return { y, pe: Math.round(e.pe), ui: Math.round(e.ui), gap: Math.round(e.pe * K - e.ui) };
+      return { y, pe: Math.round(e.pe), ui: Math.round(e.ui), gap: Math.round(e.pe - e.ui / K) };
     });
     const ptnExp = byYear.reduce((s, e) => s + e.pe, 0);
     const uzbImp = byYear.reduce((s, e) => s + e.ui, 0);
@@ -245,7 +245,7 @@ async function main() {
     const partnersList: ProductPartner[] = [...agg.byPartner.entries()]
       .map(([iso, e]) => {
         const pm = pmByIso.get(iso)!;
-        return { iso3: iso, name: pm.name, tier: pm.tier, transit: pm.transit, ptnExp: Math.round(e.pe), uzbImp: Math.round(e.ui), gap: Math.round(e.pe * K - e.ui) };
+        return { iso3: iso, name: pm.name, tier: pm.tier, transit: pm.transit, ptnExp: Math.round(e.pe), uzbImp: Math.round(e.ui), gap: Math.round(e.pe - e.ui / K) };
       })
       .sort((a, b) => b.gap - a.gap);
     const posSum = partnersList.reduce((s, x) => s + Math.max(0, x.gap), 0) || 1;
@@ -257,7 +257,7 @@ async function main() {
       chapterLabel: CHAPTER_LABELS[chapter] ?? cleanDesc(payload.hs2desc[chapter] ?? `HS ${chapter}`),
       category: categoryFor(chapter).key,
       ptnExp, uzbImp,
-      gap: Math.round(ptnExp * K - uzbImp),
+      gap: Math.round(ptnExp - uzbImp / K),
       positiveGap: Math.round(positiveGap),
       byYear,
       partners: partnersList.slice(0, 10),
@@ -335,7 +335,9 @@ async function main() {
     return row;
   });
   await write("cells.json", { v: 2, y0: ANALYSIS_START_YEAR, p: pList, k: kList, r: rows });
-  await write("monthly.json", []);
+  // monthly.json belongs to build-monthly.ts. This script used to stub it out to
+  // an empty array, which silently destroyed the monthly layer — and the years
+  // only it carries — on every rebuild of the annual data.
   await write("products.json", topProducts);
 
   const n = (l: number) => recs.filter((r) => r.l === l).length.toLocaleString();

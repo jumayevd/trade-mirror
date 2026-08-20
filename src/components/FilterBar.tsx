@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
-import { DerivedYearsNote } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, DEFAULT_FILTER, availableOptions, partnerName, hsLabel, hs4Label, hs6Label, hsFullText } from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, hs4Label, hs6Label, hsFullText, hsLabel, meta, partnerName } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
@@ -18,11 +17,6 @@ const lbl = "text-[10px] font-semibold uppercase tracking-wider text-faint";
  * documented band. 0% compares the two books as reported, with no CIF/FOB
  * adjustment at all — the floor case for any discrepancy.
  */
-const FREIGHT_SCENARIOS = (() => {
-  const hi = Math.round(meta.cif.high * 100);
-  return Array.from({ length: hi + 1 }, (_, i) => i / 100);
-})();
-
 /**
  * Product option text. Roughly 2,500 HS lines arrive from Comtrade cut at 90
  * characters, and the tail is often what separates two neighbouring codes, so
@@ -188,8 +182,6 @@ export default function FilterBar() {
           </button>
         )}
       </div>
-
-      <DerivedYearsNote years={filter.years} />
     </div>
   );
 }

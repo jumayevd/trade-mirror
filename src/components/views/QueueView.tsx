@@ -6,17 +6,14 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { BandBadge, DerivedYearsNote, InfoTip, SectionTitle, Stat } from "@/components/ui";
+import { BandBadge, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum } from "@/lib/format";
 import diagnosticsRaw from "@/data/diagnostics.json";
 import type { LocaleKey } from "@/lib/locales";
-import {
-  aggregate, DEFAULT_FILTER, isDerivedYear, meta, yearsFor, yearsLabel,
-  type Aggregate, type Channel, type Filter, type Granularity, type RiskBand,
-} from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, isDerivedYear, meta, yearsFor, yearsLabel, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
 
 /**
  * Discrepancy & Risk — the screening queue. Every partner × code combination at
@@ -33,12 +30,6 @@ import {
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
-
-/** Every whole percentage from 0 to the top of the documented band, like the filter bar. */
-const FREIGHT_SCENARIOS = (() => {
-  const hi = Math.round(meta.cif.high * 100);
-  return Array.from({ length: hi + 1 }, (_, i) => i / 100);
-})();
 
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
@@ -202,8 +193,6 @@ export default function QueueView() {
           </select>
         </div>
       </section>
-
-      <DerivedYearsNote years={years} />
 
       {/* MTRS summary */}
       <section className="space-y-3">

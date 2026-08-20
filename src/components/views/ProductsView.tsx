@@ -366,8 +366,8 @@ export default function ProductsView() {
     return { pe, ui };
   }, [level, effChapter, hs4, filter, data]);
 
-  /** What the partner's FOB books become once the chosen freight margin is applied. */
-  const expectedCif = nodePos.pe * (1 + filter.cif);
+  /** Uzbekistan's CIF record brought down to the partner's FOB basis. */
+  const importFob = nodePos.ui / (1 + filter.cif);
 
   // true when neither a chapter nor an HS4 code is drilled into — the node is the whole view
   const isAllNode = !(level === 6 && hs4) && !(effChapter && level !== 2);
@@ -488,7 +488,7 @@ export default function ProductsView() {
             <Stat
               label={t("prod.stat.reportedExports")}
               value={fmtUSD(nodePos.pe)}
-              sub={`${t("prod.stat.reportedExports.sub")}, ${period} · ${fill(t("prod.stat.expectedCif"), { rate: Math.round(filter.cif * 100), value: fmtUSD(expectedCif) })}`}
+              sub={`${t("prod.stat.reportedExports.sub")}, ${period} · ${fill(t("prod.stat.importFob"), { rate: Math.round(filter.cif * 100), value: fmtUSD(importFob) })}`}
               info={`${t("prod.stat.reportedExports.info")} ${t("prod.stat.allComparable.info")}`}
             />
             <Stat

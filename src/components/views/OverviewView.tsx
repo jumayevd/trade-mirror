@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
-import { Stat, SectionTitle, InfoTip, EmptyState, Segmented, DerivedYearsNote } from "@/components/ui";
+import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
 import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
@@ -130,10 +130,9 @@ export default function OverviewView() {
     const periods = rows.map((a) => a.label ?? String(a.year));
     const positiveName = t("kpi.positive");
     const shareName = t("ovw.series.gapShare");
-    // The gap as a share of expected CIF imports over the positive channel-years,
-    // the same identity the queue's Gap % column reports, so the two read alike.
-    const K = 1 + FULL_WINDOW.cif;
-    const shares = rows.map((a) => (a.pePos > 0 ? a.positive / (a.pePos * K) : null));
+    // The gap as a share of the partner's FOB exports over the positive
+    // channel-years, the same identity the queue's Gap % column reports.
+    const shares = rows.map((a) => (a.pePos > 0 ? a.positive / a.pePos : null));
     // 90+ monthly points would smother the lines in dots
     const dots = rows.length > 24 ? 0 : 7;
     return {
@@ -421,7 +420,6 @@ export default function OverviewView() {
             />
           )}
         </div>
-        <DerivedYearsNote years={years} />
         <Segmented<OverviewTab>
           ariaLabel={t("ovw.view.aria")}
           value={tab}

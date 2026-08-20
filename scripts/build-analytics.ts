@@ -151,7 +151,7 @@ async function main() {
       for (const yr of ANALYSIS_YEARS) {
         const y = cell.byYear.get(yr);
         if (!y || y.ptnExp <= NOISE) continue;
-        pe += y.ptnExp; gap += y.ptnExp * K - y.uzbImp;
+        pe += y.ptnExp; gap += y.ptnExp - y.uzbImp / K;
       }
       if (pe < HS6_MIN_PTN && gap < HS6_MIN_GAP) continue;
       keptHs6.add(cell.cmd);
@@ -239,17 +239,17 @@ async function main() {
   for (const [cmd, agg] of prodAgg) {
     const byYear = ANALYSIS_YEARS.filter((y) => agg.byYear.has(y)).map((y) => {
       const e = agg.byYear.get(y)!;
-      return { y, pe: Math.round(e.pe), ui: Math.round(e.ui), gap: Math.round(e.pe * K - e.ui) };
+      return { y, pe: Math.round(e.pe), ui: Math.round(e.ui), gap: Math.round(e.pe - e.ui / K) };
     });
     const ptnExp = byYear.reduce((s, e) => s + e.pe, 0);
     const uzbImp = byYear.reduce((s, e) => s + e.ui, 0);
-    const gap = ptnExp * K - uzbImp;
+    const gap = ptnExp - uzbImp / K;
     const positiveGap = byYear.reduce((s, e) => s + Math.max(0, e.gap), 0);
     if (positiveGap <= NOISE) continue;
     const partnersList: ProductPartner[] = [...agg.byPartner.entries()]
       .map(([iso, e]) => {
         const pm = pmByIso.get(iso)!;
-        return { iso3: iso, name: pm.name, tier: pm.tier, transit: pm.transit, ptnExp: Math.round(e.pe), uzbImp: Math.round(e.ui), gap: Math.round(e.pe * K - e.ui) };
+        return { iso3: iso, name: pm.name, tier: pm.tier, transit: pm.transit, ptnExp: Math.round(e.pe), uzbImp: Math.round(e.ui), gap: Math.round(e.pe - e.ui / K) };
       })
       .sort((a, b) => b.gap - a.gap);
     const posSum = partnersList.reduce((s, x) => s + Math.max(0, x.gap), 0) || 1;

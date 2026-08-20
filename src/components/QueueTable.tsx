@@ -40,12 +40,12 @@ const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
 const PAGE_SIZES = [25, 50, 100];
 
 /**
- * Gap as a share of the expected CIF import value over the positive channel-years,
- * so the row reads as one identity: pePosT × (1 + f) − uiPosT = posT, and
- * Gap % = posT ÷ (pePosT × (1 + f)). Null when there is no denominator.
+ * Gap as a share of the partner's FOB exports over the positive channel-years,
+ * so the row reads as one identity: pePosT − uiPosT / (1 + f) = posT, and
+ * Gap % = posT ÷ pePosT. Null when there is no denominator.
  */
-const gapPct = (c: Channel, K: number): number | null =>
-  c.pePosT > 0 ? c.posT / (c.pePosT * K) : null;
+const gapPct = (c: Channel): number | null =>
+  c.pePosT > 0 ? c.posT / c.pePosT : null;
 
 /** Short alternative-explanation hints per engine flag, used in the expanded row. */
 const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
@@ -62,10 +62,10 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
  * finished order so the tie-breaks stay attached to their primary key rather
  * than flipping independently of it.
  */
-function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir, K: number): Channel[] {
+function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir): Channel[] {
   const by: Record<SortKey, (a: Channel, b: Channel) => number> = {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
-    gapPct: (a, b) => (gapPct(b, K) ?? -1) - (gapPct(a, K) ?? -1) || b.posT - a.posT,
+    gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
       b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
     value: (a, b) => b.pePosT - a.pePosT || b.posT - a.posT,
@@ -79,7 +79,7 @@ type Translate = (key: LocaleKey) => string;
 
 /** One-sentence cautious reading, built strictly from measured fields. */
 function interpretation(c: Channel, f: Filter, t: Translate): string {
-  const pct = gapPct(c, 1 + f.cif);
+  const pct = gapPct(c);
   const score = c.scored
     ? ` ${t("risk.read.scoreLead")} ${c.mtrs.toFixed(0)} (G ${c.abnormalGap.toFixed(2)} × P ${c.persistence.toFixed(2)}), ` +
       `${t("risk.read.flaggedIn")} ${c.flaggedYears}/${c.matchedYears} ${t("risk.read.matchedYears")}.`
@@ -107,7 +107,7 @@ export default function QueueTable({
   years: number[];
 }) {
   const { t } = useI18n();
-  /** Freight uplift from FOB to a CIF-comparable value, per the active scenario. */
+  /** Freight factor: recorded CIF imports are divided by this to reach an FOB basis. */
   const K = 1 + filter.cif;
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("risk");
@@ -150,8 +150,8 @@ export default function QueueTable({
         c.cmdLabel.toLowerCase().includes(q)
       );
     });
-    return sortChannels(filtered, sort, dir, 1 + filter.cif);
-  }, [channels, query, sort, dir, partnerSel, productSel, filter.cif]);
+    return sortChannels(filtered, sort, dir);
+  }, [channels, query, sort, dir, partnerSel, productSel]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -248,8 +248,8 @@ export default function QueueTable({
                 <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("risk.th.hsCode")}</th>
                 <th className={th}>{t("common.product")}</th>
                 <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
-                <th className={thNum} title={t("risk.tip.uzbImport")}>{t("risk.th.uzbImport")}</th>
-                <th className={thNum} title={`${t("risk.tip.exportReported")} ${t("filter.freight")}: ${Math.round(filter.cif * 100)}%.`}>{t("risk.th.exportReported")}</th>
+                <th className={thNum} title={`${t("risk.tip.uzbImport")} ${t("filter.freight")}: ${Math.round(filter.cif * 100)}%.`}>{t("risk.th.uzbImport")}</th>
+                <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
                 <th className={thNum} title={t("risk.tip.gapPct")}>{t("risk.th.gapPct")}</th>
                 <th className={th} title={t("risk.tip.persistence")}>{t("common.persistence")}</th>
@@ -261,7 +261,7 @@ export default function QueueTable({
                 const key = keyOf(c);
                 const open = expanded === key;
                 const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
-                const pct = gapPct(c, 1 + filter.cif);
+                const pct = gapPct(c);
                 return [
                   <tr
                     key={key}
@@ -308,13 +308,13 @@ export default function QueueTable({
                       )}
                     </td>
                     <td className={td}><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
-                    <td className={tdNum} title={c.uiPosT > 0 ? fmtUSDFull(c.uiPosT) : undefined}>
+                    {/* imports divided down to an FOB basis at the selected freight
+                        scenario, so the row reads as an identity: export − import = gap */}
+                    <td className={tdNum} title={c.uiPosT > 0 ? fmtUSDFull(c.uiPosT / K) : undefined}>
                       {/* no positive-year UZB record — a gap in the mirror, never a measured zero */}
-                      {c.uiPosT > 0 ? fmtUSD(c.uiPosT) : <MissingValue />}
+                      {c.uiPosT > 0 ? fmtUSD(c.uiPosT / K) : <MissingValue />}
                     </td>
-                    {/* exports at the selected freight scenario, so the row reads as
-                        an identity: export − import = gap, at whatever rate is set */}
-                    <td className={tdNum} title={fmtUSDFull(c.pePosT * K)}>{fmtUSD(c.pePosT * K)}</td>
+                    <td className={tdNum} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
                     <td className={`${tdNum} font-semibold`} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                     <td className={tdNum}>
                       {pct == null ? <MissingValue kind="notComparable" /> : fmtPct(pct, 1)}
@@ -421,8 +421,8 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
                   <td className={`${td} tabular`}>{y}</td>
                   {yr ? (
                     <>
-                      <td className={tdNum} title={fmtUSDFull(yr.pe * K)}>{fmtUSD(yr.pe * K)}</td>
-                      <td className={tdNum} title={fmtUSDFull(yr.ui)}>{fmtUSD(yr.ui)}</td>
+                      <td className={tdNum} title={fmtUSDFull(yr.pe)}>{fmtUSD(yr.pe)}</td>
+                      <td className={tdNum} title={fmtUSDFull(yr.ui / K)}>{fmtUSD(yr.ui / K)}</td>
                       <td className={tdNum} title={fmtUSDFull(gap)}>{fmtUSD(gap)}</td>
                     </>
                   ) : (

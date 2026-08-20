@@ -23,8 +23,8 @@ export const UZBEKISTAN = { code: "860", iso3: "UZB", name: "Uzbekistan" } as co
  */
 export const CIF_FOB_FACTOR = 0.10;
 
-/** CIF/FOB sensitivity band — central 10%, robustness range 6–15%. */
-export const CIF_BAND = { low: 0.06, central: 0.10, high: 0.15 } as const;
+/** CIF/FOB sensitivity band — central 10%, robustness range 5–15%, all offered in the UI. */
+export const CIF_BAND = { low: 0.05, central: 0.10, high: 0.15 } as const;
 
 /**
  * Re-export / transit hubs. Uzbekistan attributes imports to country of ORIGIN, not

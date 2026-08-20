@@ -80,8 +80,9 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
   const product = productByCmd(channel.cmd);
   const period = `${meta.window.start}–${meta.window.end}`;
   const cifPct = Math.round(meta.cif.central * 100);
-  const expectedLow = channel.peT * (1 + meta.cif.low);
-  const expectedHigh = channel.peT * (1 + meta.cif.high);
+  // a smaller freight factor deflates less, so it yields the LARGER adjusted import
+  const adjLow = channel.uiT / (1 + meta.cif.high);
+  const adjHigh = channel.uiT / (1 + meta.cif.low);
   const partner = channel.partner; // localised by the aggregate
 
   // sign reversals across comparable years (transitions between + and − among non-noise years)
@@ -197,9 +198,9 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
           <Stat label={t("chan.stat.partnerExports")} value={fmtUSD(channel.peT)} accent={COLORS.partner}
             sub={fill(t("chan.sub.partnerReported"), { name: partner })}
             info={`${fill(t("chan.info.peCumulative"), { cmd: channel.cmd, name: partner })} ${fmtUSDFull(channel.peT)}.`} />
-          <Stat label={`${t("chan.stat.expectedCif")} (${cifPct}%)`} value={fmtUSD(channel.expectedT)}
-            sub={`${t("chan.sub.band")} ${fmtUSD(expectedLow)} – ${fmtUSD(expectedHigh)}`}
-            info={fill(t("chan.info.expectedCif"), { cif: cifPct })} />
+          <Stat label={`${t("chan.stat.importFob")} (${cifPct}%)`} value={fmtUSD(channel.adjUiT)}
+            sub={`${t("chan.sub.band")} ${fmtUSD(adjLow)} – ${fmtUSD(adjHigh)}`}
+            info={fill(t("chan.info.importFob"), { cif: cifPct })} />
           <Stat label={t("chan.stat.uzbImports")} value={fmtUSD(channel.uiT)} accent={COLORS.uzb}
             sub={t("chan.sub.uzbRecorded")}
             info={`${fill(t("chan.info.uiCumulative"), { cmd: channel.cmd, name: partner })} ${fmtUSDFull(channel.uiT)}.`} />

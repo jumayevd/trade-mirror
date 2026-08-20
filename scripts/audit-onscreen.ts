@@ -39,26 +39,26 @@ function identityOf(chs: Channel[]) {
 const full = aggregate(FULL);
 for (const [lbl, chs] of [["HS2", full.channels], ["HS4", full.channels4], ["HS6", full.channels6]] as const) {
   const { pe, ui, pos } = identityOf(chs);
-  check(`identity ${lbl} all-chapters`, near(pe * K - ui, pos, 2), `${Math.round(pe * K - ui)} vs ${Math.round(pos)}`);
+  check(`identity ${lbl} all-chapters`, near(pe - ui / K, pos, 2), `${Math.round(pe - ui / K)} vs ${Math.round(pos)}`);
 }
 // per chapter drill-down, as Product Analysis renders it
 for (const ch of ["85", "87", "84", "30", "72"]) {
   const chs = full.channels6.filter((c) => c.chapter === ch);
   const { pe, ui, pos } = identityOf(chs);
-  check(`identity HS6 within chapter ${ch}`, near(pe * K - ui, pos, 2));
+  check(`identity HS6 within chapter ${ch}`, near(pe - ui / K, pos, 2));
 }
 
 /* ---------------------------------------------------------------- */
 /* 2. Country Analysis: the summary-by-year table, row by row        */
 /* ---------------------------------------------------------------- */
 for (const r of full.annual) {
-  check(`annual identity ${r.year}`, near(r.pePos * K - r.uiPos, r.positive, 2),
-    `${Math.round(r.pePos * K - r.uiPos)} vs ${Math.round(r.positive)}`);
+  check(`annual identity ${r.year}`, near(r.pePos - r.uiPos / K, r.positive, 2),
+    `${Math.round(r.pePos - r.uiPos / K)} vs ${Math.round(r.positive)}`);
 }
 // monthly basis too
 const monthly = aggregate({ ...FULL, granularity: "month", months: [] });
 for (const r of monthly.annual) {
-  check(`monthly annual identity ${r.label}`, near(r.pePos * K - r.uiPos, r.positive, 2));
+  check(`monthly annual identity ${r.label}`, near(r.pePos - r.uiPos / K, r.positive, 2));
 }
 
 /* ---------------------------------------------------------------- */
@@ -91,7 +91,7 @@ console.log(`  note: ${Math.round(unlistedBase).toLocaleString()} USD of the hea
 /* 4. partner profile figures                                       */
 /* ---------------------------------------------------------------- */
 for (const p of full.partners.slice(0, 25)) {
-  check(`profile identity (${p.iso3})`, near(p.pePosT * K - p.uiPosT, p.posT, 2));
+  check(`profile identity (${p.iso3})`, near(p.pePosT - p.uiPosT / K, p.posT, 2));
   check(`profile observed >= paired (${p.iso3})`, p.observed.pe + 1 >= p.peT && p.observed.ui + 1 >= p.uiT);
 }
 
@@ -99,10 +99,10 @@ for (const p of full.partners.slice(0, 25)) {
 /* 5. channel pages                                                 */
 /* ---------------------------------------------------------------- */
 for (const c of full.channels6.slice(0, 200)) {
-  check(`channel expectedT (${c.partnerIso}/${c.cmd})`, near(c.expectedT, c.peT * K, 2));
+  check(`channel adjUiT (${c.partnerIso}/${c.cmd})`, near(c.adjUiT, c.uiT / K, 2));
   const yearlyPos = c.years.reduce((s, y) => s + Math.max(y.signed, 0), 0);
   check(`channel posT = sum of years (${c.partnerIso}/${c.cmd})`, near(yearlyPos, c.posT, 2));
-  check(`channel signedT (${c.partnerIso}/${c.cmd})`, near(c.signedT, c.expectedT - c.uiT, 2));
+  check(`channel signedT (${c.partnerIso}/${c.cmd})`, near(c.signedT, c.peT - c.adjUiT, 2));
 }
 
 /* ---------------------------------------------------------------- */

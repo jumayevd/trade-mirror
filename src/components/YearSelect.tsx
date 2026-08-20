@@ -1,7 +1,8 @@
 "use client";
 
 import MultiSelect from "@/components/MultiSelect";
-import { meta } from "@/lib/dataset";
+import { comparableMonthsOfYear, isDerivedYear, meta } from "@/lib/dataset";
+import { monthRuns } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -10,6 +11,18 @@ import { useI18n } from "@/lib/i18n";
  * overview and the otherwise filter-free Discrepancy & Risk page all use this
  * control, so "period" behaves identically wherever it appears.
  */
+/**
+ * Years the annual workbook never reached carry their comparable months in the
+ * label — "2025 (Jan–Oct)" — so the shortfall is visible at the point of
+ * choosing rather than in a note somewhere below the controls. Years inside the
+ * workbook are complete by construction and stay bare.
+ */
+function yearLabel(y: number, t: (k: never) => string): string {
+  if (!isDerivedYear(y)) return String(y);
+  const runs = monthRuns(comparableMonthsOfYear(y), (m) => t(`month.${m}` as never));
+  return runs ? `${y} (${runs})` : String(y);
+}
+
 export default function YearSelect({
   years,
   onChange,
@@ -32,7 +45,7 @@ export default function YearSelect({
     <MultiSelect
       values={allOn ? [] : years.map(String)}
       onChange={(v) => onChange(v.length === 0 ? [...options] : v.map(Number).sort((a, b) => a - b))}
-      options={options.map((y) => ({ value: String(y), label: String(y) }))}
+      options={options.map((y) => ({ value: String(y), label: yearLabel(y, t) }))}
       label={label ?? t("filter.period")}
       allLabel={t("filter.allYears")}
       searchable={false}

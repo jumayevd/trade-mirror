@@ -1,27 +1,27 @@
 {
   "version": "3.1",
-  "generatedAt": "2026-08-10T17:00:33.260Z",
+  "generatedAt": "2026-08-20T06:12:03.222Z",
   "headlineLevel": 6,
   "corGP": {
     "2": 0.553,
-    "4": 0.568,
+    "4": 0.571,
     "6": 0.609
   },
   "gapRateQuantiles": {
     "2": {
-      "p50": 0.266,
-      "p90": 0.728,
-      "p99": 0.946
+      "p50": 0.271,
+      "p90": 0.729,
+      "p99": 0.947
     },
     "4": {
-      "p50": 0.281,
-      "p90": 0.725,
-      "p99": 0.939
+      "p50": 0.284,
+      "p90": 0.728,
+      "p99": 0.941
     },
     "6": {
-      "p50": 0.3,
-      "p90": 0.735,
-      "p99": 0.946
+      "p50": 0.302,
+      "p90": 0.738,
+      "p99": 0.947
     }
   },
   "coverage": {
@@ -30,8 +30,8 @@
       "matchedCells": 2013,
       "orphanImportCellYears": 3206,
       "lostExportCellYears": 2178,
-      "inScopeCells": 1414,
-      "inScopeCellYears": 4793,
+      "inScopeCells": 1395,
+      "inScopeCellYears": 4714,
       "valueRetainedShare": 0.9029491003510226,
       "belowFloor": 0
     },
@@ -40,8 +40,8 @@
       "matchedCells": 7250,
       "orphanImportCellYears": 12673,
       "lostExportCellYears": 10276,
-      "inScopeCells": 4460,
-      "inScopeCellYears": 12933,
+      "inScopeCells": 4377,
+      "inScopeCellYears": 12642,
       "valueRetainedShare": 0.8539067590591018,
       "belowFloor": 0
     },
@@ -50,27 +50,27 @@
       "matchedCells": 12644,
       "orphanImportCellYears": 24681,
       "lostExportCellYears": 22201,
-      "inScopeCells": 7040,
-      "inScopeCellYears": 18640,
+      "inScopeCells": 6879,
+      "inScopeCellYears": 18199,
       "valueRetainedShare": 0.7933985834134981,
       "belowFloor": 0
     }
   },
   "bandCuts": {
     "2": {
-      "critical": 88.9,
-      "high": 60.7,
-      "elevated": 34.7
+      "critical": 88.8,
+      "high": 60.4,
+      "elevated": 33.9
     },
     "4": {
-      "critical": 86.5,
-      "high": 56,
-      "elevated": 26.4
+      "critical": 86.4,
+      "high": 55.2,
+      "elevated": 24.7
     },
     "6": {
-      "critical": 86.1,
-      "high": 52.9,
-      "elevated": 16.7
+      "critical": 85.8,
+      "high": 51.7,
+      "elevated": 13.7
     }
   },
   "partnerEffects": [

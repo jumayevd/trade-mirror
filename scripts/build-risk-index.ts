@@ -150,10 +150,11 @@ function runLevel(level: number): LevelResult {
       acc = { p: r.p, k: r.k, n: 0, kPos: 0, expected: 0, posSum: 0, value: 0, wLogGap: 0, wSum: 0 };
       byCell.set(kk, acc);
     }
-    const expected = r.pe * K;
-    const signed = expected - r.ui;
+    // FOB basis on both sides: the CIF import is divided down, not the export raised
+    const adjUi = r.ui / K;
+    const signed = r.pe - adjUi;
     acc.n++;
-    acc.expected += expected;
+    acc.expected += r.pe;
     acc.value += val;
     if (signed > NOISE) { acc.kPos++; acc.posSum += signed; }
     const w = Math.log(val);

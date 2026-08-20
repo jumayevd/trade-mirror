@@ -501,8 +501,8 @@ export default function PartnersView() {
               <tbody className="zebra">
                 {data.annual.map((r) => {
                   const noData = r.comparablePartners === 0;
-                  // positive channel-years only, so expected − imports = positive exactly
-                  const expected = r.pePos * K;
+                  // the import column stays the raw CIF record, as its heading says;
+                  // the freight division happens inside the positive-share column
                   const period = r.label ?? String(r.year);
                   return (
                     <tr key={period} className="border-b border-[var(--color-border-soft)] last:border-b-0">
@@ -514,7 +514,7 @@ export default function PartnersView() {
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
                       </td>
                       <td className={tdNum}>
-                        {noData || expected <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / expected, 1)}
+                        {noData || r.pePos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / r.pePos, 1)}
                       </td>
                     </tr>
                   );

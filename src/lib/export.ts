@@ -16,7 +16,7 @@ export function channelsToCsv(channels: Channel[], filter: Filter): string {
 
   const cols = [
     "partner_iso3", "partner", "hs_level", "code", "label", "chapter",
-    "partner_exports_fob_usd", "expected_import_cif_usd", "uzb_imports_cif_usd",
+    "partner_exports_fob_usd", "uzb_imports_cif_usd", "uzb_imports_fob_basis_usd",
     "signed_discrepancy_usd", "positive_discrepancy_usd",
     "bounded_asymmetry_pct", "positive_share_pct",
     "comparable_years", "positive_years", "longest_positive_streak",
@@ -27,7 +27,7 @@ export function channelsToCsv(channels: Channel[], filter: Filter): string {
   const rows = channels.map((c) =>
     [
       c.partnerIso, esc(c.partner), c.level, c.cmd, esc(c.cmdLabel), c.chapter,
-      Math.round(c.peT), Math.round(c.expectedT), Math.round(c.uiT),
+      Math.round(c.peT), Math.round(c.uiT), Math.round(c.adjUiT),
       Math.round(c.signedT), Math.round(c.posT),
       (c.boundedAsymmetry * 100).toFixed(1), (c.positiveShare * 100).toFixed(1),
       c.comparableYears, c.posYears, c.longestPosStreak,

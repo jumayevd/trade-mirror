@@ -1,7 +1,7 @@
 "use client";
 
-import { BAND_COLORS, COLORS, monthRuns } from "@/lib/format";
-import { comparableMonthsOfYear, isDerivedYear, yearsFor, yearsLabel, type Filter, type RiskBand, type Robustness, type Tier } from "@/lib/dataset";
+import { BAND_COLORS, COLORS } from "@/lib/format";
+import { yearsFor, yearsLabel, type Filter, type RiskBand, type Robustness, type Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 
 /** Fill {placeholders} in a translated string with runtime values. */
@@ -245,29 +245,6 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
       </div>
       {!compact && <p className="mt-1.5 max-w-3xl text-[11px] text-faint">{t("ov.ladder.note")}</p>}
     </div>
-  );
-}
-
-/**
- * Says which of the selected years come from the monthly books rather than the
- * annual workbook, and how much of each is actually comparable. Renders nothing
- * when the selection is entirely inside the workbook's window, so the ordinary
- * case stays quiet.
- */
-export function DerivedYearsNote({ years }: { years: number[] }) {
-  const { t } = useI18n();
-  const derived = [...new Set(years)].filter(isDerivedYear).sort((a, b) => a - b);
-  if (derived.length === 0) return null;
-  const parts = derived.map((y) => {
-    const ms = comparableMonthsOfYear(y);
-    const runs = monthRuns(ms, (m) => t(`month.${m}` as never));
-    return `${y} — ${ms.length}/12${runs ? ` (${runs})` : ""}`;
-  });
-  return (
-    <p className="max-w-3xl text-xs leading-relaxed text-faint">
-      <span className="font-medium text-muted">{t("year.derived.lead")}</span>{" "}
-      {parts.join("; ")}. {t("year.derived.note")}
-    </p>
   );
 }
 
