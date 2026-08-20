@@ -442,7 +442,7 @@ export default function OverviewView() {
             label={t("kpi.positive")}
             value={fmtUSD(k.positive.central)}
             sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}`}
-            info={t("ovw.stat.positive.info")}
+            info={t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))}
           />
           <Stat
             label={t("ovw.stat.partnersCovered")}
