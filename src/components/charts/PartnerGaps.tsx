@@ -5,7 +5,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { PartnerAgg } from "@/lib/dataset";
 import { COLORS, fmtUSDFull } from "@/lib/format";
-import { BAR_SPEC, baseGrid, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { BAR_SPEC, CHART_FONT, baseGrid, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -37,7 +37,7 @@ export default function PartnerGaps({
       grid: { ...baseGrid, top: 44 },
       legend: {
         top: 0,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
         itemWidth: 14,
         data: [ptnLabel, uzbLabel],
       },

@@ -17,7 +17,7 @@ import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import type { LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
-import { baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
+import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
 /**
  * Executive Overview — a standalone summary across every partner, with the
@@ -144,7 +144,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 3,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
       },
       tooltip: {
         ...baseTooltip(),
@@ -171,8 +171,8 @@ export default function OverviewView() {
         {
           type: "value",
           name: shareName,
-          nameTextStyle: { color: COLORS.axis, fontSize: 13 },
-          axisLabel: { color: COLORS.axis, fontSize: 13, formatter: (v: number) => fmtPct(v, 0) },
+          nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
+          axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: (v: number) => fmtPct(v, 0) },
           splitLine: { show: false },
           axisLine: { show: false },
         },
@@ -261,7 +261,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 8,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
       },
       tooltip: {
         ...baseTooltip(),
@@ -330,7 +330,7 @@ export default function OverviewView() {
         icon: "roundRect",
         itemWidth: 14,
         itemHeight: 8,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
       },
       tooltip: {
         ...baseTooltip(),

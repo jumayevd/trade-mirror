@@ -6,7 +6,7 @@ import EChart from "@/components/EChart";
 import type { YearRow } from "@/lib/dataset";
 import { COLORS, fmtUSDFull } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { BAR_SPEC, baseGrid, baseTooltip, catAxis, moneyAxisFormatter, valueAxis } from "@/lib/echartBase";
+import { BAR_SPEC, CHART_FONT, baseGrid, baseTooltip, catAxis, moneyAxisFormatter, valueAxis } from "@/lib/echartBase";
 
 interface Props {
   /** Comparable channel-years only — years where BOTH sides reported. */
@@ -39,7 +39,7 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
     return {
       backgroundColor: "transparent",
       grid: baseGrid,
-      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: 13 }, data: [peName, uiName] },
+      legend: { top: 0, textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel }, data: [peName, uiName] },
       tooltip: {
         ...baseTooltip(),
         trigger: "axis",
@@ -128,8 +128,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           return `<strong>${y}</strong><br/>${t("chart.signedDiscrepancy")}: <span style="font-weight:600">${fmtUSDFull(row.signed)}</span>`;
         },
       },
-      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 13 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 13, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",

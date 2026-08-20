@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import type { Product } from "@/lib/dataset";
 import { COLORS, fmtUSDFull } from "@/lib/format";
-import { BAR_SPEC, baseGrid, baseTooltip, baseTextStyle, catAxis, moneyAxisFormatter, valueAxis } from "@/lib/echartBase";
+import { BAR_SPEC, CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, moneyAxisFormatter, valueAxis } from "@/lib/echartBase";
 
 /**
  * Annual reported-vs-recorded chart for one HS6 product (spec §6.8).
@@ -30,7 +30,7 @@ export default function ProductChart({ product }: { product: Product }) {
       grid: baseGrid,
       legend: {
         top: 0,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
         data: [ptnName, uzbName],
       },
       tooltip: {
@@ -107,8 +107,8 @@ export default function ProductChart({ product }: { product: Product }) {
           return `<strong>${row.y}</strong><br/>${gapName}: <span style="font-weight:600">${fmtUSDFull(Math.round(row.gap))}</span>`;
         },
       },
-      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 13 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 13, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",

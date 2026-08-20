@@ -12,6 +12,7 @@
     "data:labels": "tsx scripts/build-labels.ts && python scripts/check-labels.py",
     "data:verify": "tsx scripts/verify-against-source.ts",
     "data:monthly": "python scripts/extract-monthly.py && tsx scripts/build-monthly.ts",
+    "audit:charts": "tsx scripts/audit-chart-text.ts",
     "data:audit": "tsx scripts/audit-vs-comtrade.ts",
     "data:audit:ui": "tsx scripts/audit-onscreen.ts"
   },

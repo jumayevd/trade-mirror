@@ -11,7 +11,7 @@ import { meta, partnerName, regionLabel, RISK_CONFIG, type PartnerMeta } from "@
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSDFull, COLORS } from "@/lib/format";
-import { BAR_SPEC, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
+import { BAR_SPEC, CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /** Fill {placeholders} in a translated string with dataset values. */
 const fill = (s: string, vals: Record<string, string | number>) =>
@@ -172,8 +172,8 @@ export default function QualityView() {
       yAxis: {
         type: "value",
         name: fill(t("qual.level.axis"), { level: levelCode }),
-        nameTextStyle: { color: COLORS.axis, fontSize: 13 },
-        axisLabel: { color: COLORS.axis, fontSize: 13, formatter: (v: number) => fmtNum(v) },
+        nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
+        axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: (v: number) => fmtNum(v) },
         splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
         axisLine: { show: false },
       },

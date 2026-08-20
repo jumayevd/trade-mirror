@@ -8,7 +8,7 @@ import { COLORS, fmtUSD } from "./format";
 /**
  * Chart base per the dataviz mark specs, in CBU house colours (navy + gold):
  *  - gridlines: hairline (1px), SOLID, one step off the surface, recessive
- *  - axis text: neutral grey, 13.5px before the reading scale; baseline in the baseline grey
+ *  - axis text: neutral grey, CHART_FONT.axisLabel before the reading scale; baseline in the baseline grey
  *  - tooltip: card surface, navy-tinted hairline border, dark ink
  *  - legends: 13px, top; present only for >= 2 series
  *  - bars <= 24px with 4px rounded data-end (square at baseline); lines 2px;
@@ -36,6 +36,22 @@ import { COLORS, fmtUSD } from "./format";
  */
 export const CHART_TEXT_BOOST = 1.15;
 
+/**
+ * The chart type scale, named rather than sprinkled as literals.
+ *
+ * Axis labels and legends are the text a reader scans; the tooltip is text they
+ * have already pointed at, and it arrives in a panel of its own with nothing
+ * competing. So the axis is the largest step here and the tooltip the smallest —
+ * the reverse of the usual instinct, and deliberately so, because a tooltip set
+ * level with the axis reads as shouting once the reading scale is turned up.
+ */
+export const CHART_FONT = {
+  axisLabel: 15,
+  axisName: 14,
+  legend: 14,
+  tooltip: 11,
+} as const;
+
 export function scaleFonts<T>(node: T, k: number): T {
   if (Array.isArray(node)) return node.map((v) => scaleFonts(v, k)) as unknown as T;
   if (node !== null && typeof node === "object") {
@@ -58,14 +74,14 @@ export const moneyAxisFormatter = (v: number) => fmtUSD(v);
  * stayed at 12 real pixels no matter what the reader chose. EChart merges this
  * in as the default, so a chart gets it whether or not it spreads it itself.
  */
-export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist-sans)", fontSize: 13 };
+export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist-sans)", fontSize: CHART_FONT.legend };
 
 export function baseTooltip(): TooltipComponentOption {
   return {
     backgroundColor: COLORS.surface,
     borderColor: "rgba(22,35,59,0.16)",
     borderWidth: 1,
-    textStyle: { color: "#141a26", fontSize: 13.5 },
+    textStyle: { color: "#141a26", fontSize: CHART_FONT.tooltip },
     padding: [8, 12],
     // no glide: the default 0.4s easing makes the tooltip trail the cursor,
     // which reads as lag and as pointing at the previous mark
@@ -78,8 +94,8 @@ export function valueAxis(name?: string): YAXisComponentOption {
   return {
     type: "value",
     name,
-    nameTextStyle: { color: COLORS.axis, fontSize: 12.5 },
-    axisLabel: { color: COLORS.axis, fontSize: 13.5, formatter: (v: number) => fmtUSD(v) },
+    nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
+    axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: (v: number) => fmtUSD(v) },
     splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
     axisLine: { show: false },
   };
@@ -89,7 +105,7 @@ export function catAxis(data: (string | number)[]): XAXisComponentOption {
   return {
     type: "category",
     data,
-    axisLabel: { color: COLORS.axis, fontSize: 13.5 },
+    axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel },
     axisLine: { lineStyle: { color: COLORS.baseline, width: 1 } },
     axisTick: { show: false },
   };

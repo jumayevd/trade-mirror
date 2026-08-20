@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { partnerMetaOf, type PartnerAgg } from "@/lib/dataset";
 import { COLORS, fmtNum, fmtUSD } from "@/lib/format";
-import { baseTooltip } from "@/lib/echartBase";
+import { CHART_FONT, baseTooltip } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -178,7 +178,7 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
         pieces,
         left: 8,
         bottom: 16,
-        textStyle: { color: COLORS.text, fontSize: 13 },
+        textStyle: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
         itemWidth: 14,
         itemHeight: 10,
       },
