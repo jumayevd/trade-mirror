@@ -6,7 +6,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { BandBadge, InfoTip, SectionTitle, Stat } from "@/components/ui";
+import { BandBadge, DerivedYearsNote, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -14,7 +14,7 @@ import { COLORS, fmtNum } from "@/lib/format";
 import diagnosticsRaw from "@/data/diagnostics.json";
 import type { LocaleKey } from "@/lib/locales";
 import {
-  aggregate, DEFAULT_FILTER, meta, yearsFor, yearsLabel,
+  aggregate, DEFAULT_FILTER, isDerivedYear, meta, yearsFor, yearsLabel,
   type Aggregate, type Channel, type Filter, type Granularity, type RiskBand,
 } from "@/lib/dataset";
 
@@ -71,7 +71,7 @@ export default function QueueView() {
   const [months, setMonths] = useState<number[]>([]);
   const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
   // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
-  const detailVer = useMonthlyDetail(granularity === "month");
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
 
   const pickGranularity = (g: Granularity) => {
     if (g === granularity) return;
@@ -202,6 +202,8 @@ export default function QueueView() {
           </select>
         </div>
       </section>
+
+      <DerivedYearsNote years={years} />
 
       {/* MTRS summary */}
       <section className="space-y-3">

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
+import { DerivedYearsNote } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { meta, DEFAULT_FILTER, availableOptions, partnerName, hsLabel, hs4Label, hs6Label, hsFullText } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
@@ -187,6 +188,8 @@ export default function FilterBar() {
           </button>
         )}
       </div>
+
+      <DerivedYearsNote years={filter.years} />
     </div>
   );
 }

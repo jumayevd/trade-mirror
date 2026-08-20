@@ -172,8 +172,44 @@ export const monthsOfYear = (y: number): number[] => monthlyPacked?.monthsByYear
 /** Every selectable year on either basis, for URL validation and pickers. */
 export const ALL_YEARS: number[] = [...new Set([...meta.years, ...monthlyYears])].sort((a, b) => a - b);
 
+const annualYearSet = new Set<number>(meta.years);
+
+/**
+ * Years the annual workbook never reached but the monthly books do. A yearly
+ * figure for one of these is simply its months summed, so the yearly basis can
+ * offer them — but they come from a different vintage and are still filling up,
+ * so they are never folded into a default window silently: the picker offers
+ * them and the view says what they are.
+ */
+export const monthlyOnlyYears: number[] = monthlyYears.filter((y) => !annualYearSet.has(y));
+
+/** True when a year's yearly figures come from the monthly books, not the workbook. */
+export const isDerivedYear = (y: number): boolean => !annualYearSet.has(y);
+
+const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) => a - b);
+
+/**
+ * Months of a year where BOTH books carry a flow above the noise floor.
+ *
+ * monthsByYear counts a month present when either side reported, which
+ * overstates coverage at the end of the series: partners keep reporting exports
+ * into 2026 while Uzbekistan's import book stops after October 2025, and a
+ * month only one side filed can never be compared.
+ */
+const comparableMonths = (() => {
+  const acc = new Map<number, Set<number>>();
+  for (const r of monthlyCells) {
+    if (r.pe <= NOISE || r.ui <= NOISE) continue;
+    let set = acc.get(r.y);
+    if (!set) { set = new Set<number>(); acc.set(r.y, set); }
+    set.add(r.m);
+  }
+  return new Map<number, number[]>([...acc].map(([y, set]) => [y, [...set].sort((a, b) => a - b)]));
+})();
+export const comparableMonthsOfYear = (y: number): number[] => comparableMonths.get(y) ?? [];
+
 /** Years the active granularity offers. */
-export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : meta.years);
+export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : yearlyYears);
 
 /* ------------------------------------------------------------------ */
 /* Monthly HS6 detail — fetched on demand                               */
@@ -295,7 +331,14 @@ function monthlySource(f: Filter): Cell[] {
 
 /** The cell universe the filter's time basis selects. */
 function sourceCells(f: Filter): Cell[] {
-  return f.granularity === "month" ? monthlySource(f) : cells;
+  if (f.granularity === "month") return monthlySource(f);
+  // Past the workbook's last year the only record is the monthly book, so those
+  // years' yearly cells are their months summed. Only years the caller actually
+  // ticked are pulled in — an empty selection stays the annual window, so no
+  // default view silently mixes the two vintages.
+  const derived = f.years.filter((y) => !annualYearSet.has(y));
+  if (derived.length === 0) return cells;
+  return [...cells, ...monthlySource({ ...f, years: derived, months: [] })];
 }
 
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
@@ -734,7 +777,11 @@ export function availableOptions(f: Filter): {
 
   // In monthly mode the month filter is deliberately NOT applied to the year
   // facet: unticking months must never hide years, only narrow their totals.
-  const universe = f.granularity === "month" ? monthlySource({ ...f, months: [], years: [] }) : cells;
+  const universe = f.granularity === "month"
+    ? monthlySource({ ...f, months: [], years: [] })
+    : monthlyOnlyYears.length
+      ? [...cells, ...monthlySource({ ...f, months: [], years: monthlyOnlyYears })]
+      : cells;
   for (const r of universe) {
     const code = matchesCode(r, f);
     // a dimension's own selection is excluded from its own facet
@@ -762,7 +809,11 @@ export function availableOptions(f: Filter): {
 
 export function aggregate(f: Filter): Aggregate {
   const windowYears = yearsFor(f.granularity);
-  const picked = f.years.length ? new Set(f.years) : new Set(windowYears);
+  // No ticks means the whole basis on monthly, but only the workbook's years on
+  // yearly: the derived years have to be asked for, never inherited.
+  const picked = f.years.length
+    ? new Set(f.years)
+    : new Set(f.granularity === "month" ? windowYears : meta.years);
   const years = windowYears.filter((y) => picked.has(y));
   const yearsInRange = years.length;
   const allowPartner = (iso: string) => {

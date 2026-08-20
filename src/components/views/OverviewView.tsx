@@ -6,11 +6,11 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
-import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
+import { Stat, SectionTitle, InfoTip, EmptyState, Segmented, DerivedYearsNote } from "@/components/ui";
 import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, productByCmd, yearsFor, yearsLabel,
+  aggregate, DEFAULT_FILTER, meta, hsLabel, isDerivedYear, productByCmd, yearsFor, yearsLabel,
   type Channel, type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
@@ -74,8 +74,9 @@ export default function OverviewView() {
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
   const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
-  // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
-  const detailVer = useMonthlyDetail(granularity === "month");
+  // The HS4/HS6 detail backs both the monthly basis and any year the annual
+  // workbook never reached, so either one has to trigger the fetch.
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
   const data = useMemo(
     () => aggregate({ ...FULL_WINDOW, granularity, years, months }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -420,6 +421,7 @@ export default function OverviewView() {
             />
           )}
         </div>
+        <DerivedYearsNote years={years} />
         <Segmented<OverviewTab>
           ariaLabel={t("ovw.view.aria")}
           value={tab}

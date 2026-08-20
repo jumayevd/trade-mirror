@@ -32,6 +32,21 @@ export function fmtPct(v: number, digits = 1): string {
   return `${(v * 100).toFixed(digits)}%`;
 }
 
+/** Month numbers as contiguous named runs: [1..10] -> "January–October". */
+export function monthRuns(months: number[], name: (m: number) => string): string {
+  if (months.length === 0) return "";
+  const runs: string[] = [];
+  let start = months[0];
+  let prev = months[0];
+  for (const m of months.slice(1)) {
+    if (m === prev + 1) { prev = m; continue; }
+    runs.push(start === prev ? name(start) : `${name(start)}–${name(prev)}`);
+    start = prev = m;
+  }
+  runs.push(start === prev ? name(start) : `${name(start)}–${name(prev)}`);
+  return runs.join(", ");
+}
+
 export function fmtNum(v: number): string {
   return new Intl.NumberFormat("en-US").format(Math.round(v));
 }
