@@ -50,7 +50,15 @@ export function scaleFonts<T>(node: T, k: number): T {
 
 export const moneyAxisFormatter = (v: number) => fmtUSD(v);
 
-export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist-sans)" };
+/**
+ * Root text style every chart inherits. The fontSize matters as much as the
+ * family: anything a chart does not size explicitly — series labels, axis
+ * pointer labels, visualMap and dataZoom text — otherwise falls back to
+ * ECharts' own built-in 12, which never passes through the reading scale and so
+ * stayed at 12 real pixels no matter what the reader chose. EChart merges this
+ * in as the default, so a chart gets it whether or not it spreads it itself.
+ */
+export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist-sans)", fontSize: 13 };
 
 export function baseTooltip(): TooltipComponentOption {
   return {
