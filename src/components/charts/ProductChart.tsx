@@ -107,8 +107,8 @@ export default function ProductChart({ product }: { product: Product }) {
           return `<strong>${row.y}</strong><br/>${gapName}: <span style="font-weight:600">${fmtUSDFull(Math.round(row.gap))}</span>`;
         },
       },
-      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 10 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 10, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(product.byYear.map((y) => y.y)), axisLabel: { color: COLORS.axis, fontSize: 11 } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 11, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",

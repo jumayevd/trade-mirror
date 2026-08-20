@@ -171,7 +171,7 @@ export default function OverviewView() {
         {
           type: "value",
           name: shareName,
-          nameTextStyle: { color: COLORS.axis, fontSize: 10 },
+          nameTextStyle: { color: COLORS.axis, fontSize: 11 },
           axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtPct(v, 0) },
           splitLine: { show: false },
           axisLine: { show: false },

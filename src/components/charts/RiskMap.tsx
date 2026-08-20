@@ -143,7 +143,7 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
         formatter: (p: unknown) => {
           const it = p as { name: string };
           const iso = ISO_BY_GEO[it.name];
-          const small = `font-size:11px;color:${COLORS.text}`;
+          const small = `font-size:0.9em;color:${COLORS.text}`;
           if (!iso || !partnerMetaOf(iso)) {
             return `<b>${it.name}</b><br/><span style="${small}">${t("ctry.map.notInSet")}</span>`;
           }
@@ -157,10 +157,10 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
             ? `${metricName}: <span style="${small}">${t("ctry.map.notComputable")}</span>`
             : `${metricName}: <b>${fmtMetric(v)}</b>`;
           const grey = pr.tier === "Low"
-            ? `<br/><span style="font-size:11px;color:${COLORS.warn}">${t("ctry.map.lowQuality")}</span>`
+            ? `<br/><span style="font-size:0.9em;color:${COLORS.warn}">${t("ctry.map.lowQuality")}</span>`
             : "";
           const transit = pr.transit
-            ? `<br/><span style="font-size:11px;color:${COLORS.transit}">${t("ctry.map.transitHub")}</span>`
+            ? `<br/><span style="font-size:0.9em;color:${COLORS.transit}">${t("ctry.map.transitHub")}</span>`
             : "";
           return [
             `<b>${pr.name}</b> · <span style="${small}">${t("ctry.map.dataQuality")}: ${t(TIER_KEYS[pr.tier])}</span>`,

@@ -172,7 +172,7 @@ export default function QualityView() {
       yAxis: {
         type: "value",
         name: fill(t("qual.level.axis"), { level: levelCode }),
-        nameTextStyle: { color: COLORS.axis, fontSize: 10 },
+        nameTextStyle: { color: COLORS.axis, fontSize: 11 },
         axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtNum(v) },
         splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
         axisLine: { show: false },

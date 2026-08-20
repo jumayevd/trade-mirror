@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as echarts from "echarts";
+import { readZoom, serverZoom, subscribeZoom } from "@/lib/zoom-store";
+import { scaleFonts } from "@/lib/echartBase";
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -36,6 +38,8 @@ function bitmapRatio(): number {
 const POINTER_EVENTS = ["click", "dblclick", "mousedown", "mouseup", "mousemove", "contextmenu", "wheel"] as const;
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
+  const zoom = useSyncExternalStore(subscribeZoom, readZoom, serverZoom);
+  const scaled = useMemo(() => scaleFonts(option, zoom), [option, zoom]);
   const ref = useRef<HTMLDivElement>(null);
   const outer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -83,7 +87,7 @@ export default function EChart({ option, className, style, registerMaps, onEvent
       devicePixelRatio: bitmapRatio(),
     });
     chartRef.current = chart;
-    chart.setOption(option);
+    chart.setOption(scaled);
 
     if (onEvents) {
       for (const [evt, handler] of Object.entries(onEvents)) {
@@ -103,8 +107,8 @@ export default function EChart({ option, className, style, registerMaps, onEvent
   }, [registerMaps]);
 
   useEffect(() => {
-    chartRef.current?.setOption(option, true);
-  }, [option]);
+    chartRef.current?.setOption(scaled, true);
+  }, [scaled]);
 
   return (
     <div ref={outer} className={className} style={{ width: "100%", height: "100%", ...style }}>

@@ -128,8 +128,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
           return `<strong>${y}</strong><br/>${t("chart.signedDiscrepancy")}: <span style="font-weight:600">${fmtUSDFull(row.signed)}</span>`;
         },
       },
-      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 10 } },
-      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 10, formatter: moneyAxisFormatter } },
+      xAxis: { ...catAxis(windowYears), axisLabel: { color: COLORS.axis, fontSize: 11 } },
+      yAxis: { ...valueAxis(), axisLabel: { color: COLORS.axis, fontSize: 11, formatter: moneyAxisFormatter } },
       series: [
         {
           type: "bar",

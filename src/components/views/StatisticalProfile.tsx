@@ -21,19 +21,19 @@ import { BAR_SPEC, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 const cat = (data: (string | number)[]) => ({
   ...catAxis(data),
-  axisLabel: { color: COLORS.axis, fontSize: 10 },
+  axisLabel: { color: COLORS.axis, fontSize: 11 },
 });
 const moneyAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-  axisLabel: { color: COLORS.axis, fontSize: 10, formatter: (v: number) => fmtUSD(v) },
+  nameTextStyle: { color: COLORS.axis, fontSize: 11 },
+  axisLabel: { color: COLORS.axis, fontSize: 11, formatter: (v: number) => fmtUSD(v) },
   splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
 const countAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: 10 },
-  axisLabel: { color: COLORS.axis, fontSize: 10 },
+  nameTextStyle: { color: COLORS.axis, fontSize: 11 },
+  axisLabel: { color: COLORS.axis, fontSize: 11 },
   splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
   axisLine: { show: false },
 });
@@ -114,7 +114,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
           return `${HIST_LABELS[p.dataIndex]}<br/>${fmtNum(p.value)} ${t("risk.channelsCount")}`;
         },
       },
-      xAxis: { ...cat(HIST_LABELS), axisLabel: { color: COLORS.axis, rotate: 35, fontSize: 10, interval: 0 } },
+      xAxis: { ...cat(HIST_LABELS), axisLabel: { color: COLORS.axis, rotate: 35, fontSize: 11, interval: 0 } },
       yAxis: countAxis(t("risk.channelsCount")),
       series: [{
         name: t("risk.channelsCount"),
@@ -212,7 +212,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
     },
     xAxis: {
       ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
-      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 10, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
+      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: 11, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
     },
     // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
     yAxis: moneyAxis(),
