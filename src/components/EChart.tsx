@@ -34,8 +34,34 @@ function bitmapRatio(zoom: number): number {
  * coordinate space those carry once CSS `zoom` is in the ancestry (Chrome
  * changed behaviour in 128, Edge/Safari differ again), so hover can land a
  * few percent off the mark — worst at the far corner of a large canvas.
+ *
+ * This is every event zrender binds to the chart element, under BOTH of the
+ * schemes it chooses between, because it does not choose the one you would
+ * expect. zrender picks pointer events when
+ *
+ *     'onpointerdown' in window && (browser.edge || browser.ie >= 11)
+ *
+ * and it detects Edge with /Edge?\/([\d.]+)/ — the optional `e` matches
+ * `Edg/` too, so every modern Chromium Edge takes the pointer path and reads
+ * `pointermove` where Chrome reads `mousemove`. Correcting only the mouse
+ * names left hover and clicking uncorrected on Edge, which is the default
+ * browser on Windows: the error is the reading scale, so the cursor missed by
+ * a quarter of its distance from the chart's left edge and every region
+ * resolved to its neighbour. Covering both lists costs nothing on Chrome,
+ * where the extra names are simply never dispatched to zrender.
+ *
+ * zrender's document-level listeners are not here on purpose: those go through
+ * its own `calculate` path, which measures with four probe elements and is
+ * already zoom-correct.
  */
-const POINTER_EVENTS = ["click", "dblclick", "mousedown", "mouseup", "mousemove", "contextmenu", "wheel"] as const;
+const POINTER_EVENTS = [
+  // shared by both schemes
+  "click", "dblclick", "contextmenu", "wheel", "mousewheel",
+  // the mouse scheme (Chrome, Firefox, Safari)
+  "mousedown", "mouseup", "mousemove", "mouseout",
+  // the pointer scheme (Edge, IE11)
+  "pointerdown", "pointerup", "pointermove", "pointerout",
+] as const;
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
   const zoom = useSyncExternalStore(subscribeZoom, readZoom, serverZoom);
