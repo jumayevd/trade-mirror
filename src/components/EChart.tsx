@@ -58,6 +58,25 @@ export default function EChart({ option, className, style, registerMaps, onEvent
   const chartRef = useRef<echarts.ECharts | null>(null);
 
   /*
+   * Handlers are bound to the chart once, at init, but callers rebuild them on
+   * every render — RiskMap's click closes over the partner map of the aggregate
+   * it was rendered with. Binding the function itself froze that closure: a
+   * country that gained data after the chart mounted stayed unclickable until a
+   * reload, because the handler still tested the partner set from mount time.
+   * The chart gets a stable trampoline instead, and this ref carries whatever
+   * the latest render produced.
+   */
+  const eventsRef = useRef(onEvents);
+  useEffect(() => { eventsRef.current = onEvents; });
+
+  /*
+   * Which events are bound is part of the chart's identity; which functions
+   * serve them is not. Re-initialising on the names alone keeps the binding
+   * honest without tearing the chart down every time a filter moves.
+   */
+  const eventNames = Object.keys(onEvents ?? {}).sort().join(",");
+
+  /*
    * Self-calibrating pointer correction. `clientX` and getBoundingClientRect()
    * always share one space (the visual viewport), so mapping through their
    * ratio yields the chart's local coordinates no matter how the browser
@@ -108,10 +127,8 @@ export default function EChart({ option, className, style, registerMaps, onEvent
     chartRef.current = chart;
     chart.setOption(resolved);
 
-    if (onEvents) {
-      for (const [evt, handler] of Object.entries(onEvents)) {
-        chart.on(evt, handler);
-      }
+    for (const evt of eventNames ? eventNames.split(",") : []) {
+      chart.on(evt, (params: unknown) => eventsRef.current?.[evt]?.(params));
     }
 
     const ro = new ResizeObserver(() => chart.resize());
@@ -121,9 +138,10 @@ export default function EChart({ option, className, style, registerMaps, onEvent
       chart.dispose();
       chartRef.current = null;
     };
-    // re-init on maps or reading scale; option updates are handled below
+    // re-init on maps, reading scale or which events are bound; option updates
+    // are handled below and handlers are read live through eventsRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registerMaps, zoom]);
+  }, [registerMaps, zoom, eventNames]);
 
   useEffect(() => {
     chartRef.current?.setOption(resolved, true);
