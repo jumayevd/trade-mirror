@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as echarts from "echarts";
 import { readZoom, serverZoom, subscribeZoom } from "@/lib/zoom-store";
-import { baseTextStyle, CHART_TEXT_BOOST, scaleFonts } from "@/lib/echartBase";
+import { baseTextStyle } from "@/lib/echartBase";
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -18,15 +18,15 @@ interface Props {
 }
 
 /**
- * The `.chart-frame` wrapper cancels the page zoom (see globals.css), so inside
- * it one CSS pixel is one on-screen pixel again. The canvas therefore only needs
- * the plain device pixel ratio to stay sharp — and, more importantly, ECharts'
- * pointer maths and the rendered geometry share one coordinate system, so hover
- * lands on the mark under the cursor.
+ * Charts inherit the page zoom, so a chart's CSS pixel is `zoom` screen pixels.
+ * The backing store has to carry that as well as the device ratio or the canvas
+ * is drawn at the smaller size and stretched, which softens every label and
+ * hairline. ECharts takes this only at init, so the chart is re-initialised when
+ * the reading scale changes.
  */
-function bitmapRatio(): number {
-  if (typeof window === "undefined") return 1;
-  return window.devicePixelRatio || 1;
+function bitmapRatio(zoom: number): number {
+  if (typeof window === "undefined") return zoom;
+  return (window.devicePixelRatio || 1) * zoom;
 }
 
 /**
@@ -39,16 +39,20 @@ const POINTER_EVENTS = ["click", "dblclick", "mousedown", "mouseup", "mousemove"
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
   const zoom = useSyncExternalStore(subscribeZoom, readZoom, serverZoom);
-  // The root textStyle is merged in rather than assumed: five of the charts never
-  // set one, and without it their unsized text inherits ECharts' own 12 and never
-  // sees the reading scale. A chart's own textStyle still wins where it sets one.
-  const scaled = useMemo(() => {
-    const withRootText = {
-      ...option,
-      textStyle: { ...baseTextStyle, ...(option.textStyle as object | undefined) },
-    };
-    return scaleFonts(withRootText, zoom * CHART_TEXT_BOOST);
-  }, [option, zoom]);
+  /*
+   * The root textStyle is merged in rather than assumed: five of the charts never
+   * set one, and without it their unsized text falls back to ECharts' own 12
+   * instead of the dashboard's scale. A chart's own textStyle still wins.
+   *
+   * Sizes are passed through untouched. They used to be multiplied here to make
+   * up for the chart frame cancelling the page zoom; the frame no longer does, so
+   * the declared size is the size, and canvas text and the DOM tooltip can no
+   * longer drift apart.
+   */
+  const resolved = useMemo(() => ({
+    ...option,
+    textStyle: { ...baseTextStyle, ...(option.textStyle as object | undefined) },
+  }), [option]);
   const ref = useRef<HTMLDivElement>(null);
   const outer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
@@ -60,6 +64,12 @@ export default function EChart({ option, className, style, registerMaps, onEvent
    * scaled `offsetX`. Runs on the wrapper in the CAPTURE phase, which is
    * guaranteed to precede zrender's own listeners on the inner element; when
    * the two spaces already agree it redefines nothing.
+   *
+   * This is now the only thing keeping hover on the right mark. The chart frame
+   * used to cancel the page zoom, which left the two spaces already in agreement
+   * and made this a no-op; charts inherit the zoom now, so rect.width /
+   * clientWidth is the zoom factor and dividing it out is what lands the cursor
+   * on the mark beneath it.
    */
   useEffect(() => {
     const host = outer.current;
@@ -93,10 +103,10 @@ export default function EChart({ option, className, style, registerMaps, onEvent
     }
     const chart = echarts.init(ref.current, undefined, {
       renderer: "canvas",
-      devicePixelRatio: bitmapRatio(),
+      devicePixelRatio: bitmapRatio(zoom),
     });
     chartRef.current = chart;
-    chart.setOption(scaled);
+    chart.setOption(resolved);
 
     if (onEvents) {
       for (const [evt, handler] of Object.entries(onEvents)) {
@@ -111,13 +121,13 @@ export default function EChart({ option, className, style, registerMaps, onEvent
       chart.dispose();
       chartRef.current = null;
     };
-    // re-init only when maps change; option updates handled below
+    // re-init on maps or reading scale; option updates are handled below
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registerMaps]);
+  }, [registerMaps, zoom]);
 
   useEffect(() => {
-    chartRef.current?.setOption(scaled, true);
-  }, [scaled]);
+    chartRef.current?.setOption(resolved, true);
+  }, [resolved]);
 
   return (
     <div ref={outer} className={className} style={{ width: "100%", height: "100%", ...style }}>

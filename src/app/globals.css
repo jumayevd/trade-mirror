@@ -79,25 +79,24 @@ body {
 }
 
 /*
- * Charts opt out of the page zoom.
+ * Charts scale with the page like everything else.
  *
- * CSS `zoom` scales the rendered box but NOT the pointer coordinates a canvas
- * library reads back (offsetX/offsetY arrive in on-screen pixels while the canvas
- * addresses its own unzoomed space). Hit-testing therefore drifts right and down,
- * by more the further the cursor is from the chart's top-left corner — hovering
- * Kazakhstan would highlight China, and the same offset put the wrong bar under
- * the cursor in every bar chart.
+ * They used to cancel the page zoom here, because CSS `zoom` scales the rendered
+ * box but not the pointer coordinates a canvas library reads back, so hit-testing
+ * drifted. EChart now corrects those coordinates itself, mapping clientX through
+ * getBoundingClientRect, which is zoom-agnostic and covers hover, click, drag and
+ * wheel alike — so the CSS cancellation became redundant.
  *
- * Cancelling the zoom inside the chart frame brings the cumulative zoom back to
- * 1, so the two coordinate systems agree again. Percentage sizes are resolved
- * against the containing block in the element's own zoom space, so 100% still
- * fills the host exactly — the frame ends up the same size on screen, only with
- * one CSS pixel back to one screen pixel inside it. Fixed in CSS rather than by
- * patching event coordinates: this holds for hover, click, drag and wheel alike,
- * with no assumption about which space a given event property is measured in.
+ * It was also actively harmful. Cancelling the zoom left one CSS pixel inside a
+ * chart equal to one screen pixel while the same declaration outside was
+ * multiplied by the reading scale, so chart text had to be compensated by hand.
+ * Canvas text cannot be measured from the DOM, so whether that compensation
+ * landed was invisible, and it drifted out of step with the DOM tooltip beside
+ * it — the tooltip growing while the axis labels stayed put. Inheriting the zoom
+ * puts every part of a chart, canvas and tooltip, in one coordinate space where
+ * that cannot happen.
  */
 .chart-frame {
-  zoom: var(--page-unzoom);
   width: 100%;
   height: 100%;
 }
@@ -110,13 +109,12 @@ body {
  */
 :root {
   /*
-   * Reading scale. The two must stay in step: unzoom = 1 / zoom (see
-   * .chart-frame). These are the defaults; the header's text-size control
-   * overrides both on the document element, so any change here must also change
-   * DEFAULT_ZOOM in src/lib/zoom-store.ts or the first paint will jump.
+   * Reading scale, applied to body and inherited by everything including charts.
+   * This is the default; the header's text-size control overrides it on the
+   * document element, so any change here must also change DEFAULT_ZOOM in
+   * src/lib/zoom-store.ts or the first paint will jump.
    */
   --page-zoom: 1.25;
-  --page-unzoom: 0.8;
 
   --shell-max: 1200px;
   /* header: 0.5rem padding top+bottom around a 2rem control row, plus its border */

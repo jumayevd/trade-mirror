@@ -1,18 +1,23 @@
 /**
  * What size does chart text actually render at?
  *
- * Chart text is drawn into a canvas, so it cannot be measured from the DOM and
- * it does not appear in any HTML snapshot — which made three rounds of "the
- * labels are still small" impossible to check by inspection. ECharts can render
- * the same option tree server-side to SVG, where every string carries its
- * resolved font-size, so this renders the real option through the real scaler
- * and reports what the reader will see.
+ * Chart text is drawn into a canvas, so it cannot be read from the DOM and it
+ * appears in no HTML snapshot — which is why "the labels are still small" went
+ * four rounds without being checkable. ECharts can render the same option tree
+ * server-side to SVG, where every string carries its resolved font-size, so this
+ * renders the real options and reports what the reader will actually see.
  *
- * Run with: npx tsx scripts/audit-chart-text.ts
+ * Charts inherit the page's reading scale, so the screen size of a label is the
+ * size ECharts resolves multiplied by that scale. The tooltip is a DOM element
+ * and never reaches the SVG, so it is asserted directly against the same scale —
+ * the point being that both now live in one coordinate space, which is what
+ * stops the tooltip drifting larger than the axis.
+ *
+ * Run with: npm run audit:charts
  */
 import * as echarts from "echarts";
 import {
-  baseGrid, baseTextStyle, baseTooltip, catAxis, CHART_FONT, CHART_TEXT_BOOST, scaleFonts, valueAxis,
+  baseGrid, baseTextStyle, baseTooltip, catAxis, CHART_FONT, valueAxis,
 } from "@/lib/echartBase";
 import { COLORS } from "@/lib/format";
 import { ZOOM_STEPS, DEFAULT_ZOOM } from "@/lib/zoom-store";
@@ -42,8 +47,8 @@ function dynamicsOption() {
   };
 }
 
-/** Font sizes ECharts emitted, largest first, with how many strings carry each. */
-function emitted(option: object): [number, number][] {
+/** Font sizes ECharts resolved, largest first, with how many strings carry each. */
+function resolvedSizes(option: object): [number, number][] {
   const chart = echarts.init(null as never, undefined, { renderer: "svg", ssr: true, width: 1000, height: 320 });
   chart.setOption(option as echarts.EChartsOption);
   const svg = chart.renderToSVGString();
@@ -56,25 +61,27 @@ function emitted(option: object): [number, number][] {
   return [...counts.entries()].sort((a, b) => b[0] - a[0]);
 }
 
-console.log("declared chart scale:", JSON.stringify(CHART_FONT), `boost x${CHART_TEXT_BOOST}`);
-console.log("\nrendered font sizes per reading step (canvas text, real pixels):");
+const declared = resolvedSizes(dynamicsOption());
+console.log("declared chart scale:", JSON.stringify(CHART_FONT));
+console.log("\nresolved by ECharts (declared, before the reading scale):");
+console.log("  " + declared.map(([px, n]) => `${px}px x${n}`).join(", "));
+
+console.log("\nscreen size per reading step — canvas text inherits the page zoom:");
 for (const zoom of ZOOM_STEPS) {
-  const k = zoom * CHART_TEXT_BOOST;
-  const rows = emitted(scaleFonts({ ...dynamicsOption(), textStyle: { ...baseTextStyle } }, k));
   const tag = zoom === DEFAULT_ZOOM ? " (default)" : "";
-  console.log(`  zoom ${zoom}${tag}  scale x${k.toFixed(4)}  ->  ` +
-    rows.map(([px, n]) => `${px}px x${n}`).join(", "));
+  const shown = declared.map(([px, n]) => `${(px * zoom).toFixed(1)}px x${n}`).join(", ");
+  console.log(`  zoom ${zoom}${tag}  ->  ${shown}`);
 }
 
-// the tooltip is DOM, not canvas, so it never reaches the SVG — assert it directly
-const k = DEFAULT_ZOOM * CHART_TEXT_BOOST;
-const scaledTip = scaleFonts(baseTooltip(), k) as { textStyle: { fontSize: number } };
-const axisReal = CHART_FONT.axisLabel * k;
-const tipReal = scaledTip.textStyle.fontSize;
+// the tooltip is a DOM element, so it never reaches the SVG — assert it directly
+const tip = baseTooltip().textStyle as { fontSize: number };
+const axisScreen = CHART_FONT.axisLabel * DEFAULT_ZOOM;
+const tipScreen = tip.fontSize * DEFAULT_ZOOM;
 console.log(`\nat the default step:`);
-console.log(`  axis label  ${CHART_FONT.axisLabel} declared -> ${axisReal.toFixed(1)} real px`);
-console.log(`  tooltip     ${CHART_FONT.tooltip} declared -> ${tipReal.toFixed(1)} real px`);
-console.log(`  axis is ${(axisReal / tipReal).toFixed(2)}x the tooltip` +
-  (axisReal > tipReal ? " — correct: the label a reader scans is larger than the panel they pointed at"
-                      : " — WRONG WAY ROUND"));
-if (axisReal <= tipReal) process.exitCode = 1;
+console.log(`  axis label  ${CHART_FONT.axisLabel} declared -> ${axisScreen.toFixed(1)} screen px`);
+console.log(`  tooltip     ${tip.fontSize} declared -> ${tipScreen.toFixed(1)} screen px`);
+const ok = axisScreen > tipScreen;
+console.log(`  axis is ${(axisScreen / tipScreen).toFixed(2)}x the tooltip` +
+  (ok ? " — correct: the label a reader scans is larger than the panel they pointed at"
+      : " — WRONG WAY ROUND"));
+if (!ok) process.exitCode = 1;

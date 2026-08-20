@@ -45,13 +45,8 @@ export const subscribeZoom = (fn: () => void) => {
 /** Server render uses the default, which is also the value baked into globals.css. */
 export const serverZoom = (): ZoomStep => DEFAULT_ZOOM;
 
-/**
- * Charts un-zoom themselves to keep canvas hit-testing aligned (see .chart-frame),
- * so the inverse has to move in step with the zoom or pointer coordinates drift.
- */
+/** Charts inherit this like the rest of the page, so there is no inverse to keep in step. */
 export function applyZoom(z: ZoomStep): void {
   if (typeof document === "undefined") return;
-  const root = document.documentElement.style;
-  root.setProperty("--page-zoom", String(z));
-  root.setProperty("--page-unzoom", String(Math.round((1 / z) * 1e6) / 1e6));
+  document.documentElement.style.setProperty("--page-zoom", String(z));
 }
