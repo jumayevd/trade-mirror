@@ -592,7 +592,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     const n = years.length;
 
     const boundedAsymmetry = Math.max(peT, adjUiT) > 0 ? clamp(absT / Math.max(peT, adjUiT)) : 0;
-    const positiveShare = adjUiT > 0 ? clamp(posT / adjUiT) : 0;
+    const positiveShare = peT > 0 ? clamp(posT / peT) : 0;
     const uvRatio = uvYears >= 2 && uw > 0 && pw > 0 && pwv > 0 ? (uwv / uw) / (pwv / pw) : null;
 
     // scenario robustness: does the direction-relevant sign hold across 6/10/15%?
@@ -943,14 +943,12 @@ export function aggregate(f: Filter): Aggregate {
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const peT = cs.reduce((s, c) => s + c.peT, 0);
     const posT = cs.reduce((s, c) => s + c.posT, 0);
-    // the gap rate divides by the importing book, on the same FOB basis as the gap
-    const adjUiT = cs.reduce((s, c) => s + c.uiT, 0) / (1 + f.cif);
     const top = [...cs].sort((a, b) => dirVal(b) - dirVal(a))[0];
     chapters.push({
       chapter, label: hsLabel(chapter), category: cs[0].category, residual: isResidualChapter(chapter),
       peT, uiT: cs.reduce((s, c) => s + c.uiT, 0),
       posT, signedT: cs.reduce((s, c) => s + c.signedT, 0),
-      gapRate: adjUiT > 0 ? posT / adjUiT : 0, channels: cs.length,
+      gapRate: peT > 0 ? posT / peT : 0, channels: cs.length,
       topPartner: top ? { name: top.partner, iso3: top.partnerIso, value: Math.round(dirVal(top)) } : null,
       trend: trendOf(series),
     });

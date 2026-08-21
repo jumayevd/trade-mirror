@@ -49,11 +49,16 @@ const K = 1 + CIF_BAND.central;
 
 
 /**
- * Re-export / transit hubs, extended for the full partner list. Uzbekistan records
- * imports by country of ORIGIN while these economies typically report exports by last
- * consignment, so a mirror gap here can be pure routing rather than misreporting.
+ * The flag is reserved for RE-EXPORT markets, which is a narrower thing than a
+ * transit route. Goods crossing a land corridor travel under customs transit and
+ * never enter that country's trade statistics at all, so a corridor cannot
+ * produce a phantom gap; a re-export market clears the goods, resells them and
+ * files its own export, which can. Measured on this data only the UAE and Hong
+ * Kong behave that way — Uzbekistan credits them 0.26 and 0.11 of what they
+ * report shipping, against ~0.9 for genuine suppliers — so the set is those two
+ * and the extras list is empty.
  */
-const EXTRA_TRANSIT = ["HKG", "NLD", "BEL", "LTU", "LVA", "EST", "PAN"];
+const EXTRA_TRANSIT: string[] = [];
 const TRANSIT = new Set<string>([...TRANSIT_HUBS, ...EXTRA_TRANSIT]);
 
 interface InCell { p: string; l: number; k: string; y: number; pe: number; ui: number; uw?: number; pw?: number }

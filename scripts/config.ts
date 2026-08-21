@@ -45,7 +45,7 @@ export const CIF_BAND = { low: 0.05, central: 0.10, high: 0.15 } as const;
  * bilateral trade (its books and Uzbekistan's agree to within ~6%), so its gap
  * should not be read the same way as a re-export hub's.
  */
-export const TRANSIT_HUBS = new Set(["ARE", "CHE", "GBR", "SGP", "KAZ"]);
+export const TRANSIT_HUBS = new Set(["ARE", "HKG"]);
 
 /**
  * HS sections — group the 2-digit chapters into economic categories for filtering

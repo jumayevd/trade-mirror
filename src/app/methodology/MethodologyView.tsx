@@ -46,6 +46,26 @@ function Formula({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Section header: a numbered eyebrow above the heading. The page is an argument
+ * in order — why the gap is readable, what the literature says, what is measured,
+ * how it is scored, what qualifies it — and numbering makes that sequence visible
+ * instead of leaving six equal-weight headings in a column.
+ */
+function SectionHead({ n, title, desc }: { n: string; title: string; desc?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2.5">
+        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] text-[12px] font-semibold text-white">
+          {n}
+        </span>
+        <h2 className={H2}>{title}</h2>
+      </div>
+      {desc ? <p className={P}>{desc}</p> : null}
+    </div>
+  );
+}
+
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
@@ -103,7 +123,7 @@ export default function MethodologyView() {
   const MEASURES: { key: string; formula: string }[] = [
     { key: "importFob", formula: "M_cif ÷ (1 + f),  f ∈ {0% … 25%}, central 10%" },
     { key: "positive", formula: "Σ max(X_fob − M_cif ÷ (1 + f), 0)" },
-    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ [M_cif ÷ (1 + f)]" },
+    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ X_fob" },
   ];
 
   return (
@@ -114,30 +134,35 @@ export default function MethodologyView() {
           UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
         </p>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
-        <p className={P}>{tr("meth.lede")}</p>
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[13.5px] leading-relaxed text-muted">
+          {tr("meth.lede")}
+        </p>
       </section>
 
       {/* 1. why a positive gap is worth reading ------------------------- */}
-      <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.why.title")}</h2>
-        <p className={P}>
-          {tr("meth.why.p1")}
-          <Cite ids={["bhagwati1964", "unsd2019"]} />
-        </p>
-        <p className={P}>
-          {tr("meth.why.p2")}
-          <Cite ids={["fisman2004", "javorcik2008", "berger2008", "farhad2019"]} />
-        </p>
-        <p className={P}>
-          {tr("meth.why.p3")}
-          <Cite ids={["buehn2011", "carrere2015", "kellenberg2019"]} />
-        </p>
+      <section className="space-y-3">
+        <SectionHead n="1" title={tr("meth.why.title")} />
+        {/* three separate reasons, so they get three cards rather than one column
+            of paragraphs a reader has to segment themselves */}
+        <div className="grid max-w-5xl gap-3 lg:grid-cols-3">
+          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+            {tr("meth.why.p1")}
+            <Cite ids={["bhagwati1964", "unsd2019"]} />
+          </div>
+          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+            {tr("meth.why.p2")}
+            <Cite ids={["fisman2004", "javorcik2008", "berger2008", "farhad2019"]} />
+          </div>
+          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+            {tr("meth.why.p3")}
+            <Cite ids={["buehn2011", "carrere2015", "kellenberg2019"]} />
+          </div>
+        </div>
       </section>
 
       {/* 2. literature findings ------------------------------------------ */}
       <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.lit.title")}</h2>
-        <p className={P}>{tr("meth.lit.desc")}</p>
+        <SectionHead n="2" title={tr("meth.lit.title")} desc={tr("meth.lit.desc")} />
         <div className="card max-w-5xl overflow-x-auto">
           <table className="w-full min-w-[680px]">
             <thead>
@@ -167,8 +192,7 @@ export default function MethodologyView() {
 
       {/* 3. the measures on the dashboard ------------------------------- */}
       <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.measures.title")}</h2>
-        <p className={P}>{tr("meth.measures.desc")}</p>
+        <SectionHead n="3" title={tr("meth.measures.title")} desc={tr("meth.measures.desc")} />
         <div className="card max-w-4xl overflow-x-auto">
           <table className="w-full min-w-[620px]">
             <thead>
@@ -201,7 +225,7 @@ export default function MethodologyView() {
 
       {/* 4. the risk score ---------------------------------------------- */}
       <section className="space-y-3">
-        <h2 className={H2}>{tr("meth.risk.title")}</h2>
+        <SectionHead n="4" title={tr("meth.risk.title")} />
         <p className={P}>
           {tr("meth.risk.desc")}
           <Cite ids={["gara2018", "choi2019"]} />
@@ -215,7 +239,7 @@ export default function MethodologyView() {
 
           <Step n="1" title={tr("meth.risk.s1.title")}>
             {tr("meth.risk.s1.body")}
-            <Formula>gap rate = Σ max(X − M ÷ (1 + f), 0) ÷ Σ [M ÷ (1 + f)]</Formula>
+            <Formula>gap rate = Σ max(X − M ÷ (1 + f), 0) ÷ Σ X</Formula>
             {tr("meth.risk.s1.body2")}{" "}
             {tr("meth.risk.s1.body3")}
             <Cite ids={["bhagwati1964", "oecdjrc2008"]} />
@@ -268,8 +292,7 @@ export default function MethodologyView() {
 
       {/* 5. diagnostics -------------------------------------------------- */}
       <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.diag.title")}</h2>
-        <p className={P}>{tr("meth.diag.desc")}</p>
+        <SectionHead n="5" title={tr("meth.diag.title")} desc={tr("meth.diag.desc")} />
         <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Diag label="cor(G, P)" value={diag.corGP[HS6].toFixed(2)} note={tr("meth.diag.corGP")} />
           <Diag
@@ -283,15 +306,29 @@ export default function MethodologyView() {
             note={`${tr("meth.diag.gapRateNote")} p90 ${fmtPct(rates.p90, 0)} · p99 ${fmtPct(rates.p99, 0)}`}
           />
         </div>
-        <p className="tabular max-w-3xl text-[12.5px] text-faint">
-          {tr("meth.diag.bands")}: {tr("band.critical")} ≥ {cuts.critical.toFixed(1)} · {tr("band.high")} ≥ {cuts.high.toFixed(1)} · {tr("band.elevated")} ≥ {cuts.elevated.toFixed(1)} (HS6)
-        </p>
+        {/* the fitted cut-offs were a run-on line of numbers; as a table each
+            band's threshold is findable instead of parsed out of prose */}
+        <div className="max-w-md overflow-hidden rounded-md border border-[var(--color-border-soft)]">
+          <table className="w-full">
+            <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left text-[12px] font-medium text-muted">
+              {tr("meth.diag.bands")} (HS6)
+            </caption>
+            <tbody className="zebra">
+              {([["critical", cuts.critical], ["high", cuts.high], ["elevated", cuts.elevated]] as const).map(([b, v]) => (
+                <tr key={b} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b}`)}</td>
+                  <td className={`${TD} tabular whitespace-nowrap text-right`}>≥ {v.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* 6. references ------------------------------------------------------ */}
       <section className="max-w-4xl space-y-2">
-        <h2 className={H2}>{tr("meth.refs.title")}</h2>
-        <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted">
+        <SectionHead n="6" title={tr("meth.refs.title")} />
+        <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted lg:columns-2 lg:gap-8">
           {/* the annotated readings live in the Literature findings table — the
               list here is the bare citation, only for sources actually used */}
           {REFERENCES.map((r) => (

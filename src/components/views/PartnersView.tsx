@@ -307,6 +307,23 @@ export default function PartnersView() {
       </div>
     );
 
+  /**
+   * Two partners in the ranking are re-export markets rather than suppliers, and
+   * their gap means something different from everyone else's. It rides with the
+   * table rather than sitting in its own section, because it is only meaningful
+   * next to the rows it qualifies.
+   */
+  const reExportNote = (
+    <div className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-3">
+      <h3 className="mb-1 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+        {t("ctry.reexport.title")}
+        <TransitTag />
+      </h3>
+      <p className="text-[13px] leading-relaxed text-muted">{t("ctry.reexport.body")}</p>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-faint">{t("ctry.reexport.note")}</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* 1. header */}
@@ -378,7 +395,7 @@ export default function PartnersView() {
             <RiskMap partners={data.partners} metric={mapMetric} />
           )
         ) : (
-          rankingTable
+          <>{rankingTable}<div className="mt-3">{reExportNote}</div></>
         )}
       </section>
 
@@ -456,6 +473,7 @@ export default function PartnersView() {
             right={<InfoTip text={t("ctry.rank.info")} />}
           />
           {rankingTable}
+          {reExportNote}
         </section>
       )}
 
@@ -514,7 +532,7 @@ export default function PartnersView() {
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
                       </td>
                       <td className={tdNum}>
-                        {noData || r.uiPos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / (r.uiPos / K), 1)}
+                        {noData || r.pePos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / r.pePos, 1)}
                       </td>
                     </tr>
                   );

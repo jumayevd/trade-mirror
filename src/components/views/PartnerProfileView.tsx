@@ -219,7 +219,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   // positive channel-years only, so exports − adjusted imports = the positive discrepancy
   const adjImport = p.uiPosT / (1 + FULL_FILTER.cif);
-  const posShare = adjImport > 0 ? p.posT / adjImport : 0;
+  const posShare = p.pePosT > 0 ? p.posT / p.pePosT : 0;
   const trendWord = t(p.trend > 1_000_000 ? "prof.trend.rising" : p.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
   const topSector = structure[0];
 
