@@ -8,7 +8,7 @@ import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/com
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { hsFullLabel, productByCmd, type Channel, type Filter } from "@/lib/dataset";
+import { hsFullLabel, narrowerThanScoredWindow, productByCmd, SCORED_WINDOW, type Channel, type Filter } from "@/lib/dataset";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
@@ -18,6 +18,21 @@ import type { LocaleKey } from "@/lib/locales";
  */
 
 export { LEVEL_LABEL_KEYS, type HsLevel };
+
+/**
+ * Marks a column the period ticks do not reach. The score, its band and the
+ * persistence it was fitted on are properties of the whole scored window, so
+ * when the reader narrows the period those three columns describe more years
+ * than the value columns beside them — and say so rather than looking wrong.
+ */
+function WindowTag() {
+  const { t } = useI18n();
+  return (
+    <span className="ml-1.5 whitespace-nowrap rounded-sm bg-[var(--color-panel-2)] px-1 py-px text-[10.5px] font-normal tracking-normal text-faint">
+      {t("risk.window.tag")}
+    </span>
+  );
+}
 
 /** Series-identity dot for column headers — the header text itself stays ink (rule 5). */
 function HeadDot({ color }: { color: string }) {
@@ -110,6 +125,10 @@ export default function QueueTable({
   const { t } = useI18n();
   /** Freight factor: recorded CIF imports are divided by this to reach an FOB basis. */
   const K = 1 + filter.cif;
+  /** The reader has narrowed past the fit, so the score columns need labelling. */
+  const narrowed = narrowerThanScoredWindow(filter);
+  const scoredWindow = `${SCORED_WINDOW.start}–${SCORED_WINDOW.end}`;
+  const windowTip = narrowed ? ` ${t("risk.window.tip").replace("{window}", scoredWindow)}` : "";
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("risk");
   const [dir, setDir] = useState<SortDir>("desc");
@@ -248,13 +267,19 @@ export default function QueueTable({
                 <th className={th}>{t("common.partner")}</th>
                 <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("risk.th.hsCode")}</th>
                 <th className={th}>{t("common.product")}</th>
-                <th className={th} title={t("risk.tip.riskValue")}>{t("risk.th.riskValue")}</th>
+                <th className={th} title={`${t("risk.tip.riskValue")}${windowTip}`}>
+                  {t("risk.th.riskValue")}{narrowed ? <WindowTag /> : null}
+                </th>
                 <th className={thNum} title={`${t("risk.tip.uzbImport")} ${t("filter.freight")}: ${Math.round(filter.cif * 100)}%.`}>{t("risk.th.uzbImport")}</th>
                 <th className={thNum} title={t("risk.tip.exportReported")}>{t("risk.th.exportReported")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}><HeadDot color={COLORS.positive} />{t("risk.th.gap")}</th>
                 <th className={thNum} title={t("risk.tip.gapPct")}>{t("risk.th.gapPct")}</th>
-                <th className={th} title={t("risk.tip.persistence")}>{t("common.persistence")}</th>
-                <th className={th} title={t("risk.tip.band")}>{t("risk.th.band")}</th>
+                <th className={th} title={`${t("risk.tip.persistence")}${windowTip}`}>
+                  {t("common.persistence")}{narrowed ? <WindowTag /> : null}
+                </th>
+                <th className={th} title={`${t("risk.tip.band")}${windowTip}`}>
+                  {t("risk.th.band")}{narrowed ? <WindowTag /> : null}
+                </th>
               </tr>
             </thead>
             <tbody className="zebra">
@@ -320,8 +345,23 @@ export default function QueueTable({
                     <td className={tdNum}>
                       {pct == null ? <MissingValue kind="notComparable" /> : fmtPct(pct, 1)}
                     </td>
-                    <td className={`${td} tabular whitespace-nowrap`} title={`${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`}>
-                      {c.posYears}/{c.comparableYears} {t("risk.unit.yr")} · {t("risk.streak")} {c.longestPosStreak}
+                    {/* The score's own k/n, not the visible slice: a scored row read
+                        "1/1 yr" beside a 94 built from eight years, which made the
+                        score look unexplainable. The slice moves to the tooltip. */}
+                    <td
+                      className={`${td} tabular whitespace-nowrap`}
+                      title={
+                        c.scored
+                          ? `${t("risk.window.scored")} ${scoredWindow} — ${c.flaggedYears}/${c.matchedYears} ${t("risk.unit.yr")} · ${t("risk.read.longestStreak")} ${c.scoredStreak}. ` +
+                            `${t("risk.window.selected")} ${c.posYears}/${c.comparableYears} ${t("risk.unit.yr")} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}.`
+                          : `${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`
+                      }
+                    >
+                      {c.scored ? (
+                        <>{c.flaggedYears}/{c.matchedYears} {t("risk.unit.yr")} · {t("risk.streak")} {c.scoredStreak}</>
+                      ) : (
+                        <>{c.posYears}/{c.comparableYears} {t("risk.unit.yr")} · {t("risk.streak")} {c.longestPosStreak}</>
+                      )}
                     </td>
                     <td className={td}><BandBadge band={c.band} /></td>
                   </tr>,

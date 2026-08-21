@@ -215,6 +215,23 @@ export const comparableMonthsOfYear = (y: number): number[] => comparableMonths.
  */
 export const FREIGHT_SCENARIOS: number[] = [0, 0.05, 0.10, 0.15, 0.20, 0.25];
 
+/**
+ * The window the risk index was fitted on — the annual layer, because G is a
+ * percentile rank across cells and P counts whole years. Monthly-only years are
+ * outside it, so a cell can be listed for a period the score never saw.
+ */
+export const SCORED_WINDOW = meta.window;
+
+/**
+ * True when the visible period covers less than the scored window, so the score,
+ * its band and its persistence describe more years than the value columns beside
+ * them. Monthly mode always qualifies: the index has no month resolution, and the
+ * monthly layer reaches into years the annual one does not cover. An empty year
+ * selection means every year, as everywhere else in the filter.
+ */
+export const narrowerThanScoredWindow = (f: Filter): boolean =>
+  f.granularity === "month" || (f.years.length > 0 && f.years.length < meta.years.length);
+
 /** Years the active granularity offers. */
 export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : yearlyYears);
 
@@ -413,7 +430,7 @@ const histYears = (() => {
 /* ------------------------------------------------------------------ */
 
 /** `${level}|${partnerIso}|${code}` → [MTRS, G, P, k, n, excess gap USD, band]. */
-type RiskRow = readonly [number, number, number, number, number, number, number];
+type RiskRow = readonly [number, number, number, number, number, number, number, number];
 interface PartnerEffect { iso: string; u: number; cells: number }
 
 const riskIndex = riskRaw as unknown as {
@@ -428,7 +445,7 @@ const riskIndex = riskRaw as unknown as {
 export const RISK_CONFIG = riskIndex.config;
 export const RISK_BAND_CUTS = riskIndex.bandCuts;
 const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
-const EMPTY_RISK: RiskRow = [0, 0, 0, 0, 0, 0, 3];
+const EMPTY_RISK: RiskRow = [0, 0, 0, 0, 0, 0, 3, 0];
 
 /**
  * Partner reporting-discrepancy indicator: the value-weighted mean log gap
@@ -527,11 +544,14 @@ export interface Channel {
   robustness: Robustness; flags: string[];
   /**
    * MTRS v3.0, read from the precomputed index. Pooled over the whole window, so
-   * these five fields do not move with the period ticks — the ticks decide which
-   * cells are listed and how large their gap is, not how the cell scores.
+   * these fields do not move with the period ticks — the ticks decide which
+   * cells are listed and how large their gap is, not how the cell scores. Read
+   * flaggedYears / matchedYears / scoredStreak together with the score: they are
+   * the persistence it was actually built from, which is why a narrowed period
+   * must label them rather than swap in its own year count.
    */
   mtrs: number; abnormalGap: number; persistence: number;
-  flaggedYears: number; matchedYears: number; excessGap: number;
+  flaggedYears: number; matchedYears: number; scoredStreak: number; excessGap: number;
   band: RiskBand; scored: boolean;
   /** positive discrepancy used for ranking */
   primary: number;
@@ -628,7 +648,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     // the score estimated on every year that cell was matched.
     const rkey = `${level}|${r0.p}|${r0.k}`;
     const rr = riskIndex.cells[rkey];
-    const [mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap, bandIdx] = rr ?? EMPTY_RISK;
+    const [mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap, bandIdx, scoredStreak] = rr ?? EMPTY_RISK;
 
     out.push({
       partner: partnerName(pm.iso3), partnerIso: pm.iso3, region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
@@ -639,7 +659,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
       robustness, flags,
-      mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap,
+      mtrs, abnormalGap, persistence, flaggedYears, matchedYears, scoredStreak, excessGap,
       band: BANDS[bandIdx] ?? "low", scored: !!rr,
       primary, trend,
     });

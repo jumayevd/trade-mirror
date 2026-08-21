@@ -11,14 +11,17 @@
  * Construction:
  *   0  matched set   both books report the cell-year; one-sided flows are
  *                    bucketed separately and never scored
- *   1  gap rate      Σ max(X × (1 + f) − M, 0) ÷ Σ X × (1 + f) over the matched
- *                    years, at the central freight rate f — the ratio measure of
- *                    the partner-country method (Bhagwati 1964)
+ *   1  gap rate      Σ max(X − M ÷ (1 + f), 0) ÷ Σ X over the matched years, at
+ *                    the central freight rate f — the ratio measure of the
+ *                    partner-country method (Bhagwati 1964)
  *   2  G             percentile rank of the gap rate among cells with a positive
  *                    gap at the same HS level, 0 … 1 (rank normalization per the
  *                    OECD/JRC composite-indicator handbook); no positive gap → 0
  *   3  P             (k + 1) / (n + 2), Laplace's rule of succession: k = years
- *                    with a positive gap, n = matched years
+ *                    with a positive gap, n = matched years. The longest run of
+ *                    consecutive positive years travels with k and n, so the
+ *                    dashboard can show what the score was fitted on even when
+ *                    the reader has narrowed the period
  *   4  composite     RS = 100 × √(G × P) — geometric aggregation, so only a gap
  *                    that is both large for its trade and recurring scores high
  *   5  bands         Critical = top 2.5% of positive scores; High, Elevated and
@@ -87,6 +90,20 @@ function quantile(sortedAsc: number[], q: number): number {
   return lo === hi ? sortedAsc[lo] : sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
 }
 
+/**
+ * Longest run of consecutive positive years among the matched ones — the same
+ * definition the dashboard uses for the period it has on screen, so the two
+ * agree on what the word means: an unmatched year interrupts nothing, because
+ * a year neither book reported is not a year without a gap.
+ */
+function longestPosRun(obs: { y: number; pos: boolean }[]): number {
+  let best = 0, run = 0;
+  for (const o of [...obs].sort((a, b) => a.y - b.y)) {
+    if (o.pos) { run++; if (run > best) best = run; } else run = 0;
+  }
+  return best;
+}
+
 function pearson(a: number[], b: number[]): number {
   const n = a.length;
   if (n < 2) return 0;
@@ -103,6 +120,8 @@ function pearson(a: number[], b: number[]): number {
 
 interface CellScore {
   rs: number; g: number; p: number; k: number; n: number; excess: number; band: number; value: number;
+  /** Longest run of consecutive positive-gap years inside the matched window. */
+  streak: number;
 }
 
 interface LevelResult {
@@ -129,6 +148,12 @@ function runLevel(level: number): LevelResult {
     p: string; k: string;
     n: number; kPos: number;
     expected: number; posSum: number; value: number;
+    /**
+     * Every matched year and whether it ran positive, kept so the longest run
+     * can be measured the way the dashboard measures it: consecutive matched
+     * years, since a year neither book reported is absent rather than negative.
+     */
+    obs: { y: number; pos: boolean }[];
     // for the descriptive partner indicator
     wLogGap: number; wSum: number;
   }
@@ -147,7 +172,7 @@ function runLevel(level: number): LevelResult {
     const kk = `${r.p}|${r.k}`;
     let acc = byCell.get(kk);
     if (!acc) {
-      acc = { p: r.p, k: r.k, n: 0, kPos: 0, expected: 0, posSum: 0, value: 0, wLogGap: 0, wSum: 0 };
+      acc = { p: r.p, k: r.k, n: 0, kPos: 0, expected: 0, posSum: 0, value: 0, obs: [], wLogGap: 0, wSum: 0 };
       byCell.set(kk, acc);
     }
     // FOB basis on both sides: the CIF import is divided down, not the export raised
@@ -158,6 +183,7 @@ function runLevel(level: number): LevelResult {
     acc.expected += r.pe;
     acc.value += val;
     if (signed > NOISE) { acc.kPos++; acc.posSum += signed; }
+    acc.obs.push({ y: r.y, pos: signed > NOISE });
     const w = Math.log(val);
     acc.wLogGap += w * (Math.log(r.pe) - Math.log(r.ui));
     acc.wSum += w;
@@ -191,6 +217,7 @@ function runLevel(level: number): LevelResult {
       excess: Math.round(c.posSum),
       band: 3,
       value: Math.round(c.meanValue),
+      streak: longestPosRun(c.obs),
     });
   }
 
@@ -254,10 +281,10 @@ function runLevel(level: number): LevelResult {
 const LEVELS = [2, 4, 6] as const;
 const results = LEVELS.map(runLevel);
 
-const cellOut: Record<string, [number, number, number, number, number, number, number]> = {};
+const cellOut: Record<string, [number, number, number, number, number, number, number, number]> = {};
 for (const r of results) {
   for (const [kk, s] of r.scores) {
-    cellOut[`${r.level}|${kk}`] = [s.rs, s.g, s.p, s.k, s.n, s.excess, s.band];
+    cellOut[`${r.level}|${kk}`] = [s.rs, s.g, s.p, s.k, s.n, s.excess, s.band, s.streak];
   }
 }
 
@@ -267,7 +294,7 @@ const riskJson = {
   // reproduces a byte-identical file
   generatedAt: meta.generatedAt,
   config: { alpha: ALPHA, beta: BETA, materialityFloor: MATERIALITY_FLOOR, criticalTop: CRITICAL_TOP, freight: K - 1 },
-  /** `${level}|${partnerIso}|${code}` → [rs, G, P, k, n, excessGapUsd, band] */
+  /** `${level}|${partnerIso}|${code}` → [rs, G, P, k, n, excessGapUsd, band, longestPosStreak] */
   cells: cellOut,
   partnerEffects: Object.fromEntries(results.map((r) => [r.level, r.partnerGap])),
   bandCuts: Object.fromEntries(results.map((r) => [r.level, r.bandCuts])),

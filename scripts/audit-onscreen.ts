@@ -112,7 +112,7 @@ for (const c of full.channels6.slice(0, 200)) {
 const riskCells = (riskRaw as unknown as { cells: Record<string, number[]> }).cells;
 let rsChecked = 0;
 for (const [key, row] of Object.entries(riskCells)) {
-  const [rs, g, p, k, n] = row;
+  const [rs, g, p, k, n, , , streak] = row;
   if (rsChecked++ > 4000) break;
   /*
    * G and P ship rounded to 3 decimals and RS to 1, so RS cannot be re-derived
@@ -125,6 +125,14 @@ for (const [key, row] of Object.entries(riskCells)) {
   check(`RS consistent with stored G,P [${key}]`, rs >= lo - 0.06 && rs <= hi + 0.06,
     `${rs} outside [${lo.toFixed(2)}, ${hi.toFixed(2)}]`);
   check(`P = (k+1)/(n+2) [${key}]`, Math.abs(p - (k + 1) / (n + 2)) <= 0.0006);
+  /*
+   * The stored streak is what the queue prints beside the score once the reader
+   * narrows the period, so it has to mean the same thing the engine means: a run
+   * of consecutive MATCHED years, which makes every-matched-year-positive imply
+   * a run the length of the window.
+   */
+  check(`streak <= k <= n [${key}]`, streak <= k && k <= n, `${streak}/${k}/${n}`);
+  check(`k = n implies streak = n [${key}]`, k !== n || streak === n, `${streak} != ${n}`);
 }
 
 /* ---------------------------------------------------------------- */
