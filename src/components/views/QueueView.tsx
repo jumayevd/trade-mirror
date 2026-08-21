@@ -11,7 +11,6 @@ import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum } from "@/lib/format";
-import diagnosticsRaw from "@/data/diagnostics.json";
 import type { LocaleKey } from "@/lib/locales";
 import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, isDerivedYear, meta, yearsFor, yearsLabel, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
 
@@ -48,10 +47,12 @@ const TD_NUM = `${TD} tabular text-right whitespace-nowrap`;
 
 const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
 
-/** Band cut-offs are fitted per HS level, so the legend quotes the live level. */
-const BAND_CUTS = (diagnosticsRaw as unknown as {
-  bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
-}).bandCuts;
+/*
+ * Band cut-offs are re-fitted on the period in view and arrive on the aggregate,
+ * so the legend quotes the distribution actually being banded. Quoting the
+ * whole-window fit here would misstate every narrowed period: one selected year
+ * caps P at 0.67, which pulls the entire score distribution down with it.
+ */
 
 export default function QueueView() {
   const { t } = useI18n();
@@ -110,7 +111,7 @@ export default function QueueView() {
 
   /** Score ranges quoted beside each band, at the HS level currently listed. */
   const bandRanges = useMemo<Record<RiskBand, string>>(() => {
-    const c = BAND_CUTS[String(level)] ?? BAND_CUTS["6"];
+    const c = data.bandCuts[level];
     const n = (v: number) => v.toFixed(1);
     return {
       critical: `≥ ${n(c.critical)}`,
@@ -118,7 +119,7 @@ export default function QueueView() {
       elevated: `${n(c.elevated)} – ${n(c.high)}`,
       low: `< ${n(c.elevated)}`,
     };
-  }, [level]);
+  }, [data, level]);
 
   return (
     <div className="space-y-6">

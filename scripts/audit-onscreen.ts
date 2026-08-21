@@ -110,9 +110,10 @@ for (const c of full.channels6.slice(0, 200)) {
 /* 6. the risk score, as printed in Discrepancy & Risk              */
 /* ---------------------------------------------------------------- */
 const riskCells = (riskRaw as unknown as { cells: Record<string, number[]> }).cells;
+const riskConfig = (riskRaw as unknown as { config: { freight: number } }).config;
 let rsChecked = 0;
 for (const [key, row] of Object.entries(riskCells)) {
-  const [rs, g, p, k, n, , , streak] = row;
+  const [rs, g, p, k, n] = row;
   if (rsChecked++ > 4000) break;
   /*
    * G and P ship rounded to 3 decimals and RS to 1, so RS cannot be re-derived
@@ -125,14 +126,41 @@ for (const [key, row] of Object.entries(riskCells)) {
   check(`RS consistent with stored G,P [${key}]`, rs >= lo - 0.06 && rs <= hi + 0.06,
     `${rs} outside [${lo.toFixed(2)}, ${hi.toFixed(2)}]`);
   check(`P = (k+1)/(n+2) [${key}]`, Math.abs(p - (k + 1) / (n + 2)) <= 0.0006);
+}
+
+/* ---------------------------------------------------------------- */
+/* 6b. the live score reproduces the fit it was derived from        */
+/* ---------------------------------------------------------------- */
+/*
+ * The dashboard now scores the period on screen rather than reading the index,
+ * so the two constructions have to meet where they describe the same thing: the
+ * whole annual window at the freight rate the index was fitted at. Any drift
+ * here means the runtime path and the fitted model have diverged.
+ */
+{
+  const fitted = aggregate({ ...DEFAULT_FILTER, cif: riskConfig.freight });
+  const pairs: [Channel[], number][] = [[fitted.channels, 2], [fitted.channels4, 4], [fitted.channels6, 6]];
+  let compared = 0, gDrift = 0, rsDrift = 0;
+  for (const [cs, level] of pairs) {
+    for (const c of cs) {
+      const row = riskCells[`${level}|${c.partnerIso}|${c.cmd}`];
+      if (!row) continue;
+      const [rs, g, p] = row;
+      compared++;
+      gDrift = Math.max(gDrift, Math.abs(g - c.abnormalGap));
+      rsDrift = Math.max(rsDrift, Math.abs(rs - c.mtrs));
+      check(`P matches the fitted index [${level}|${c.partnerIso}|${c.cmd}]`,
+        Math.abs(p - c.persistence) <= 0.0011, `${p} vs ${c.persistence}`);
+    }
+  }
   /*
-   * The stored streak is what the queue prints beside the score once the reader
-   * narrows the period, so it has to mean the same thing the engine means: a run
-   * of consecutive MATCHED years, which makes every-matched-year-positive imply
-   * a run the length of the window.
+   * G is a rank over the cells present, and the index also ranks the HS4 rollups
+   * it derives itself, so the two cross-sections are not identical cell for cell.
+   * The tolerance is on the rank, not on equality.
    */
-  check(`streak <= k <= n [${key}]`, streak <= k && k <= n, `${streak}/${k}/${n}`);
-  check(`k = n implies streak = n [${key}]`, k !== n || streak === n, `${streak} != ${n}`);
+  check("live G tracks the fitted G", gDrift <= 0.02, `max |dG| = ${gDrift.toFixed(4)}`);
+  check("live RS tracks the fitted RS", rsDrift <= 1.5, `max |dRS| = ${rsDrift.toFixed(2)}`);
+  console.log(`  note: live-vs-fitted compared ${compared.toLocaleString()} cells; max |dG| ${gDrift.toFixed(4)}, max |dRS| ${rsDrift.toFixed(2)}`);
 }
 
 /* ---------------------------------------------------------------- */

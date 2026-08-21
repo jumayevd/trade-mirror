@@ -215,22 +215,8 @@ export const comparableMonthsOfYear = (y: number): number[] => comparableMonths.
  */
 export const FREIGHT_SCENARIOS: number[] = [0, 0.05, 0.10, 0.15, 0.20, 0.25];
 
-/**
- * The window the risk index was fitted on — the annual layer, because G is a
- * percentile rank across cells and P counts whole years. Monthly-only years are
- * outside it, so a cell can be listed for a period the score never saw.
- */
-export const SCORED_WINDOW = meta.window;
-
-/**
- * True when the visible period covers less than the scored window, so the score,
- * its band and its persistence describe more years than the value columns beside
- * them. Monthly mode always qualifies: the index has no month resolution, and the
- * monthly layer reaches into years the annual one does not cover. An empty year
- * selection means every year, as everywhere else in the filter.
- */
-export const narrowerThanScoredWindow = (f: Filter): boolean =>
-  f.granularity === "month" || (f.years.length > 0 && f.years.length < meta.years.length);
+/** The window the static index was fitted on, quoted on /methodology. */
+export const FITTED_WINDOW = meta.window;
 
 /** Years the active granularity offers. */
 export const yearsFor = (g: Granularity): number[] => (g === "month" ? monthlyYears : yearlyYears);
@@ -426,26 +412,30 @@ const histYears = (() => {
 })();
 
 /* ------------------------------------------------------------------ */
-/* MTRS v3.0 — precomputed risk index                                  */
+/* MTRS v3.1 — fitted constants and the descriptive partner indicator   */
 /* ------------------------------------------------------------------ */
 
-/** `${level}|${partnerIso}|${code}` → [MTRS, G, P, k, n, excess gap USD, band]. */
-type RiskRow = readonly [number, number, number, number, number, number, number, number];
+/*
+ * The scores themselves are no longer read from here: they are computed for the
+ * period on screen (see scoreCrossSection), so that narrowing the years narrows
+ * what the score claims. What the index still supplies is the fitted
+ * configuration — the smoothing constants, the Critical share and the freight
+ * rate the fit used — the descriptive partner indicator, and the whole-window
+ * band cut-offs quoted on /methodology as the reference fit.
+ */
 interface PartnerEffect { iso: string; u: number; cells: number }
 
 const riskIndex = riskRaw as unknown as {
   version: string;
   generatedAt: string;
   config: { alpha: number; beta: number; materialityFloor: number; criticalTop: number; freight: number };
-  cells: Record<string, RiskRow>;
   partnerEffects: Record<string, PartnerEffect[]>;
   bandCuts: Record<string, { critical: number; high: number; elevated: number }>;
 };
 
 export const RISK_CONFIG = riskIndex.config;
-export const RISK_BAND_CUTS = riskIndex.bandCuts;
-const BANDS: RiskBand[] = ["critical", "high", "elevated", "low"];
-const EMPTY_RISK: RiskRow = [0, 0, 0, 0, 0, 0, 3, 0];
+/** Cut-offs from the whole-window fit; the live ones travel on the Aggregate. */
+export const FITTED_BAND_CUTS = riskIndex.bandCuts;
 
 /**
  * Partner reporting-discrepancy indicator: the value-weighted mean log gap
@@ -543,15 +533,16 @@ export interface Channel {
   uvYears: number; uvRatio: number | null;
   robustness: Robustness; flags: string[];
   /**
-   * MTRS v3.0, read from the precomputed index. Pooled over the whole window, so
-   * these fields do not move with the period ticks — the ticks decide which
-   * cells are listed and how large their gap is, not how the cell scores. Read
-   * flaggedYears / matchedYears / scoredStreak together with the score: they are
-   * the persistence it was actually built from, which is why a narrowed period
-   * must label them rather than swap in its own year count.
+   * MTRS v3.1, computed for the period in view: G is the percentile rank of this
+   * cell's gap rate across the period's whole cross-section, P = (k + 1)/(n + 2)
+   * over the n years in view, and RS = 100 √(G × P). Selecting one year makes it
+   * a one-year score — posYears and comparableYears above are the k and n that
+   * produced it, so the columns cannot disagree. Assigned after construction by
+   * scoreCrossSection, since G needs every cell before any cell can be ranked.
    */
   mtrs: number; abnormalGap: number; persistence: number;
-  flaggedYears: number; matchedYears: number; scoredStreak: number; excessGap: number;
+  /** Cumulative positive gap in view — the fitted index's `excess`, recomputed. */
+  excessGap: number;
   band: RiskBand; scored: boolean;
   /** positive discrepancy used for ranking */
   primary: number;
@@ -563,6 +554,112 @@ function trendOf(series: { y: number; v: number }[]) {
   const n = Math.min(3, Math.floor(series.length / 2) || 1);
   const mean = (a: { v: number }[]) => a.reduce((s, x) => s + x.v, 0) / a.length;
   return mean(series.slice(-n)) - mean(series.slice(0, n));
+}
+
+/** Percentile rank in [0,1], ties averaged — the fitted index's normalization. */
+function percentileRanks(values: number[]): number[] {
+  const n = values.length;
+  const out = new Array<number>(n).fill(0);
+  if (n === 0) return out;
+  const order = values.map((v, i) => [v, i] as [number, number]).sort((a, b) => a[0] - b[0]);
+  let i = 0;
+  while (i < n) {
+    let j = i;
+    while (j + 1 < n && order[j + 1][0] === order[i][0]) j++;
+    const pr = ((i + j) / 2 + 1 - 0.5) / n;
+    for (let t = i; t <= j; t++) out[order[t][1]] = pr;
+    i = j + 1;
+  }
+  return out;
+}
+
+/** Quantile of an ascending array, linear interpolation. */
+function quantileAsc(sortedAsc: number[], q: number): number {
+  if (sortedAsc.length === 0) return 0;
+  const pos = (sortedAsc.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return lo === hi ? sortedAsc[lo] : sortedAsc[lo] + (sortedAsc[hi] - sortedAsc[lo]) * (pos - lo);
+}
+
+export interface BandCuts { critical: number; high: number; elevated: number }
+
+/**
+ * Score one HS level for the period in view. G is the percentile rank of the
+ * cell's gap rate among the cells that have a positive one, P = (k + 1)/(n + 2)
+ * over the years in view — Laplace's rule of succession, so one positive year
+ * out of one reads as 0.67 rather than certainty — and RS = 100 √(G × P). The
+ * bands are re-cut on the resulting distribution by the same rule as the fitted
+ * index: Critical is the top 2.5%, and the rest splits at the 75th and 50th
+ * percentiles.
+ *
+ * The cross-section passed in is the period's, before the country and product
+ * ticks — a rank has to be against every cell at the level, or selecting one
+ * partner would silently re-rank it against itself.
+ */
+interface CellScore { g: number; p: number; rs: number; band: RiskBand }
+export interface LevelScores { cuts: BandCuts; by: Map<string, CellScore> }
+
+function scoreCrossSection(cs: Channel[]): LevelScores {
+  const withGap = cs.filter((c) => c.peT > 0 && c.excessGap > 0);
+  const ranks = percentileRanks(withGap.map((c) => c.excessGap / c.peT));
+  const gOf = new Map<string, number>();
+  withGap.forEach((c, i) => gOf.set(cellKey(c), ranks[i]));
+
+  const by = new Map<string, CellScore>();
+  for (const c of cs) {
+    const g = gOf.get(cellKey(c)) ?? 0;
+    // ALPHA = BETA = 1, the same smoothing the fitted index applies
+    const p = (c.posYears + 1) / (c.comparableYears + 2);
+    by.set(cellKey(c), {
+      g: Math.round(g * 1000) / 1000,
+      p: Math.round(p * 1000) / 1000,
+      rs: Math.round(100 * Math.sqrt(g * p) * 10) / 10,
+      band: "low",
+    });
+  }
+
+  const all = [...by.values()].map((v) => v.rs).sort((a, b) => a - b);
+  const critical = quantileAsc(all, 1 - RISK_CONFIG.criticalTop);
+  const rest = all.filter((x) => x < critical);
+  const cuts: BandCuts = { critical, high: quantileAsc(rest, 0.75), elevated: quantileAsc(rest, 0.5) };
+  for (const v of by.values()) {
+    v.band = v.rs <= 0 ? "low"
+      : v.rs >= cuts.critical ? "critical"
+        : v.rs >= cuts.high ? "high"
+          : v.rs >= cuts.elevated ? "elevated" : "low";
+  }
+  return { cuts, by };
+}
+
+/** Identity of a cell inside one HS level. */
+const cellKey = (c: Channel) => `${c.partnerIso}|${c.cmd}`;
+
+/** Copy a level's scores onto the channels the page will actually render. */
+function applyScores(cs: Channel[], scores: LevelScores): void {
+  for (const c of cs) {
+    const v = scores.by.get(cellKey(c));
+    if (!v) continue;
+    c.abnormalGap = v.g; c.persistence = v.p; c.mtrs = v.rs; c.band = v.band;
+  }
+}
+
+/**
+ * One scored cross-section per period × freight × level. Recomputing it on every
+ * country or product tick would be wasted work — the ranking cannot move, since
+ * those ticks decide what is listed, not what any cell is worth.
+ */
+const scoreCache = new Map<string, LevelScores>();
+const SCORE_CACHE_MAX = 24;
+
+function levelScores(f: Filter, level: number, periodCells: Cell[], ready: Channel[] | null): LevelScores {
+  const years = f.years.length ? f.years : yearsFor(f.granularity);
+  const key = `${level}|${f.granularity}|${f.cif}|${years.join(",")}|${f.months.join(",")}|${monthlyDetailVersion}`;
+  const hit = scoreCache.get(key);
+  if (hit) return hit;
+  const scores = scoreCrossSection(ready ?? buildChannels(periodCells, level, f));
+  if (scoreCache.size >= SCORE_CACHE_MAX) scoreCache.delete(scoreCache.keys().next().value!);
+  scoreCache.set(key, scores);
+  return scores;
 }
 
 function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
@@ -642,13 +739,15 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     const primary = posT;
     const trend = trendOf(years.map((x) => ({ y: x.y, v: pos(x.signed) })));
 
-    // ---- MTRS v3.0, looked up rather than recomputed ----
-    // The score needs the fitted structural model, so it is a property of the
-    // whole-window cell. A channel the period ticks have narrowed still carries
-    // the score estimated on every year that cell was matched.
-    const rkey = `${level}|${r0.p}|${r0.k}`;
-    const rr = riskIndex.cells[rkey];
-    const [mtrs, abnormalGap, persistence, flaggedYears, matchedYears, excessGap, bandIdx, scoredStreak] = rr ?? EMPTY_RISK;
+    /*
+     * The score is filled in by scoreCrossSection once the level's whole
+     * cross-section exists, because G is a rank and a rank needs its peers.
+     * Only the cell's own cumulative gap can be summed here: the index counts a
+     * year as positive above the noise floor, so this mirrors that rule rather
+     * than posT, which keeps every positive cent.
+     */
+    let excessGap = 0;
+    for (const yr of years) if (yr.signed > NOISE) excessGap += yr.signed;
 
     out.push({
       partner: partnerName(pm.iso3), partnerIso: pm.iso3, region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
@@ -659,8 +758,8 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
       robustness, flags,
-      mtrs, abnormalGap, persistence, flaggedYears, matchedYears, scoredStreak, excessGap,
-      band: BANDS[bandIdx] ?? "low", scored: !!rr,
+      mtrs: 0, abnormalGap: 0, persistence: 0, excessGap,
+      band: "low", scored: years.length > 0,
       primary, trend,
     });
   }
@@ -714,6 +813,13 @@ export interface ChapterAgg {
 export interface Aggregate {
   filter: Filter;
   years: number[];
+  /**
+   * Band cut-offs by HS level, re-fitted on the period in view. The legend has to
+   * quote these rather than the static ones: a one-year selection caps P at 0.67,
+   * so the whole score distribution shifts and the fitted cut-offs would put
+   * every cell in Low.
+   */
+  bandCuts: Record<number, BandCuts>;
   /** As-reported totals at the rollup level, one-sided observations included. */
   observed: ObservedTotals;
   channels: Channel[]; // HS2 after all filters
@@ -888,6 +994,22 @@ export function aggregate(f: Filter): Aggregate {
   const baseChannels = buildChannels(fc, 2, f);
   const baseChannels4 = buildChannels(fc, 4, f);
   const baseChannels6 = buildChannels(fc, 6, f);
+
+  /*
+   * Score the period, then filter. With no country or product tick the base
+   * channels already ARE the period's cross-section, so the common case costs
+   * one extra pass over numbers already in hand; with a tick, the cross-section
+   * is rebuilt unfiltered so the rank still stands against every cell.
+   */
+  const wholeCrossSection = f.country.length === 0 && f.hs2.length === 0 && f.hs4.length === 0 && f.hs6.length === 0;
+  const periodCells = wholeCrossSection ? fc : sourceCells(f).filter((r) => picked.has(r.y) && pMeta.has(r.p));
+  const bandCuts: Record<number, BandCuts> = {};
+  for (const [lvl, base] of [[2, baseChannels], [4, baseChannels4], [6, baseChannels6]] as const) {
+    const scores = levelScores(f, lvl, periodCells, wholeCrossSection ? base : null);
+    applyScores(base, scores);
+    bandCuts[lvl] = scores.cuts;
+  }
+
   const channels = applyChannelFilters(baseChannels, f);
   const channels4 = applyChannelFilters(baseChannels4, f);
   const channels6 = applyChannelFilters(baseChannels6, f);
@@ -1129,7 +1251,7 @@ export function aggregate(f: Filter): Aggregate {
   };
 
   return {
-    filter: f, years, observed, channels, channels4, channels6, baseChannels, baseChannels4, baseChannels6,
+    filter: f, years, bandCuts, observed, channels, channels4, channels6, baseChannels, baseChannels4, baseChannels6,
     partners, chapters, categories, annual, concentration,
     movers: { goods, countries },
     heatmap: { import: heatImport, partners: partners.map((p) => ({ iso3: p.iso3, name: p.name, tier: p.tier })) },

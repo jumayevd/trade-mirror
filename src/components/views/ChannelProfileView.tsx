@@ -156,7 +156,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
     fill(t("chan.narrative.limitations"), { list: limitations }),
     fill(t("chan.narrative.score"), {
       score: channel.mtrs.toFixed(0), g: channel.abnormalGap.toFixed(2), p: channel.persistence.toFixed(2),
-      flagged: channel.flaggedYears, matched: channel.matchedYears,
+      flagged: channel.posYears, matched: channel.comparableYears,
       band: t(`band.${channel.band}` as LocaleKey), next: t(NEXT_STEP[channel.band]),
     }),
   ].join(" ");

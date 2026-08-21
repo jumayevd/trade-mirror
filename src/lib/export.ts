@@ -20,7 +20,7 @@ export function channelsToCsv(channels: Channel[], filter: Filter): string {
     "signed_discrepancy_usd", "positive_discrepancy_usd",
     "bounded_asymmetry_pct", "positive_share_pct",
     "comparable_years", "positive_years", "longest_positive_streak",
-    "mtrs", "abnormal_gap_intensity_g", "persistence_p", "flagged_years_k", "matched_years_n",
+    "mtrs", "abnormal_gap_intensity_g", "persistence_p",
     "excess_gap_usd", "risk_band", "robustness", "flags",
   ];
   const esc = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
@@ -31,7 +31,7 @@ export function channelsToCsv(channels: Channel[], filter: Filter): string {
       Math.round(c.signedT), Math.round(c.posT),
       (c.boundedAsymmetry * 100).toFixed(1), (c.positiveShare * 100).toFixed(1),
       c.comparableYears, c.posYears, c.longestPosStreak,
-      c.mtrs.toFixed(1), c.abnormalGap.toFixed(3), c.persistence.toFixed(3), c.flaggedYears, c.matchedYears,
+      c.mtrs.toFixed(1), c.abnormalGap.toFixed(3), c.persistence.toFixed(3),
       Math.round(c.excessGap), c.band, c.robustness, esc(c.flags.join(";")),
     ].join(","),
   );
