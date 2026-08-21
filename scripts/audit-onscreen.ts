@@ -13,6 +13,7 @@
  */
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
+import { CONFIG_KEYS, clustersOf, metaOf } from "../src/lib/anomaly";
 
 /* the identity holds at whatever rate the default filter carries */
 const K = 1 + DEFAULT_FILTER.cif;
@@ -208,6 +209,37 @@ for (const [tag, rate, shown] of [
 check("band brackets the central rate",
   full.kpis.positive.low <= aggregate({ ...FULL, cif: meta.cif.central }).kpis.positive.central + 1
   && aggregate({ ...FULL, cif: meta.cif.central }).kpis.positive.central <= full.kpis.positive.high + 1);
+
+/* ---------------------------------------------------------------- */
+/* 12. the unexplained-discrepancy section, every configuration     */
+/* ---------------------------------------------------------------- */
+/*
+ * Four fitted configurations ship and the reader switches between them, so each
+ * has to stand on its own: the tier a cluster carries must follow from its own
+ * interval against its own threshold, and nothing may claim more precision than
+ * shrinkage allows.
+ */
+for (const key of CONFIG_KEYS) {
+  const m = metaOf(key);
+  const cs = clustersOf(key);
+  check(`[${key}] cluster count matches its metadata`, cs.length === m.clusters,
+    `${cs.length} vs ${m.clusters}`);
+  check(`[${key}] tier counts match the cluster list`,
+    cs.filter((c) => c.tier === 1).length === m.tier1
+    && cs.filter((c) => c.tier === 2).length === m.tier2);
+  let bad = 0;
+  for (const c of cs) {
+    const expect = c.nObs === 1 ? 3 : c.lo90 >= m.threshold ? 1 : c.uHat >= m.threshold ? 2 : 0;
+    if (c.tier !== expect || c.lo90 > c.uHat || c.shrinkage < 0 || c.shrinkage > 1) bad++;
+  }
+  check(`[${key}] every cluster obeys the two-tier rule and its interval bounds`, bad === 0,
+    `${bad} of ${cs.length} clusters violate it`);
+  // a Confirmed cluster whose interval sits below the line would name a country wrongly
+  const wrong = cs.filter((c) => c.tier === 1 && c.lo90 < m.threshold).length;
+  check(`[${key}] no Confirmed cluster has an interval below the threshold`, wrong === 0);
+  check(`[${key}] rho is a share`, m.rho > 0 && m.rho < 1, `${m.rho}`);
+  check(`[${key}] the model converged`, m.converged);
+}
 
 /* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);

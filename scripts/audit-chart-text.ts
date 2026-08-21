@@ -20,6 +20,8 @@ import {
   baseGrid, baseTextStyle, baseTooltip, catAxis, CHART_FONT, valueAxis,
 } from "@/lib/echartBase";
 import { COLORS } from "@/lib/format";
+import { caterpillarOption } from "@/components/charts/Caterpillar";
+import type { Tier } from "@/lib/anomaly";
 import { ZOOM_STEPS, DEFAULT_ZOOM } from "@/lib/zoom-store";
 
 /** The Executive Overview dynamics chart, built the way the page builds it. */
@@ -59,6 +61,32 @@ function resolvedSizes(option: object): [number, number][] {
     counts.set(px, (counts.get(px) ?? 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => b[0] - a[0]);
+}
+
+/*
+ * The caterpillar plot draws one custom-series mark per cluster, so it is the one
+ * chart whose renderItem can fail at runtime without failing the type check.
+ * Rendering it here proves the series definition is valid ECharts and that its
+ * text obeys the same scale as every other chart.
+ */
+function caterpillarSample() {
+  const clusters = Array.from({ length: 40 }, (_, i) => ({
+    partner: `Partner ${i}`, code: String(1000 + i), label: `Product ${i}`,
+    uHat: 1.2 - i * 0.03, lo90: 0.9 - i * 0.03, postSd: 0.18, nObs: 3 + (i % 5),
+    tier: (i < 3 ? 1 : i < 10 ? 2 : 0) as Tier,
+  }));
+  return caterpillarOption(clusters, 0.45, {
+    score: "Score", interval: "90% interval", obs: "Obs", threshold: "Threshold",
+    tier: (x) => ["Not flagged", "Confirmed", "Provisional", "Suppressed"][x] ?? "",
+  });
+}
+
+const cat = resolvedSizes(caterpillarSample());
+console.log(`caterpillar plot: rendered, resolved sizes ` +
+  cat.map(([px, k]) => `${px}px x${k}`).join(", "));
+if (cat.length === 0) {
+  console.log("  WRONG: the custom series produced no text at all");
+  process.exitCode = 1;
 }
 
 const declared = resolvedSizes(dynamicsOption());

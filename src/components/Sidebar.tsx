@@ -10,6 +10,7 @@ const ANALYSIS: { href: string; label: LocaleKey }[] = [
   { href: "/partners", label: "nav.partners" },
   { href: "/products", label: "nav.products" },
   { href: "/risk", label: "nav.queue" },
+  { href: "/unexplained", label: "nav.anomaly" },
 ];
 /** Methodology comes first: it defines the measures Data Quality then qualifies. */
 const REFERENCE: { href: string; label: LocaleKey }[] = [
