@@ -28,9 +28,22 @@ export const CIF_BAND = { low: 0.05, central: 0.10, high: 0.15 } as const;
 
 /**
  * Re-export / transit hubs. Uzbekistan attributes imports to country of ORIGIN, not
- * consignment, so goods routed through these hubs can show phantom gaps. Bucketed
- * separately and excluded from the headline "core" estimate. KAZ is the main
- * land-transit corridor (also a direct neighbour — noted in the UI).
+ * consignment, so goods routed through these hubs show a gap that is routing
+ * rather than misreporting: the hub files an export to Uzbekistan while
+ * Uzbekistan books the same goods against the country they were made in.
+ *
+ * This set is a LABEL, not an exclusion. It drives the transit tag, the
+ * per-channel alternative explanation and the transit share on a product, and
+ * nothing more: these partners are counted in every total on the dashboard,
+ * including the headline positive discrepancy, where they are about a quarter of
+ * it. Hong Kong and the UAE are the clearest cases — Uzbekistan records roughly
+ * a tenth and a quarter of what they report shipping, against ~0.9 for direct
+ * suppliers like China and Germany. Nor does the flag move a channel's
+ * robustness, so a pure routing artefact can still read "robust".
+ *
+ * KAZ is the main land-transit corridor but also a direct neighbour with a real
+ * bilateral trade (its books and Uzbekistan's agree to within ~6%), so its gap
+ * should not be read the same way as a re-export hub's.
  */
 export const TRANSIT_HUBS = new Set(["ARE", "CHE", "GBR", "SGP", "KAZ"]);
 

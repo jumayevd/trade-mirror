@@ -103,7 +103,7 @@ export default function MethodologyView() {
   const MEASURES: { key: string; formula: string }[] = [
     { key: "importFob", formula: "M_cif ÷ (1 + f),  f ∈ {0% … 25%}, central 10%" },
     { key: "positive", formula: "Σ max(X_fob − M_cif ÷ (1 + f), 0)" },
-    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ M_cif ÷ (1 + f)" },
+    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ [M_cif ÷ (1 + f)]" },
   ];
 
   return (
@@ -215,7 +215,7 @@ export default function MethodologyView() {
 
           <Step n="1" title={tr("meth.risk.s1.title")}>
             {tr("meth.risk.s1.body")}
-            <Formula>gap rate = Σ max(X − M ÷ (1 + f), 0) ÷ Σ X</Formula>
+            <Formula>gap rate = Σ max(X − M ÷ (1 + f), 0) ÷ Σ [M ÷ (1 + f)]</Formula>
             {tr("meth.risk.s1.body2")}{" "}
             {tr("meth.risk.s1.body3")}
             <Cite ids={["bhagwati1964", "oecdjrc2008"]} />
