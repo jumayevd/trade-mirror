@@ -514,7 +514,7 @@ export default function PartnersView() {
                         {noData ? <MissingValue /> : fmtUSD(r.positive)}
                       </td>
                       <td className={tdNum}>
-                        {noData || r.pePos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / r.pePos, 1)}
+                        {noData || r.uiPos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / (r.uiPos / K), 1)}
                       </td>
                     </tr>
                   );

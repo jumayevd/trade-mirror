@@ -8,7 +8,7 @@ import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/com
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { hsFullText, productByCmd, type Channel, type Filter } from "@/lib/dataset";
+import { hsFullLabel, productByCmd, type Channel, type Filter } from "@/lib/dataset";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
@@ -40,12 +40,13 @@ const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
 const PAGE_SIZES = [25, 50, 100];
 
 /**
- * Gap as a share of the partner's FOB exports over the positive channel-years,
- * so the row reads as one identity: pePosT − uiPosT / (1 + f) = posT, and
- * Gap % = posT ÷ pePosT. Null when there is no denominator.
+ * Gap as a share of Uzbekistan's recorded imports on an FOB basis, over the
+ * positive channel-years: Gap % = posT ÷ (uiPosT ÷ (1 + f)). The denominator is
+ * the importing book rather than the partner's, so the ratio answers how far the
+ * record that is being audited falls short of itself. Null when there is none.
  */
-const gapPct = (c: Channel): number | null =>
-  c.pePosT > 0 ? c.posT / c.pePosT : null;
+const gapPct = (c: Channel, K: number): number | null =>
+  c.uiPosT > 0 ? c.posT / (c.uiPosT / K) : null;
 
 /** Short alternative-explanation hints per engine flag, used in the expanded row. */
 const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
@@ -62,10 +63,10 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
  * finished order so the tie-breaks stay attached to their primary key rather
  * than flipping independently of it.
  */
-function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir): Channel[] {
+function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir, K: number): Channel[] {
   const by: Record<SortKey, (a: Channel, b: Channel) => number> = {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
-    gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
+    gapPct: (a, b) => (gapPct(b, K) ?? -1) - (gapPct(a, K) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
       b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
     value: (a, b) => b.pePosT - a.pePosT || b.posT - a.posT,
@@ -79,7 +80,7 @@ type Translate = (key: LocaleKey) => string;
 
 /** One-sentence cautious reading, built strictly from measured fields. */
 function interpretation(c: Channel, f: Filter, t: Translate): string {
-  const pct = gapPct(c);
+  const pct = gapPct(c, 1 + f.cif);
   const score = c.scored
     ? ` ${t("risk.read.scoreLead")} ${c.mtrs.toFixed(0)} (G ${c.abnormalGap.toFixed(2)} × P ${c.persistence.toFixed(2)}), ` +
       `${t("risk.read.flaggedIn")} ${c.flaggedYears}/${c.matchedYears} ${t("risk.read.matchedYears")}.`
@@ -150,8 +151,8 @@ export default function QueueTable({
         c.cmdLabel.toLowerCase().includes(q)
       );
     });
-    return sortChannels(filtered, sort, dir);
-  }, [channels, query, sort, dir, partnerSel, productSel]);
+    return sortChannels(filtered, sort, dir, K);
+  }, [channels, query, sort, dir, partnerSel, productSel, K]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pageRaw, pageCount - 1);
@@ -261,7 +262,7 @@ export default function QueueTable({
                 const key = keyOf(c);
                 const open = expanded === key;
                 const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
-                const pct = gapPct(c);
+                const pct = gapPct(c, K);
                 return [
                   <tr
                     key={key}
@@ -297,12 +298,12 @@ export default function QueueTable({
                           href={`/products/${c.cmd}`}
                           onClick={(e) => e.stopPropagation()}
                           className="hover:underline"
-                          title={hsFullText(c.cmd) ?? c.cmdLabel}
+                          title={hsFullLabel(c.cmd)}
                         >
                           {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
                         </Link>
                       ) : (
-                        <span title={hsFullText(c.cmd) ?? c.cmdLabel}>
+                        <span title={hsFullLabel(c.cmd)}>
                           {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
                         </span>
                       )}

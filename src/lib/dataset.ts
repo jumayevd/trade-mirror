@@ -15,7 +15,7 @@ import monthlyRaw from "@/data/monthly.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
-import { tCategory, tCountry, tRegion, tText } from "@/lib/labels";
+import { labelLang, tCategory, tCountry, tRegion, tText } from "@/lib/labels";
 
 export const METHODOLOGY_VERSION = "3.1";
 
@@ -366,6 +366,25 @@ export const categoryLabel = (key: string) => tCategory(key, catLabel.get(key) ?
 const hsFull = hsFullRaw as Record<string, string>;
 export const hsFullText = (cmd: string): string | null => hsFull[cmd] ?? null;
 
+/**
+ * Hover text for a code: the complete nomenclature line when the reader can read
+ * it, otherwise the localised short label.
+ *
+ * hsFullText is the nomenclature's own English, so handing it straight to a
+ * tooltip put an English sentence inside a Russian or Uzbek interface — the
+ * shipped label beside it was translated, the hover was not. Where a translation
+ * of the full line exists it wins; where it does not, the translated label is
+ * better than untranslated English.
+ */
+export const hsFullLabel = (cmd: string): string => {
+  const full = hsFull[cmd];
+  if (full) {
+    const localised = tText(full);
+    if (localised !== full || labelLang() === "en") return localised;
+  }
+  return hsLabel(cmd);
+};
+
 export const hs6Label = (cmd: string) => tText(meta.hs6labels[cmd] ?? `HS ${cmd}`);
 /** HS4 is derived from HS6; labels borrow the largest child's description. */
 export const hs4Label = (cmd: string) => tText(meta.hs4labels[cmd] ?? `HS ${cmd}`);
@@ -573,7 +592,7 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     const n = years.length;
 
     const boundedAsymmetry = Math.max(peT, adjUiT) > 0 ? clamp(absT / Math.max(peT, adjUiT)) : 0;
-    const positiveShare = peT > 0 ? clamp(posT / peT) : 0;
+    const positiveShare = adjUiT > 0 ? clamp(posT / adjUiT) : 0;
     const uvRatio = uvYears >= 2 && uw > 0 && pw > 0 && pwv > 0 ? (uwv / uw) / (pwv / pw) : null;
 
     // scenario robustness: does the direction-relevant sign hold across 6/10/15%?
@@ -924,12 +943,14 @@ export function aggregate(f: Filter): Aggregate {
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const peT = cs.reduce((s, c) => s + c.peT, 0);
     const posT = cs.reduce((s, c) => s + c.posT, 0);
+    // the gap rate divides by the importing book, on the same FOB basis as the gap
+    const adjUiT = cs.reduce((s, c) => s + c.uiT, 0) / (1 + f.cif);
     const top = [...cs].sort((a, b) => dirVal(b) - dirVal(a))[0];
     chapters.push({
       chapter, label: hsLabel(chapter), category: cs[0].category, residual: isResidualChapter(chapter),
       peT, uiT: cs.reduce((s, c) => s + c.uiT, 0),
       posT, signedT: cs.reduce((s, c) => s + c.signedT, 0),
-      gapRate: peT > 0 ? posT / peT : 0, channels: cs.length,
+      gapRate: adjUiT > 0 ? posT / adjUiT : 0, channels: cs.length,
       topPartner: top ? { name: top.partner, iso3: top.partnerIso, value: Math.round(dirVal(top)) } : null,
       trend: trendOf(series),
     });

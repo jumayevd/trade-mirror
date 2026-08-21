@@ -130,9 +130,10 @@ export default function OverviewView() {
     const periods = rows.map((a) => a.label ?? String(a.year));
     const positiveName = t("kpi.positive");
     const shareName = t("ovw.series.gapShare");
-    // The gap as a share of the partner's FOB exports over the positive
-    // channel-years, the same identity the queue's Gap % column reports.
-    const shares = rows.map((a) => (a.pePos > 0 ? a.positive / a.pePos : null));
+    // The gap as a share of Uzbekistan's recorded imports on an FOB basis over
+    // the positive channel-years — the same ratio the queue's Gap % column shows.
+    const K = 1 + FULL_WINDOW.cif;
+    const shares = rows.map((a) => (a.uiPos > 0 ? a.positive / (a.uiPos / K) : null));
     // 90+ monthly points would smother the lines in dots
     const dots = rows.length > 24 ? 0 : 7;
     return {

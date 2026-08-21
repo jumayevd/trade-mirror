@@ -154,7 +154,8 @@ function runLevel(level: number): LevelResult {
     const adjUi = r.ui / K;
     const signed = r.pe - adjUi;
     acc.n++;
-    acc.expected += r.pe;
+    // the gap rate divides by the importing book, on the same FOB basis as the gap
+    acc.expected += adjUi;
     acc.value += val;
     if (signed > NOISE) { acc.kPos++; acc.posSum += signed; }
     const w = Math.log(val);

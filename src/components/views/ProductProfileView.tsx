@@ -50,7 +50,8 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
   const cifPct = Math.round(FULL_FILTER.cif * 100);
   const residual = isResidualChapter(p.chapter);
 
-  const gapShare = p.ptnExp > 0 ? p.positiveGap / p.ptnExp : 0;
+  const adjImport = p.uzbImp / (1 + meta.cif.central);
+  const gapShare = adjImport > 0 ? p.positiveGap / adjImport : 0;
   const confTier: Tier = p.highConfShare >= 0.7 ? "High" : p.highConfShare >= 0.4 ? "Medium" : "Low";
 
   // full-window channel drill-down for this HS6 line (no materiality floor)

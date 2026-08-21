@@ -5,7 +5,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
-import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, hs4Label, hs6Label, hsFullText, hsLabel, meta, partnerName } from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, hs4Label, hs6Label, hsFullLabel, hsFullText, hsLabel, meta, partnerName } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
@@ -30,7 +30,12 @@ const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
 const optionText = (code: string, label: string, lang: string) => {
   const full = hsFullText(code);
   if (!full) return { label };
-  return lang === "en" ? { label: full } : { label, full };
+  if (lang === "en") return { label: full };
+  // the hover used to carry the English line here, which put English inside a
+  // translated interface; hsFullLabel gives the translated one, and if that is
+  // just the label again there is nothing to add
+  const localised = hsFullLabel(code);
+  return localised === label ? { label } : { label, full: localised };
 };
 
 export default function FilterBar() {

@@ -13,7 +13,7 @@ import { Cite, REFERENCES } from "@/lib/references";
  *
  * Order: why a positive mirror gap is worth reading at all, the literature the
  * reading rests on, the measures the dashboard shows, how the risk score is
- * built, what the score diagnostics say, the limitations, and the bibliography.
+ * built, what the score diagnostics say, and the bibliography.
  */
 
 const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
@@ -103,10 +103,8 @@ export default function MethodologyView() {
   const MEASURES: { key: string; formula: string }[] = [
     { key: "importFob", formula: "M_cif ÷ (1 + f),  f ∈ {0% … 25%}, central 10%" },
     { key: "positive", formula: "Σ max(X_fob − M_cif ÷ (1 + f), 0)" },
-    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ X_fob" },
+    { key: "gapRate", formula: "Σ max(D, 0) ÷ Σ M_cif ÷ (1 + f)" },
   ];
-
-  const LIMITS = ["1", "2", "3", "4", "5", "6", "7"];
 
   return (
     <div className="space-y-9">
@@ -290,17 +288,7 @@ export default function MethodologyView() {
         </p>
       </section>
 
-      {/* 6. limitations --------------------------------------------------- */}
-      <section className="space-y-2">
-        <h2 className={H2}>{tr("meth.lim.title")}</h2>
-        <ol className="max-w-3xl list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed text-muted">
-          {LIMITS.map((n) => (
-            <li key={n}>{tr(`meth.lim.${n}`)}</li>
-          ))}
-        </ol>
-      </section>
-
-      {/* 7. references ------------------------------------------------------ */}
+      {/* 6. references ------------------------------------------------------ */}
       <section className="max-w-4xl space-y-2">
         <h2 className={H2}>{tr("meth.refs.title")}</h2>
         <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted">
