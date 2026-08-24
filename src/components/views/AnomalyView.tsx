@@ -11,7 +11,6 @@ import {
   asMultiple, chapterRollup, clustersOf, hi90, metaOf, partnerRollup,
   type ClusterLevel, type Tier,
 } from "@/lib/anomaly";
-import { Cite } from "@/lib/references";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
@@ -20,9 +19,9 @@ import type { LocaleKey } from "@/lib/locales";
  * The model is fitted offline by analysis/step5_export.py; this reads finished
  * numbers. The page is written for economists: the specification is stated in
  * the notation they already read, û is reported in log points with the multiple
- * in the tooltip, and the prose is a literature review of what each strand of
- * the mirror-statistics tradition contributes to the specification — including
- * the two places this panel had to depart from it.
+ * in the tooltip, and the only prose is the specification's own rules and the
+ * two precision quantities — the interval and the shrinkage — which decide what
+ * the ranking below them can be read to say. Every table pages at ten rows.
  *
  * Labelling is deliberate throughout: this is an "unexplained discrepancy
  * score", never a risk of money laundering or fraud. Every ranked view carries
@@ -87,47 +86,41 @@ function RangeBar({ lo, hi, min, max, threshold }: { lo: number; hi: number; min
 const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
-/**
- * The literature review, as strands rather than a bibliography: each entry says
- * what that work contributes to the specification above. The full references
- * render on /methodology, which is why these only cite.
- */
-const LITERATURE: { key: string; refs: string[] }[] = [
-  { key: "a", refs: ["bhagwati1964", "unsd2019", "berger2008"] },
-  { key: "b", refs: ["fisman2004", "javorcik2008", "kellenberg2019", "ferrantino2008"] },
-  { key: "c", refs: ["hummels2006", "mayer2011"] },
-  { key: "d", refs: ["gara2018", "mundlak1978", "farhad2019"] },
-  { key: "e", refs: ["robinson1991", "goldstein1996"] },
-  { key: "f", refs: ["nitsch2016", "carrere2015", "choi2019"] },
-];
+/** Shared pager: every table on the page shows ten rows and steps through the rest. */
+function Pager({ page, count, onPage }: { page: number; count: number; onPage: (p: number) => void }) {
+  const { t } = useI18n();
+  const pages = Math.ceil(count / PAGE);
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center gap-3 text-[13.5px]">
+      <button type="button" disabled={page === 0} onClick={() => onPage(Math.max(0, page - 1))}
+        className="rounded-md border border-[var(--color-border)] px-2 py-1 disabled:opacity-40">
+        ← {t("risk.prev")}
+      </button>
+      <span className="tabular text-faint">
+        {page * PAGE + 1}–{Math.min((page + 1) * PAGE, count)} / {fmtNum(count)}
+      </span>
+      <button type="button" disabled={page >= pages - 1} onClick={() => onPage(Math.min(pages - 1, page + 1))}
+        className="rounded-md border border-[var(--color-border)] px-2 py-1 disabled:opacity-40">
+        {t("risk.next")} →
+      </button>
+    </div>
+  );
+}
 
-/**
- * The specification's terms, in the order the equation lists them, with the prior
- * sign each was written with. The fitted coefficient is shown separately in the
- * diagnostics: where the two disagree the page says so, because a wrong sign is
- * a finding about the data rather than a reason to drop the term.
- */
-const TERMS: { i: number; sign: "positive" | "negative" | null; muted?: boolean }[] = [
-  { i: 1, sign: null },
-  { i: 2, sign: "negative" },
-  { i: 3, sign: "positive" },
-  { i: 4, sign: "positive" },
-  { i: 5, sign: "negative" },
-  { i: 6, sign: "positive" },
-  // EXPORT and its two interactions are not estimable on this extract
-  { i: 7, sign: "negative", muted: true },
-  { i: 8, sign: null },
-  { i: 9, sign: null },
-  { i: 10, sign: null },
-];
+/** The specification's terms, in the order the equation lists them. */
+const TERM_COUNT = 9;
 
 const CAT_LIMIT = 400;
-const PAGE = 25;
+/** Ten rows in every table on the page: these are read, not scanned. */
+const PAGE = 10;
 
 export default function AnomalyView() {
   const { t } = useI18n();
   const [cluster, setCluster] = useState<ClusterLevel>("hs4");
   const [page, setPage] = useState(0);
+  const [partnerPage, setPartnerPage] = useState(0);
+  const [sectorPage, setSectorPage] = useState(0);
 
   const meta = useMemo(() => metaOf(cluster), [cluster]);
   const clusters = useMemo(() => clustersOf(cluster), [cluster]);
@@ -143,9 +136,15 @@ export default function AnomalyView() {
     max: Math.max(...ranked.map(hi90), meta.threshold),
   }), [ranked, meta.threshold]);
 
+  // the rollups keep their own materiality floors; only the paging is shared
+  const partnerRows = useMemo(() => partners.filter((r) => r.clusters >= 10), [partners]);
+  const sectorRows = useMemo(() => chapters.filter((r) => r.clusters >= 5), [chapters]);
+
   const wedge = fmtPct(meta.freightWedge, 1);
-  const pages = Math.ceil(ranked.length / PAGE);
-  const switchLevel = (v: ClusterLevel) => { setCluster(v); setPage(0); };
+  const switchLevel = (v: ClusterLevel) => {
+    setCluster(v);
+    setPage(0); setPartnerPage(0); setSectorPage(0);
+  };
 
   return (
     <div className="space-y-8">
@@ -178,30 +177,23 @@ export default function AnomalyView() {
                 <th className={TH}>{t("anom.eq.th.symbol")}</th>
                 <th className={TH}>{t("anom.eq.th.meaning")}</th>
                 <th className={TH}>{t("anom.eq.th.source")}</th>
-                <th className={TH}>{t("anom.eq.th.sign")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
-              {TERMS.map(({ i, sign, muted }) => (
+              {Array.from({ length: TERM_COUNT }, (_, k) => k + 1).map((i) => (
                 <tr key={i} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium ${muted ? "text-faint" : "text-foreground"}`}>
+                  <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium text-foreground`}>
                     {t(`anom.eq.v${i}.sym` as LocaleKey)}
                   </td>
-                  <td className={`${TD} ${muted ? "text-faint" : "text-muted"}`}>
-                    {t(`anom.eq.v${i}.mean` as LocaleKey)}
-                  </td>
+                  <td className={`${TD} text-muted`}>{t(`anom.eq.v${i}.mean` as LocaleKey)}</td>
                   <td className={`${TD} text-[13px] text-faint`}>
                     {fill(t(`anom.eq.v${i}.src` as LocaleKey), { wedge })}
-                  </td>
-                  <td className={`${TD} whitespace-nowrap text-[13px] text-faint`}>
-                    {sign ? (sign === "positive" ? "+" : "−") : t("anom.eq.sign.na")}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="max-w-4xl text-[13px] leading-relaxed text-faint">{t("anom.eq.signNote")}</p>
 
         {/* ---- the rules that keep the specification correct ---- */}
         <div className="grid max-w-5xl gap-3 pt-1 sm:grid-cols-2">
@@ -217,28 +209,6 @@ export default function AnomalyView() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* ---- literature: what grounds the specification, and where it departs ---- */}
-      <section className="space-y-3">
-        <SectionTitle title={t("anom.lit.title")} desc={t("anom.lit.desc")} />
-        <div className="grid gap-3 lg:grid-cols-2">
-          {LITERATURE.map(({ key, refs }) => (
-            <div key={key} className="card p-4">
-              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.lit.${key}.t` as LocaleKey)}</h3>
-              <p className="text-[13.5px] leading-relaxed text-muted">
-                {t(`anom.lit.${key}.b` as LocaleKey)}
-                <Cite ids={refs} />
-              </p>
-            </div>
-          ))}
-        </div>
-        <p className="max-w-4xl rounded-md border-l-2 border-l-[var(--color-gold)] bg-[var(--color-panel)] px-4 py-3 text-[13.5px] leading-relaxed text-muted">
-          {t("anom.lit.departure")}
-        </p>
-        <p className="text-[12.5px] text-faint">
-          <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
-        </p>
       </section>
 
       {/* ---- cluster level ---- */}
@@ -280,6 +250,19 @@ export default function AnomalyView() {
           </>
         )}
         <Disclaimer />
+      </section>
+
+      {/* ---- what the two precision columns mean, before the ranking ---- */}
+      <section className="space-y-3">
+        <SectionTitle title={t("anom.iv.title")} desc={t("anom.iv.desc")} />
+        <div className="grid gap-3 lg:grid-cols-3">
+          {(["a", "b", "c"] as const).map((k) => (
+            <div key={k} className="card p-4">
+              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.iv.${k}.t` as LocaleKey)}</h3>
+              <p className="text-[13.5px] leading-relaxed text-muted">{t(`anom.iv.${k}.b` as LocaleKey)}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ---- the ranked table ---- */}
@@ -338,23 +321,7 @@ export default function AnomalyView() {
             </table>
           </div>
         )}
-        {pages > 1 && (
-          <div className="flex items-center gap-3 text-[13.5px]">
-            <button type="button" disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="rounded-md border border-[var(--color-border)] px-2 py-1 disabled:opacity-40">
-              ← {t("risk.prev")}
-            </button>
-            <span className="tabular text-faint">
-              {page * PAGE + 1}–{Math.min((page + 1) * PAGE, ranked.length)} / {fmtNum(ranked.length)}
-            </span>
-            <button type="button" disabled={page >= pages - 1}
-              onClick={() => setPage((p) => Math.min(pages - 1, p + 1))}
-              className="rounded-md border border-[var(--color-border)] px-2 py-1 disabled:opacity-40">
-              {t("risk.next")} →
-            </button>
-          </div>
-        )}
+        <Pager page={page} count={ranked.length} onPage={setPage} />
         <div className="flex flex-wrap gap-2 pt-1">
           {([1, 2, 0, 3] as Tier[]).map((tier) => (
             <span key={tier} className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border-soft)] px-2.5 py-1.5">
@@ -386,7 +353,7 @@ export default function AnomalyView() {
               </tr>
             </thead>
             <tbody className="zebra">
-              {partners.filter((r) => r.clusters >= 10).slice(0, 20).map((r) => (
+              {partnerRows.slice(partnerPage * PAGE, partnerPage * PAGE + PAGE).map((r) => (
                 <tr key={r.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={TD}>
                     <Link href={`/partners/${r.iso.toLowerCase()}`} className="font-medium hover:underline">
@@ -407,6 +374,7 @@ export default function AnomalyView() {
             </tbody>
           </table>
         </div>
+        <Pager page={partnerPage} count={partnerRows.length} onPage={setPartnerPage} />
         <Disclaimer />
       </section>
 
@@ -428,7 +396,7 @@ export default function AnomalyView() {
               </tr>
             </thead>
             <tbody className="zebra">
-              {chapters.filter((r) => r.clusters >= 5).slice(0, 20).map((r) => (
+              {sectorRows.slice(sectorPage * PAGE, sectorPage * PAGE + PAGE).map((r) => (
                 <tr key={r.hs2} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} tabular font-medium text-foreground`}>{r.hs2}</td>
                   <td className={`${TD} text-muted`}>{r.label}</td>
@@ -443,6 +411,7 @@ export default function AnomalyView() {
             </tbody>
           </table>
         </div>
+        <Pager page={sectorPage} count={sectorRows.length} onPage={setSectorPage} />
         <Disclaimer />
       </section>
 
