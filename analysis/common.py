@@ -22,6 +22,12 @@ YEARS = list(range(2019, 2025))
 MIN_SIDE_USD = 50_000
 REPORTER = "UZB"
 
+#: EAEU members, and the other parties to the 2011 CIS free trade agreement.
+#: Coded 2 / 1 / 0 as a single ordered term: deeper integration means fewer
+#: barriers and less reason to misstate, so the expected sign is negative.
+EAEU = {"RUS", "BLR", "KAZ", "KGZ", "ARM"}
+CIS_FTA_ONLY = {"MDA", "TJK", "UKR"}
+
 #: HS chapter -> section, the coarse product grouping the freight surface uses.
 _SECTIONS: list[tuple[int, int, str]] = [
     (1, 5, "I"), (6, 14, "II"), (15, 15, "III"), (16, 24, "IV"), (25, 27, "V"),
@@ -38,6 +44,24 @@ def hs_section(hs2: pd.Series) -> pd.Series:
     for lo, hi, name in _SECTIONS:
         out[(ch >= lo) & (ch <= hi)] = name
     return out
+
+
+def transit_share(p: pd.DataFrame) -> pd.Series:
+    """
+    The share of a partner's claimed shipments that Uzbekistan does not credit to
+    it. Uzbekistan books imports by country of ORIGIN, so goods a hub buys and
+    resells are recorded against the manufacturer instead: the hub's own export
+    filing has no counterpart in the Uzbek book, and the shortfall shows up here.
+    Genuine suppliers sit near zero, re-export markets near one.
+
+    Constructed from the same mirror as the dependent variable, so it is a
+    descriptive covariate, not an exogenous instrument - it is measured over the
+    WHOLE matched panel rather than the screened subset, which keeps it from
+    being a function of the cells it helps explain, but does not make it exogenous.
+    """
+    g = p.groupby("ctr", observed=True)[["uz_imports_cif", "ptn_exports_fob"]].sum()
+    ratio = g["uz_imports_cif"] / g["ptn_exports_fob"].where(g["ptn_exports_fob"] > 0)
+    return (1 - ratio).clip(lower=0, upper=1).fillna(0)
 
 
 def load_panel(min_side: float = MIN_SIDE_USD) -> pd.DataFrame:
@@ -92,6 +116,17 @@ def load_panel(min_side: float = MIN_SIDE_USD) -> pd.DataFrame:
     p["distance_km"] = num(p["distw"]).fillna(num(p["distcap"])).fillna(num(p["dist"]))
     p["landlocked_partner"] = num(p["landlocked"]).fillna(0).astype(int)
     p["contig"] = num(p["contig"]).fillna(0).astype(int)
+
+    # ---- partner covariates: these replace the partner fixed effects ----
+    gdp = pd.read_csv(DATA / "wdi_gdppc.csv", dtype={"iso3": "string"})
+    p = p.merge(gdp, left_on=["ctr", "year"], right_on=["iso3", "year"], how="left").drop(columns=["iso3"])
+    # a handful of partners have no WDI series in a given year; carry the
+    # partner's own median rather than dropping the cell
+    p["gdp_pc"] = p["gdp_pc"].fillna(p.groupby("ctr", observed=True)["gdp_pc"].transform("median"))
+    p["ln_gdp_pc"] = np.log(num(p["gdp_pc"]).astype(float))
+
+    p["cis_eaeu"] = p["ctr"].map(lambda c: 2 if c in EAEU else 1 if c in CIS_FTA_ONLY else 0).astype(int)
+    p["transit"] = p["ctr"].map(transit_share(p)).astype(float).fillna(0.0)
 
     p["section"] = hs_section(p["hs2"])
     p["ln_dist"] = np.log(p["distance_km"].astype(float))

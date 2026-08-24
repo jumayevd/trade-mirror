@@ -18,12 +18,25 @@ What remains is the import over-reporting arm: cells where Uzbekistan records
 more, once freight is removed, than the partner says it shipped. Money leaving
 against over-invoiced imports.
 
-    ln|gap| ~ tariff + trade_dev + trade_bar + C(partner) + C(hs2) + C(year)
-              + (1 | partner x HS6)
+    ln|gap|_ic = b0 + b1 gdp_c + b2 tariff_i + b3 dist_c + b4 CIS/EAEU_c
+                 + b5 transit_c + b7 (trade_ic - trade_bar_jc) + b9 trade_bar_jc
+                 + HS2 dummies + year dummies + u_jc + e_ic
 
-trade_bar alongside trade_dev is a Mundlak device: including the cluster mean
-relaxes the random-effects orthogonality assumption. It looks redundant next to
-trade_dev. It is not.
+i is the HS6 product, c the partner, j the HS4 sector; u_jc is the estimand.
+Partner fixed effects are deliberately absent: the partner-level covariates
+replace them, which is what makes gdp, distance, integration and transit
+identified at all. The cost is that unobserved partner heterogeneity now loads
+partly onto u_jc, so a partner with uniformly poor records carries it across its
+clusters - stated in the diagnostics rather than hidden.
+
+trade_bar alongside the within-cluster deviation is a Mundlak device: including
+the cluster mean relaxes the random-effects orthogonality assumption. It looks
+redundant next to the deviation. It is not.
+
+b6, b8 and b10 - the EXPORT direction dummy and its interactions with both
+Mundlak terms - are not estimable here. This extract carries one mirror
+direction, so EXPORT is constant and the interactions collapse onto their main
+effects. They are omitted rather than faked.
 
 Corruption indices, tax-haven flags, secrecy scores and AML risk indices are
 deliberately absent from the right-hand side. Conditioning on them would turn the
@@ -39,6 +52,12 @@ import pandas as pd
 import statsmodels.formula.api as smf
 
 from common import OUT
+
+#: The fixed part, per the specification. Partner dummies are absent by design.
+SPEC = ("ln_gap ~ ln_gdp_pc + tariff + ln_dist + cis_eaeu + transit "
+        "+ trade_dev + trade_bar + C(hs2) + C(year)")
+#: Reported coefficients, in the order the specification lists them.
+TERMS = ["ln_gdp_pc", "tariff", "ln_dist", "cis_eaeu", "transit", "trade_dev", "trade_bar"]
 
 MIN_GAP_USD = 50_000
 CRITICAL_TOP = 0.025
@@ -105,8 +124,9 @@ def main() -> int:
           f"<=3 obs {100 * (sizes <= 3).mean():.1f}%, median {sizes.median():.0f}, max {sizes.max()}")
 
     rule("Mixed model")
-    spec = "ln_gap ~ tariff + trade_dev + trade_bar + C(ctr) + C(hs2) + C(year)"
-    print(f"  {spec}\n  + (1 | cluster)   EXPORT omitted: only one mirror direction exists")
+    spec = SPEC
+    print(f"  {spec}")
+    print("  + (1 | cluster)   b6, b8, b10 omitted: only one mirror direction exists")
     md = smf.mixedlm(spec, data=df, groups=df["cluster"])
     # The default optimiser sequence converges here; forcing lbfgs hits a singular
     # information matrix, because singleton clusters are perfectly fitted once the
@@ -114,13 +134,13 @@ def main() -> int:
     res = md.fit()
     print(f"  converged: {res.converged}")
 
-    keep = ["Intercept", "tariff", "trade_dev", "trade_bar"]
+    keep = ["Intercept", *TERMS]
     print(f"\n  {'term':>12} {'coef':>10} {'se':>9} {'z':>8} {'p':>8}")
     for k in keep:
         if k in res.params.index:
             print(f"  {k:>12} {res.params[k]:>10.4f} {res.bse[k]:>9.4f} "
                   f"{res.tvalues[k]:>8.2f} {res.pvalues[k]:>8.4f}")
-    print("  partner, chapter and year fixed effects retained but not printed")
+    print("  chapter and year fixed effects retained but not printed")
 
     var_u = float(res.cov_re.iloc[0, 0])
     var_e = float(res.scale)

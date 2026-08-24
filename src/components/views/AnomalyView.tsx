@@ -101,6 +101,26 @@ const LITERATURE: { key: string; refs: string[] }[] = [
   { key: "f", refs: ["nitsch2016", "carrere2015", "choi2019"] },
 ];
 
+/**
+ * The specification's terms, in the order the equation lists them, with the prior
+ * sign each was written with. The fitted coefficient is shown separately in the
+ * diagnostics: where the two disagree the page says so, because a wrong sign is
+ * a finding about the data rather than a reason to drop the term.
+ */
+const TERMS: { i: number; sign: "positive" | "negative" | null; muted?: boolean }[] = [
+  { i: 1, sign: null },
+  { i: 2, sign: "negative" },
+  { i: 3, sign: "positive" },
+  { i: 4, sign: "positive" },
+  { i: 5, sign: "negative" },
+  { i: 6, sign: "positive" },
+  // EXPORT and its two interactions are not estimable on this extract
+  { i: 7, sign: "negative", muted: true },
+  { i: 8, sign: null },
+  { i: 9, sign: null },
+  { i: 10, sign: null },
+];
+
 const CAT_LIMIT = 400;
 const PAGE = 25;
 
@@ -158,22 +178,44 @@ export default function AnomalyView() {
                 <th className={TH}>{t("anom.eq.th.symbol")}</th>
                 <th className={TH}>{t("anom.eq.th.meaning")}</th>
                 <th className={TH}>{t("anom.eq.th.source")}</th>
+                <th className={TH}>{t("anom.eq.th.sign")}</th>
               </tr>
             </thead>
             <tbody className="zebra">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
+              {TERMS.map(({ i, sign, muted }) => (
                 <tr key={i} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium text-foreground`}>
+                  <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium ${muted ? "text-faint" : "text-foreground"}`}>
                     {t(`anom.eq.v${i}.sym` as LocaleKey)}
                   </td>
-                  <td className={`${TD} text-muted`}>{t(`anom.eq.v${i}.mean` as LocaleKey)}</td>
+                  <td className={`${TD} ${muted ? "text-faint" : "text-muted"}`}>
+                    {t(`anom.eq.v${i}.mean` as LocaleKey)}
+                  </td>
                   <td className={`${TD} text-[13px] text-faint`}>
                     {fill(t(`anom.eq.v${i}.src` as LocaleKey), { wedge })}
+                  </td>
+                  <td className={`${TD} whitespace-nowrap text-[13px] text-faint`}>
+                    {sign ? (sign === "positive" ? "+" : "−") : t("anom.eq.sign.na")}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+        <p className="max-w-4xl text-[13px] leading-relaxed text-faint">{t("anom.eq.signNote")}</p>
+
+        {/* ---- the rules that keep the specification correct ---- */}
+        <div className="grid max-w-5xl gap-3 pt-1 sm:grid-cols-2">
+          <h3 className="text-[14px] font-semibold sm:col-span-2">{t("anom.rules.title")}</h3>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card p-4">
+              <p className="mb-1 font-mono text-[13px] font-semibold text-foreground">
+                {t(`anom.rules.r${i}.t` as LocaleKey)}
+              </p>
+              <p className="text-[13.5px] leading-relaxed text-muted">
+                {t(`anom.rules.r${i}.b` as LocaleKey)}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -431,6 +473,13 @@ export default function AnomalyView() {
               </tbody>
             </table>
             <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.diag.feNote")}</p>
+            <h4 className="mt-3 mb-1 text-[13.5px] font-semibold">{t("anom.fit.title")}</h4>
+            <p className="mb-1 text-[13px] leading-relaxed text-faint">{t("anom.fit.desc")}</p>
+            <ul className="list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-faint">
+              {(["anom.fit.gdp", "anom.fit.dist", "anom.fit.transit"] as LocaleKey[]).map((k) => (
+                <li key={k}>{t(k)}</li>
+              ))}
+            </ul>
           </div>
 
           <div className="card p-4">

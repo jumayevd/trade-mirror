@@ -303,3 +303,77 @@ partner-year; I have not touched it.
 
 With 1 and 2 settled either way I can build Step 5, the dashboard section. Nothing
 there depends on the choice beyond which JSON it reads.
+
+---
+
+## Respecification (supersedes the Step 4 results above)
+
+The specification was revised to the one now shown on the dashboard: partner
+fixed effects are dropped and replaced by partner-level covariates, which is what
+makes them identified at all.
+
+```
+ln|gap|_ic = β₀ + β₁gdp_c + β₂tariff_i + β₃dist_c + β₄CIS/EAEU_c + β₅transit_c
+           + β₆EXPORT_ic
+           + β₇(trade_ic − trade̅_jc) + β₈EXPORT_ic × (trade_ic − trade̅_jc)
+           + β₉trade̅_jc + β₁₀EXPORT_ic × trade̅_jc
+           + HS2 dummies + year dummies + u_jc + ε_ic
+```
+
+New inputs: `gdp_c` from World Bank WDI NY.GDP.PCAP.KD, constant 2015 US$,
+fetched by `analysis/fetch_wdi.py`; `dist_c` the population-weighted CEPII
+distance, now used as a regressor rather than only in the freight step;
+`CIS/EAEU_c` coded 2 for EAEU members (RUS, BLR, KAZ, KGZ, ARM), 1 for the other
+parties to the 2011 CIS FTA (MDA, TJK, UKR), 0 otherwise; and `transit_c`,
+constructed as the share of a partner's claimed shipments Uzbekistan does not
+credit to it, 1 − ΣM/ΣX over the matched panel.
+
+**β₆, β₈ and β₁₀ are not estimable.** The extract carries one mirror direction, so
+`EXPORT` is constant and its two interactions collapse onto their main effects.
+All three are dropped together rather than the dummy alone.
+
+### Fitted (partner × HS4)
+
+| Term | Coef | SE | p | Prior | Holds |
+|---|---:|---:|---:|:--:|:--:|
+| gdp (log) | +0.048 | 0.016 | 0.003 | − | **no** |
+| tariff | −0.001 | 0.002 | 0.461 | + | no, insignificant |
+| dist (log) | −0.055 | 0.037 | 0.136 | + | **no** |
+| CIS/EAEU | −0.078 | 0.023 | <0.001 | − | yes |
+| transit | −0.402 | 0.162 | 0.013 | + | **no** |
+| trade − trade̅ | +0.809 | 0.009 | <0.001 | + | yes |
+| trade̅ | +0.830 | 0.010 | <0.001 | + | yes |
+
+σ²_u 0.158, σ²_e 0.662, **ρ = 0.192** — closer to Gara et al.'s 0.18 than the
+previous specification's 0.160. At HS6, ρ = 0.347.
+
+| | Clusters | ρ | Confirmed | Provisional |
+|---|---:|---:|---:|---:|
+| partner × HS4 | 3,611 | 0.192 | 3 | 88 |
+| partner × HS6 | 6,148 | 0.347 | 9 | 142 |
+
+### Three priors do not survive
+
+**`transit` is negative, and structurally so.** The variable measures the share of
+a partner's claimed shipments Uzbekistan does not credit to it; the estimated arm
+keeps only cells where Uzbekistan records *more*. A re-export hub is by
+construction the opposite case, so it loads negatively. The positive prior is
+right for the export arm, which this extract cannot estimate. This is a
+construction artefact of having one direction, not a finding that hubs are clean.
+
+**`gdp` is positive.** Richer partners carry larger residual gaps here, against
+the reporting-quality prior.
+
+**`dist` is negative and insignificant**, consistent with every other place
+distance has been tried on this panel — the same result that stopped the freight
+surface being used.
+
+All three are reported as fitted. A wrong sign is a finding about the data, not a
+reason to drop the term.
+
+### Effect on the ranking
+
+Materially different from the previous specification. India × 3004 (medicaments,
+n = 36, shrinkage 0.93) is now the best-supported Confirmed cluster, with an
+interval of 0.588–1.010 that clears the threshold comfortably. Germany × 3921,
+previously the top Confirmed cluster, drops to Provisional.

@@ -25,14 +25,12 @@ from scipy import stats
 warnings.filterwarnings("ignore")
 
 from common import OUT, YEARS  # noqa: E402
-from step4_anomaly import CRITICAL_TOP, MIN_GAP_USD, Z90, build  # noqa: E402
+from step4_anomaly import CRITICAL_TOP, MIN_GAP_USD, SPEC, TERMS, Z90, build  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 DEST = ROOT.parent / "src" / "data" / "anomaly.json"
 
 CLUSTERS = ["hs4", "hs6"]
-SPEC = "ln_gap ~ tariff + trade_dev + trade_bar + C(ctr) + C(hs2) + C(year)"
-TERMS = ["tariff", "trade_dev", "trade_bar"]
 
 
 def fit_one(cluster: str) -> dict:

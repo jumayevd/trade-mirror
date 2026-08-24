@@ -246,6 +246,8 @@ def main() -> int:
     cols = ["ctr", "hs6", "hs4", "hs2", "year", "section", "uz_imports_cif", "ptn_exports_fob",
             "uz_weight", "ptn_weight", "uv_hs6", "w2v", "ln_w2v", "distance_km", "ln_dist",
             "contig", "landlocked_partner", "tariff", "tariff_missing", "mfn_adv_max",
+            # partner covariates for Step 4; they stand in for partner fixed effects
+            "gdp_pc", "ln_gdp_pc", "cis_eaeu", "transit",
             "freight_clean_sample", "section_extrapolated", "cif_fob_ratio", "ln_ratio",
             "margin_a", "margin_b"]
     usable[cols].to_csv(OUT / "freight.csv", index=False)
