@@ -9,19 +9,20 @@ import { useI18n } from "@/lib/i18n";
 import {
   ANOMALY_BASE_RATE, ANOMALY_MIN_GAP, ANOMALY_SOURCE, ANOMALY_WINDOW,
   asMultiple, chapterRollup, clustersOf, hi90, metaOf, partnerRollup,
-  type Cluster, type ClusterLevel, type Tier,
+  type ClusterLevel, type Tier,
 } from "@/lib/anomaly";
+import { Cite } from "@/lib/references";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
  * Unexplained Discrepancy Analysis (Gara, Giammatteo & Tosti 2018).
  *
  * The model is fitted offline by analysis/step5_export.py; this reads finished
- * numbers. The page is public, so it is written for a reader who has never met a
- * mixed model: the score is shown as "how many times bigger than expected"
- * rather than in log points, the equation is spelled out with every variable's
- * source, and the two statistical ideas a reader has to hold — the likely range
- * and shrinkage — get a panel of their own rather than a tooltip.
+ * numbers. The page is written for economists: the specification is stated in
+ * the notation they already read, û is reported in log points with the multiple
+ * in the tooltip, and the prose is a literature review of what each strand of
+ * the mirror-statistics tradition contributes to the specification — including
+ * the two places this panel had to depart from it.
  *
  * Labelling is deliberate throughout: this is an "unexplained discrepancy
  * score", never a risk of money laundering or fraud. Every ranked view carries
@@ -41,14 +42,11 @@ const THN = `${TH} text-right`;
 const TD = "px-3 py-2 align-middle text-[14px]";
 const TDN = `${TD} tabular text-right whitespace-nowrap`;
 
-/**
- * The score, in the unit the page uses everywhere: a multiple of what is
- * expected. Two decimals, not one: the flagging line and the lower end of a
- * borderline group's range can sit four hundredths apart, and at one decimal
- * both print the same number, which makes the worked example read as a
- * contradiction.
- */
-const times = (logPoints: number): string => `${asMultiple(logPoints).toFixed(2)}×`;
+/** û as printed: log points, the unit the model estimates in. */
+const score = (u: number): string => u.toFixed(3);
+
+/** The same quantity as a multiple of the predicted gap, for the hover. */
+const times = (u: number): string => `${asMultiple(u).toFixed(2)}×`;
 
 function TierTag({ tier }: { tier: Tier }) {
   const { t } = useI18n();
@@ -89,6 +87,20 @@ function RangeBar({ lo, hi, min, max, threshold }: { lo: number; hi: number; min
 const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
+/**
+ * The literature review, as strands rather than a bibliography: each entry says
+ * what that work contributes to the specification above. The full references
+ * render on /methodology, which is why these only cite.
+ */
+const LITERATURE: { key: string; refs: string[] }[] = [
+  { key: "a", refs: ["bhagwati1964", "unsd2019", "berger2008"] },
+  { key: "b", refs: ["fisman2004", "javorcik2008", "kellenberg2019", "ferrantino2008"] },
+  { key: "c", refs: ["hummels2006", "mayer2011"] },
+  { key: "d", refs: ["gara2018", "mundlak1978", "farhad2019"] },
+  { key: "e", refs: ["robinson1991", "goldstein1996"] },
+  { key: "f", refs: ["nitsch2016", "carrere2015", "choi2019"] },
+];
+
 const CAT_LIMIT = 400;
 const PAGE = 25;
 
@@ -111,11 +123,6 @@ export default function AnomalyView() {
     max: Math.max(...ranked.map(hi90), meta.threshold),
   }), [ranked, meta.threshold]);
 
-  /* A real row from the table, so the worked example is never a toy. Prefer a
-     Confirmed group; fall back to the top-scoring one if none clears. */
-  const example = useMemo<Cluster | undefined>(
-    () => ranked.find((c) => c.tier === 1) ?? ranked[0], [ranked],
-  );
   const wedge = fmtPct(meta.freightWedge, 1);
   const pages = Math.ceil(ranked.length / PAGE);
   const switchLevel = (v: ClusterLevel) => { setCluster(v); setPage(0); };
@@ -132,21 +139,6 @@ export default function AnomalyView() {
         <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[14.5px] leading-relaxed text-muted">
           {t("anom.lede")}
         </p>
-      </section>
-
-      {/* ---- how to read the page, before any number is shown ---- */}
-      <section className="space-y-3">
-        <SectionTitle title={t("anom.method.title")} />
-        <div className="grid max-w-5xl gap-3 lg:grid-cols-3">
-          {(["anom.method.p1", "anom.method.p2", "anom.method.p3"] as LocaleKey[]).map((k) => (
-            <div key={k} className="card p-4 text-[14px] leading-relaxed text-muted">{t(k)}</div>
-          ))}
-        </div>
-        <div className="max-w-3xl space-y-2 rounded-md border-l-2 border-l-[var(--color-gold)] bg-[var(--color-panel)] px-4 py-3">
-          {(["anom.method.p4", "anom.method.p5", "anom.method.p6"] as LocaleKey[]).map((k) => (
-            <p key={k} className="text-[14px] leading-relaxed text-muted">{t(k)}</p>
-          ))}
-        </div>
       </section>
 
       {/* ---- the equation and where each number comes from ---- */}
@@ -185,50 +177,29 @@ export default function AnomalyView() {
         </div>
       </section>
 
-      {/* ---- how the score is worked out, on a real row ---- */}
+      {/* ---- literature: what grounds the specification, and where it departs ---- */}
       <section className="space-y-3">
-        <SectionTitle title={t("anom.score.title")} desc={t("anom.score.desc")} />
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="card p-4">
-              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.score.s${i}.t` as LocaleKey)}</h3>
+        <SectionTitle title={t("anom.lit.title")} desc={t("anom.lit.desc")} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          {LITERATURE.map(({ key, refs }) => (
+            <div key={key} className="card p-4">
+              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.lit.${key}.t` as LocaleKey)}</h3>
               <p className="text-[13.5px] leading-relaxed text-muted">
-                {fill(t(`anom.score.s${i}.b` as LocaleKey), { wedge })}
+                {t(`anom.lit.${key}.b` as LocaleKey)}
+                <Cite ids={refs} />
               </p>
             </div>
           ))}
         </div>
-        {example && (
-          <p className="max-w-4xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[14px] leading-relaxed text-muted">
-            {fill(t(example.tier === 1 ? "anom.score.example" : "anom.score.exampleProv"), {
-              partner: example.partner,
-              code: example.code,
-              label: example.label,
-              years: example.nObs,
-              gap: fmtUSD(example.gapUsd),
-              mult: times(example.uHat),
-              lo: times(example.lo90),
-              hi: times(hi90(example)),
-              thr: times(meta.threshold),
-            })}
-          </p>
-        )}
+        <p className="max-w-4xl rounded-md border-l-2 border-l-[var(--color-gold)] bg-[var(--color-panel)] px-4 py-3 text-[13.5px] leading-relaxed text-muted">
+          {t("anom.lit.departure")}
+        </p>
+        <p className="text-[12.5px] text-faint">
+          <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
+        </p>
       </section>
 
-      {/* ---- the two ideas a reader has to hold ---- */}
-      <section className="space-y-3">
-        <SectionTitle title={t("anom.terms.title")} />
-        <div className="grid gap-3 lg:grid-cols-3">
-          {(["interval", "shrink", "rho"] as const).map((k) => (
-            <div key={k} className="card p-4">
-              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.terms.${k}.t` as LocaleKey)}</h3>
-              <p className="text-[13.5px] leading-relaxed text-muted">{t(`anom.terms.${k}.b` as LocaleKey)}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- level of detail ---- */}
+      {/* ---- cluster level ---- */}
       <section>
         <label className="inline-block space-y-1.5">
           <span className="block text-[13px] font-medium text-faint">{t("anom.cfg.cluster")}</span>
@@ -302,14 +273,16 @@ export default function AnomalyView() {
                       {c.label.length > 38 ? `${c.label.slice(0, 38)}…` : c.label}
                     </td>
                     <td className={TDN}>{c.nObs}</td>
-                    <td className={`${TDN} font-semibold`}>{times(c.uHat)}</td>
+                    <td className={`${TDN} font-semibold`} title={`e^û = ${times(c.uHat)}`}>
+                      {score(c.uHat)}
+                    </td>
                     <td className={TD}>
                       <span className="flex items-center gap-2"
-                        title={`${times(c.lo90)} – ${times(hi90(c))}`}>
+                        title={`${score(c.lo90)} – ${score(hi90(c))}  (${times(c.lo90)} – ${times(hi90(c))})`}>
                         <RangeBar lo={c.lo90} hi={hi90(c)} min={bounds.min} max={bounds.max}
                           threshold={meta.threshold} />
                         <span className="tabular whitespace-nowrap text-[12.5px] text-faint">
-                          {times(c.lo90)}–{times(hi90(c))}
+                          {score(c.lo90)}–{score(hi90(c))}
                         </span>
                       </span>
                     </td>
