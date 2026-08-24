@@ -1,16 +1,15 @@
 """
-Step 4 - the anomaly model. PROVISIONAL: see STEP3_REPORT.md.
+Step 4 - the anomaly model.
 
     python analysis/step4_anomaly.py [--cluster hs6|hs4]
 
-Two of Step 3's inputs are not settled, so every number here is conditional on
-choices that are still open:
+Two things about the inputs, both settled and both worth stating:
 
   1. The cell-level freight surface is not identified in this data (three of the
-     four mandatory checks fail). What the zero-duty sample does support is an
-     aggregate wedge by product section and weight class, and that is what
-     deflates the CIF side here. It is a defensible instrument, better grounded
-     than a flat 10%, but it is not the fitted surface the brief specifies.
+     four mandatory checks fail). What the zero-duty sample does support is a
+     single aggregate wedge, and that fitted rate is what deflates the CIF side.
+     It is better grounded than the flat 10% the brief objected to, but it is not
+     the fitted surface the brief specifies. See STEP34_REPORT.md.
   2. The extract carries one mirror direction only - Uzbekistan's imports against
      partners' exports. The export-under-reporting arm needs a second download,
      so the EXPORT dummy is degenerate and is omitted rather than faked.
@@ -50,50 +49,25 @@ def rule(t: str) -> None:
     print(f"\n{'=' * 78}\n{t}\n{'=' * 78}")
 
 
-def freight_factors(f: pd.DataFrame) -> tuple[pd.DataFrame, float]:
+def freight_wedge(f: pd.DataFrame) -> float:
     """
-    Model C from Step 3: the aggregate CIF/FOB wedge on the zero-duty sample, by
-    HS section and weight class. Aggregates rather than cell-level predictions,
-    because the cell-level surface is noise; floored at zero, because freight is
-    a physical cost. Thin combinations fall back to the section, then to the
-    overall wedge.
+    The one freight quantity this data identifies: the aggregate CIF/FOB wedge on
+    the zero-duty sample, where the incentive to misinvoice is weakest. Step 3
+    shows the cell-level gravity surface has no predictive power here - distance
+    carries no gradient and held-out R2 is 0.005 - so a single fitted rate is what
+    gets applied. Floored at zero, because freight is a physical cost.
     """
-    clean = f[f["freight_clean_sample"] & f["w2v"].notna()].copy()
-    overall = clean["uz_imports_cif"].sum() / clean["ptn_exports_fob"].sum() - 1
-
-    def wedge(g: pd.DataFrame) -> float:
-        return g["uz_imports_cif"].sum() / g["ptn_exports_fob"].sum() - 1
-
-    sec = {s: wedge(g) for s, g in clean.groupby("section", observed=True) if len(g) >= 100}
-    cell = {k: wedge(g) for k, g in clean.groupby(["section", "wclass"], observed=True) if len(g) >= 100}
-    rows = []
-    for (s, w), v in cell.items():
-        rows.append({"section": s, "wclass": w, "factor": max(v, 0.0), "basis": "section x weight"})
-    tab = pd.DataFrame(rows)
-    return tab, max(overall, 0.0), sec  # type: ignore[return-value]
+    clean = f[f["freight_clean_sample"]]
+    return max(clean["uz_imports_cif"].sum() / clean["ptn_exports_fob"].sum() - 1, 0.0)
 
 
-def build(cluster_level: str, freight: str = "flat") -> tuple[pd.DataFrame, dict]:
+def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
     f = pd.read_csv(OUT / "freight.csv",
                     dtype={"hs6": "string", "hs4": "string", "hs2": "string",
                            "ctr": "string", "section": "string"})
-    # weight class is defined on the whole panel so the clean sample and the
-    # extrapolation set share cut points
-    f = f[f["w2v"].notna()].copy()
-    f["wclass"] = pd.qcut(f["w2v"], 4, labels=["light", "mid-light", "mid-heavy", "heavy"])
-
-    tab, overall, sec = freight_factors(f)
-    if freight == "flat":
-        # The only freight quantity this data identifies is the overall zero-duty
-        # wedge. Its section and weight dimensions contain negative wedges, which
-        # cannot be freight, so disaggregating buys arbitrariness, not detail.
-        f["factor"] = overall
-    else:
-        f = f.merge(tab, on=["section", "wclass"], how="left")
-        f["factor"] = f["factor"].fillna(f["section"].map(lambda s: max(sec.get(s, overall), 0.0)))
-        f["factor"] = f["factor"].fillna(overall)
-
-    f["uz_fob"] = f["uz_imports_cif"] / (1 + f["factor"])
+    wedge = freight_wedge(f)
+    f["factor"] = wedge
+    f["uz_fob"] = f["uz_imports_cif"] / (1 + wedge)
     f["gap"] = f["uz_fob"] - f["ptn_exports_fob"]
 
     keep = f[(f["gap"] > 0) & (f["gap"] >= MIN_GAP_USD)].copy()
@@ -106,7 +80,7 @@ def build(cluster_level: str, freight: str = "flat") -> tuple[pd.DataFrame, dict
     keep["n_obs"] = grp.transform("size")
 
     info = {
-        "panel": len(f), "kept": len(keep), "overall_factor": overall,
+        "panel": len(f), "kept": len(keep), "overall_factor": wedge,
         "median_factor": float(f["factor"].median()),
         "gap_usd": float(keep["gap"].sum()),
         "clusters": int(keep["cluster"].nunique()),
@@ -117,13 +91,10 @@ def build(cluster_level: str, freight: str = "flat") -> tuple[pd.DataFrame, dict
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cluster", default="hs4", choices=["hs6", "hs4", "hs2"])
-    ap.add_argument("--freight", default="flat", choices=["flat", "modelc"],
-                    help="flat: the fitted overall zero-duty wedge. modelc: section x weight class.")
     args = ap.parse_args()
 
-    df, info = build(args.cluster, args.freight)
-    rule(f"Panel - import over-reporting arm, cluster = partner x {args.cluster.upper()}, "
-         f"freight = {args.freight}")
+    df, info = build(args.cluster)
+    rule(f"Panel - import over-reporting arm, cluster = partner x {args.cluster.upper()}")
     print(f"  cells with a freight-adjusted positive gap >= ${MIN_GAP_USD:,}: {info['kept']:,} "
           f"of {info['panel']:,}")
     print(f"  total gap: ${info['gap_usd'] / 1e9:.2f}B   clusters: {info['clusters']:,}")
@@ -218,7 +189,7 @@ def main() -> int:
     print(f"    by flagged share: {pr.head(5)['ctr'].tolist()}")
     print(f"    by unexplained value: {byval}")
 
-    stem = f"anomaly_{args.cluster}_{args.freight}"
+    stem = f"anomaly_{args.cluster}"
     sc.to_csv(OUT / f"{stem}.csv", index=False)
     print(f"\nwrote {OUT / f'{stem}.csv'} ({len(sc):,} clusters)")
     print(f"\nrho {rho:.4f} | clusters {len(sc):,} | confirmed "

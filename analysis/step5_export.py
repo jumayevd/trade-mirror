@@ -3,8 +3,7 @@ Step 5 - precompute every configuration the dashboard offers.
 
     python analysis/step5_export.py
 
-Fits all four combinations of cluster level (partner x HS4, partner x HS6) and
-freight instrument (the fitted flat wedge, the section x weight-class variant) and
+Fits the model at both cluster levels - partner x HS4 and partner x HS6 - and
 writes src/data/anomaly.json. Nothing here runs in the browser: the dashboard
 reads finished numbers, exactly as it does for the risk index.
 
@@ -30,16 +29,14 @@ from step4_anomaly import CRITICAL_TOP, MIN_GAP_USD, Z90, build  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 DEST = ROOT.parent / "src" / "data" / "anomaly.json"
-SRC_MONTHLY = ROOT.parent.parent / "UN Comtrade monthly" / "UN Comtrade monthly" / "mirror_trade_monthly_2017_latest.csv"
 
 CLUSTERS = ["hs4", "hs6"]
-FREIGHTS = ["flat", "modelc"]
 SPEC = "ln_gap ~ tariff + trade_dev + trade_bar + C(ctr) + C(hs2) + C(year)"
 TERMS = ["tariff", "trade_dev", "trade_bar"]
 
 
-def fit_one(cluster: str, freight: str) -> dict:
-    df, info = build(cluster, freight)
+def fit_one(cluster: str) -> dict:
+    df, info = build(cluster)
     res = smf.mixedlm(SPEC, data=df, groups=df["cluster"]).fit()
     var_u = float(res.cov_re.iloc[0, 0])
     var_e = float(res.scale)
@@ -74,7 +71,7 @@ def fit_one(cluster: str, freight: str) -> dict:
     return {
         "sc": sc.sort_values("u_hat", ascending=False).reset_index(drop=True),
         "meta": {
-            "cluster": cluster, "freight": freight,
+            "cluster": cluster,
             "observations": int(info["kept"]), "panelCells": int(info["panel"]),
             "clusters": int(len(sc)),
             "gapUsd": float(sc["gap_usd"].sum()),
@@ -130,78 +127,26 @@ def rollups(sc: pd.DataFrame, base: float = CRITICAL_TOP) -> tuple[list, list]:
     return out_p, out_c
 
 
-def monthly_series(wedge: float) -> dict:
-    """
-    The one place monthly data is used: a trend line, never a model input. Shipping
-    lag means a January departure lands in Uzbekistan's February or March book, so
-    monthly gaps are noisy by construction and are shown as a shape, not a level.
-    """
-    keep = ["year", "month", "reporting_side", "reporter_iso", "partner_iso",
-            "hs_level", "hs_code", "trade_value_usd"]
-    parts = []
-    for ch in pd.read_csv(SRC_MONTHLY, usecols=keep, chunksize=3_000_000, low_memory=False,
-                          dtype={"reporting_side": "category", "hs_level": "category",
-                                 "hs_code": "string"}):
-        ch = ch[(ch["hs_level"].astype(str) == "HS6") & ch["year"].isin(YEARS)]
-        uz = ch["reporting_side"].astype(str) == "uzbekistan_imports"
-        ch = ch.assign(
-            ctr=np.where(uz, ch["partner_iso"].astype(str), ch["reporter_iso"].astype(str)),
-            hs2=ch["hs_code"].str.zfill(6).str[:2],
-            side=np.where(uz, "uz", "ptn"),
-        )
-        parts.append(ch.groupby(["ctr", "hs2", "year", "month", "side"], observed=True)
-                     .agg(v=("trade_value_usd", "sum")).reset_index())
-    d = pd.concat(parts).groupby(["ctr", "hs2", "year", "month", "side"], observed=True).sum().reset_index()
-    w = d.pivot_table(index=["ctr", "hs2", "year", "month"], columns="side", values="v",
-                      fill_value=0.0).reset_index()
-    for c in ("uz", "ptn"):
-        if c not in w:
-            w[c] = 0.0
-    w["gap"] = w["uz"] / (1 + wedge) - w["ptn"]
-    w["period"] = w["year"] * 100 + w["month"]
-
-    def series(frame: pd.DataFrame, key: str) -> dict:
-        g = frame.groupby([key, "period"], observed=True)["gap"].sum().reset_index()
-        g = g[g["gap"] > 0]
-        out: dict[str, dict] = {}
-        for k, gg in g.groupby(key, observed=True):
-            gg = gg.sort_values("period")
-            out[str(k)] = {"p": [int(x) for x in gg["period"]],
-                           "v": [round(float(x) / 1e6, 3) for x in gg["gap"]]}
-        return out
-
-    top_p = (w.groupby("ctr", observed=True)["gap"].sum().sort_values(ascending=False)
-             .head(20).index.tolist())
-    top_c = (w.groupby("hs2", observed=True)["gap"].sum().sort_values(ascending=False)
-             .head(20).index.tolist())
-    return {
-        "partners": series(w[w["ctr"].isin(top_p)], "ctr"),
-        "chapters": series(w[w["hs2"].isin(top_c)], "hs2"),
-    }
-
-
 def main() -> int:
     configs: dict[str, dict] = {}
     partners: list[str] = []
     codes: list[str] = []
 
     for cl in CLUSTERS:
-        for fr in FREIGHTS:
-            print(f"fitting cluster={cl} freight={fr} ...", flush=True)
-            r = fit_one(cl, fr)
-            sc = r["sc"]
-            for iso in sc["ctr"]:
-                if iso not in partners:
-                    partners.append(iso)
-            for c in sc["code"]:
-                if c not in codes:
-                    codes.append(c)
-            pr, cr = rollups(sc)
-            key = f"{cl}_{fr}"
-            configs[key] = {"meta": r["meta"], "partnerRollup": pr, "chapterRollup": cr, "sc": sc}
-            m = r["meta"]
-            print(f"  rho {m['rho']:.4f}  clusters {m['clusters']:,}  "
-                  f"tier1 {m['tier1']}  tier2 {m['tier2']}")
+        print(f"fitting cluster={cl} ...", flush=True)
+        r = fit_one(cl)
+        sc = r["sc"]
+        for iso in sc["ctr"]:
+            if iso not in partners:
+                partners.append(iso)
+        for c in sc["code"]:
+            if c not in codes:
+                codes.append(c)
+        pr, cr = rollups(sc)
+        configs[cl] = {"meta": r["meta"], "partnerRollup": pr, "chapterRollup": cr, "sc": sc}
+        m = r["meta"]
+        print(f"  rho {m['rho']:.4f}  clusters {m['clusters']:,}  "
+              f"tier1 {m['tier1']}  tier2 {m['tier2']}")
 
     pidx = {v: i for i, v in enumerate(partners)}
     cidx = {v: i for i, v in enumerate(codes)}
@@ -226,10 +171,6 @@ def main() -> int:
             },
         }
 
-    wedge = configs["hs4_flat"]["meta"]["freightWedge"]
-    print("building the monthly trend series ...", flush=True)
-    trend = monthly_series(wedge)
-
     doc = {
         "version": "1.0",
         "window": [YEARS[0], YEARS[-1]],
@@ -238,9 +179,8 @@ def main() -> int:
         "z90": Z90,
         "partners": partners,
         "codes": codes,
-        "defaultConfig": "hs4_flat",
+        "defaultConfig": "hs4",
         "configs": packed,
-        "trend": trend,
         "source": {
             "gravity": "CEPII GeoDist (Mayer & Zignago 2011)",
             "method": "Gara, Giammatteo & Tosti (2018), Banca d'Italia QEF 445",
@@ -250,9 +190,8 @@ def main() -> int:
     DEST.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
     print(f"\nwrote {DEST} ({DEST.stat().st_size / 1e6:.2f} MB)")
     for k, v in packed.items():
-        print(f"  {k:12} clusters {v['meta']['clusters']:>6,}  rho {v['meta']['rho']:.3f}  "
+        print(f"  {k:6} clusters {v['meta']['clusters']:>6,}  rho {v['meta']['rho']:.3f}  "
               f"tier1 {v['meta']['tier1']:>3}  tier2 {v['meta']['tier2']:>3}")
-    print(f"  trend series: {len(trend['partners'])} partners, {len(trend['chapters'])} chapters")
     return 0
 
 

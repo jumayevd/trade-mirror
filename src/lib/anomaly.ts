@@ -9,17 +9,14 @@ import { hsFullLabel, hsLabel, partnerName } from "@/lib/dataset";
  * dashboard reads are the random intercepts — the systematic part of a cell's
  * discrepancy that distance, weight, product, partner and year do not explain.
  *
- * Four configurations ship, and the reader picks: the cluster the random effect
- * is defined on (partner × HS4 or partner × HS6) and the freight instrument (the
- * fitted flat wedge or the section × weight-class variant). They are offered
- * rather than resolved because the two cluster levels answer to different
- * trade-offs, and the numbers should be able to be compared rather than taken on
- * trust — see the diagnostics panel.
+ * Two configurations ship, and the reader picks how finely the score is defined:
+ * per partner × HS4 heading, or per partner × HS6 line. They are offered rather
+ * than resolved because the choice is a real trade-off — HS6 is more specific but
+ * most of its groups hold one or two years, which the diagnostics panel shows.
  */
 
 export type ClusterLevel = "hs4" | "hs6";
-export type FreightMode = "flat" | "modelc";
-export type ConfigKey = `${ClusterLevel}_${FreightMode}`;
+export type ConfigKey = ClusterLevel;
 
 /** 1 Confirmed, 2 Provisional, 0 not flagged, 3 suppressed singleton. */
 export type Tier = 0 | 1 | 2 | 3;
@@ -28,7 +25,6 @@ export interface Coefficient { term: string; coef: number; se: number; z: number
 
 export interface ConfigMeta {
   cluster: ClusterLevel;
-  freight: FreightMode;
   /** Cell-years entering the regression. */
   observations: number;
   /** Matched cells in the panel before the positive-gap filter. */
@@ -124,10 +120,6 @@ interface Doc {
     chapterRollup: Omit<ChapterRow, "label">[];
     cells: PackedCells;
   }>;
-  trend: {
-    partners: Record<string, { p: number[]; v: number[] }>;
-    chapters: Record<string, { p: number[]; v: number[] }>;
-  };
   source: { gravity: string; method: string; tariff: string };
 }
 
@@ -139,10 +131,7 @@ export const ANOMALY_BASE_RATE = doc.criticalTop;
 export const ANOMALY_SOURCE = doc.source;
 export const DEFAULT_CONFIG = doc.defaultConfig;
 
-export const CONFIG_KEYS: ConfigKey[] = ["hs4_flat", "hs4_modelc", "hs6_flat", "hs6_modelc"];
-
-export const configKey = (cluster: ClusterLevel, freight: FreightMode): ConfigKey =>
-  `${cluster}_${freight}`;
+export const CONFIG_KEYS: ConfigKey[] = ["hs4", "hs6"];
 
 export const metaOf = (key: ConfigKey): ConfigMeta => doc.configs[key].meta;
 
@@ -182,14 +171,13 @@ export function chapterRollup(key: ConfigKey): ChapterRow[] {
   return doc.configs[key].chapterRollup.map((r) => ({ ...r, label: hsLabel(r.hs2) }));
 }
 
-/** Monthly gap series, in USD millions, for the trend panel only. */
-export function trendSeries(kind: "partners" | "chapters", key: string) {
-  return doc.trend[kind][key] ?? null;
-}
+/**
+ * The score in the unit a reader can hold: how many times larger this group's
+ * gaps run than the model expects. The score is a log difference, so e^score is
+ * the multiple — 0.69 is "twice as large", 0 is "exactly as expected".
+ */
+export const asMultiple = (logPoints: number): number => Math.exp(logPoints);
 
-export const trendKeys = (kind: "partners" | "chapters"): string[] =>
-  Object.keys(doc.trend[kind]);
-
-/** `202403` → `2024-03`, the wire format for a monthly period. */
-export const periodLabel = (p: number): string =>
-  `${Math.floor(p / 100)}-${String(p % 100).padStart(2, "0")}`;
+/** Upper end of the 90% interval, the mirror of lo90. */
+export const hi90 = (c: Pick<Cluster, "uHat" | "postSd">): number =>
+  c.uHat + doc.z90 * c.postSd;

@@ -57,8 +57,9 @@ export function caterpillarOption(
           if (!c) return "";
           return (
             `<b>${c.partner} &times; ${c.code}</b><br/>${c.label}<br/>` +
-            `${labels.score} ${c.uHat.toFixed(3)}<br/>` +
-            `${labels.interval} ${c.lo90.toFixed(3)} – ${(c.uHat + 1.645 * c.postSd).toFixed(3)}<br/>` +
+            `${labels.score} ${Math.exp(c.uHat).toFixed(2)}×<br/>` +
+            `${labels.interval} ${Math.exp(c.lo90).toFixed(2)}× – ` +
+            `${Math.exp(c.uHat + 1.645 * c.postSd).toFixed(2)}×<br/>` +
             `${labels.obs} ${c.nObs} &middot; ${labels.tier(c.tier)}`
           );
         },
@@ -76,7 +77,14 @@ export function caterpillarOption(
         type: "value",
         name: labels.score,
         nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
-        axisLabel: { color: COLORS.text, fontSize: CHART_FONT.axisLabel },
+        // The model works in log points; a reader does not. The axis is still
+        // linear in logs - which is what makes the intervals symmetric - but it
+        // is labelled in the multiples the rest of the page uses.
+        axisLabel: {
+          color: COLORS.text,
+          fontSize: CHART_FONT.axisLabel,
+          formatter: (v: number) => `${Math.exp(v).toFixed(1)}×`,
+        },
         splitLine: { lineStyle: { color: COLORS.grid, type: "dashed" } },
       },
       series: [
@@ -113,7 +121,7 @@ export function caterpillarOption(
             silent: true,
             symbol: "none",
             label: {
-              formatter: `${labels.threshold} ${threshold.toFixed(2)}`,
+              formatter: `${labels.threshold} ${Math.exp(threshold).toFixed(2)}×`,
               color: COLORS.axis,
               fontSize: CHART_FONT.axisLabel,
               position: "insideEndTop",
