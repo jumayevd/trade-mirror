@@ -33,9 +33,9 @@ export interface Coverage {
   inExtract: number;
   /** Partners with at least one cell-year both books reported. */
   matched: number;
-  /** …and both sides above the materiality floor. */
+  /** …and trade size above the floor. */
   aboveFloor: number;
-  /** …and at least one freight-adjusted positive gap above it. */
+  /** …and therefore estimated. Nothing is dropped on the size of the gap. */
   positiveGap: number;
 }
 
@@ -91,8 +91,6 @@ export interface Cluster {
   /** exp(fixed part) × (exp(û) − 1), summed over the cluster's years. */
   unexplainedUsd: number;
   tier: Tier;
-  firstYear: number;
-  lastYear: number;
 }
 
 export interface PartnerRow {
@@ -121,13 +119,16 @@ export interface ChapterRow {
 
 interface PackedCells {
   p: number[]; k: number[]; n: number[]; u: number[]; lo: number[]; sd: number[];
-  sh: number[]; g: number[]; x: number[]; t: number[]; y0: number[]; y1: number[];
+  sh: number[]; g: number[]; x: number[]; t: number[];
 }
 
 interface Doc {
   version: string;
   window: [number, number];
-  minGapUsd: number;
+  /** Cells enter the panel at this much trade, measured as the mean of both sides. */
+  minTradeUsd: number;
+  /** Percentile bounds ln|gap| is winsorised at, rather than cells being dropped. */
+  winsor: [number, number];
   criticalTop: number;
   z90: number;
   partners: string[];
@@ -146,7 +147,8 @@ interface Doc {
 const doc = raw as unknown as Doc;
 
 export const ANOMALY_WINDOW = doc.window;
-export const ANOMALY_MIN_GAP = doc.minGapUsd;
+export const ANOMALY_MIN_TRADE = doc.minTradeUsd;
+export const ANOMALY_WINSOR = doc.winsor;
 export const ANOMALY_BASE_RATE = doc.criticalTop;
 export const ANOMALY_SOURCE = doc.source;
 export const ANOMALY_COVERAGE = doc.coverage;
@@ -177,8 +179,6 @@ export function clustersOf(key: ConfigKey): Cluster[] {
       gapUsd: c.g[i] * 1e6,
       unexplainedUsd: c.x[i] * 1e6,
       tier: c.t[i] as Tier,
-      firstYear: c.y0[i],
-      lastYear: c.y1[i],
     };
   }
   return out;

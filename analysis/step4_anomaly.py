@@ -65,7 +65,11 @@ SPEC = ("ln_gap ~ ln_gdp_pc + tariff + ln_dist + transit + POS "
 TERMS = ["ln_gdp_pc", "tariff", "ln_dist", "transit", "POS",
          "trade_dev", "POS:trade_dev", "trade_bar", "POS:trade_bar"]
 
-MIN_GAP_USD = 50_000
+#: Winsorising bounds on ln|gap|. Extreme ratios are pulled in rather than
+#: dropped: excluding a cell because its ratio is extreme would be selection on
+#: the outcome, which is the fault the old gap floor had. Capping bounds the
+#: leverage without removing the observation.
+WINSOR = (0.005, 0.995)
 CRITICAL_TOP = 0.025
 Z90 = 1.645
 
@@ -101,9 +105,18 @@ def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
     # them. Estimating a single arm selects on the sign of the dependent variable,
     # and that selection is correlated with the regressors - which is why distance
     # was never identified until the two were pooled.
-    keep = f[f["gap"].abs() >= MIN_GAP_USD].copy()
+    # No floor on the gap itself. The old one removed the best-agreeing cells in
+    # the panel - half within 10% of parity - at a rate running from 76% of the
+    # smallest trade quintile to 2% of the largest, so inclusion correlated with
+    # trade size, which is a regressor. Materiality now lives in the ranked table,
+    # where a reader can sort by value, rather than in the estimation sample where
+    # it biases the coefficients.
+    keep = f.copy()
     keep["POS"] = (keep["gap"] > 0).astype(int)
-    keep["ln_gap"] = np.log(keep["gap"].abs())
+    raw = np.log(keep["gap"].abs().clip(lower=1.0))
+    lo, hi = raw.quantile(WINSOR)
+    keep["ln_gap"] = raw.clip(lo, hi)
+    keep["winsorised"] = (raw < lo) | (raw > hi)
     keep["trade_ic"] = np.log((keep["uz_fob"] + keep["ptn_exports_fob"]) / 2)
     keep["cluster"] = keep["ctr"] + "|" + keep[cluster_level]
     grp = keep.groupby("cluster", observed=True)["trade_ic"]
@@ -116,6 +129,7 @@ def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
         "median_factor": float(f["factor"].median()),
         "gap_usd": float(keep["gap"].abs().sum()),
         "positive": int(keep["POS"].sum()), "negative": int((1 - keep["POS"]).sum()),
+        "winsorised": int(keep["winsorised"].sum()),
         "clusters": int(keep["cluster"].nunique()),
     }
     return keep, info
@@ -128,8 +142,9 @@ def main() -> int:
 
     df, info = build(args.cluster)
     rule(f"Panel - both directions, cluster = partner x {args.cluster.upper()}")
-    print(f"  cells with |freight-adjusted gap| >= ${MIN_GAP_USD:,}: {info['kept']:,} "
-          f"of {info['panel']:,}")
+    print(f"  cells entering the model: {info['kept']:,} of {info['panel']:,}")
+    print(f"    ln|gap| winsorised at {100 * WINSOR[0]:.1f}/{100 * WINSOR[1]:.1f}: "
+          f"{info['winsorised']:,} cells")
     print(f"    POS = 1 (partner reports more): {info['positive']:,}   "
           f"POS = 0 (Uzbekistan records more): {info['negative']:,}")
     print(f"  total |gap|: ${info['gap_usd'] / 1e9:.2f}B   clusters: {info['clusters']:,}")

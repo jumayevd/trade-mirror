@@ -18,8 +18,17 @@ OUT = ROOT / "out"
 DATA = ROOT / "data"
 
 YEARS = list(range(2019, 2025))
-#: A cell side must clear this to be worth comparing; small denominators give absurd ratios.
-MIN_SIDE_USD = 50_000
+#: A cell must carry at least this much trade, measured as the mean of the two
+#: sides, to enter the panel. It replaces the older rule of flooring each side
+#: separately at $50,000, which used size as a proxy for credibility and was the
+#: wrong instrument twice over: it discarded small cells the two books agreed on
+#: - the median Uzbek cell has a smaller side of only $12,097, so the old floor
+#: sat above the median - while keeping cells where one book was nearly empty.
+#: Extreme ratios are handled downstream by winsorising the dependent variable
+#: rather than by dropping cells, because dropping on the ratio would be
+#: selection on the outcome. Flooring on trade size conditions on a regressor,
+#: which is not.
+MIN_TRADE_USD = 10_000
 REPORTER = "UZB"
 
 #: EAEU members, and the other parties to the 2011 CIS free trade agreement.
@@ -64,15 +73,19 @@ def transit_share(p: pd.DataFrame) -> pd.Series:
     return (1 - ratio).clip(lower=0, upper=1).fillna(0)
 
 
-def load_panel(min_side: float = MIN_SIDE_USD) -> pd.DataFrame:
+def load_panel(min_trade: float = MIN_TRADE_USD) -> pd.DataFrame:
     """
     The matched annual panel over the model window, with gravity attributes, the
     tariff schedule and the HS6 global unit value attached.
+
+    The size filter is on the mean of the two reported values, computed before
+    the freight adjustment - the adjustment moves it by under 8% and using the
+    raw values keeps the filter independent of a wedge estimated downstream.
     """
     p = pd.read_csv(OUT / "annual_cells.csv",
                     dtype={"hs6": "string", "hs4": "string", "hs2": "string", "ctr": "string"})
     p = p[p["year"].isin(YEARS) & p["matched"]].copy()
-    p = p[(p["uz_imports_cif"] >= min_side) & (p["ptn_exports_fob"] >= min_side)].copy()
+    p = p[((p["uz_imports_cif"] + p["ptn_exports_fob"]) / 2 >= min_trade)].copy()
 
     # ---- HS6 global unit value, from the EXPORTER's books ----
     # The cell's own unit value cannot be a regressor: a misreported value would

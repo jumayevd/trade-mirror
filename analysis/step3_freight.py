@@ -30,7 +30,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.formula.api as smf
 
-from common import MIN_SIDE_USD, OUT, YEARS, load_panel
+from common import MIN_TRADE_USD, OUT, YEARS, load_panel
 
 RNG = np.random.default_rng(20260821)
 HOLDOUT = 0.25
@@ -81,7 +81,7 @@ def coef_table(m, terms: list[str]) -> None:
 def main() -> int:
     panel = load_panel()
     print(f"model window {YEARS[0]}-{YEARS[-1]}: {len(panel):,} matched cells "
-          f"with both sides >= ${MIN_SIDE_USD:,}")
+          f"with trade size >= ${MIN_TRADE_USD:,}")
 
     usable = panel[np.isfinite(panel["ln_ratio"]) & np.isfinite(panel["ln_w2v"])
                    & np.isfinite(panel["ln_dist"])].copy()

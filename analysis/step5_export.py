@@ -25,7 +25,8 @@ from scipy import stats
 warnings.filterwarnings("ignore")
 
 from common import OUT, YEARS  # noqa: E402
-from step4_anomaly import CRITICAL_TOP, MIN_GAP_USD, SPEC, TERMS, Z90, build  # noqa: E402
+from common import MIN_TRADE_USD  # noqa: E402
+from step4_anomaly import CRITICAL_TOP, SPEC, TERMS, WINSOR, Z90, build  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent
 DEST = ROOT.parent / "src" / "data" / "anomaly.json"
@@ -43,16 +44,21 @@ def fit_one(cluster: str) -> dict:
     re_map = {g: float(v.iloc[0]) for g, v in res.random_effects.items()}
     sc = (df.groupby("cluster", observed=True)
           .agg(ctr=("ctr", "first"), code=(cluster, "first"), hs2=("hs2", "first"),
-               n_obs=("ln_gap", "size"), gap_usd=("gap", "sum"),
-               uz=("uz_fob", "sum"), ptn=("ptn_exports_fob", "sum"),
-               first_year=("year", "min"), last_year=("year", "max")).reset_index())
+               n_obs=("ln_gap", "size"), gap_usd=("gap", lambda g: g.abs().sum()),
+               uz=("uz_fob", "sum"), ptn=("ptn_exports_fob", "sum")).reset_index())
     sc["u_hat"] = sc["cluster"].map(re_map)
     sc = sc[sc["u_hat"].notna()].copy()
     sc["shrinkage"] = sc["n_obs"] * var_u / (sc["n_obs"] * var_u + var_e)
     sc["post_sd"] = np.sqrt(var_u * (1 - sc["shrinkage"]))
     sc["lo90"] = sc["u_hat"] - Z90 * sc["post_sd"]
 
-    thr = float(sc["u_hat"].quantile(1 - CRITICAL_TOP))
+    # Round BEFORE banding, at the precision the file ships. Assigning tiers at
+    # full precision and then rounding lets a cluster sitting within 1e-05 of the
+    # threshold ship a value that re-derives to a different tier than the one it
+    # carries - which is exactly what the on-screen audit caught.
+    for col, dp in (("u_hat", 4), ("lo90", 4), ("post_sd", 4), ("shrinkage", 4)):
+        sc[col] = sc[col].round(dp)
+    thr = round(float(sc["u_hat"].quantile(1 - CRITICAL_TOP)), 4)
     tier = np.where(sc["lo90"] >= thr, 1, np.where(sc["u_hat"] >= thr, 2, 0))
     sc["tier"] = np.where(sc["n_obs"] == 1, 3, tier)  # 3 = suppressed singleton
 
@@ -134,18 +140,14 @@ def coverage() -> dict:
     p = pd.read_csv(OUT / "annual_cells.csv", dtype={"ctr": "string"})
     p = p[p["year"].between(YEARS[0], YEARS[-1])]
     m = p[p["matched"]]
-    big = m[(m["uz_imports_cif"] >= MIN_GAP_USD) & (m["ptn_exports_fob"] >= MIN_GAP_USD)]
+    big = m[(m["uz_imports_cif"] + m["ptn_exports_fob"]) / 2 >= MIN_TRADE_USD]
     f = pd.read_csv(OUT / "freight.csv", dtype={"ctr": "string"})
-    clean = f[f["freight_clean_sample"]]
-    wedge = clean["uz_imports_cif"].sum() / clean["ptn_exports_fob"].sum() - 1
-    # both directions, as the model estimates them
-    gap = f["ptn_exports_fob"] - f["uz_imports_cif"] / (1 + wedge)
-    est = f[gap.abs() >= MIN_GAP_USD]
     return {
         "inExtract": int(p["ctr"].nunique()),
         "matched": int(m["ctr"].nunique()),
         "aboveFloor": int(big["ctr"].nunique()),
-        "positiveGap": int(est["ctr"].nunique()),
+        # every cell above the floor is estimated; nothing is dropped on the gap
+        "positiveGap": int(f["ctr"].nunique()),
     }
 
 
@@ -183,22 +185,21 @@ def main() -> int:
                 "p": [pidx[x] for x in sc["ctr"]],
                 "k": [cidx[x] for x in sc["code"]],
                 "n": [int(x) for x in sc["n_obs"]],
-                "u": [round(float(x), 4) for x in sc["u_hat"]],
-                "lo": [round(float(x), 4) for x in sc["lo90"]],
-                "sd": [round(float(x), 4) for x in sc["post_sd"]],
-                "sh": [round(float(x), 4) for x in sc["shrinkage"]],
+                "u": [float(x) for x in sc["u_hat"]],
+                "lo": [float(x) for x in sc["lo90"]],
+                "sd": [float(x) for x in sc["post_sd"]],
+                "sh": [float(x) for x in sc["shrinkage"]],
                 "g": [round(float(x) / 1e6, 3) for x in sc["gap_usd"]],
                 "x": [round(float(x) / 1e6, 3) for x in sc["unexplained_usd"]],
                 "t": [int(x) for x in sc["tier"]],
-                "y0": [int(x) for x in sc["first_year"]],
-                "y1": [int(x) for x in sc["last_year"]],
             },
         }
 
     doc = {
         "version": "1.0",
         "window": [YEARS[0], YEARS[-1]],
-        "minGapUsd": MIN_GAP_USD,
+        "minTradeUsd": MIN_TRADE_USD,
+        "winsor": list(WINSOR),
         "criticalTop": CRITICAL_TOP,
         "z90": Z90,
         "partners": partners,

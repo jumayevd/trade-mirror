@@ -7,7 +7,7 @@ import { EmptyState, Segmented, SectionTitle, Stat } from "@/components/ui";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import {
-  ANOMALY_BASE_RATE, ANOMALY_COVERAGE, ANOMALY_MIN_GAP, ANOMALY_SOURCE, ANOMALY_WINDOW,
+  ANOMALY_BASE_RATE, ANOMALY_COVERAGE, ANOMALY_MIN_TRADE, ANOMALY_SOURCE, ANOMALY_WINDOW,
   asMultiple, chapterRollup, clustersOf, hi90, metaOf, partnerRollup,
   type ClusterLevel, type Tier,
 } from "@/lib/anomaly";
@@ -112,6 +112,15 @@ function Pager({ page, count, onPage }: { page: number; count: number; onPage: (
 /** The specification's terms, in the order the equation lists them. */
 const TERM_COUNT = 9;
 
+/**
+ * Minimum cumulative gap for a cluster to appear in the ranked table. A display
+ * control, deliberately: the model estimates every cell above the trade floor,
+ * because excluding small gaps from the fit would truncate the dependent
+ * variable on a rule correlated with trade size. Keeping small clusters off a
+ * triage list is a different job, and it belongs here.
+ */
+const GAP_STEPS = [0, 1e5, 1e6, 1e7] as const;
+
 const CAT_LIMIT = 400;
 /** Ten rows in every table on the page: these are read, not scanned. */
 const PAGE = 10;
@@ -121,6 +130,7 @@ export default function AnomalyView() {
   const [cluster, setCluster] = useState<ClusterLevel>("hs4");
   const [page, setPage] = useState(0);
   const [partnerPage, setPartnerPage] = useState(0);
+  const [minGap, setMinGap] = useState<number>(0);
   const [sectorPage, setSectorPage] = useState(0);
 
   const meta = useMemo(() => metaOf(cluster), [cluster]);
@@ -129,13 +139,14 @@ export default function AnomalyView() {
   const chapters = useMemo(() => chapterRollup(cluster), [cluster]);
 
   // groups with one year are not ranked: a single year cannot show a pattern
-  const ranked = useMemo(() => clusters.filter((c) => c.tier !== 3), [clusters]);
+  const scored = useMemo(() => clusters.filter((c) => c.tier !== 3), [clusters]);
+  const ranked = useMemo(() => scored.filter((c) => c.gapUsd >= minGap), [scored, minGap]);
   const shown = ranked.slice(page * PAGE, page * PAGE + PAGE);
-  const cat = useMemo(() => ranked.slice(0, CAT_LIMIT), [ranked]);
+  const cat = useMemo(() => scored.slice(0, CAT_LIMIT), [scored]);
   const bounds = useMemo(() => ({
-    min: Math.min(...ranked.map((c) => c.lo90), meta.threshold),
-    max: Math.max(...ranked.map(hi90), meta.threshold),
-  }), [ranked, meta.threshold]);
+    min: Math.min(...scored.map((c) => c.lo90), meta.threshold),
+    max: Math.max(...scored.map(hi90), meta.threshold),
+  }), [scored, meta.threshold]);
 
   /*
    * No floor on either rollup. An earlier version listed only partners with ten
@@ -149,6 +160,7 @@ export default function AnomalyView() {
     setCluster(v);
     setPage(0); setPartnerPage(0); setSectorPage(0);
   };
+  const setGap = (v: number) => { setMinGap(v); setPage(0); };
 
   return (
     <div className="space-y-8">
@@ -272,6 +284,23 @@ export default function AnomalyView() {
       {/* ---- the ranked table ---- */}
       <section className="space-y-2">
         <SectionTitle title={t("anom.table.title")} desc={t("anom.table.desc")} />
+        <label className="flex flex-wrap items-center gap-2 text-[13px]">
+          <span className="font-medium text-faint">{t("anom.table.minGap")}</span>
+          <Segmented
+            value={String(minGap)}
+            ariaLabel={t("anom.table.minGap")}
+            onChange={(v) => setGap(Number(v))}
+            options={GAP_STEPS.map((g) => ({
+              key: String(g),
+              label: g === 0 ? t("anom.table.minGapAll") : `≥ ${fmtUSD(g)}`,
+            }))}
+          />
+          <span className="tabular text-faint">
+            {fill(t("anom.table.minGapCount"), {
+              shown: fmtNum(ranked.length), total: fmtNum(scored.length),
+            })}
+          </span>
+        </label>
         {ranked.length === 0 ? <EmptyState text={t("anom.empty")} /> : (
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[880px] border-collapse">
@@ -510,7 +539,7 @@ export default function AnomalyView() {
                 ["anom.cov.scored", meta.partnersScored],
               ] as [LocaleKey, number][]).map(([k, v], i, arr) => (
                 <div key={k} className={`flex justify-between gap-3 ${i === arr.length - 1 ? "border-t border-[var(--color-border-soft)] pt-1 font-semibold" : ""}`}>
-                  <dt className={i === arr.length - 1 ? "" : "text-muted"}>{fill(t(k), { floor: fmtUSD(ANOMALY_MIN_GAP) })}</dt>
+                  <dt className={i === arr.length - 1 ? "" : "text-muted"}>{fill(t(k), { floor: fmtUSD(ANOMALY_MIN_TRADE) })}</dt>
                   <dd className="tabular">{v}</dd>
                 </div>
               ))}
@@ -529,7 +558,7 @@ export default function AnomalyView() {
               <div className="flex gap-2"><dt>Method:</dt><dd>{ANOMALY_SOURCE.method}</dd></div>
               <div className="flex gap-2"><dt>Gravity:</dt><dd>{ANOMALY_SOURCE.gravity}</dd></div>
               <div className="flex gap-2"><dt>Tariff:</dt><dd>{ANOMALY_SOURCE.tariff}</dd></div>
-              <div className="flex gap-2"><dt>Floor:</dt><dd>{fmtUSD(ANOMALY_MIN_GAP)}</dd></div>
+              <div className="flex gap-2"><dt>Floor:</dt><dd>{fmtUSD(ANOMALY_MIN_TRADE)} trade size</dd></div>
             </dl>
           </div>
         </div>

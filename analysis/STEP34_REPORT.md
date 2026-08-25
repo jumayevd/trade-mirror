@@ -508,3 +508,63 @@ Thinner HS6 clusters absorb more of their own residual, so σ²_u rises and the 
 percentile lands higher. A higher cut at HS6 is not a stricter test — it is the
 same test against a wider distribution, which is why scores compare only within a
 level.
+
+---
+
+## Floors replaced: trade size in, side and gap floors out
+
+Two floors are gone, replaced by one.
+
+**The old side floor** required each side to clear $50,000 separately. The median
+Uzbek cell has a smaller side of **$12,097**, so that floor sat above the median
+and removed two thirds of everything. It also used size as a proxy for
+credibility, which fails in both directions: it discarded $20k-against-$21k cells
+where the books agree perfectly, while keeping 86 cells where the ratio still
+exceeded 100×.
+
+**The old gap floor** required |gap| ≥ $50,000. The cells it removed were the
+best-agreeing in the panel — half within 0.95×–1.17×, none above 2× — and it
+removed them at a rate running from **76% of the smallest trade quintile to 2% of
+the largest**. Inclusion therefore correlated with trade size, which is a
+regressor, and that is selection on the dependent variable.
+
+**The replacement** is a single floor on trade size — the mean of the two
+reported values, taken before the freight adjustment so the filter does not
+depend on a wedge estimated downstream — at **$10,000**, with ln|gap| winsorised
+at the 0.5/99.5 percentiles instead of extreme cells being dropped. Flooring on
+size conditions on a regressor; flooring on the gap or the ratio would condition
+on the outcome.
+
+| | Old (both sides + gap, $50k) | New (trade size ≥ $10k) |
+|---|---:|---:|
+| Cells in the panel | 44,090 | **88,380** |
+| Clusters, partner × HS4 | 7,271 | **12,632** |
+| Singleton clusters | 27% | **25%** |
+| Partners in the rollup | 57 | **74** |
+| HS6 lines | 3,384 | 4,071 |
+| Fitted freight wedge | 15.0% | **15.1%** |
+| ρ | 0.196 | 0.190 |
+| Confirmed / Provisional | 11 / 305 | 11 / 306 |
+
+Every structural estimate survives: dist +0.183 (p < 0.001), tariff +0.0056
+(p < 0.001), transit +1.11 (p < 0.001). 442 cells are winsorised out of 88,380.
+
+The cost is honest: σ²_e rises from 0.62 to 1.23 and intervals widen, because the
+added cells genuinely are noisier. ρ absorbing that almost unchanged is the
+evidence that the systematic component survives the widening.
+
+**Materiality moved to the display.** The ranked table gains a minimum-gap
+control (All / $100k / $1M / $10M) so small clusters can be kept off a triage
+list without their exclusion biasing the fit that produced it.
+
+**Two consequences to note.** At partner × HS6 the panel now spreads over 28,951
+clusters and only **one** clears the Confirmed bar — thinner clusters, wider
+intervals. HS6 remains available but is now close to unusable for confirmation,
+and HS4 is the level that carries the analysis. And the export grew from 0.90 MB
+to 2.26 MB, with two unused per-cluster fields dropped to hold it down.
+
+**One bug the audit caught in the process.** Tiers were assigned at full
+precision and û shipped rounded to four decimals, so a cluster sitting within
+1e-05 of the threshold shipped a value that re-derived to a different tier than
+the one it carried. Rounding now happens before banding, so the file is
+self-consistent at the precision it ships.
