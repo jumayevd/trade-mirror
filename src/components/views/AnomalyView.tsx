@@ -20,8 +20,9 @@ import type { LocaleKey } from "@/lib/locales";
  * numbers. The page is written for economists: the specification is stated in
  * the notation they already read, û is reported in log points with the multiple
  * in the tooltip, and the only prose is the specification's own rules and the
- * two precision quantities — the interval and the shrinkage — which decide what
- * the ranking below them can be read to say. Every table pages at ten rows.
+ * precision quantities — what the interval is for, how it is built, and why the
+ * flagging line moves between cluster levels — which decide what the ranking
+ * below them can be read to say. Every table pages at ten rows.
  *
  * Labelling is deliberate throughout: this is an "unexplained discrepancy
  * score", never a risk of money laundering or fraud. Every ranked view carries
@@ -259,7 +260,7 @@ export default function AnomalyView() {
       <section className="space-y-3">
         <SectionTitle title={t("anom.iv.title")} desc={t("anom.iv.desc")} />
         <div className="grid gap-3 lg:grid-cols-3">
-          {(["a", "b", "c"] as const).map((k) => (
+          {(["a", "b", "d"] as const).map((k) => (
             <div key={k} className="card p-4">
               <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.iv.${k}.t` as LocaleKey)}</h3>
               <p className="text-[13.5px] leading-relaxed text-muted">{t(`anom.iv.${k}.b` as LocaleKey)}</p>
@@ -273,7 +274,7 @@ export default function AnomalyView() {
         <SectionTitle title={t("anom.table.title")} desc={t("anom.table.desc")} />
         {ranked.length === 0 ? <EmptyState text={t("anom.empty")} /> : (
           <div className="card overflow-x-auto">
-            <table className="w-full min-w-[940px] border-collapse">
+            <table className="w-full min-w-[880px] border-collapse">
               <thead className="border-b border-[var(--color-border)]">
                 <tr>
                   <th className={TH}>{t("anom.th.partner")}</th>
@@ -282,7 +283,6 @@ export default function AnomalyView() {
                   <th className={THN} title={t("anom.tip.n")}>{t("anom.th.n")}</th>
                   <th className={THN} title={t("anom.tip.uhat")}>{t("anom.th.uhat")}</th>
                   <th className={TH} title={t("anom.tip.interval")}>{t("anom.th.interval")}</th>
-                  <th className={THN} title={t("anom.tip.shrinkage")}>{t("anom.th.shrinkage")}</th>
                   <th className={THN} title={t("anom.tip.gap")}>{t("anom.th.gap")}</th>
                   <th className={THN} title={t("anom.tip.unexplained")}>{t("anom.th.unexplained")}</th>
                   <th className={TH}>{t("anom.th.tier")}</th>
@@ -314,7 +314,6 @@ export default function AnomalyView() {
                         </span>
                       </span>
                     </td>
-                    <td className={TDN}>{c.shrinkage.toFixed(2)}</td>
                     <td className={TDN} title={fmtUSDFull(c.gapUsd)}>{fmtUSD(c.gapUsd)}</td>
                     <td className={TDN} title={fmtUSDFull(c.unexplainedUsd)}>{fmtUSD(c.unexplainedUsd)}</td>
                     <td className={TD}><TierTag tier={c.tier} /></td>

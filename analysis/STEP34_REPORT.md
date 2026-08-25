@@ -444,3 +444,67 @@ surfaced.
 
 The partner funnel moves with the direction: 65 partners carry at least one
 positive discrepancy above the floor, against 69 in the other direction.
+
+---
+
+## Both directions, and CIS/EAEU out
+
+`CIS/EAEU_c` is removed. **MFN cannot replace it**: `tariff_i` already *is*
+Uzbekistan's applied MFN ad valorem rate, and the non-MFN schedule turns out to be
+exactly twice the MFN schedule on **all 7,759 dutiable HS10 lines** — correlation
+1.0000 — so an MFN preference margin is a scalar multiple of `tariff_i` and
+perfectly collinear with it. The only MFN variable that could enter is a
+partner-level *status* dummy, which is a legal fact no dataset here carries.
+
+Both signs of the discrepancy are now estimated together, separated by a dummy
+rather than one being dropped:
+
+```
+gap_ic = X_ic − M_ic / (1 + f)        both signs, |gap| ≥ $50,000
+POS_ic = 1 where gap > 0
+
+ln|gap|_ic = β₀ + β₁gdp_c + β₂tariff_i + β₃dist_c + β₄transit_c + β₅POS_ic
+           + β₆(trade_ic − trade̅_jc) + β₇POS_ic × (trade_ic − trade̅_jc)
+           + β₈trade̅_jc + β₉POS_ic × trade̅_jc
+           + HS2 dummies + year dummies + u_jc + ε_ic
+```
+
+31,867 observations — 19,989 positive, 11,878 negative — in 5,605 clusters at
+partner × HS4. Singletons fall to 28%, the median cluster holds 3 observations,
+and **46% of clusters now contain both directions**.
+
+| Term | Coef | SE | p | Prior | Holds |
+|---|---:|---:|---:|:--:|:--:|
+| gdp (log) | +0.014 | 0.011 | 0.236 | − | no, insignificant |
+| tariff | +0.0039 | 0.0011 | 0.001 | + | yes |
+| **dist (log)** | **+0.189** | 0.021 | **<0.001** | + | **yes** |
+| transit | +0.837 | 0.097 | <0.001 | + | yes |
+| POS | +0.273 | 0.135 | 0.044 | — | positive gaps run 31% larger |
+| trade − trade̅ | +0.812 | 0.008 | <0.001 | + | yes |
+| POS × (trade − trade̅) | +0.003 | 0.010 | 0.797 | — | no differential slope |
+| trade̅ | +0.824 | 0.010 | <0.001 | + | yes |
+| POS × trade̅ | −0.021 | 0.010 | 0.031 | — | small differential |
+
+**The headline result is distance.** `dist` was insignificant on *either* arm
+alone — +0.05 (p 0.52) on one, −0.04 (p 0.16) on the other — and comes out at
+**+0.189 (p < 0.001)** once both are pooled. Estimating a single sign selects on
+the dependent variable, and that selection was correlated with distance; pooling
+removes it. Six of seven priors now hold, against three when this began.
+
+ρ = 0.196 at partner × HS4 and 0.329 at HS6, both close to Gara et al.'s 0.18.
+
+### Why the thresholds differ between levels
+
+The threshold is the 97.5th percentile of û *within* a configuration, so 2.5% of
+clusters clear it at either level by construction. The distributions are not the
+same width:
+
+| | σ²_u | sd(û) | Threshold |
+|---|---:|---:|---:|
+| partner × HS4 | 0.151 | 0.258 | **0.531** |
+| partner × HS6 | 0.244 | 0.356 | **0.714** |
+
+Thinner HS6 clusters absorb more of their own residual, so σ²_u rises and the same
+percentile lands higher. A higher cut at HS6 is not a stricter test — it is the
+same test against a wider distribution, which is why scores compare only within a
+level.

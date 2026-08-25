@@ -10,18 +10,21 @@ Two things about the inputs, both settled and both worth stating:
      single aggregate wedge, and that fitted rate is what deflates the CIF side.
      It is better grounded than the flat 10% the brief objected to, but it is not
      the fitted surface the brief specifies. See STEP34_REPORT.md.
-  2. The extract carries one mirror direction only - Uzbekistan's imports against
-     partners' exports. The export-under-reporting arm needs a second download,
-     so the EXPORT dummy is degenerate and is omitted rather than faked.
+  2. The extract carries one mirror direction - Uzbekistan's imports against
+     partners' exports - so EXPORT, the arm dummy of the reference design, is not
+     available. What IS available is the SIGN of that mirror's gap, and both
+     signs are estimated together under a dummy rather than one being dropped.
 
-The estimated arm is the one the rest of the dashboard screens: cells where
-Uzbekistan records LESS, once freight is removed, than the partner says it
-shipped. It is also the arm this specification was written for - the tariff
-prior and the transit prior are both statements about this direction.
-
-    ln|gap|_ic = b0 + b1 gdp_c + b2 tariff_i + b3 dist_c + b4 CIS/EAEU_c
-                 + b5 transit_c + b7 (trade_ic - trade_bar_jc) + b9 trade_bar_jc
+    ln|gap|_ic = b0 + b1 gdp_c + b2 tariff_i + b3 dist_c + b4 transit_c
+                 + b5 POS_ic
+                 + b6 (trade_ic - trade_bar_jc) + b7 POS x (trade_ic - trade_bar_jc)
+                 + b8 trade_bar_jc + b9 POS x trade_bar_jc
                  + HS2 dummies + year dummies + u_jc + e_ic
+
+POS = 1 where the partner reports shipping more than Uzbekistan records
+receiving, 0 the other way. Estimating a single sign selects on the dependent
+variable, and that selection is correlated with the regressors: distance is
+insignificant on either arm alone and strongly positive once they are pooled.
 
 i is the HS6 product, c the partner, j the HS4 sector; u_jc is the estimand.
 Partner fixed effects are deliberately absent: the partner-level covariates
@@ -34,10 +37,10 @@ trade_bar alongside the within-cluster deviation is a Mundlak device: including
 the cluster mean relaxes the random-effects orthogonality assumption. It looks
 redundant next to the deviation. It is not.
 
-b6, b8 and b10 - the EXPORT direction dummy and its interactions with both
-Mundlak terms - are not estimable here. This extract carries one mirror
-direction, so EXPORT is constant and the interactions collapse onto their main
-effects. They are omitted rather than faked.
+CIS/EAEU is out of the specification. The MFN alternative was tested and cannot
+enter: Uzbekistan's non-MFN schedule is exactly twice its MFN schedule on all
+7,759 dutiable lines, so an MFN preference margin is a scalar multiple of tariff_i
+and perfectly collinear with it.
 
 Corruption indices, tax-haven flags, secrecy scores and AML risk indices are
 deliberately absent from the right-hand side. Conditioning on them would turn the
@@ -55,10 +58,12 @@ import statsmodels.formula.api as smf
 from common import OUT
 
 #: The fixed part, per the specification. Partner dummies are absent by design.
-SPEC = ("ln_gap ~ ln_gdp_pc + tariff + ln_dist + cis_eaeu + transit "
-        "+ trade_dev + trade_bar + C(hs2) + C(year)")
+SPEC = ("ln_gap ~ ln_gdp_pc + tariff + ln_dist + transit + POS "
+        "+ trade_dev + POS:trade_dev + trade_bar + POS:trade_bar "
+        "+ C(hs2) + C(year)")
 #: Reported coefficients, in the order the specification lists them.
-TERMS = ["ln_gdp_pc", "tariff", "ln_dist", "cis_eaeu", "transit", "trade_dev", "trade_bar"]
+TERMS = ["ln_gdp_pc", "tariff", "ln_dist", "transit", "POS",
+         "trade_dev", "POS:trade_dev", "trade_bar", "POS:trade_bar"]
 
 MIN_GAP_USD = 50_000
 CRITICAL_TOP = 0.025
@@ -88,13 +93,17 @@ def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
     wedge = freight_wedge(f)
     f["factor"] = wedge
     f["uz_fob"] = f["uz_imports_cif"] / (1 + wedge)
-    # The screened direction: the partner reports shipping more than Uzbekistan
-    # records receiving. This is the arm the rest of the dashboard ranks, and the
-    # arm the tariff and transit priors are statements about.
+    # Signed: positive where the partner reports shipping more than Uzbekistan
+    # records receiving, negative the other way.
     f["gap"] = f["ptn_exports_fob"] - f["uz_fob"]
 
-    keep = f[(f["gap"] > 0) & (f["gap"] >= MIN_GAP_USD)].copy()
-    keep["ln_gap"] = np.log(keep["gap"])
+    # Both directions enter, separated by a dummy rather than by dropping one of
+    # them. Estimating a single arm selects on the sign of the dependent variable,
+    # and that selection is correlated with the regressors - which is why distance
+    # was never identified until the two were pooled.
+    keep = f[f["gap"].abs() >= MIN_GAP_USD].copy()
+    keep["POS"] = (keep["gap"] > 0).astype(int)
+    keep["ln_gap"] = np.log(keep["gap"].abs())
     keep["trade_ic"] = np.log((keep["uz_fob"] + keep["ptn_exports_fob"]) / 2)
     keep["cluster"] = keep["ctr"] + "|" + keep[cluster_level]
     grp = keep.groupby("cluster", observed=True)["trade_ic"]
@@ -105,7 +114,8 @@ def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
     info = {
         "panel": len(f), "kept": len(keep), "overall_factor": wedge,
         "median_factor": float(f["factor"].median()),
-        "gap_usd": float(keep["gap"].sum()),
+        "gap_usd": float(keep["gap"].abs().sum()),
+        "positive": int(keep["POS"].sum()), "negative": int((1 - keep["POS"]).sum()),
         "clusters": int(keep["cluster"].nunique()),
     }
     return keep, info
@@ -117,10 +127,12 @@ def main() -> int:
     args = ap.parse_args()
 
     df, info = build(args.cluster)
-    rule(f"Panel - positive-discrepancy arm, cluster = partner x {args.cluster.upper()}")
-    print(f"  cells with a freight-adjusted positive gap >= ${MIN_GAP_USD:,}: {info['kept']:,} "
+    rule(f"Panel - both directions, cluster = partner x {args.cluster.upper()}")
+    print(f"  cells with |freight-adjusted gap| >= ${MIN_GAP_USD:,}: {info['kept']:,} "
           f"of {info['panel']:,}")
-    print(f"  total gap: ${info['gap_usd'] / 1e9:.2f}B   clusters: {info['clusters']:,}")
+    print(f"    POS = 1 (partner reports more): {info['positive']:,}   "
+          f"POS = 0 (Uzbekistan records more): {info['negative']:,}")
+    print(f"  total |gap|: ${info['gap_usd'] / 1e9:.2f}B   clusters: {info['clusters']:,}")
     print(f"  freight factor: median {100 * info['median_factor']:.1f}%, "
           f"overall zero-duty wedge {100 * info['overall_factor']:.1f}%")
     sizes = df.groupby("cluster", observed=True).size()
@@ -130,7 +142,7 @@ def main() -> int:
     rule("Mixed model")
     spec = SPEC
     print(f"  {spec}")
-    print("  + (1 | cluster)   b6, b8, b10 omitted: only one mirror direction exists")
+    print("  + (1 | cluster)")
     md = smf.mixedlm(spec, data=df, groups=df["cluster"])
     # The default optimiser sequence converges here; forcing lbfgs hits a singular
     # information matrix, because singleton clusters are perfectly fitted once the
