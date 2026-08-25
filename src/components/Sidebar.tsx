@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { SHOW_UNEXPLAINED } from "@/lib/flags";
 import type { LocaleKey } from "@/lib/locales";
 
 const ANALYSIS: { href: string; label: LocaleKey }[] = [
@@ -10,7 +11,8 @@ const ANALYSIS: { href: string; label: LocaleKey }[] = [
   { href: "/partners", label: "nav.partners" },
   { href: "/products", label: "nav.products" },
   { href: "/risk", label: "nav.queue" },
-  { href: "/unexplained", label: "nav.anomaly" },
+  // still being worked on; see src/lib/flags.ts to switch it on locally
+  ...(SHOW_UNEXPLAINED ? [{ href: "/unexplained", label: "nav.anomaly" as LocaleKey }] : []),
 ];
 /** Methodology comes first: it defines the measures Data Quality then qualifies. */
 const REFERENCE: { href: string; label: LocaleKey }[] = [
