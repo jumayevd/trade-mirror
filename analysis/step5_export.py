@@ -125,6 +125,29 @@ def rollups(sc: pd.DataFrame, base: float = CRITICAL_TOP) -> tuple[list, list]:
     return out_p, out_c
 
 
+def coverage() -> dict:
+    """
+    The partner funnel, stage by stage. Published rather than implied: a reader
+    who sees 57 partners in a rollup is entitled to know how the other 130 in the
+    extract dropped out, and which stage did it.
+    """
+    p = pd.read_csv(OUT / "annual_cells.csv", dtype={"ctr": "string"})
+    p = p[p["year"].between(YEARS[0], YEARS[-1])]
+    m = p[p["matched"]]
+    big = m[(m["uz_imports_cif"] >= MIN_GAP_USD) & (m["ptn_exports_fob"] >= MIN_GAP_USD)]
+    f = pd.read_csv(OUT / "freight.csv", dtype={"ctr": "string"})
+    clean = f[f["freight_clean_sample"]]
+    wedge = clean["uz_imports_cif"].sum() / clean["ptn_exports_fob"].sum() - 1
+    gap = f["uz_imports_cif"] / (1 + wedge) - f["ptn_exports_fob"]
+    est = f[(gap > 0) & (gap >= MIN_GAP_USD)]
+    return {
+        "inExtract": int(p["ctr"].nunique()),
+        "matched": int(m["ctr"].nunique()),
+        "aboveFloor": int(big["ctr"].nunique()),
+        "positiveGap": int(est["ctr"].nunique()),
+    }
+
+
 def main() -> int:
     configs: dict[str, dict] = {}
     partners: list[str] = []
@@ -141,6 +164,8 @@ def main() -> int:
             if c not in codes:
                 codes.append(c)
         pr, cr = rollups(sc)
+        r["meta"]["partnersScored"] = len(pr)
+        r["meta"]["chaptersScored"] = len(cr)
         configs[cl] = {"meta": r["meta"], "partnerRollup": pr, "chapterRollup": cr, "sc": sc}
         m = r["meta"]
         print(f"  rho {m['rho']:.4f}  clusters {m['clusters']:,}  "
@@ -178,6 +203,7 @@ def main() -> int:
         "partners": partners,
         "codes": codes,
         "defaultConfig": "hs4",
+        "coverage": coverage(),
         "configs": packed,
         "source": {
             "gravity": "CEPII GeoDist (Mayer & Zignago 2011)",

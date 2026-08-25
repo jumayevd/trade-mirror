@@ -7,7 +7,7 @@ import { EmptyState, Segmented, SectionTitle, Stat } from "@/components/ui";
 import { fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import {
-  ANOMALY_BASE_RATE, ANOMALY_MIN_GAP, ANOMALY_SOURCE, ANOMALY_WINDOW,
+  ANOMALY_BASE_RATE, ANOMALY_COVERAGE, ANOMALY_MIN_GAP, ANOMALY_SOURCE, ANOMALY_WINDOW,
   asMultiple, chapterRollup, clustersOf, hi90, metaOf, partnerRollup,
   type ClusterLevel, type Tier,
 } from "@/lib/anomaly";
@@ -136,9 +136,12 @@ export default function AnomalyView() {
     max: Math.max(...ranked.map(hi90), meta.threshold),
   }), [ranked, meta.threshold]);
 
-  // the rollups keep their own materiality floors; only the paging is shared
-  const partnerRows = useMemo(() => partners.filter((r) => r.clusters >= 10), [partners]);
-  const sectorRows = useMemo(() => chapters.filter((r) => r.clusters >= 5), [chapters]);
+  /*
+   * No floor on either rollup. An earlier version listed only partners with ten
+   * or more clusters, which silently dropped 31 of 57 — including Ecuador, whose
+   * single cluster is the highest-scoring Confirmed row in the table above. A
+   * ranked view and its rollup have to cover the same population.
+   */
 
   const wedge = fmtPct(meta.freightWedge, 1);
   const switchLevel = (v: ClusterLevel) => {
@@ -353,7 +356,7 @@ export default function AnomalyView() {
               </tr>
             </thead>
             <tbody className="zebra">
-              {partnerRows.slice(partnerPage * PAGE, partnerPage * PAGE + PAGE).map((r) => (
+              {partners.slice(partnerPage * PAGE, partnerPage * PAGE + PAGE).map((r) => (
                 <tr key={r.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={TD}>
                     <Link href={`/partners/${r.iso.toLowerCase()}`} className="font-medium hover:underline">
@@ -374,7 +377,7 @@ export default function AnomalyView() {
             </tbody>
           </table>
         </div>
-        <Pager page={partnerPage} count={partnerRows.length} onPage={setPartnerPage} />
+        <Pager page={partnerPage} count={partners.length} onPage={setPartnerPage} />
         <Disclaimer />
       </section>
 
@@ -396,7 +399,7 @@ export default function AnomalyView() {
               </tr>
             </thead>
             <tbody className="zebra">
-              {sectorRows.slice(sectorPage * PAGE, sectorPage * PAGE + PAGE).map((r) => (
+              {chapters.slice(sectorPage * PAGE, sectorPage * PAGE + PAGE).map((r) => (
                 <tr key={r.hs2} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} tabular font-medium text-foreground`}>{r.hs2}</td>
                   <td className={`${TD} text-muted`}>{r.label}</td>
@@ -411,7 +414,7 @@ export default function AnomalyView() {
             </tbody>
           </table>
         </div>
-        <Pager page={sectorPage} count={sectorRows.length} onPage={setSectorPage} />
+        <Pager page={sectorPage} count={chapters.length} onPage={setSectorPage} />
         <Disclaimer />
       </section>
 
@@ -495,6 +498,25 @@ export default function AnomalyView() {
                 );
               })}
             </div>
+          </div>
+
+          <div className="card p-4">
+            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.cov.title")}</h3>
+            <dl className="space-y-1 text-[13.5px]">
+              {([
+                ["anom.cov.extract", ANOMALY_COVERAGE.inExtract],
+                ["anom.cov.matched", ANOMALY_COVERAGE.matched],
+                ["anom.cov.floor", ANOMALY_COVERAGE.aboveFloor],
+                ["anom.cov.positive", ANOMALY_COVERAGE.positiveGap],
+                ["anom.cov.scored", meta.partnersScored],
+              ] as [LocaleKey, number][]).map(([k, v], i, arr) => (
+                <div key={k} className={`flex justify-between gap-3 ${i === arr.length - 1 ? "border-t border-[var(--color-border-soft)] pt-1 font-semibold" : ""}`}>
+                  <dt className={i === arr.length - 1 ? "" : "text-muted"}>{fill(t(k), { floor: fmtUSD(ANOMALY_MIN_GAP) })}</dt>
+                  <dd className="tabular">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.cov.note")}</p>
           </div>
 
           <div className="card p-4">

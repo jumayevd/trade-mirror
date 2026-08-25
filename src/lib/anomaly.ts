@@ -23,6 +23,22 @@ export type Tier = 0 | 1 | 2 | 3;
 
 export interface Coefficient { term: string; coef: number; se: number; z: number; p: number }
 
+/**
+ * The partner funnel behind the estimated panel. Published so that a count in a
+ * rollup can always be traced back to how many partners the extract started with
+ * and which stage removed the rest.
+ */
+export interface Coverage {
+  /** Partners appearing anywhere in the extract over the window. */
+  inExtract: number;
+  /** Partners with at least one cell-year both books reported. */
+  matched: number;
+  /** …and both sides above the materiality floor. */
+  aboveFloor: number;
+  /** …and at least one freight-adjusted positive gap above it. */
+  positiveGap: number;
+}
+
 export interface ConfigMeta {
   cluster: ClusterLevel;
   /** Cell-years entering the regression. */
@@ -48,6 +64,9 @@ export interface ConfigMeta {
   medianSize: number;
   maxSize: number;
   sizeHist: Record<string, number>;
+  /** Partners and chapters the rollups list — every one of them, not a top slice. */
+  partnersScored: number;
+  chaptersScored: number;
   coefficients: Coefficient[];
   converged: boolean;
 }
@@ -114,6 +133,7 @@ interface Doc {
   partners: string[];
   codes: string[];
   defaultConfig: ConfigKey;
+  coverage: Coverage;
   configs: Record<ConfigKey, {
     meta: ConfigMeta;
     partnerRollup: Omit<PartnerRow, "partner">[];
@@ -129,6 +149,7 @@ export const ANOMALY_WINDOW = doc.window;
 export const ANOMALY_MIN_GAP = doc.minGapUsd;
 export const ANOMALY_BASE_RATE = doc.criticalTop;
 export const ANOMALY_SOURCE = doc.source;
+export const ANOMALY_COVERAGE = doc.coverage;
 export const DEFAULT_CONFIG = doc.defaultConfig;
 
 export const CONFIG_KEYS: ConfigKey[] = ["hs4", "hs6"];

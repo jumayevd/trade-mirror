@@ -13,7 +13,7 @@
  */
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
-import { CONFIG_KEYS, clustersOf, metaOf } from "../src/lib/anomaly";
+import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
 /* the identity holds at whatever rate the default filter carries */
 const K = 1 + DEFAULT_FILTER.cif;
@@ -239,6 +239,29 @@ for (const key of CONFIG_KEYS) {
   check(`[${key}] no Confirmed cluster has an interval below the threshold`, wrong === 0);
   check(`[${key}] rho is a share`, m.rho > 0 && m.rho < 1, `${m.rho}`);
   check(`[${key}] the model converged`, m.converged);
+
+  /*
+   * The ranked table and the partner rollup must cover the same population at the
+   * data layer. This does not reach the view — the defect it is named for was a
+   * display filter, `clusters >= 10`, which dropped the highest-scoring Confirmed
+   * row out of its own rollup and which no data-level assertion can see. What
+   * this pins is the layer underneath: if the two populations ever diverge in the
+   * export, the view cannot paper over it.
+   */
+  const rollupPartners = new Set(partnerRollup(key).map((r) => r.iso));
+  const rankedPartners = new Set(cs.filter((c) => c.tier !== 3).map((c) => c.iso));
+  const orphans = [...rankedPartners].filter((iso) => !rollupPartners.has(iso));
+  check(`[${key}] every ranked partner appears in the partner rollup`, orphans.length === 0,
+    `missing: ${orphans.slice(0, 6).join(", ")}`);
+
+  const rollupChapters = new Set(chapterRollup(key).map((r) => r.hs2));
+  const rankedChapters = new Set(cs.filter((c) => c.tier !== 3).map((c) => c.code.slice(0, 2)));
+  const chOrphans = [...rankedChapters].filter((h) => !rollupChapters.has(h));
+  check(`[${key}] every ranked chapter appears in the sector rollup`, chOrphans.length === 0,
+    `missing: ${chOrphans.slice(0, 6).join(", ")}`);
+
+  check(`[${key}] the rollup count matches the metadata`,
+    rollupPartners.size === m.partnersScored, `${rollupPartners.size} vs ${m.partnersScored}`);
 }
 
 /* ---------------------------------------------------------------- */
