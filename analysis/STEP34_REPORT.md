@@ -377,3 +377,70 @@ Materially different from the previous specification. India × 3004 (medicaments
 n = 36, shrinkage 0.93) is now the best-supported Confirmed cluster, with an
 interval of 0.588–1.010 that clears the threshold comfortably. Germany × 3921,
 previously the top Confirmed cluster, drops to Provisional.
+
+---
+
+## Direction correction (supersedes everything above on the estimated arm)
+
+The model was estimated on the wrong arm. It kept cells where **Uzbekistan
+records more** than the partner reports shipping (M > X, import over-invoicing).
+It now keeps the opposite: the **positive discrepancy**, where the partner reports
+shipping more than Uzbekistan records receiving (X > M).
+
+```
+gap_ic = X_ic − M_ic / (1 + f)      positive discrepancy only, gap ≥ $50,000
+```
+
+The labels on the two directions were correct as written — an importer declaring
+more than the exporter shipped is over-paying abroad, one declaring less is
+shrinking the duty base. What was wrong was the choice between them.
+
+### Three reasons the positive discrepancy is the right arm
+
+**It is the arm the rest of the dashboard screens.** The Discrepancy & Risk
+section ranks cells where partner exports exceed Uzbek imports. Running the
+anomaly model on the opposite sign meant two sections of one dashboard pointed at
+opposite offences on the same data.
+
+**It is the arm the specification's own priors describe.** The tariff prior is
+positive, which is a statement about duty evasion — the Fisman–Wei "missing
+imports" mechanism, which exists only in this direction. The transit prior is
+positive, which is a statement about origin attribution — hubs whose export
+filings have no Uzbek counterpart, again only in this direction.
+
+**It is the larger arm.** 19,989 observations against 11,878, $37.70B against
+$23.35B, and singleton clusters fall from 41% to 33%.
+
+### What the estimates do
+
+| Term | Wrong arm (M > X) | Correct arm (X > M) | Prior | Holds |
+|---|---:|---:|:--:|:--:|
+| gdp (log) | +0.048 (p 0.003) | +0.022 (p 0.106) | − | no, now insignificant |
+| **tariff** | −0.001 (p 0.461) | **+0.0067 (p < 0.001)** | + | **yes** |
+| dist (log) | −0.055 (p 0.136) | −0.043 (p 0.155) | + | no |
+| **CIS/EAEU** | −0.078 (p < 0.001) | **−0.244 (p < 0.001)** | − | **yes, 3× stronger** |
+| **transit** | **−0.402 (p 0.013)** | **+0.772 (p < 0.001)** | + | **yes, sign flips** |
+| trade − trade̅ | +0.809 | +0.818 | + | yes |
+| trade̅ | +0.830 | +0.795 | + | yes |
+
+**Five of seven priors now hold, against three before.** The tariff turning
+positive and highly significant is the decisive evidence: it reproduces the
+founding empirical result of this literature, and it can only appear on this arm.
+transit flipping from −0.402 to +0.772 is the second: the negative sign was a
+selection artefact of screening the direction in which a re-export hub is by
+construction the opposite case.
+
+ρ rises from 0.192 to 0.228 at partner × HS4, and to 0.417 at HS6.
+
+| | Observations | Clusters | ρ | Confirmed | Provisional |
+|---|---:|---:|---:|---:|---:|
+| partner × HS4 | 19,989 | 4,591 | 0.228 | 5 | 110 |
+| partner × HS6 | 19,989 | 8,647 | 0.417 | 21 | 186 |
+
+Top clusters are now Kazakhstan × 0201 (bovine meat, n = 7, û 1.104) and
+China × 5407 (woven synthetic filament fabrics, n = 24, û 1.076, $767M of gap) —
+textile and food lines rather than the plastics and machinery the wrong arm
+surfaced.
+
+The partner funnel moves with the direction: 65 partners carry at least one
+positive discrepancy above the floor, against 69 in the other direction.

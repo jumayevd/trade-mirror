@@ -138,7 +138,8 @@ def coverage() -> dict:
     f = pd.read_csv(OUT / "freight.csv", dtype={"ctr": "string"})
     clean = f[f["freight_clean_sample"]]
     wedge = clean["uz_imports_cif"].sum() / clean["ptn_exports_fob"].sum() - 1
-    gap = f["uz_imports_cif"] / (1 + wedge) - f["ptn_exports_fob"]
+    # same direction the model estimates: the partner reports more than Uzbekistan records
+    gap = f["ptn_exports_fob"] - f["uz_imports_cif"] / (1 + wedge)
     est = f[(gap > 0) & (gap >= MIN_GAP_USD)]
     return {
         "inExtract": int(p["ctr"].nunique()),

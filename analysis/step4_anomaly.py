@@ -14,9 +14,10 @@ Two things about the inputs, both settled and both worth stating:
      partners' exports. The export-under-reporting arm needs a second download,
      so the EXPORT dummy is degenerate and is omitted rather than faked.
 
-What remains is the import over-reporting arm: cells where Uzbekistan records
-more, once freight is removed, than the partner says it shipped. Money leaving
-against over-invoiced imports.
+The estimated arm is the one the rest of the dashboard screens: cells where
+Uzbekistan records LESS, once freight is removed, than the partner says it
+shipped. It is also the arm this specification was written for - the tariff
+prior and the transit prior are both statements about this direction.
 
     ln|gap|_ic = b0 + b1 gdp_c + b2 tariff_i + b3 dist_c + b4 CIS/EAEU_c
                  + b5 transit_c + b7 (trade_ic - trade_bar_jc) + b9 trade_bar_jc
@@ -87,7 +88,10 @@ def build(cluster_level: str) -> tuple[pd.DataFrame, dict]:
     wedge = freight_wedge(f)
     f["factor"] = wedge
     f["uz_fob"] = f["uz_imports_cif"] / (1 + wedge)
-    f["gap"] = f["uz_fob"] - f["ptn_exports_fob"]
+    # The screened direction: the partner reports shipping more than Uzbekistan
+    # records receiving. This is the arm the rest of the dashboard ranks, and the
+    # arm the tariff and transit priors are statements about.
+    f["gap"] = f["ptn_exports_fob"] - f["uz_fob"]
 
     keep = f[(f["gap"] > 0) & (f["gap"] >= MIN_GAP_USD)].copy()
     keep["ln_gap"] = np.log(keep["gap"])
@@ -113,7 +117,7 @@ def main() -> int:
     args = ap.parse_args()
 
     df, info = build(args.cluster)
-    rule(f"Panel - import over-reporting arm, cluster = partner x {args.cluster.upper()}")
+    rule(f"Panel - positive-discrepancy arm, cluster = partner x {args.cluster.upper()}")
     print(f"  cells with a freight-adjusted positive gap >= ${MIN_GAP_USD:,}: {info['kept']:,} "
           f"of {info['panel']:,}")
     print(f"  total gap: ${info['gap_usd'] / 1e9:.2f}B   clusters: {info['clusters']:,}")
