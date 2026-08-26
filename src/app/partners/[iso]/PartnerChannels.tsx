@@ -16,6 +16,13 @@ import { useI18n } from "@/lib/i18n";
  * screening signals. Styling follows the shared FilterBar.
  */
 
+const TH = "px-3 py-2 text-left text-[12.5px] font-medium text-faint whitespace-nowrap";
+const TH_NUM = `${TH} text-right`;
+
+/** Fill {placeholders} in a translated string with values. */
+const fill = (s: string, vals: Record<string, string | number>) =>
+  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
+
 export interface ChapterRow { chapter: string; label: string; posT: number }
 export interface ChannelRow {
   cmd: string; label: string; chapter: string; hs4: string;
@@ -160,32 +167,55 @@ export default function PartnerChannels({
         />
         {filtered.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
-            No HS6 channel of {partner} has a comparable positive discrepancy above the noise
-            floor under this product selection.
+            {fill(t("prof.signals.empty"), { partner })}
           </p>
         ) : (
           <>
-            <div className="card zebra divide-y divide-[var(--color-border-soft)]">
-              {filtered.slice(0, shown).map((c) => (
-                <div key={c.cmd} className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3">
-                  <RiskScore score={c.mtrs} band={c.band} />
-                  <BandBadge band={c.band} />
-                  <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline" title={c.label}>
-                    {c.label} <span className="tabular text-xs text-faint">HS {c.cmd}</span>
-                  </Link>
-                  <RobustnessBadge r={c.robustness} />
-                  <span className="tabular w-24 whitespace-nowrap text-right text-sm" style={{ color: COLORS.positive }} title={`${t("prof.tip.positiveDiscrepancy")}: ${fmtUSDFull(c.posT)}`}>
-                    {fmtUSD(c.posT)}
-                  </span>
-                </div>
-              ))}
+            {/* A real table with a header row: the columns carried no labels at
+                all, so a reader met five unexplained values per line. */}
+            <div className="card overflow-x-auto">
+              <table className="w-full min-w-[720px] border-collapse">
+                <thead className="border-b border-[var(--color-border)]">
+                  <tr>
+                    <th className={TH_NUM}>{t("prof.th.score")}</th>
+                    <th className={TH}>{t("prof.th.band")}</th>
+                    <th className={TH}>{t("prof.th.code")}</th>
+                    <th className={TH}>{t("prof.th.product")}</th>
+                    <th className={TH} title={t("prof.th.qualityTip")}>{t("prof.th.quality")}</th>
+                    <th className={TH_NUM}>{t("prof.th.gap")}</th>
+                  </tr>
+                </thead>
+                <tbody className="zebra">
+                  {filtered.slice(0, shown).map((c) => (
+                    <tr key={c.cmd} className="border-b border-[var(--color-border-soft)] last:border-0">
+                      <td className="px-3 py-2 align-middle"><RiskScore score={c.mtrs} band={c.band} /></td>
+                      <td className="px-3 py-2 align-middle"><BandBadge band={c.band} /></td>
+                      <td className="tabular whitespace-nowrap px-3 py-2 align-middle text-[13.5px] font-medium">
+                        {c.cmd}
+                      </td>
+                      <td className="max-w-[22rem] px-3 py-2 align-middle text-[13.5px]">
+                        <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`}
+                          className="block truncate font-medium hover:underline" title={c.label}>
+                          {c.label}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 align-middle"><RobustnessBadge r={c.robustness} /></td>
+                      <td className="tabular whitespace-nowrap px-3 py-2 text-right align-middle text-[13.5px]"
+                        style={{ color: COLORS.positive }}
+                        title={`${t("prof.tip.positiveDiscrepancy")}: ${fmtUSDFull(c.posT)}`}>
+                        {fmtUSD(c.posT)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             {shown < filtered.length && (
               <button
                 onClick={() => setShown((n) => n + PAGE * 2)}
                 className="mt-2 rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground"
               >
-                Show more ({filtered.length - shown} left)
+                {fill(t("prof.signals.more"), { n: filtered.length - shown })}
               </button>
             )}
           </>
