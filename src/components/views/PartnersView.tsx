@@ -26,12 +26,8 @@ type HeroMode = "map" | "table";
 const MAX_COMPARE = 4;
 const PAGE_SIZE = 15;
 
-/** Fill {placeholders} in a translated string with dataset values. */
-const fill = (str: string, vals: Record<string, string | number>) =>
-  Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), str);
 
 /** Same noise floor the engine screens on — quoted in the ranking footnote. */
-const NOISE_FLOOR = 100_000;
 
 const gapRate = (p: PartnerAgg) => (p.peT > 0 ? p.posT / p.peT : 0);
 
@@ -301,7 +297,7 @@ export default function PartnersView() {
         </table>
         {/* why a partner row can fall short of the total row below it */}
         <p className="border-t border-[var(--color-border-soft)] px-3 py-2 text-[12px] leading-relaxed text-faint">
-          {fill(t("ctry.rank.floorNote"), { floor: fmtNum(NOISE_FLOOR) })}
+          {t("ctry.rank.floorNote")}
         </p>
         <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>

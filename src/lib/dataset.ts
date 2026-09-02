@@ -56,8 +56,22 @@ export interface Product {
   uv: { uvUzb: number; uvPtn: number; uvRatio: number; years: number } | null;
 }
 
-/** Values at or below this are treated as noise, not as a reported flow. */
-const NOISE = 100_000;
+/**
+ * The materiality floor, now zero: a flow counts as reported when it is reported.
+ *
+ * This used to be $100,000 on each side, and it decided three separate things at
+ * once — which channel-years could be compared, which years counted as showing a
+ * positive gap, and which channels reached a ranked list. At HS6 that is a
+ * severe cut: of the 99,474 partner × product combinations in the source, 48,937
+ * have both books in the same year, but only 12,644 clear $100,000 on both sides
+ * (analysis/hs6_coverage_*.py, and the workbook it writes).
+ *
+ * A mirror comparison needs two books; it does not need them to be large. Size
+ * is still available where it belongs: the screening list has its own minimum-gap
+ * control, and small channels rank low on their own merits rather than being
+ * removed before they can be ranked.
+ */
+const NOISE = 0;
 
 export const meta = metaRaw as unknown as Meta;
 export const products = productsRaw as unknown as Product[];
@@ -189,7 +203,7 @@ export const isDerivedYear = (y: number): boolean => !annualYearSet.has(y);
 const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) => a - b);
 
 /**
- * Months of a year where BOTH books carry a flow above the noise floor.
+ * Months of a year BOTH books reported.
  *
  * monthsByYear counts a month present when either side reported, which
  * overstates coverage at the end of the series: partners keep reporting exports
@@ -742,9 +756,10 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     /*
      * The score is filled in by scoreCrossSection once the level's whole
      * cross-section exists, because G is a rank and a rank needs its peers.
-     * Only the cell's own cumulative gap can be summed here: the index counts a
-     * year as positive above the noise floor, so this mirrors that rule rather
-     * than posT, which keeps every positive cent.
+     * Only the cell's own cumulative gap can be summed here. It mirrors the rule
+     * the index counts a positive year by, which with NOISE at zero is the same
+     * set of years posT sums - the two now agree by construction rather than by
+     * coincidence, and the loop is kept so they stay tied if the rule moves.
      */
     let excessGap = 0;
     for (const yr of years) if (yr.signed > NOISE) excessGap += yr.signed;
@@ -771,12 +786,18 @@ const BAND_RANK: Record<RiskBand, number> = { critical: 0, high: 1, elevated: 2,
 function applyChannelFilters(chs: Channel[], f: Filter): Channel[] {
   return chs
     .filter((c) => {
-      // HS 98/99 ("commodities not specified", confidential) are not comparable at
-      // product level: they stay in baseChannels for totals and the statistical
-      // profile, but never rank as screening priorities.
-      if (isResidualChapter(c.chapter)) return false;
+      /*
+       * HS 98/99 ("commodities not specified", confidential) used to be removed
+       * here. They are now ranked like anything else and carry the "residual-hs"
+       * flag instead, so a reader sees what the code is rather than never seeing
+       * the channel — hiding a chapter is a strong claim to make silently, and
+       * at HS6 it was removing 20 channels while looking like a principle.
+       */
       if (f.band !== "all" && c.band !== f.band) return false;
       if (c.primary < f.minGap) return false;
+      // only channels with nothing to rank: this screens the positive discrepancy,
+      // so a channel that never shows one has no row to draw. The old $100,000
+      // threshold on the same line is gone with NOISE.
       if (c.posT <= NOISE) return false;
       return true;
     })

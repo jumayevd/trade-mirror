@@ -3,96 +3,166 @@
   "generatedAt": "2026-08-21T09:27:09.296Z",
   "headlineLevel": 6,
   "corGP": {
-    "2": 0.553,
-    "4": 0.571,
-    "6": 0.609
+    "2": 0.464,
+    "4": 0.386,
+    "6": 0.356
   },
   "gapRateQuantiles": {
     "2": {
-      "p50": 0.271,
-      "p90": 0.729,
-      "p99": 0.947
+      "p50": 0.344,
+      "p90": 0.905,
+      "p99": 0.996
     },
     "4": {
-      "p50": 0.284,
-      "p90": 0.728,
-      "p99": 0.941
+      "p50": 0.376,
+      "p90": 0.934,
+      "p99": 0.998
     },
     "6": {
-      "p50": 0.302,
-      "p90": 0.738,
-      "p99": 0.947
+      "p50": 0.395,
+      "p90": 0.942,
+      "p99": 0.998
     }
   },
   "coverage": {
     "2": {
-      "matchedCellYears": 9747,
-      "matchedCells": 2013,
-      "orphanImportCellYears": 3206,
-      "lostExportCellYears": 2178,
-      "inScopeCells": 1395,
-      "inScopeCellYears": 4714,
-      "valueRetainedShare": 0.9029491003510226,
-      "belowFloor": 0
+      "matchedCellYears": 20087,
+      "matchedCells": 3914,
+      "orphanImportCellYears": 8368,
+      "lostExportCellYears": 3463,
+      "inScopeCells": 3260,
+      "inScopeCellYears": 11708,
+      "valueRetainedShare": 0.911286660550711,
+      "belowFloor": 1853
     },
     "4": {
-      "matchedCellYears": 28786,
-      "matchedCells": 7250,
-      "orphanImportCellYears": 12673,
-      "lostExportCellYears": 10276,
-      "inScopeCells": 4377,
-      "inScopeCellYears": 12642,
-      "valueRetainedShare": 0.8539067590591018,
-      "belowFloor": 0
+      "matchedCellYears": 87609,
+      "matchedCells": 21089,
+      "orphanImportCellYears": 47245,
+      "lostExportCellYears": 26204,
+      "inScopeCells": 17729,
+      "inScopeCellYears": 53530,
+      "valueRetainedShare": 0.8850422570541805,
+      "belowFloor": 13770
     },
     "6": {
-      "matchedCellYears": 44434,
-      "matchedCells": 12644,
-      "orphanImportCellYears": 24681,
-      "lostExportCellYears": 22201,
-      "inScopeCells": 6879,
-      "inScopeCellYears": 18199,
-      "valueRetainedShare": 0.7933985834134981,
-      "belowFloor": 0
+      "matchedCellYears": 176750,
+      "matchedCells": 48920,
+      "orphanImportCellYears": 119942,
+      "lostExportCellYears": 77685,
+      "inScopeCells": 40475,
+      "inScopeCellYears": 110295,
+      "valueRetainedShare": 0.848868085524911,
+      "belowFloor": 35952
     }
   },
   "bandCuts": {
     "2": {
-      "critical": 88.8,
-      "high": 60.4,
-      "elevated": 33.9
+      "critical": 89.1,
+      "high": 66.6,
+      "elevated": 46.5
     },
     "4": {
-      "critical": 86.4,
-      "high": 55.2,
-      "elevated": 24.7
+      "critical": 87.7,
+      "high": 66.8,
+      "elevated": 46.7
     },
     "6": {
-      "critical": 85.8,
-      "high": 51.7,
-      "elevated": 13.7
+      "critical": 86.7,
+      "high": 66.7,
+      "elevated": 46.4
     }
   },
   "partnerEffects": [
     {
-      "iso": "HKG",
-      "u": 1.213,
-      "cells": 41
-    },
-    {
-      "iso": "MAR",
-      "u": 1.1484,
+      "iso": "ISL",
+      "u": 2.5558,
       "cells": 1
     },
     {
-      "iso": "LKA",
-      "u": 0.6567,
+      "iso": "ARE",
+      "u": 1.9475,
+      "cells": 1325
+    },
+    {
+      "iso": "HKG",
+      "u": 1.7901,
+      "cells": 293
+    },
+    {
+      "iso": "MLT",
+      "u": 1.2272,
       "cells": 5
     },
     {
-      "iso": "ARE",
-      "u": 0.5915,
-      "cells": 199
+      "iso": "MAR",
+      "u": 1.0986,
+      "cells": 3
+    },
+    {
+      "iso": "CUB",
+      "u": 1.0464,
+      "cells": 1
+    },
+    {
+      "iso": "ECU",
+      "u": 0.9778,
+      "cells": 3
+    },
+    {
+      "iso": "EST",
+      "u": 0.9019,
+      "cells": 631
+    },
+    {
+      "iso": "PSE",
+      "u": 0.885,
+      "cells": 1
+    },
+    {
+      "iso": "UGA",
+      "u": 0.8533,
+      "cells": 2
+    },
+    {
+      "iso": "IRN",
+      "u": 0.8293,
+      "cells": 641
+    },
+    {
+      "iso": "MKD",
+      "u": 0.7831,
+      "cells": 6
+    },
+    {
+      "iso": "TZA",
+      "u": 0.7458,
+      "cells": 6
+    },
+    {
+      "iso": "ITA",
+      "u": 0.7174,
+      "cells": 1832
+    },
+    {
+      "iso": "POL",
+      "u": 0.6963,
+      "cells": 1644
+    },
+    {
+      "iso": "LTU",
+      "u": 0.6072,
+      "cells": 1992
+    },
+    {
+      "iso": "DZA",
+      "u": 0.6054,
+      "cells": 1
+    },
+    {
+      "iso": "THA",
+      "u": 0.5544,
+      "cells": 317
     },
     {
       "iso": "ZWE",
@@ -100,389 +170,409 @@
       "cells": 1
     },
     {
-      "iso": "BGD",
-      "u": 0.43,
-      "cells": 3
-    },
-    {
-      "iso": "KHM",
-      "u": 0.3884,
-      "cells": 1
-    },
-    {
-      "iso": "JOR",
-      "u": 0.3765,
-      "cells": 4
-    },
-    {
-      "iso": "HND",
-      "u": 0.3115,
-      "cells": 1
-    },
-    {
-      "iso": "TUN",
-      "u": 0.3089,
-      "cells": 1
-    },
-    {
-      "iso": "LUX",
-      "u": 0.2953,
-      "cells": 8
-    },
-    {
-      "iso": "MNG",
-      "u": 0.2881,
-      "cells": 6
-    },
-    {
-      "iso": "AUS",
-      "u": 0.2355,
-      "cells": 4
-    },
-    {
-      "iso": "POL",
-      "u": 0.2259,
-      "cells": 289
-    },
-    {
-      "iso": "EST",
-      "u": 0.1959,
-      "cells": 70
-    },
-    {
-      "iso": "MLT",
-      "u": 0.1917,
-      "cells": 2
-    },
-    {
-      "iso": "IRN",
-      "u": 0.1786,
-      "cells": 158
-    },
-    {
-      "iso": "SGP",
-      "u": 0.1515,
-      "cells": 25
-    },
-    {
-      "iso": "TUR",
-      "u": 0.1359,
-      "cells": 1308
-    },
-    {
-      "iso": "ITA",
-      "u": 0.1289,
-      "cells": 537
-    },
-    {
-      "iso": "KAZ",
-      "u": 0.1287,
-      "cells": 664
+      "iso": "DEU",
+      "u": 0.5265,
+      "cells": 2413
     },
     {
       "iso": "KGZ",
-      "u": 0.123,
-      "cells": 235
+      "u": 0.5216,
+      "cells": 1212
     },
     {
-      "iso": "DEU",
-      "u": 0.1163,
-      "cells": 753
-    },
-    {
-      "iso": "HUN",
-      "u": 0.1036,
-      "cells": 76
-    },
-    {
-      "iso": "CHN",
-      "u": 0.1024,
-      "cells": 2087
-    },
-    {
-      "iso": "NLD",
-      "u": 0.1019,
-      "cells": 216
-    },
-    {
-      "iso": "SVN",
-      "u": 0.0932,
-      "cells": 31
-    },
-    {
-      "iso": "FRA",
-      "u": 0.0928,
-      "cells": 215
-    },
-    {
-      "iso": "SWE",
-      "u": 0.0608,
-      "cells": 55
-    },
-    {
-      "iso": "RUS",
-      "u": 0.0434,
-      "cells": 1447
-    },
-    {
-      "iso": "ARM",
-      "u": 0.0419,
-      "cells": 12
-    },
-    {
-      "iso": "SVK",
-      "u": 0.0415,
-      "cells": 32
-    },
-    {
-      "iso": "AUT",
-      "u": 0.0286,
-      "cells": 134
-    },
-    {
-      "iso": "TJK",
-      "u": 0.0156,
-      "cells": 69
-    },
-    {
-      "iso": "FIN",
-      "u": 0.003,
-      "cells": 93
-    },
-    {
-      "iso": "MDA",
-      "u": -0.0065,
-      "cells": 21
-    },
-    {
-      "iso": "ROU",
-      "u": -0.0169,
-      "cells": 36
-    },
-    {
-      "iso": "MYS",
-      "u": -0.0249,
-      "cells": 54
-    },
-    {
-      "iso": "AZE",
-      "u": -0.0291,
-      "cells": 56
-    },
-    {
-      "iso": "NZL",
-      "u": -0.0343,
-      "cells": 2
-    },
-    {
-      "iso": "PRT",
-      "u": -0.0591,
-      "cells": 11
-    },
-    {
-      "iso": "IRL",
-      "u": -0.0612,
-      "cells": 14
-    },
-    {
-      "iso": "ISR",
-      "u": -0.0693,
-      "cells": 28
-    },
-    {
-      "iso": "GEO",
-      "u": -0.0697,
-      "cells": 69
-    },
-    {
-      "iso": "ESP",
-      "u": -0.075,
-      "cells": 148
-    },
-    {
-      "iso": "BGR",
-      "u": -0.0798,
-      "cells": 57
-    },
-    {
-      "iso": "BLR",
-      "u": -0.1048,
-      "cells": 244
-    },
-    {
-      "iso": "HRV",
-      "u": -0.1103,
-      "cells": 3
-    },
-    {
-      "iso": "CZE",
-      "u": -0.118,
-      "cells": 208
-    },
-    {
-      "iso": "UKR",
-      "u": -0.1205,
-      "cells": 366
-    },
-    {
-      "iso": "BEL",
-      "u": -0.1363,
-      "cells": 102
-    },
-    {
-      "iso": "NOR",
-      "u": -0.1435,
-      "cells": 8
-    },
-    {
-      "iso": "GRC",
-      "u": -0.1492,
-      "cells": 18
-    },
-    {
-      "iso": "PAK",
-      "u": -0.1502,
-      "cells": 40
-    },
-    {
-      "iso": "CHE",
-      "u": -0.1595,
-      "cells": 122
-    },
-    {
-      "iso": "GBR",
-      "u": -0.1703,
-      "cells": 107
+      "iso": "LUX",
+      "u": 0.5056,
+      "cells": 149
     },
     {
       "iso": "DNK",
-      "u": -0.171,
-      "cells": 38
+      "u": 0.4862,
+      "cells": 378
     },
     {
-      "iso": "BIH",
-      "u": -0.1738,
+      "iso": "NLD",
+      "u": 0.4418,
+      "cells": 1189
+    },
+    {
+      "iso": "TUR",
+      "u": 0.4378,
+      "cells": 3401
+    },
+    {
+      "iso": "CIV",
+      "u": 0.423,
       "cells": 1
     },
     {
-      "iso": "SAU",
-      "u": -0.1852,
-      "cells": 13
-    },
-    {
-      "iso": "LVA",
-      "u": -0.1888,
-      "cells": 125
-    },
-    {
-      "iso": "CAN",
-      "u": -0.1976,
-      "cells": 24
-    },
-    {
-      "iso": "KOR",
-      "u": -0.2012,
-      "cells": 658
-    },
-    {
-      "iso": "SRB",
-      "u": -0.2034,
-      "cells": 25
-    },
-    {
-      "iso": "PSE",
-      "u": -0.2173,
-      "cells": 1
-    },
-    {
-      "iso": "USA",
-      "u": -0.2268,
-      "cells": 219
+      "iso": "KAZ",
+      "u": 0.3719,
+      "cells": 2302
     },
     {
       "iso": "PHL",
-      "u": -0.2274,
-      "cells": 4
+      "u": 0.3585,
+      "cells": 32
     },
     {
-      "iso": "VNM",
-      "u": -0.2312,
-      "cells": 39
+      "iso": "AUS",
+      "u": 0.3484,
+      "cells": 49
     },
     {
-      "iso": "IDN",
-      "u": -0.2469,
-      "cells": 23
+      "iso": "FRA",
+      "u": 0.3482,
+      "cells": 1358
     },
     {
-      "iso": "THA",
-      "u": -0.2547,
-      "cells": 46
-    },
-    {
-      "iso": "LTU",
-      "u": -0.2737,
-      "cells": 367
-    },
-    {
-      "iso": "JPN",
-      "u": -0.2823,
-      "cells": 158
+      "iso": "ISR",
+      "u": 0.3421,
+      "cells": 157
     },
     {
       "iso": "KEN",
-      "u": -0.2884,
-      "cells": 3
-    },
-    {
-      "iso": "IND",
-      "u": -0.3013,
-      "cells": 311
-    },
-    {
-      "iso": "MEX",
-      "u": -0.3076,
-      "cells": 5
-    },
-    {
-      "iso": "EGY",
-      "u": -0.3747,
+      "u": 0.3315,
       "cells": 9
     },
     {
-      "iso": "BRA",
-      "u": -0.4097,
-      "cells": 64
+      "iso": "GBR",
+      "u": 0.3299,
+      "cells": 763
     },
     {
-      "iso": "LBN",
-      "u": -0.4534,
-      "cells": 3
-    },
-    {
-      "iso": "MKD",
-      "u": -0.5185,
-      "cells": 1
-    },
-    {
-      "iso": "UGA",
-      "u": -0.5276,
-      "cells": 1
-    },
-    {
-      "iso": "GTM",
-      "u": -0.7446,
-      "cells": 1
-    },
-    {
-      "iso": "ARG",
-      "u": -0.8769,
+      "iso": "TUN",
+      "u": 0.3148,
       "cells": 2
     },
     {
+      "iso": "IRL",
+      "u": 0.3059,
+      "cells": 143
+    },
+    {
+      "iso": "NZL",
+      "u": 0.2778,
+      "cells": 13
+    },
+    {
+      "iso": "SRB",
+      "u": 0.2628,
+      "cells": 253
+    },
+    {
+      "iso": "SVK",
+      "u": 0.2592,
+      "cells": 220
+    },
+    {
+      "iso": "HUN",
+      "u": 0.257,
+      "cells": 412
+    },
+    {
+      "iso": "BGR",
+      "u": 0.2537,
+      "cells": 408
+    },
+    {
+      "iso": "ESP",
+      "u": 0.2424,
+      "cells": 1036
+    },
+    {
+      "iso": "COL",
+      "u": 0.2194,
+      "cells": 7
+    },
+    {
+      "iso": "CHN",
+      "u": 0.2043,
+      "cells": 3541
+    },
+    {
+      "iso": "MNG",
+      "u": 0.1946,
+      "cells": 20
+    },
+    {
+      "iso": "EGY",
+      "u": 0.1799,
+      "cells": 55
+    },
+    {
+      "iso": "NOR",
+      "u": 0.1795,
+      "cells": 31
+    },
+    {
+      "iso": "RUS",
+      "u": 0.175,
+      "cells": 3352
+    },
+    {
+      "iso": "AUT",
+      "u": 0.1742,
+      "cells": 973
+    },
+    {
+      "iso": "CZE",
+      "u": 0.1491,
+      "cells": 1344
+    },
+    {
+      "iso": "USA",
+      "u": 0.1478,
+      "cells": 806
+    },
+    {
+      "iso": "SVN",
+      "u": 0.1398,
+      "cells": 317
+    },
+    {
+      "iso": "CYP",
+      "u": 0.132,
+      "cells": 19
+    },
+    {
+      "iso": "HRV",
+      "u": 0.1287,
+      "cells": 43
+    },
+    {
+      "iso": "LKA",
+      "u": 0.1191,
+      "cells": 26
+    },
+    {
+      "iso": "HND",
+      "u": 0.1123,
+      "cells": 1
+    },
+    {
+      "iso": "TJK",
+      "u": 0.1046,
+      "cells": 424
+    },
+    {
+      "iso": "GEO",
+      "u": 0.0952,
+      "cells": 397
+    },
+    {
+      "iso": "GRC",
+      "u": 0.0925,
+      "cells": 137
+    },
+    {
+      "iso": "ROU",
+      "u": 0.0828,
+      "cells": 302
+    },
+    {
+      "iso": "KHM",
+      "u": 0.0727,
+      "cells": 2
+    },
+    {
+      "iso": "VNM",
+      "u": 0.0611,
+      "cells": 184
+    },
+    {
+      "iso": "SWE",
+      "u": 0.0579,
+      "cells": 427
+    },
+    {
+      "iso": "LBN",
+      "u": 0.0527,
+      "cells": 13
+    },
+    {
+      "iso": "PAK",
+      "u": 0.0402,
+      "cells": 192
+    },
+    {
+      "iso": "AFG",
+      "u": 0.0344,
+      "cells": 8
+    },
+    {
+      "iso": "JOR",
+      "u": 0.0074,
+      "cells": 13
+    },
+    {
+      "iso": "FIN",
+      "u": 0.0066,
+      "cells": 483
+    },
+    {
+      "iso": "OMN",
+      "u": 0.0013,
+      "cells": 1
+    },
+    {
+      "iso": "AZE",
+      "u": -0.0058,
+      "cells": 292
+    },
+    {
+      "iso": "MDA",
+      "u": -0.0064,
+      "cells": 167
+    },
+    {
+      "iso": "SUR",
+      "u": -0.0064,
+      "cells": 1
+    },
+    {
+      "iso": "JPN",
+      "u": -0.0068,
+      "cells": 596
+    },
+    {
+      "iso": "LVA",
+      "u": -0.0097,
+      "cells": 965
+    },
+    {
+      "iso": "CAN",
+      "u": -0.0522,
+      "cells": 196
+    },
+    {
+      "iso": "BLR",
+      "u": -0.0556,
+      "cells": 1141
+    },
+    {
+      "iso": "ARM",
+      "u": -0.0623,
+      "cells": 235
+    },
+    {
+      "iso": "CHL",
+      "u": -0.0781,
+      "cells": 6
+    },
+    {
+      "iso": "UKR",
+      "u": -0.1163,
+      "cells": 1417
+    },
+    {
+      "iso": "BEL",
+      "u": -0.1221,
+      "cells": 851
+    },
+    {
+      "iso": "CHE",
+      "u": -0.134,
+      "cells": 771
+    },
+    {
+      "iso": "SGP",
+      "u": -0.1865,
+      "cells": 180
+    },
+    {
+      "iso": "MYS",
+      "u": -0.1873,
+      "cells": 200
+    },
+    {
+      "iso": "ARG",
+      "u": -0.211,
+      "cells": 8
+    },
+    {
+      "iso": "CRI",
+      "u": -0.2274,
+      "cells": 2
+    },
+    {
+      "iso": "KOR",
+      "u": -0.2502,
+      "cells": 1963
+    },
+    {
+      "iso": "SAU",
+      "u": -0.301,
+      "cells": 31
+    },
+    {
+      "iso": "MEX",
+      "u": -0.3025,
+      "cells": 6
+    },
+    {
+      "iso": "BRA",
+      "u": -0.3748,
+      "cells": 169
+    },
+    {
+      "iso": "AND",
+      "u": -0.3868,
+      "cells": 1
+    },
+    {
+      "iso": "IDN",
+      "u": -0.4135,
+      "cells": 133
+    },
+    {
+      "iso": "IND",
+      "u": -0.4503,
+      "cells": 1599
+    },
+    {
+      "iso": "BGD",
+      "u": -0.4525,
+      "cells": 6
+    },
+    {
       "iso": "ZAF",
-      "u": -1.1354,
+      "u": -0.5627,
+      "cells": 35
+    },
+    {
+      "iso": "PER",
+      "u": -0.612,
+      "cells": 2
+    },
+    {
+      "iso": "MLI",
+      "u": -0.641,
+      "cells": 1
+    },
+    {
+      "iso": "PRT",
+      "u": -0.6494,
+      "cells": 209
+    },
+    {
+      "iso": "GTM",
+      "u": -0.7713,
+      "cells": 2
+    },
+    {
+      "iso": "PRY",
+      "u": -0.8546,
+      "cells": 1
+    },
+    {
+      "iso": "BIH",
+      "u": -1.2884,
       "cells": 4
+    },
+    {
+      "iso": "COD",
+      "u": -1.4099,
+      "cells": 2
     },
     {
       "iso": "MOZ",
@@ -490,8 +580,18 @@
       "cells": 1
     },
     {
-      "iso": "ECU",
-      "u": -2.0427,
+      "iso": "MWI",
+      "u": -1.8541,
+      "cells": 1
+    },
+    {
+      "iso": "GHA",
+      "u": -2.7525,
+      "cells": 2
+    },
+    {
+      "iso": "MNE",
+      "u": -5.9992,
       "cells": 1
     }
   ]
