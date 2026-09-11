@@ -60,6 +60,7 @@ const FLAG_LABEL_KEYS: Record<string, LocaleKey> = {
   "sparse-reporter": "chan.flag.sparseReporter",
   "missing-weight": "chan.flag.missingWeight",
   "freight-sensitive": "chan.flag.freightSensitive",
+  "small-cell": "chan.flag.smallCell",
 };
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";

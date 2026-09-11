@@ -71,6 +71,7 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
   "sparse-reporter": "risk.flag.sparseReporter",
   "missing-weight": "risk.flag.missingWeight",
   "freight-sensitive": "risk.flag.freightSensitive",
+  "small-cell": "risk.flag.smallCell",
 };
 
 /**

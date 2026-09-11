@@ -732,6 +732,17 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     const netSigns = [sgn(peT - uiT / Klo), sgn(signedT), sgn(peT - uiT / Khi)];
     const flipsAcrossFreight = new Set(netSigns.filter((s) => s !== 0)).size > 1 || netSigns.includes(0);
 
+    /*
+     * Mean annual trade over the comparable years, as the mean of the two
+     * reported sides: Σ((pe + ui) / 2) ÷ n, which is (peT + uiT) ÷ 2n. This is
+     * the quantity the fitted index measures smallness by, computed the same
+     * way and against the floor it was built with, so a cell the build counts
+     * as small is exactly a cell flagged as small here. Taken before the
+     * freight adjustment, so the label does not move when the reader changes
+     * the scenario.
+     */
+    const meanAnnualValue = (peT + uiT) / (2 * n);
+
     // flags
     const flags: string[] = [];
     if (pm.transit) flags.push("transit");
@@ -740,6 +751,13 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     if (pm.coverage < 0.5) flags.push("sparse-reporter");
     if (uvYears === 0 && level === 6) flags.push("missing-weight");
     if (flipsAcrossFreight) flags.push("freight-sensitive");
+    /*
+     * Small by value, not wrong. The score is scale-free — G ranks the gap RATE
+     * and P counts persistence, so a cell trading a few thousand dollars can
+     * rank beside one trading hundreds of millions. Nothing is hidden for being
+     * small; the reader is told which rows those are.
+     */
+    if (meanAnnualValue < RISK_CONFIG.materialityFloor) flags.push("small-cell");
 
     const nHist = histYears.get(`${level}|${r0.p}|${r0.k}`) ?? n; // full-window comparable years
     const robustness: Robustness =

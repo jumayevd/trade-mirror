@@ -13,6 +13,7 @@
  */
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
+import diagRaw from "../src/data/diagnostics.json";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
 /* the identity holds at whatever rate the default filter carries */
@@ -262,6 +263,37 @@ for (const key of CONFIG_KEYS) {
 
   check(`[${key}] the rollup count matches the metadata`,
     rollupPartners.size === m.partnersScored, `${rollupPartners.size} vs ${m.partnersScored}`);
+}
+
+/* ---------------------------------------------------------------- */
+/* the small-cell flag names the same cells the index counts as small  */
+/* ---------------------------------------------------------------- */
+/* The flag is a label, never a filter: it tells a reader that a row scoring
+ * high on a scale-free rate is a small flow. It is only worth trusting if it
+ * marks exactly the cells the fitted index measured as below the floor, so it
+ * is computed the same way — mean annual (pe + ui) / 2 over comparable years,
+ * pre-freight — against the floor the index published. These assertions fail
+ * if either definition drifts from the other. */
+{
+  const coverage = (diagRaw as unknown as {
+    coverage: Record<string, { belowFloor: number }>;
+  }).coverage;
+  const levels: [number, Channel[]][] = [
+    [2, full.baseChannels], [4, full.baseChannels4], [6, full.baseChannels6],
+  ];
+  for (const [lvl, chs] of levels) {
+    const flagged = chs.filter((c) => c.flags.includes("small-cell")).length;
+    const fitted = coverage[String(lvl)]?.belowFloor;
+    check(`HS${lvl} small-cell flags match the fitted index's below-floor count`,
+      flagged === fitted, `${flagged} flagged vs ${fitted} counted`);
+  }
+  // a label must not remove a row: every positive-gap channel is still ranked
+  for (const [lvl, base] of levels) {
+    const ranked = lvl === 2 ? full.channels : lvl === 4 ? full.channels4 : full.channels6;
+    check(`HS${lvl} the small-cell flag hides nothing`,
+      ranked.length === base.filter((c) => c.posT > 0).length,
+      `${ranked.length} ranked vs ${base.filter((c) => c.posT > 0).length} with a positive gap`);
+  }
 }
 
 /* ---------------------------------------------------------------- */
