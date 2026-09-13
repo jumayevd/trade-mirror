@@ -297,6 +297,40 @@ for (const key of CONFIG_KEYS) {
 }
 
 /* ---------------------------------------------------------------- */
+/* the minimum-gap control narrows lists without restating totals      */
+/* ---------------------------------------------------------------- */
+/* The floor is the reader's materiality judgement, applied to the ranked
+ * lists only. The KPI band is computed from the pre-screen channels, so a
+ * reader who narrows a shortlist must not see the headline above it move —
+ * if these ever diverge, the number on the page stops describing the
+ * population it claims to. Counts must also fall monotonically: a higher
+ * floor can never admit a channel a lower one excluded. */
+{
+  const floors = [0, 1e5, 1e6, 1e7];
+  const at = floors.map((minGap) => ({ minGap, a: aggregate({ ...FULL, minGap }) }));
+  const headline = at[0].a.kpis.positive.central;
+  for (const { minGap, a } of at) {
+    check(`the headline is unmoved by a $${minGap} minimum gap`,
+      near(a.kpis.positive.central, headline, 1),
+      `${Math.round(a.kpis.positive.central)} vs ${Math.round(headline)}`);
+    check(`the comparable population is unmoved by a $${minGap} minimum gap`,
+      a.baseChannels.length === at[0].a.baseChannels.length);
+  }
+  for (let i = 1; i < at.length; i++) {
+    const hi = at[i].a, lo = at[i - 1].a;
+    check(`a higher floor never lengthens the list ($${at[i].minGap})`,
+      hi.channels.length <= lo.channels.length
+      && hi.channels4.length <= lo.channels4.length
+      && hi.channels6.length <= lo.channels6.length
+      && hi.partners.length <= lo.partners.length
+      && hi.chapters.length <= lo.chapters.length);
+    // and every surviving channel really does clear the floor
+    const under = hi.channels6.filter((c) => c.primary < at[i].minGap).length;
+    check(`every HS6 row clears the $${at[i].minGap} floor`, under === 0, `${under} below it`);
+  }
+}
+
+/* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");

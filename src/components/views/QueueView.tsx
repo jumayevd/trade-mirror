@@ -6,6 +6,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
+import GapFloor from "@/components/GapFloor";
 import { BandBadge, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
@@ -29,6 +30,10 @@ import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, isDerivedYear, meta, year
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
+
+/** The same level before the minimum-gap floor, for the "N of M" count. */
+const levelBase = (a: Aggregate, level: HsLevel): Channel[] =>
+  level === 2 ? a.baseChannels : level === 4 ? a.baseChannels4 : a.baseChannels6;
 
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
@@ -62,6 +67,7 @@ export default function QueueView() {
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
   const [months, setMonths] = useState<number[]>([]);
   const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
+  const [minGap, setMinGap] = useState<number>(DEFAULT_FILTER.minGap);
   // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
   const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
 
@@ -84,12 +90,18 @@ export default function QueueView() {
   );
 
   const filter = useMemo<Filter>(
-    () => ({ ...DEFAULT_FILTER, granularity, years, months, cif }),
-    [granularity, years, months, cif],
+    () => ({ ...DEFAULT_FILTER, granularity, years, months, cif, minGap }),
+    [granularity, years, months, cif, minGap],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const data = useMemo(() => aggregate(filter), [filter, detailVer]);
   const channels = levelChannels(data, level);
+  // what the list holds with the floor at zero: every channel showing a positive
+  // discrepancy, which is the only other thing applyChannelFilters screens on here
+  const rankableTotal = useMemo(
+    () => levelBase(data, level).filter((c) => c.posT > 0).length,
+    [data, level],
+  );
 
   const basisSuffix = granularity === "month" ? `-monthly${months.length ? `-m${months.join("_")}` : ""}` : "";
   const cifSuffix = cif === DEFAULT_FILTER.cif ? "" : `-f${Math.round(cif * 100)}`;
@@ -192,6 +204,10 @@ export default function QueueView() {
             ))}
           </select>
         </div>
+        {/* materiality is the reader's call, not the engine's: the score is
+            scale-free, so this is how a small channel is kept out of a shortlist
+            without being removed from the data */}
+        <GapFloor value={minGap} onChange={setMinGap} shown={channels.length} total={rankableTotal} />
       </section>
 
       {/* MTRS summary */}

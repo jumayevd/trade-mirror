@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import MultiSelect from "@/components/MultiSelect";
+import GapFloor from "@/components/GapFloor";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
@@ -179,6 +180,11 @@ export default function FilterBar() {
           label={t("filter.hs6")}
           allLabel={t("filter.all")}
         />
+
+        {/* minGap already existed in the filter model and the URL; it had simply
+            never been given a control. The country and chapter rollups are built
+            from the screened channels, so this narrows those rankings too. */}
+        <GapFloor value={filter.minGap} onChange={(minGap) => patch({ minGap })} />
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>

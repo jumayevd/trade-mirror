@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import GapFloor from "@/components/GapFloor";
 import Link from "next/link";
 import {
   SectionTitle, BandBadge, RiskScore, RobustnessBadge,
@@ -50,6 +51,7 @@ export default function PartnerChannels({
   const [hs2, setHs2] = useState("all");
   const [hs4, setHs4] = useState("all");
   const [hs6, setHs6] = useState("all");
+  const [minGap, setMinGap] = useState(0);
   const [shown, setShown] = useState(PAGE);
 
   const hs2Options = useMemo(
@@ -74,15 +76,17 @@ export default function PartnerChannels({
     () => rows.filter((r) =>
       (hs2 === "all" || r.chapter === hs2)
       && (hs4 === "all" || r.hs4 === hs4)
-      && (hs6 === "all" || r.cmd === hs6)),
-    [rows, hs2, hs4, hs6],
+      && (hs6 === "all" || r.cmd === hs6)
+      // the same reader-set materiality as the screening list, on the same ladder
+      && r.posT >= minGap),
+    [rows, hs2, hs4, hs6, minGap],
   );
   const structure = useMemo(
     () => chapters.filter((c) => hs2 === "all" || c.chapter === hs2).slice(0, 8),
     [chapters, hs2],
   );
   const maxBar = structure[0]?.posT ?? 0;
-  const narrowed = hs2 !== "all" || hs4 !== "all" || hs6 !== "all";
+  const narrowed = hs2 !== "all" || hs4 !== "all" || hs6 !== "all" || minGap > 0;
 
   const pick = (level: "hs2" | "hs4" | "hs6", v: string) => {
     setShown(PAGE);
@@ -117,15 +121,18 @@ export default function PartnerChannels({
               {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
             </select>
           </div>
+          <GapFloor value={minGap} onChange={(v) => { setMinGap(v); setShown(PAGE); }} />
           <span className="tabular text-[13px] text-faint">
-            {filtered.length} of {rows.length} HS6 channels
+            {t("filter.channelCount")
+              .split("{shown}").join(String(filtered.length))
+              .split("{total}").join(String(rows.length))}
           </span>
           {narrowed && (
             <button
-              onClick={() => { setHs2("all"); setHs4("all"); setHs6("all"); setShown(PAGE); }}
+              onClick={() => { setHs2("all"); setHs4("all"); setHs6("all"); setMinGap(0); setShown(PAGE); }}
               className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground"
             >
-              Reset ✕
+              {t("filter.reset")} ✕
             </button>
           )}
         </div>
