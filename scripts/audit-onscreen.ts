@@ -14,6 +14,7 @@
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
 import diagRaw from "../src/data/diagnostics.json";
+import { parseAmount } from "../src/lib/amount";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
 /* the identity holds at whatever rate the default filter carries */
@@ -327,6 +328,29 @@ for (const key of CONFIG_KEYS) {
     // and every surviving channel really does clear the floor
     const under = hi.channels6.filter((c) => c.primary < at[i].minGap).length;
     check(`every HS6 row clears the $${at[i].minGap} floor`, under === 0, `${under} below it`);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* the typed minimum gap reads what a person actually types            */
+/* ---------------------------------------------------------------- */
+/* A parser that misreads "2.5m" changes what the filter does without
+ * changing anything a rendering check would notice, so the cases are
+ * pinned here. Anything unreadable must come back null rather than a
+ * number: a half-typed value silently becoming a floor is the failure
+ * that would be hardest to see. */
+{
+  const cases: [string, number | null][] = [
+    ["250000", 250000], ["250k", 250000], ["250K", 250000],
+    ["2.5m", 2_500_000], ["$2.5M", 2_500_000], ["1bn", 1e9], ["1b", 1e9],
+    ["$500,000", 500_000], [" 1 000 000 ", 1_000_000], ["0", 0],
+    ["", null], ["abc", null], ["-5", null], ["1.2.3", null],
+    ["10kk", null], ["1e5", null],
+  ];
+  for (const [input, want] of cases) {
+    const got = parseAmount(input);
+    check(`a typed minimum gap of ${JSON.stringify(input)} reads as ${want}`,
+      got === want, `got ${got}`);
   }
 }
 
