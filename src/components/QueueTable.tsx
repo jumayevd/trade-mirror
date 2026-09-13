@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BandBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
+import GapFloor from "@/components/GapFloor";
 import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
@@ -114,6 +115,8 @@ export default function QueueTable({
   onLevelChange,
   filter,
   years,
+  minGap,
+  onMinGapChange,
 }: {
   /** Combinations at the ACTIVE HS level, already ranked by the engine. */
   channels: Channel[];
@@ -121,6 +124,11 @@ export default function QueueTable({
   onLevelChange: (l: HsLevel) => void;
   filter: Filter;
   years: number[];
+  /** Materiality floor. Lives here rather than in the page's control bar: it
+   *  narrows this list, so it belongs beside the other things that narrow it,
+   *  next to the count that reports the result. */
+  minGap: number;
+  onMinGapChange: (v: number) => void;
 }) {
   const { t } = useI18n();
   /** Freight factor: recorded CIF imports are divided by this to reach an FOB basis. */
@@ -212,7 +220,7 @@ export default function QueueTable({
           onChange={(e) => controls(() => setQuery(e.target.value))}
           placeholder={t("risk.search.placeholder")}
           aria-label={t("risk.a11y.search")}
-          className="w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 py-1 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
+          className="h-[33px] w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
         <MultiSelect
@@ -231,12 +239,14 @@ export default function QueueTable({
           allLabel={t("filter.all")}
         />
 
+        <GapFloor value={minGap} onChange={(v) => controls(() => onMinGapChange(v))} />
+
         <label className="flex items-center gap-1.5 text-[13px] text-muted">
           {t("risk.sortLabel")}
           <select
             value={sort}
             onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
@@ -247,7 +257,7 @@ export default function QueueTable({
             onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
             aria-label={t("risk.sortDir")}
             title={t("risk.sortDir")}
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
             <option value="asc">{t("risk.sortAsc")}</option>
@@ -385,7 +395,7 @@ export default function QueueTable({
             <select
               value={pageSize}
               onChange={(e) => controls(() => setPageSize(+e.target.value))}
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+              className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
             >
               {PAGE_SIZES.map((n) => (
                 <option key={n} value={n}>{n}</option>

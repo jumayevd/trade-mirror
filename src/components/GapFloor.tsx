@@ -34,9 +34,9 @@ const STEPS = [
 ] as const;
 
 const input =
-  "w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] tabular text-foreground outline-none focus:border-[var(--color-primary)]";
+  "h-[33px] w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] tabular text-foreground outline-none focus:border-[var(--color-primary)]";
 const select =
-  "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
+  "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
 
 export default function GapFloor({
   value, onChange, shown, total,
@@ -82,7 +82,10 @@ export default function GapFloor({
         <select
           className={select}
           aria-label={t("filter.minGap")}
-          value={isPreset ? String(value) : "custom"}
+          /* the select is a mode switch, so it keeps saying Custom while the
+             field is open — snapping back to the preset the moment Custom was
+             chosen read as the control refusing the choice */
+          value={custom ? "custom" : String(value)}
           onChange={(e) => {
             if (e.target.value === "custom") {
               setWantsCustom(true);

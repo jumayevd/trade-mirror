@@ -51,7 +51,7 @@ export default function LevelTabs({
       <div
         role="group"
         aria-label={caption ?? t("qual.level.picker")}
-        className="inline-flex w-fit overflow-hidden rounded-md border border-[var(--color-border)]"
+        className="inline-flex h-[33px] w-fit overflow-hidden rounded-md border border-[var(--color-border)]"
       >
         {LEVELS.map((l, i) => {
           const on = level === l;

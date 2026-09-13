@@ -10,7 +10,7 @@ import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, hs4Label, hs6Label
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
-const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
+const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
 const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
 
 /**
@@ -111,7 +111,7 @@ export default function FilterBar() {
         {/* time basis: yearly reads the annual books, monthly the monthly ones */}
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.granularity")}</span>
-          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
+          <div className="flex h-[33px] overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
             {(["year", "month"] as const).map((g) => (
               <button
                 key={g}

@@ -6,7 +6,6 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import GapFloor from "@/components/GapFloor";
 import { BandBadge, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
@@ -30,10 +29,6 @@ import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, isDerivedYear, meta, year
 
 const levelChannels = (a: Aggregate, level: HsLevel): Channel[] =>
   level === 2 ? a.channels : level === 4 ? a.channels4 : a.channels6;
-
-/** The same level before the minimum-gap floor, for the "N of M" count. */
-const levelBase = (a: Aggregate, level: HsLevel): Channel[] =>
-  level === 2 ? a.baseChannels : level === 4 ? a.baseChannels4 : a.baseChannels6;
 
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
@@ -96,12 +91,6 @@ export default function QueueView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const data = useMemo(() => aggregate(filter), [filter, detailVer]);
   const channels = levelChannels(data, level);
-  // what the list holds with the floor at zero: every channel showing a positive
-  // discrepancy, which is the only other thing applyChannelFilters screens on here
-  const rankableTotal = useMemo(
-    () => levelBase(data, level).filter((c) => c.posT > 0).length,
-    [data, level],
-  );
 
   const basisSuffix = granularity === "month" ? `-monthly${months.length ? `-m${months.join("_")}` : ""}` : "";
   const cifSuffix = cif === DEFAULT_FILTER.cif ? "" : `-f${Math.round(cif * 100)}`;
@@ -163,7 +152,7 @@ export default function QueueView() {
       <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-2">
         <div className="flex flex-col gap-1">
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
-          <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
+          <div className="flex h-[33px] overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
             {(["year", "month"] as const).map((g) => (
               <button
                 key={g}
@@ -192,7 +181,7 @@ export default function QueueView() {
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
           <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
             aria-label={t("filter.freight")}
             value={cif}
             onChange={(e) => setCif(+e.target.value)}
@@ -204,10 +193,6 @@ export default function QueueView() {
             ))}
           </select>
         </div>
-        {/* materiality is the reader's call, not the engine's: the score is
-            scale-free, so this is how a small channel is kept out of a shortlist
-            without being removed from the data */}
-        <GapFloor value={minGap} onChange={setMinGap} shown={channels.length} total={rankableTotal} />
       </section>
 
       {/* MTRS summary */}
@@ -249,7 +234,8 @@ export default function QueueView() {
           right={<InfoTip text={t("risk.ranked.info")} />}
         />
 
-        <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years} />
+        <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years}
+          minGap={minGap} onMinGapChange={setMinGap} />
       </section>
 
       {/* what the bands mean — read after the queue, so the ranks above have context */}
