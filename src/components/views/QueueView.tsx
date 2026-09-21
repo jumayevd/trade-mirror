@@ -62,7 +62,6 @@ export default function QueueView() {
   const [years, setYears] = useState<number[]>(() => [...meta.years]);
   const [months, setMonths] = useState<number[]>([]);
   const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
-  const [minGap, setMinGap] = useState<number>(DEFAULT_FILTER.minGap);
   // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
   const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
 
@@ -85,8 +84,8 @@ export default function QueueView() {
   );
 
   const filter = useMemo<Filter>(
-    () => ({ ...DEFAULT_FILTER, granularity, years, months, cif, minGap }),
-    [granularity, years, months, cif, minGap],
+    () => ({ ...DEFAULT_FILTER, granularity, years, months, cif }),
+    [granularity, years, months, cif],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const data = useMemo(() => aggregate(filter), [filter, detailVer]);
@@ -234,8 +233,7 @@ export default function QueueView() {
           right={<InfoTip text={t("risk.ranked.info")} />}
         />
 
-        <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years}
-          minGap={minGap} onMinGapChange={setMinGap} />
+        <QueueTable channels={channels} level={level} onLevelChange={setLevel} filter={filter} years={data.years} />
       </section>
 
       {/* what the bands mean — read after the queue, so the ranks above have context */}

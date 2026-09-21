@@ -14,7 +14,6 @@
 import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
 import diagRaw from "../src/data/diagnostics.json";
-import { parseAmount } from "../src/lib/amount";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
 /* the identity holds at whatever rate the default filter carries */
@@ -294,63 +293,6 @@ for (const key of CONFIG_KEYS) {
     check(`HS${lvl} the small-cell flag hides nothing`,
       ranked.length === base.filter((c) => c.posT > 0).length,
       `${ranked.length} ranked vs ${base.filter((c) => c.posT > 0).length} with a positive gap`);
-  }
-}
-
-/* ---------------------------------------------------------------- */
-/* the minimum-gap control narrows lists without restating totals      */
-/* ---------------------------------------------------------------- */
-/* The floor is the reader's materiality judgement, applied to the ranked
- * lists only. The KPI band is computed from the pre-screen channels, so a
- * reader who narrows a shortlist must not see the headline above it move —
- * if these ever diverge, the number on the page stops describing the
- * population it claims to. Counts must also fall monotonically: a higher
- * floor can never admit a channel a lower one excluded. */
-{
-  const floors = [0, 1e5, 1e6, 1e7];
-  const at = floors.map((minGap) => ({ minGap, a: aggregate({ ...FULL, minGap }) }));
-  const headline = at[0].a.kpis.positive.central;
-  for (const { minGap, a } of at) {
-    check(`the headline is unmoved by a $${minGap} minimum gap`,
-      near(a.kpis.positive.central, headline, 1),
-      `${Math.round(a.kpis.positive.central)} vs ${Math.round(headline)}`);
-    check(`the comparable population is unmoved by a $${minGap} minimum gap`,
-      a.baseChannels.length === at[0].a.baseChannels.length);
-  }
-  for (let i = 1; i < at.length; i++) {
-    const hi = at[i].a, lo = at[i - 1].a;
-    check(`a higher floor never lengthens the list ($${at[i].minGap})`,
-      hi.channels.length <= lo.channels.length
-      && hi.channels4.length <= lo.channels4.length
-      && hi.channels6.length <= lo.channels6.length
-      && hi.partners.length <= lo.partners.length
-      && hi.chapters.length <= lo.chapters.length);
-    // and every surviving channel really does clear the floor
-    const under = hi.channels6.filter((c) => c.primary < at[i].minGap).length;
-    check(`every HS6 row clears the $${at[i].minGap} floor`, under === 0, `${under} below it`);
-  }
-}
-
-/* ---------------------------------------------------------------- */
-/* the typed minimum gap reads what a person actually types            */
-/* ---------------------------------------------------------------- */
-/* A parser that misreads "2.5m" changes what the filter does without
- * changing anything a rendering check would notice, so the cases are
- * pinned here. Anything unreadable must come back null rather than a
- * number: a half-typed value silently becoming a floor is the failure
- * that would be hardest to see. */
-{
-  const cases: [string, number | null][] = [
-    ["250000", 250000], ["250k", 250000], ["250K", 250000],
-    ["2.5m", 2_500_000], ["$2.5M", 2_500_000], ["1bn", 1e9], ["1b", 1e9],
-    ["$500,000", 500_000], [" 1 000 000 ", 1_000_000], ["0", 0],
-    ["", null], ["abc", null], ["-5", null], ["1.2.3", null],
-    ["10kk", null], ["1e5", null],
-  ];
-  for (const [input, want] of cases) {
-    const got = parseAmount(input);
-    check(`a typed minimum gap of ${JSON.stringify(input)} reads as ${want}`,
-      got === want, `got ${got}`);
   }
 }
 

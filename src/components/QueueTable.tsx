@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BandBadge, EmptyState, MissingValue, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
-import GapFloor from "@/components/GapFloor";
 import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
@@ -42,11 +41,14 @@ function HeadDot({ color }: { color: string }) {
   );
 }
 
-type SortKey = "risk" | "gapPct" | "persistence" | "value" | "importReported";
+type SortKey = "risk" | "gap" | "gapPct" | "persistence" | "value" | "importReported";
 type SortDir = "desc" | "asc";
 
 const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
   { key: "risk", labelKey: "risk.th.riskValue" },
+  // the two gap measures sit together, and in the order the columns run:
+  // the amount first, then the same thing as a share of reported exports
+  { key: "gap", labelKey: "risk.sort.gapValue" },
   { key: "gapPct", labelKey: "risk.th.gapPct" },
   { key: "persistence", labelKey: "common.persistence" },
   { key: "value", labelKey: "risk.th.exportReported" },
@@ -83,6 +85,8 @@ const FLAG_HINT_KEYS: Record<string, LocaleKey> = {
 function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir): Channel[] {
   const by: Record<SortKey, (a: Channel, b: Channel) => number> = {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
+    // the Gap column itself, which every other comparator already tie-breaks on
+    gap: (a, b) => b.posT - a.posT || b.mtrs - a.mtrs,
     gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
     persistence: (a, b) =>
       b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
@@ -115,8 +119,6 @@ export default function QueueTable({
   onLevelChange,
   filter,
   years,
-  minGap,
-  onMinGapChange,
 }: {
   /** Combinations at the ACTIVE HS level, already ranked by the engine. */
   channels: Channel[];
@@ -124,11 +126,6 @@ export default function QueueTable({
   onLevelChange: (l: HsLevel) => void;
   filter: Filter;
   years: number[];
-  /** Materiality floor. Lives here rather than in the page's control bar: it
-   *  narrows this list, so it belongs beside the other things that narrow it,
-   *  next to the count that reports the result. */
-  minGap: number;
-  onMinGapChange: (v: number) => void;
 }) {
   const { t } = useI18n();
   /** Freight factor: recorded CIF imports are divided by this to reach an FOB basis. */
@@ -238,8 +235,6 @@ export default function QueueTable({
           label={t("filter.products")}
           allLabel={t("filter.all")}
         />
-
-        <GapFloor value={minGap} onChange={(v) => controls(() => onMinGapChange(v))} />
 
         <label className="flex items-center gap-1.5 text-[13px] text-muted">
           {t("risk.sortLabel")}
