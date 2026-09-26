@@ -23,13 +23,6 @@ const cat = (data: (string | number)[]) => ({
   ...catAxis(data),
   axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel },
 });
-const moneyAxis = (name?: string): YAXisComponentOption => ({
-  type: "value", name,
-  nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
-  axisLabel: { color: COLORS.axis, fontSize: CHART_FONT.axisLabel, formatter: (v: number) => fmtUSD(v) },
-  splitLine: { lineStyle: { color: COLORS.grid, width: 1, type: "solid" } },
-  axisLine: { show: false },
-});
 const countAxis = (name?: string): YAXisComponentOption => ({
   type: "value", name,
   nameTextStyle: { color: COLORS.axis, fontSize: CHART_FONT.axisName },
@@ -166,67 +159,6 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
     ],
   }), [thres, t]);
 
-  /* ---- (c) concentration ---- */
-  const conc = useMemo(() => {
-    const sorted = base.filter((c) => c.posT > 0).sort((a, b) => b.posT - a.posT);
-    const total = sorted.reduce((s, c) => s + c.posT, 0);
-    const topShare = (k: number) => (total > 0 ? sorted.slice(0, k).reduce((s, c) => s + c.posT, 0) / total : 0);
-    const hhi = total > 0 ? Math.round(sorted.reduce((s, c) => s + (c.posT / total) ** 2, 0) * 10000) : 0;
-    const countTo = (p: number) => {
-      if (total <= 0) return 0;
-      let cum = 0;
-      for (let i = 0; i < sorted.length; i++) {
-        cum += sorted[i].posT;
-        if (cum / total >= p) return i + 1;
-      }
-      return sorted.length;
-    };
-    const pareto = sorted.slice(0, 15);
-    const cumShares: number[] = [];
-    pareto.reduce((cum, c) => {
-      const next = cum + c.posT;
-      cumShares.push(next / (total || 1));
-      return next;
-    }, 0);
-    return {
-      n: sorted.length, total, hhi,
-      top1: topShare(1), top5: topShare(5), top10: topShare(10), top20: topShare(20),
-      n50: countTo(0.5), n75: countTo(0.75), n90: countTo(0.9),
-      pareto, cumShares,
-    };
-  }, [base]);
-
-  const paretoOption = useMemo<EChartsOption>(() => ({
-    backgroundColor: "transparent",
-    grid: { ...baseGrid, bottom: 56 },
-    tooltip: {
-      ...baseTooltip(),
-      trigger: "axis",
-      axisPointer: { type: "shadow" },
-      formatter: (params: unknown) => {
-        const arr = params as { dataIndex: number }[];
-        const i = arr[0].dataIndex;
-        const c = conc.pareto[i];
-        return `${c.partner} · ${c.cmdLabel}<br/>HS ${c.cmd}<br/>${t("risk.th.gap")}: ${fmtUSDFull(c.posT)}<br/>${t("risk.cumulativeShare")}: ${fmtPct(conc.cumShares[i])}`;
-      },
-    },
-    xAxis: {
-      ...cat(conc.pareto.map((c) => `${c.partnerIso} ${c.cmd}`)),
-      axisLabel: { color: COLORS.axis, rotate: 45, fontSize: CHART_FONT.axisLabel, fontFamily: "var(--font-geist-mono), monospace", interval: 0 },
-    },
-    // single money axis — the cumulative share lives in the tooltip only (no dual-axis charts)
-    yAxis: moneyAxis(),
-    series: [
-      {
-        name: t("risk.th.gap"),
-        type: "bar",
-        data: conc.pareto.map((c) => Math.round(c.posT)),
-        ...BAR_SPEC,
-        itemStyle: { ...BAR_SPEC.itemStyle, color: COLORS.positive },
-      },
-    ],
-  }), [conc, t]);
-
   /* ---- (d) persistent channels ---- */
   const persistent = useMemo(
     () =>
@@ -344,48 +276,6 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
         <div className="card p-3" style={{ height: 300 }}>
           <EChart option={thresOption} />
         </div>
-      </section>
-
-      {/* (c) concentration */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.conc.title")}
-          desc={t("risk.conc.desc")}
-          right={<InfoTip text={`${t("risk.conc.info")} N = ${fmtNum(conc.n)}.`} />}
-        />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat
-            label={t("risk.conc.top1top5")}
-            value={`${fmtPct(conc.top1, 0)} / ${fmtPct(conc.top5, 0)}`}
-            sub={t("risk.ofTotalGap")}
-            info={`${t("risk.conc.top1top5.info")} ${fmtUSD(conc.total)}. N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label={t("risk.conc.top10top20")}
-            value={`${fmtPct(conc.top10, 0)} / ${fmtPct(conc.top20, 0)}`}
-            sub={t("risk.ofTotalGap")}
-            info={`${t("risk.conc.top10top20.info")} ${fmtUSD(conc.total)}. N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label="HHI"
-            value={fmtNum(conc.hhi)}
-            sub={t("risk.conc.hhi.sub")}
-            info={`${t("risk.conc.hhi.info")} N = ${fmtNum(conc.n)}.`}
-          />
-          <Stat
-            label={t("risk.conc.coverage")}
-            value={`${fmtNum(conc.n50)} / ${fmtNum(conc.n75)} / ${fmtNum(conc.n90)}`}
-            sub={t("risk.conc.coverage.sub")}
-            info={`${t("risk.conc.coverage.info")} ${fmtUSD(conc.total)}.`}
-          />
-        </div>
-        <div className="card p-3" style={{ height: 320 }}>
-          <EChart option={paretoOption} />
-        </div>
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.conc.paretoTop")} {conc.pareto.length} / {fmtNum(conc.n)}{" "}
-          {t("risk.conc.channelsWithGap")}. {t("risk.conc.paretoNote")} {t("common.source")}.
-        </p>
       </section>
 
       {/* (d) persistent channels */}
