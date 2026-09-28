@@ -311,12 +311,26 @@ export const reportedYearsOf = (iso: string): number[] => {
  * month only one side filed can never be compared.
  */
 const comparableMonths = (() => {
-  const acc = new Map<number, Set<number>>();
+  /*
+   * Both books are tested per CELL-month, aggregated first: the extension
+   * fetched from the live API appends import-only rows beside the workbook's
+   * partner rows, so one (partner × code × month) can span two rows and a
+   * per-row test would call a genuinely two-sided month one-sided. Folding
+   * downstream sums the same way, so this stays the grain the channels use.
+   */
+  const cellAcc = new Map<string, { y: number; m: number; pe: number; ui: number }>();
   for (const r of monthlyCells) {
-    if (r.pe <= NOISE || r.ui <= NOISE) continue;
-    let set = acc.get(r.y);
-    if (!set) { set = new Set<number>(); acc.set(r.y, set); }
-    set.add(r.m);
+    const key = `${r.p}|${r.k}|${r.y * 100 + r.m}`;
+    const e = cellAcc.get(key) ?? { y: r.y, m: r.m, pe: 0, ui: 0 };
+    e.pe += r.pe; e.ui += r.ui;
+    cellAcc.set(key, e);
+  }
+  const acc = new Map<number, Set<number>>();
+  for (const e of cellAcc.values()) {
+    if (e.pe <= NOISE || e.ui <= NOISE) continue;
+    let set = acc.get(e.y);
+    if (!set) { set = new Set<number>(); acc.set(e.y, set); }
+    set.add(e.m);
   }
   return new Map<number, number[]>([...acc].map(([y, set]) => [y, [...set].sort((a, b) => a - b)]));
 })();

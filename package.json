@@ -9,6 +9,7 @@
     "lint": "eslint",
     "data:excel": "python scripts/extract-excel.py && tsx scripts/build-from-excel.ts && npm run data:annualize && npm run data:risk && npm run data:labels",
     "data:risk": "tsx scripts/build-risk-index.ts",
+    "data:extend": "tsx scripts/fetch-monthly-extension.ts",
     "data:annualize": "tsx scripts/build-annualized.ts",
     "data:labels": "tsx scripts/build-labels.ts && python scripts/check-labels.py",
     "data:verify": "tsx scripts/verify-against-source.ts",
