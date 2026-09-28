@@ -515,6 +515,25 @@ export default function OverviewView() {
         </div>
       </section>
 
+      {/* 2b. where the discrepancy sits — the first thing after the numbers */}
+      <section>
+        <SectionTitle
+          title={t("ovw.treemap.title")}
+          desc={t("ovw.treemap.desc")}
+          right={<InfoTip text={t("ovw.treemap.info")} />}
+        />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div>
+            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</div>
+            <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
+          </div>
+          <div>
+            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</div>
+            <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
+          </div>
+        </div>
+      </section>
+
       {/* 3. overall dynamics */}
       <section>
         <SectionTitle
@@ -591,26 +610,6 @@ export default function OverviewView() {
             </div>
           )}
 
-          <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
-        </div>
-      </section>
-
-      {/* 3b. where the discrepancy sits: top five countries and HS6 products */}
-      <section>
-        <SectionTitle
-          title={t("ovw.treemap.title")}
-          desc={t("ovw.treemap.desc")}
-          right={<InfoTip text={t("ovw.treemap.info")} />}
-        />
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div>
-            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</div>
-            <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
-          </div>
-          <div>
-            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</div>
-            <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
-          </div>
         </div>
       </section>
 

@@ -11,8 +11,8 @@ import { useI18n } from "@/lib/i18n";
 /**
  * Top-five treemap for the Overview: who and what carry the positive
  * discrepancy. Tiles are sized by the cumulative positive gap over the selected
- * period and shaded on the amber ramp the map already uses — the darker the
- * tile, the larger the gap. The share printed on each tile divides by the WHOLE
+ * period and shaded blue → teal → green by rank — the deeper the
+ * colour, the larger the gap. The share printed on each tile divides by the WHOLE
  * positive total, not the five shown, so the five tiles visibly do not sum to
  * 100% and cannot be misread as the whole story.
  *
@@ -27,10 +27,14 @@ export interface TreemapItem {
   href: string;
 }
 
-/** The map's sequential amber ramp, darkest first for rank 1. */
-const RAMP = ["#8f5010", "#c2701e", "#d9a15e", "#e8c79e", "#f3e3cf"];
-/** Ink that stays legible on each ramp step. */
-const INK = ["#ffffff", "#ffffff", "#2a2118", "#2a2118", "#2a2118"];
+/*
+ * Blue → teal → green, strongest first: rank 1 carries the deepest blue and
+ * the smaller tiles cool off toward green, so magnitude reads as depth of
+ * colour without leaning on the amber the map reserves for its own ramp.
+ */
+const RAMP = ["#1e40af", "#2563eb", "#0891b2", "#0d9488", "#34d399"];
+/** Ink that stays legible on each step. */
+const INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#0b3527"];
 
 export default function GapTreemap({
   items, total, ariaLabel,
