@@ -12,12 +12,11 @@ import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components
 import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, needsMonthlyDetail, productByCmd, yearsFor, yearsLabel,
-  type Channel, type Granularity,
+  aggregate, DEFAULT_FILTER, meta, needsMonthlyDetail, yearsFor, yearsLabel,
+  type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
-import type { LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
@@ -29,45 +28,10 @@ import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } 
  * never reshape it.
  */
 const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...yearsFor("year")] };
-const TOP_N = 10;
+/** How many partners the two-sided chart's drill-down lists per period. */
+const DRILL_TOP = 10;
 
 type OverviewTab = "summary" | "profile";
-
-interface RankRow {
-  key: string;
-  code: string;
-  label: string;
-  value: number;
-  href?: string;
-  note: string;
-}
-
-type Translate = (key: LocaleKey) => string;
-
-/** Group partner × code channels by code, summing the positive discrepancy across partners. */
-function topByCode(chs: Channel[], link: boolean, t: Translate): { rows: RankRow[]; total: number } {
-  const m = new Map<string, { value: number; partners: Set<string>; label: string }>();
-  for (const c of chs) {
-    const e = m.get(c.cmd) ?? { value: 0, partners: new Set<string>(), label: hsLabel(c.cmd) };
-    e.value += c.posT;
-    e.partners.add(c.partnerIso);
-    m.set(c.cmd, e);
-  }
-  const all = [...m.entries()].filter(([, e]) => e.value > 0);
-  const total = all.reduce((s, [, e]) => s + e.value, 0);
-  const rows = all
-    .sort((a, b) => b[1].value - a[1].value)
-    .slice(0, TOP_N)
-    .map(([cmd, e]) => ({
-      key: cmd,
-      code: cmd,
-      label: e.label,
-      value: e.value,
-      href: link && productByCmd(cmd) ? `/products/${cmd}` : undefined,
-      note: `${fmtNum(e.partners.size)} ${e.partners.size === 1 ? t("ovw.note.partner") : t("ovw.note.partners")}`,
-    }));
-  return { rows, total };
-}
 
 export default function OverviewView() {
   const { t } = useI18n();
@@ -136,24 +100,6 @@ export default function OverviewView() {
     })),
     [t],
   );
-
-  const partners = useMemo(() => {
-    const all = data.partners.filter((p) => p.posT > 0);
-    const total = all.reduce((s, p) => s + p.posT, 0);
-    const rows: RankRow[] = all.slice(0, TOP_N).map((p) => ({
-      key: p.iso3,
-      code: p.iso3,
-      label: p.transit ? `${p.name} ⇄` : p.name,
-      value: p.posT,
-      href: `/partners/${p.iso3.toLowerCase()}`,
-      note: `${fmtNum(p.channels)} ${p.channels === 1 ? t("ovw.note.chapter") : t("ovw.note.chapters")}`,
-    }));
-    return { rows, total };
-  }, [data, t]);
-
-  const hs2 = useMemo(() => topByCode(data.channels, false, t), [data, t]);
-  const hs4 = useMemo(() => topByCode(data.channels4, false, t), [data, t]);
-  const hs6 = useMemo(() => topByCode(data.channels6, true, t), [data, t]);
 
   const annualOption = useMemo<EChartsOption>(() => {
     // Uzbekistan's monthly book only starts partway into the window (2019-01):
@@ -267,7 +213,7 @@ export default function OverviewView() {
     }
     return [...byPartner.values()]
       .sort((a, b) => (b.positive + b.reverse) - (a.positive + a.reverse))
-      .slice(0, TOP_N);
+      .slice(0, DRILL_TOP);
   }, [data, drillYear]);
 
   /**
@@ -524,11 +470,17 @@ export default function OverviewView() {
         />
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
-            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</div>
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</span>
+              <Link href="/partners" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
+            </div>
             <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
           </div>
           <div>
-            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</div>
+            <div className="mb-1.5 flex items-baseline justify-between">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</span>
+              <Link href="/products" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
+            </div>
             <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
           </div>
         </div>
@@ -613,48 +565,6 @@ export default function OverviewView() {
         </div>
       </section>
 
-      {/* 4. top partner countries */}
-      <section>
-        <SectionTitle
-          title={t("ovw.topPartners.title")}
-          desc={t("ovw.topPartners.desc")}
-        />
-        <RankedList rows={partners.rows} total={partners.total} codeWidth="w-10" />
-      </section>
-
-      {/* 5. top products at each HS level */}
-      <section className="space-y-5">
-        <SectionTitle
-          title={t("ovw.topProducts.title")}
-          desc={t("ovw.topProducts.desc")}
-          right={
-            <Link href="/products" className="text-sm font-medium text-[var(--color-primary)] hover:underline">
-              {t("nav.products")} →
-            </Link>
-          }
-        />
-        <RankedBlock
-          title={t("ovw.hs2.title")}
-          hint={t("ovw.hs2.hint")}
-          rows={hs2.rows}
-          total={hs2.total}
-          codeWidth="w-8"
-        />
-        <RankedBlock
-          title={t("ovw.hs4.title")}
-          hint={t("ovw.hs4.hint")}
-          rows={hs4.rows}
-          total={hs4.total}
-          codeWidth="w-12"
-        />
-        <RankedBlock
-          title={t("ovw.hs6.title")}
-          hint={t("ovw.hs6.hint")}
-          rows={hs6.rows}
-          total={hs6.total}
-          codeWidth="w-14"
-        />
-      </section>
         </div>
       )}
     </div>
@@ -678,76 +588,6 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
         </span>
       </div>
       {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Ranked list: rank · code · label · bar · value · share              */
-/* ------------------------------------------------------------------ */
-
-function RankedList({ rows, total, codeWidth }: { rows: RankRow[]; total: number; codeWidth: string }) {
-  const { t } = useI18n();
-  if (rows.length === 0) return <EmptyState />;
-  const max = rows[0].value || 1;
-  return (
-    <div className="card space-y-1.5 p-4">
-      {rows.map((r, i) => (
-        <div key={r.key} className="flex items-center gap-3 text-[13px]">
-          <span className="tabular w-4 shrink-0 text-right text-[12px] text-faint">{i + 1}</span>
-          <span className={`tabular ${codeWidth} shrink-0 text-[12px] text-faint`}>{r.code}</span>
-          <span className="w-52 shrink-0 truncate" title={r.label}>
-            {r.href ? (
-              <Link href={r.href} className="font-medium hover:underline">
-                {r.label}
-              </Link>
-            ) : (
-              r.label
-            )}
-          </span>
-          <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-sm bg-[var(--color-panel-2)]">
-            <span
-              className="absolute inset-y-0 left-0"
-              style={{
-                width: `${Math.max(1.5, (r.value / max) * 100)}%`,
-                background: COLORS.positive,
-                opacity: 0.65,
-                borderRadius: "0 4px 4px 0",
-                boxShadow: `0 0 0 1px ${COLORS.surface}`,
-              }}
-              title={fmtUSDFull(r.value)}
-            />
-          </span>
-          <span className="tabular w-20 shrink-0 text-right font-medium" title={fmtUSDFull(r.value)}>
-            {fmtUSD(r.value)}
-          </span>
-          <span
-            className="tabular w-12 shrink-0 text-right text-[12px] text-faint"
-            title={t("ovw.share.tip")}
-          >
-            {total > 0 ? fmtPct(r.value / total, 0) : "—"}
-          </span>
-          <span className="hidden w-20 shrink-0 text-right text-[12px] text-faint sm:block">{r.note}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function RankedBlock({
-  title, hint, rows, total, codeWidth,
-}: {
-  title: string; hint: string; rows: RankRow[]; total: number; codeWidth: string;
-}) {
-  return (
-    <div>
-      {/* the HS tier is the reader's orientation inside the top-10 block, so it
-          carries ink weight rather than sitting as a faint micro-label */}
-      <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-        {title}
-        <InfoTip text={hint} />
-      </p>
-      <RankedList rows={rows} total={total} codeWidth={codeWidth} />
     </div>
   );
 }
