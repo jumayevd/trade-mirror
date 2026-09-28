@@ -67,10 +67,10 @@ const FLAG_LABEL_KEYS: Record<string, LocaleKey> = {
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
 const ALT_STATUS: Record<AltStatus, { label: LocaleKey; color: string }> = {
-  unlikely: { label: "prof.status.unlikely", color: "#15803d" },
-  possible: { label: "prof.status.possible", color: "#b45309" },
-  material: { label: "prof.status.material", color: "#d97706" },
-  "cannot-assess": { label: "prof.status.cannotAssess", color: "#75847b" },
+  unlikely: { label: "prof.status.unlikely", color: COLORS.good },
+  possible: { label: "prof.status.possible", color: COLORS.warn },
+  material: { label: "prof.status.material", color: COLORS.goldDeep },
+  "cannot-assess": { label: "prof.status.cannotAssess", color: COLORS.axis },
 };
 
 export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: string }) {

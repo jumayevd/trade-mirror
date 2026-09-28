@@ -71,7 +71,8 @@ export default function GapTreemap({
       nodeClick: false,
       breadcrumb: { show: false },
       left: 0, top: 0, right: 0, bottom: 0,
-      itemStyle: { borderColor: "var(--color-panel)", borderWidth: 2, gapWidth: 2 },
+      // a canvas cannot resolve CSS variables — the themed surface is the intent
+      itemStyle: { borderColor: COLORS.surface, borderWidth: 2, gapWidth: 2 },
       label: {
         show: true,
         formatter: (p: unknown) => {

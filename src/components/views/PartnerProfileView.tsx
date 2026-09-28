@@ -71,10 +71,10 @@ const fill = (s: string, vals: Record<string, string | number>) =>
 
 type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
 const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
-  unlikely: { label: "prof.status.unlikely", color: "#15803d" },
-  possible: { label: "prof.status.possible", color: "#b45309" },
-  material: { label: "prof.status.material", color: "#d97706" },
-  "cannot-assess": { label: "prof.status.cannotAssess", color: "#75847b" },
+  unlikely: { label: "prof.status.unlikely", color: COLORS.good },
+  possible: { label: "prof.status.possible", color: COLORS.warn },
+  material: { label: "prof.status.material", color: COLORS.goldDeep },
+  "cannot-assess": { label: "prof.status.cannotAssess", color: COLORS.axis },
 };
 
 export default function PartnerProfileView({ iso }: { iso: string }) {
@@ -336,7 +336,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           title={t("prof.quality.title")}
           desc={t("prof.quality.desc")}
           right={pm.lapse ? (
-            <span className="rounded-md border px-2 py-1 text-xs font-medium" style={{ color: "#b45309", borderColor: "color-mix(in srgb, #b45309 40%, transparent)" }}
+            <span className="rounded-md border px-2 py-1 text-xs font-medium" style={{ color: COLORS.warn, borderColor: `color-mix(in srgb, ${COLORS.warn} 40%, transparent)` }}
               title={fill(t("prof.quality.stopBadgeTip"), { name, year: pm.lastReportedYear })}>
               {fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear })}
             </span>

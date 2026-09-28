@@ -192,9 +192,9 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
           // partner regions are clickable, so they carry the hand cursor; regions
           // outside the partner set are silent and fall back to the arrow
           cursor: "pointer",
-          itemStyle: { areaColor: "#eef1ee", borderColor: "#d8ded9", borderWidth: 0.5 },
-          emphasis: { label: { show: false }, itemStyle: { areaColor: "#cfd8d1" } },
-          select: { itemStyle: { areaColor: "#cfd8d1" }, label: { show: false } },
+          itemStyle: { areaColor: COLORS.mapArea, borderColor: COLORS.mapBorder, borderWidth: 0.5 },
+          emphasis: { label: { show: false }, itemStyle: { areaColor: COLORS.mapEmphasis } },
+          select: { itemStyle: { areaColor: COLORS.mapEmphasis }, label: { show: false } },
           data,
         },
       ],

@@ -7,6 +7,28 @@ import { LANGS, type LocaleKey } from "@/lib/locales";
 import {
   applyZoom, readZoom, serverZoom, subscribeZoom, writeZoom, ZOOM_STEPS, type ZoomStep,
 } from "@/lib/zoom-store";
+import { readTheme, toggleTheme, type Theme } from "@/lib/theme-store";
+
+/** The store never notifies — a theme change reloads the page — so the
+ *  subscription is inert; what this buys is the sanctioned server/client
+ *  divergence: the static render says light, the client reads the attribute. */
+const subscribeNever = () => () => {};
+const serverTheme = (): Theme => "light";
+
+/** The glyph names the mode you would SWITCH TO. */
+function ThemeToggle({ label }: { label: string }) {
+  const theme = useSyncExternalStore(subscribeNever, readTheme, serverTheme);
+  return (
+    <button
+      onClick={toggleTheme}
+      aria-label={label}
+      title={label}
+      className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] leading-none text-muted hover:text-foreground"
+    >
+      {theme === "dark" ? "☀" : "☾"}
+    </button>
+  );
+}
 
 /** Step names, smallest first — the index is the step. */
 const ZOOM_LABEL_KEYS: LocaleKey[] = [
@@ -40,6 +62,8 @@ export default function HeaderMeta() {
           ))}
         </select>
       </label>
+
+      <ThemeToggle label={t("header.theme.tip")} />
 
       <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("nav.language")}>
         {LANGS.map((l) => (
