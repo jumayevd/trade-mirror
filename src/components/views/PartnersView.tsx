@@ -7,7 +7,7 @@ import Sparkline from "@/components/charts/Sparkline";
 import RiskMap, { MAP_METRIC_KEYS, type MapMetric } from "@/components/charts/RiskMap";
 import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue, Segmented } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, type PartnerAgg } from "@/lib/dataset";
+import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -223,7 +223,7 @@ export default function PartnersView() {
               <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", t("ctry.col.positive"))}</th>
               <th className={thNum}>{sortBtn("share", t("ctry.col.gapRate"))}</th>
               <th className={thNum}>{sortBtn("channels", t("ctry.col.channels"))}</th>
-              <th className={th} title={`${t("ctry.rank.trendTipPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.rank.trendTipPost")}`}>{t("ctry.col.trend")}</th>
+              <th className={th} title={`${t("ctry.rank.trendTipPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.rank.trendTipPost")}`}>{t("ctry.col.trend")}</th>
               <th className={th} title={t("ctry.rank.topHs2Tip")}>{t("ctry.col.topHs2")}</th>
             </tr>
           </thead>
@@ -327,7 +327,7 @@ export default function PartnersView() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
             <p className="text-[12px] font-medium text-faint">
-              {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {meta.window.start}–{meta.window.end}
+              {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {DATA_WINDOW.start}–{DATA_WINDOW.end}
             </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
             <p className="text-[13px] text-muted">
@@ -403,7 +403,7 @@ export default function PartnersView() {
             desc={t("ctry.compare.desc")}
             right={
               <span className="flex items-center gap-2">
-                <InfoTip text={`${t("ctry.compare.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.compare.infoPost")}`} />
+                <InfoTip text={`${t("ctry.compare.infoPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.compare.infoPost")}`} />
                 <button
                   onClick={() => setSel([])}
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground"
@@ -478,7 +478,7 @@ export default function PartnersView() {
         <SectionTitle
           title={t("ctry.dyn.title")}
           desc={t("ctry.dyn.desc")}
-          right={<InfoTip text={`${t("ctry.dyn.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.dyn.infoPost")} ${t("common.source")}.`} />}
+          right={<InfoTip text={`${t("ctry.dyn.infoPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.dyn.infoPost")} ${t("common.source")}.`} />}
         />
         {risers.length === 0 && easers.length === 0 ? (
           <EmptyState />

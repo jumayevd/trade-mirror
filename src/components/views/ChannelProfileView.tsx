@@ -11,6 +11,8 @@ import {
 import {
   aggregate, meta, DEFAULT_FILTER, partnerMetaOf, productByCmd, isResidualChapter,
   type Aggregate, type Filter, type RiskBand,
+  yearsFor, DATA_WINDOW,
+  reportedYearsOf,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
@@ -24,10 +26,10 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  years: [...meta.years],
+  years: [...yearsFor("year")],
   minGap: 0,
 };
-const WINDOW = meta.years;
+const WINDOW = yearsFor("year");
 
 /**
  * Partner and product names are localised as the aggregate is built, so the page
@@ -79,7 +81,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
 
   const pm = partnerMetaOf(channel.partnerIso)!;
   const product = productByCmd(channel.cmd);
-  const period = `${meta.window.start}–${meta.window.end}`;
+  const period = `${DATA_WINDOW.start}–${DATA_WINDOW.end}`;
   const cifPct = Math.round(FULL_FILTER.cif * 100);
   // a smaller freight factor deflates less, so it yields the LARGER adjusted import
   const adjLow = channel.uiT / (1 + meta.cif.high);
@@ -117,10 +119,10 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
       status: weakReporter ? "material" : "unlikely",
       note: weakReporter
         ? fill(t("chan.alt.reporting.weak"), {
-            name: partner, k: pm.reportedYears.length, n: WINDOW.length,
+            name: partner, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length,
             lapse: pm.lapse ? fill(t("prof.alt.reporting.lastReport"), { year: pm.lastReportedYear }) : "",
           })
-        : fill(t("chan.alt.reporting.ok"), { name: partner, k: pm.reportedYears.length, n: WINDOW.length }),
+        : fill(t("chan.alt.reporting.ok"), { name: partner, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length }),
     },
     {
       title: t("prof.alt.classification.title"),
@@ -291,7 +293,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         <div className="space-y-4">
           <div>
             <div className="mb-2 text-xs font-medium uppercase tracking-wider text-faint">
-              {t("chan.quality.coverageLead")} · {fill(t("chan.quality.coverageYears"), { k: pm.reportedYears.length, n: WINDOW.length })} · {fmtPct(pm.coverage, 0)}
+              {t("chan.quality.coverageLead")} · {fill(t("chan.quality.coverageYears"), { k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })} · {fmtPct(reportedYearsOf(pm.iso3).length / WINDOW.length, 0)}
               {pm.lapse && (
                 <span className="ml-2 normal-case" style={{ color: "#b45309" }}>
                   {fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear })}
@@ -300,7 +302,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
             </div>
             <div className="flex flex-wrap gap-1.5">
               {WINDOW.map((y) => {
-                const has = pm.reportedYears.includes(y);
+                const has = reportedYearsOf(pm.iso3).includes(y);
                 return (
                   <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-[12px]"
                     style={{

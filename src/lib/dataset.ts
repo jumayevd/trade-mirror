@@ -12,6 +12,7 @@
 import cellsRaw from "@/data/cells.json";
 import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
+import annualizedRaw from "@/data/annualized-hs6.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
@@ -202,6 +203,51 @@ export const isDerivedYear = (y: number): boolean => !annualYearSet.has(y);
 
 const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) => a - b);
 
+/** The whole window the dashboard covers, on the yearly basis. Distinct from
+ *  meta.window (the annual workbook) and FITTED_WINDOW (the index's fit). */
+export const DATA_WINDOW = { start: yearlyYears[0], end: yearlyYears[yearlyYears.length - 1] };
+
+/*
+ * The derived years' HS6 cells, annualized at build time from the same monthly
+ * book monthlySource() folds (scripts/build-annualized.ts — the audit asserts
+ * the two agree). Shipping them lets the yearly basis carry 2025–2026 on every
+ * page, including the statically generated profiles, with no runtime fetch.
+ */
+const annualizedCells: Cell[] = (() => {
+  const packed = annualizedRaw as unknown as PackedCells;
+  const out: Cell[] = new Array(packed.r.length);
+  for (let i = 0; i < packed.r.length; i++) {
+    const row = packed.r[i];
+    const k = packed.k[row[1]];
+    const c = k.slice(0, 2);
+    out[i] = {
+      p: packed.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6,
+      y: packed.y0 + row[2], pe: row[3], ui: row[4],
+    };
+  }
+  return out;
+})();
+const annualizedYears = new Set(annualizedCells.map((r) => r.y));
+
+/** Years a partner shows up in, extended past the annual workbook: the derived
+ *  years count when the partner's export book has anything in them. */
+const derivedReportedYears = (() => {
+  const m = new Map<string, Set<number>>();
+  for (const r of annualizedCells) {
+    if (r.pe <= 0) continue;
+    let set = m.get(r.p);
+    if (!set) { set = new Set(); m.set(r.p, set); }
+    set.add(r.y);
+  }
+  return m;
+})();
+export const reportedYearsOf = (iso: string): number[] => {
+  // pMeta is declared below; this is only ever called after module init
+  const base = pMeta.get(iso)?.reportedYears ?? [];
+  const extra = derivedReportedYears.get(iso);
+  return extra ? [...new Set([...base, ...extra])].sort((a, b) => a - b) : base;
+};
+
 /**
  * Months of a year BOTH books reported.
  *
@@ -357,12 +403,18 @@ function monthlySource(f: Filter): Cell[] {
 function sourceCells(f: Filter): Cell[] {
   if (f.granularity === "month") return monthlySource(f);
   // Past the workbook's last year the only record is the monthly book, so those
-  // years' yearly cells are their months summed. Only years the caller actually
-  // ticked are pulled in — an empty selection stays the annual window, so no
-  // default view silently mixes the two vintages.
+  // years' yearly cells are their months summed — precomputed at build time
+  // (annualized-hs6.json), so the derived years are available everywhere the
+  // annual ones are, static pages included. The picker labels them as derived:
+  // they are a different vintage, months still filling up.
   const derived = f.years.filter((y) => !annualYearSet.has(y));
   if (derived.length === 0) return cells;
-  return [...cells, ...monthlySource({ ...f, years: derived, months: [] })];
+  const want = new Set(derived.filter((y) => annualizedYears.has(y)));
+  const extra: Cell[] = annualizedCells.filter((r) => want.has(r.y));
+  // a derived year the build has not annualized yet still folds live
+  const missing = derived.filter((y) => !annualizedYears.has(y));
+  if (missing.length) extra.push(...monthlySource({ ...f, years: missing, months: [] }));
+  return [...cells, ...extra];
 }
 
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
@@ -425,7 +477,7 @@ const histYears = (() => {
     if (!set) { set = new Set(); seen.set(key, set); }
     set.add(y);
   };
-  for (const r of cells) {
+  for (const r of [...cells, ...annualizedCells]) {
     if (r.l !== 6) continue;
     if (r.pe <= NOISE || r.ui <= NOISE) continue;
     mark(`6|${r.p}|${r.k}`, r.y);
@@ -512,7 +564,13 @@ export interface Filter {
 }
 export const DEFAULT_FILTER: Filter = {
   granularity: "year",
-  years: [...meta.years],
+  /*
+   * The whole window, derived years included: the dashboard covers 2017 to the
+   * newest months the monthly book carries, and says which years are derived
+   * rather than hiding them. Partial years are partial — the picker and the
+   * views label them, and a reader who wants the settled vintage unticks them.
+   */
+  years: [...yearlyYears],
   months: [],
   /*
    * No freight adjustment by default: the dashboard opens on the two books

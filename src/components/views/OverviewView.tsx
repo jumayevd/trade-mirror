@@ -26,7 +26,7 @@ import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } 
  * reading the shared filter context, so partner and HS selections made elsewhere
  * never reshape it.
  */
-const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...meta.years] };
+const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...yearsFor("year")] };
 const TOP_N = 10;
 
 type OverviewTab = "summary" | "profile";
@@ -71,7 +71,7 @@ export default function OverviewView() {
   const { t } = useI18n();
   /** Overview's controls: the time basis and which periods the summary covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
-  const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [years, setYears] = useState<number[]>(() => [...yearsFor("year")]);
   const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
   // The HS4/HS6 detail backs both the monthly basis and any year the annual

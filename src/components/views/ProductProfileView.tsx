@@ -8,8 +8,9 @@ import {
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
-  aggregate, products, meta, DEFAULT_FILTER, isResidualChapter, categoryLabel, hsLabel,
+  aggregate, products, DEFAULT_FILTER, isResidualChapter, categoryLabel, hsLabel,
   type Filter, type RiskBand, type Tier,
+  yearsFor, DATA_WINDOW,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
@@ -24,7 +25,7 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS, BAND_COLORS } from "@/lib/format";
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  years: [...meta.years],
+  years: [...yearsFor("year")],
   minGap: 0,
 };
 const FULL = aggregate(FULL_FILTER);
@@ -43,7 +44,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
   const p = products.find((x) => x.cmd === cmd);
   if (!p) notFound();
 
-  const period = `${meta.window.start}–${meta.window.end}`;
+  const period = `${DATA_WINDOW.start}–${DATA_WINDOW.end}`;
   // product and chapter names are data-derived: translate them like everywhere else
   const label = labelsFor(lang, () => hsLabel(p.cmd));
   const chapterLabel = labelsFor(lang, () => hsLabel(p.chapter));
@@ -248,7 +249,7 @@ export default function ProductProfileView({ cmd }: { cmd: string }) {
                     <td className="tabular px-3 py-2 text-right font-semibold" style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>
                       {fmtUSD(c.posT)}
                     </td>
-                    <td className="tabular px-3 py-2 text-right">{c.comparableYears}/{meta.years.length}</td>
+                    <td className="tabular px-3 py-2 text-right">{c.comparableYears}/{yearsFor("year").length}</td>
                     <td className="px-3 py-2"><RobustnessBadge r={c.robustness} /></td>
                     <td className="px-3 py-2 text-right">
                       <Link href={`/channels/${c.partnerIso.toLowerCase()}/${c.cmd}`} className="text-xs font-medium text-[var(--color-primary)] hover:underline">

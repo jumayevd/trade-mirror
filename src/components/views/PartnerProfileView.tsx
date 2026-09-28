@@ -13,6 +13,7 @@ import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import {
   aggregate, meta, DEFAULT_FILTER, isDerivedYear, partnerMetaOf, isResidualChapter,
   yearsFor, yearsLabel, type Aggregate, type Filter, type Granularity,
+  reportedYearsOf,
 } from "@/lib/dataset";
 import { channelsToCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
@@ -28,12 +29,12 @@ import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
  */
 const FULL_FILTER: Filter = {
   ...DEFAULT_FILTER,
-  years: [...meta.years],
+  years: [...yearsFor("year")],
   minGap: 0,
 };
 /** Latest single year — the one-year callout inside the executive summary. */
 const SNAP_FILTER: Filter = { ...DEFAULT_FILTER, years: [meta.defaultYear], minGap: 0 };
-const WINDOW = meta.years;
+const WINDOW = yearsFor("year");
 
 /**
  * Names inside an aggregate are localised as it is built, so the profile keeps
@@ -83,7 +84,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   /** The page's own controls, mirroring the Executive Overview's. */
   const [granularity, setGranularity] = useState<Granularity>("year");
-  const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [years, setYears] = useState<number[]>(() => [...yearsFor("year")]);
   const [months, setMonths] = useState<number[]>([]);
   const [hs2Sel, setHs2Sel] = useState<string[]>([]);
   const [hs4Sel, setHs4Sel] = useState<string[]>([]);
@@ -226,9 +227,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   // ---- executive summary (spec §6.6.1) — standardized cautious template from measured fields ----
   const coverageSentence =
     pm.lapse
-      ? fill(t("prof.sum.covLapse"), { name, year: pm.lastReportedYear, k: pm.reportedYears.length, n: WINDOW.length })
+      ? fill(t("prof.sum.covLapse"), { name, year: pm.lastReportedYear, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })
       : pm.coverage < 1
-        ? fill(t("prof.sum.covPartial"), { name, k: pm.reportedYears.length, n: WINDOW.length })
+        ? fill(t("prof.sum.covPartial"), { name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })
         : fill(t("prof.sum.covFull"), { name });
   const summary = [
     fill(t("prof.sum.observed"), { start: meta.window.start, end: meta.window.end, name, pe: fmtUSD(p.observed.pe), ui: fmtUSD(p.observed.ui) }),
@@ -262,10 +263,10 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       status: weakReporter ? "material" : pm.coverage < 1 ? "possible" : "unlikely",
       note: weakReporter
         ? fill(t("prof.alt.reporting.weak"), {
-            name, k: pm.reportedYears.length, n: WINDOW.length,
+            name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length,
             lapse: pm.lapse ? fill(t("prof.alt.reporting.lastReport"), { year: pm.lastReportedYear }) : "",
           })
-        : fill(t(pm.coverage < 1 ? "prof.alt.reporting.okPartial" : "prof.alt.reporting.okFull"), { name, k: pm.reportedYears.length, n: WINDOW.length }),
+        : fill(t(pm.coverage < 1 ? "prof.alt.reporting.okPartial" : "prof.alt.reporting.okFull"), { name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length }),
     },
     {
       title: t("prof.alt.classification.title"),
@@ -318,8 +319,8 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
           sub={fill(t("prof.stat.posShareSub"), { pct: fmtPct(posShare, 0) })}
           info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(p.posT)}.`} />
-        <Stat label={t("prof.stat.coverage")} value={`${pm.reportedYears.length}/${WINDOW.length} ${t("prof.unit.yrs")}`}
-          sub={pm.lapse ? fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear }) : fill(t("prof.stat.coverageSub"), { pct: fmtPct(pm.coverage, 0) })}
+        <Stat label={t("prof.stat.coverage")} value={`${reportedYearsOf(pm.iso3).length}/${WINDOW.length} ${t("prof.unit.yrs")}`}
+          sub={pm.lapse ? fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear }) : fill(t("prof.stat.coverageSub"), { pct: fmtPct(reportedYearsOf(pm.iso3).length / WINDOW.length, 0) })}
           info={t("prof.stat.coverage.info")} />
         <Stat label={t("prof.stat.hs2Sectors")} value={String(hs2.length)}
           sub={fill(t("prof.stat.trendSub"), { trend: trendWord })}
@@ -343,7 +344,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         />
         <div className="flex flex-wrap gap-1.5">
           {WINDOW.map((y) => {
-            const has = pm.reportedYears.includes(y);
+            const has = reportedYearsOf(pm.iso3).includes(y);
             return (
               <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-[12px]"
                 style={{

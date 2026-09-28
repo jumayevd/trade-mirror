@@ -7,7 +7,7 @@ import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
 import { SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, partnerName, regionLabel, RISK_CONFIG, type PartnerMeta } from "@/lib/dataset";
+import { meta, partnerName, regionLabel, RISK_CONFIG, type PartnerMeta, DATA_WINDOW } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSDFull, COLORS } from "@/lib/format";
@@ -194,7 +194,7 @@ export default function QualityView() {
       {/* header */}
       <section className="space-y-2">
         <p className="text-[12px] text-faint">
-          UN Comtrade · {meta.window.start}–{meta.window.end} · {t("qual.header.kicker")}
+          UN Comtrade · {DATA_WINDOW.start}–{DATA_WINDOW.end} · {t("qual.header.kicker")}
         </p>
         <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
       </section>
@@ -203,7 +203,7 @@ export default function QualityView() {
       <section>
         <SectionTitle
           title={t("qual.coverage.title")}
-          desc={fill(t("qual.coverage.desc"), { start: meta.window.start, end: meta.window.end })}
+          desc={fill(t("qual.coverage.desc"), { start: DATA_WINDOW.start, end: DATA_WINDOW.end })}
         />
         <CoverageLegend />
         <div className="card overflow-x-auto">

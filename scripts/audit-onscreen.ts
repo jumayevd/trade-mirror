@@ -11,10 +11,22 @@
  * Every assertion below mirrors one thing a reader can do with a mouse: read two
  * figures on the same screen and expect them to relate.
  */
-import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  aggregate, DEFAULT_FILTER, loadMonthlyDetail, meta, monthlyOnlyYears,
+  type Aggregate, type Channel, type Filter,
+} from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
 import diagRaw from "../src/data/diagnostics.json";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
+
+/* the monthly grain is gated on the detail layer, so the audit loads it the
+ * way the client eventually does — without this, every monthly assertion below
+ * would iterate zero rows and pass vacuously */
+loadMonthlyDetail(JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
+));
 
 /* the identity holds at whatever rate the default filter carries */
 const K = 1 + DEFAULT_FILTER.cif;
@@ -140,7 +152,9 @@ for (const [key, row] of Object.entries(riskCells)) {
  * here means the runtime path and the fitted model have diverged.
  */
 {
-  const fitted = aggregate({ ...DEFAULT_FILTER, cif: riskConfig.freight });
+  // the index is fitted on the annual window; the comparison pins those years
+  // rather than inheriting the default window, which now runs past the fit
+  const fitted = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], cif: riskConfig.freight });
   const pairs: [Channel[], number][] = [[fitted.channels, 2], [fitted.channels4, 4], [fitted.channels6, 6]];
   let compared = 0, gDrift = 0, rsDrift = 0;
   for (const [cs, level] of pairs) {
@@ -314,6 +328,29 @@ for (const cif of [0, 0.10]) {
   }
   check(`the headline is the level-independent total (${Math.round(cif * 100)}%)`,
     near(a.kpis.positive.central, sum(a.baseChannels6, "posT"), 5));
+}
+
+/* ---------------------------------------------------------------- */
+/* derived years: the annualized layer IS the monthly fold              */
+/* ---------------------------------------------------------------- */
+/* 2025 and 2026 reach the yearly basis from a build-time annualization of the
+ * monthly HS6 book. The client folding those same months live must land on the
+ * same figures to the dollar, or the two vintage paths have diverged. */
+{
+  check("there are derived years to audit", monthlyOnlyYears.length > 0,
+    String(monthlyOnlyYears.length));
+  for (const y of monthlyOnlyYears) {
+    const yearly = aggregate({ ...DEFAULT_FILTER, years: [y], minGap: 0 });
+    const folded = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: [], minGap: 0 });
+    check(`derived ${y}: positive equals the monthly fold`,
+      near(yearly.kpis.positive.central, folded.kpis.positive.central, 1),
+      `${Math.round(yearly.kpis.positive.central)} vs ${Math.round(folded.kpis.positive.central)}`);
+    const v = (a: Aggregate) => a.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
+    check(`derived ${y}: comparable value equals the monthly fold`, near(v(yearly), v(folded), 1));
+  }
+  // and the monthly series must actually have rows — the vacuous-pass trap
+  const m = aggregate({ ...FULL, granularity: "month", months: [] });
+  check("the monthly series is populated under the audit", m.annual.length > 0, String(m.annual.length));
 }
 
 /* ---------------------------------------------------------------- */

@@ -281,6 +281,26 @@ for (const k of pick(mHs4Codes, 6)) {
 reportMonthlyDetail("monthly HS6: CHN x 851713 x 2025 H1",
   { ...mbase(), country: ["CHN"], hs6: [mHs6Codes.includes("851713") ? "851713" : mHs6Codes[0]], years: [2025], months: [1, 2, 3, 4, 5, 6] }, 6);
 
+/* ------------------------------------------------------------------ */
+/* Derived years: the yearly basis past the annual workbook             */
+/* ------------------------------------------------------------------ */
+/* 2025 and 2026 reach the yearly basis from the build-time annualization of
+ * the monthly HS6 book, so their as-reported totals must equal the raw monthly
+ * file summed -- the same source anchor the monthly basis is held to. */
+for (const y of [2025, 2026]) {
+  const got = observedTotals({ ...base(), years: [y] }, 6, undefined);
+  let pe = 0, ui = 0;
+  for (const r of monthlyHs6) { if (r[2] === y) { pe += r[4]; ui += r[5]; } }
+  checks++;
+  if (got.pe !== pe || got.ui !== ui) {
+    fails++;
+    console.log(`  FAIL derived year ${y}`);
+    console.log(`       engine   exports ${got.pe.toLocaleString()}  imports ${got.ui.toLocaleString()}`);
+    console.log(`       raw      exports ${pe.toLocaleString()}  imports ${ui.toLocaleString()}`);
+  }
+}
+
+
 console.log(`\n${checks - fails}/${checks} slices reconcile exactly.`);
 if (fails) {
   console.error(`${fails} MISMATCH(ES) — figures would not agree with UN Comtrade.`);

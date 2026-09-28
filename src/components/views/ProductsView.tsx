@@ -9,9 +9,9 @@ import {
   Stat, SectionTitle, ContextLine, RiskScore, BandBadge, EmptyState, MissingValue, Pill,
 } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import {
-  meta, hsLabel, productByCmd, isResidualChapter, yearsLabel, soleValue, observedTotals,
-  type Channel, type ChapterAgg, type RiskBand,
+import { 
+  hsLabel, productByCmd, isResidualChapter, yearsLabel, soleValue, observedTotals,
+  DATA_WINDOW, type Channel, type ChapterAgg, type RiskBand,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -414,7 +414,7 @@ export default function ProductsView() {
       {/* 1. header + export */}
       <section className="space-y-2">
         <p className="text-[12px] font-medium text-faint">
-          UN Comtrade · {meta.window.start}–{meta.window.end} · {t("prod.eyebrow.hierarchy")}
+          UN Comtrade · {DATA_WINDOW.start}–{DATA_WINDOW.end} · {t("prod.eyebrow.hierarchy")}
         </p>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
@@ -697,7 +697,7 @@ export default function ProductsView() {
         <section>
           <SectionTitle
             title={t("prod.dynamics.title")}
-            desc={fill(t("prod.dynamics.desc"), { window: `${meta.window.start}–${meta.window.end}` })}
+            desc={fill(t("prod.dynamics.desc"), { window: `${DATA_WINDOW.start}–${DATA_WINDOW.end}` })}
           />
           <div className="card grid gap-x-8 gap-y-4 p-4 lg:grid-cols-2">
             <MoverList
