@@ -11,7 +11,7 @@ import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import {
-  aggregate, meta, DEFAULT_FILTER, isDerivedYear, partnerMetaOf, isResidualChapter,
+  aggregate, meta, DEFAULT_FILTER, needsMonthlyDetail, partnerMetaOf, isResidualChapter,
   yearsFor, yearsLabel, type Aggregate, type Filter, type Granularity,
   reportedYearsOf,
 } from "@/lib/dataset";
@@ -89,7 +89,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const [hs2Sel, setHs2Sel] = useState<string[]>([]);
   const [hs4Sel, setHs4Sel] = useState<string[]>([]);
   const [hs6Sel, setHs6Sel] = useState<string[]>([]);
-  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
 
   const { full: BASE, snap: SNAP } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
 

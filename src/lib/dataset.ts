@@ -228,6 +228,9 @@ const annualizedCells: Cell[] = (() => {
   return out;
 })();
 const annualizedYears = new Set(annualizedCells.map((r) => r.y));
+/** True when a derived year's yearly figures need the monthly detail after all
+ *  — only when the annualized layer is stale relative to the monthly book. */
+export const needsMonthlyDetail = (y: number): boolean => !annualYearSet.has(y) && !annualizedYears.has(y);
 
 /** Years a partner shows up in, extended past the annual workbook: the derived
  *  years count when the partner's export book has anything in them. */

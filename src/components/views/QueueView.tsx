@@ -12,7 +12,7 @@ import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { COLORS, fmtNum } from "@/lib/format";
 import type { LocaleKey } from "@/lib/locales";
-import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, isDerivedYear, yearsFor, yearsLabel, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, needsMonthlyDetail, yearsFor, yearsLabel, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
 
 /**
  * Discrepancy & Risk — the screening queue. Every partner × code combination at
@@ -63,7 +63,7 @@ export default function QueueView() {
   const [months, setMonths] = useState<number[]>([]);
   const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
   // monthly HS4/HS6 arrive from an on-demand fetch; recompute when they land
-  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
 
   const pickGranularity = (g: Granularity) => {
     if (g === granularity) return;

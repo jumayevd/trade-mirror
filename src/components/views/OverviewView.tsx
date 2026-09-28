@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
+import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
 import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, isDerivedYear, productByCmd, yearsFor, yearsLabel,
+  aggregate, DEFAULT_FILTER, meta, hsLabel, needsMonthlyDetail, productByCmd, yearsFor, yearsLabel,
   type Channel, type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
@@ -76,13 +77,37 @@ export default function OverviewView() {
   const [tab, setTab] = useState<OverviewTab>("summary");
   // The HS4/HS6 detail backs both the monthly basis and any year the annual
   // workbook never reached, so either one has to trigger the fetch.
-  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
   const data = useMemo(
     () => aggregate({ ...FULL_WINDOW, granularity, years, months }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [granularity, years, months, detailVer],
   );
   const k = data.kpis;
+
+  /*
+   * The two treemap panels: who and what carry the positive discrepancy over
+   * the selected period. Countries come off the partner rollup; products are
+   * the HS6 channels grouped by code across partners — the measurement grain,
+   * so these tiles sum against the same total the headline shows.
+   */
+  const treemap = useMemo(() => {
+    const countries: TreemapItem[] = [...data.partners]
+      .sort((a, b) => b.posT - a.posT)
+      .map((p) => ({ key: p.iso3, label: p.name, value: p.posT, href: `/partners/${p.iso3.toLowerCase()}` }));
+    const byCmd = new Map<string, { label: string; value: number }>();
+    for (const c of data.baseChannels6) {
+      if (c.posT <= 0) continue;
+      const e = byCmd.get(c.cmd) ?? { label: c.cmdLabel, value: 0 };
+      e.value += c.posT;
+      byCmd.set(c.cmd, e);
+    }
+    const products: TreemapItem[] = [...byCmd.entries()]
+      .sort((a, b) => b[1].value - a[1].value)
+      .map(([cmd, e]) => ({ key: cmd, label: `${cmd} · ${e.label}`, value: e.value, href: `/products/${cmd}` }));
+    return { countries, products, total: k.positive.central };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
   const periodLabel = yearsLabel(years);
 
   const pickGranularity = (g: Granularity) => {
@@ -538,6 +563,25 @@ export default function OverviewView() {
           )}
 
           <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
+        </div>
+      </section>
+
+      {/* 3b. where the discrepancy sits: top five countries and HS6 products */}
+      <section>
+        <SectionTitle
+          title={t("ovw.treemap.title")}
+          desc={t("ovw.treemap.desc")}
+          right={<InfoTip text={t("ovw.treemap.info")} />}
+        />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div>
+            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</div>
+            <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
+          </div>
+          <div>
+            <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</div>
+            <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
+          </div>
         </div>
       </section>
 
