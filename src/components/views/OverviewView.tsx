@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
+import { officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
@@ -91,6 +92,14 @@ export default function OverviewView() {
    * the HS6 channels grouped by code across partners — the measurement grain,
    * so these tiles sum against the same total the headline shows.
    */
+  /*
+   * The actual import flow as the statistics office publishes it — the context
+   * the mirror numbers sit inside. Null when a selected year has no published
+   * figure yet, in which case the two cards simply do not render: a KPI that
+   * silently covered fewer years than its label would be worse than none.
+   */
+  const official = useMemo(() => officialImportsOver(years), [years]);
+
   const treemap = useMemo(() => {
     const countries: TreemapItem[] = [...data.partners]
       .sort((a, b) => b.posT - a.posT)
@@ -463,6 +472,26 @@ export default function OverviewView() {
       {/* 3. headline tiles */}
       <section>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {official && (
+            <>
+              <Stat
+                label={t("ovw.stat.actualImports")}
+                value={fmtUSD(official.usd)}
+                sub={official.partial
+                  ? `${t("ovw.stat.actualImports.through")} ${official.partial.year}-${String(official.partial.throughMonth).padStart(2, "0")} · stat.uz`
+                  : `${periodLabel} · stat.uz`}
+                info={`${t("ovw.stat.actualImports.info")} ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
+                accent={COLORS.navy2}
+              />
+              <Stat
+                label={t("ovw.stat.gapShare")}
+                value={fmtPct(k.positive.central / official.usd, 1)}
+                sub={t("ovw.stat.gapShareSub")}
+                info={t("ovw.stat.gapShare.info")}
+                accent={COLORS.positive}
+              />
+            </>
+          )}
           <HeroStat
             label={t("kpi.positive")}
             value={fmtUSD(k.positive.central)}

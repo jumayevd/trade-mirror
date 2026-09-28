@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  aggregate, DEFAULT_FILTER, loadMonthlyDetail, meta, monthlyOnlyYears,
+  aggregate, DEFAULT_FILTER, loadMonthlyDetail, meta, monthlyOnlyYears, officialImportsOver,
   type Aggregate, type Channel, type Filter,
 } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
@@ -351,6 +351,31 @@ for (const cif of [0, 0.10]) {
   // and the monthly series must actually have rows — the vacuous-pass trap
   const m = aggregate({ ...FULL, granularity: "month", months: [] });
   check("the monthly series is populated under the audit", m.annual.length > 0, String(m.annual.length));
+}
+
+/* ---------------------------------------------------------------- */
+/* official imports: the stat.uz context figures                       */
+/* ---------------------------------------------------------------- */
+/* The overview quotes Uzbekistan's actual imports from the statistics office.
+ * Two things must hold: the sum covers every selected year (or the cards do
+ * not render at all — asserted by non-null), and the official series is the
+ * same order of magnitude as the mirror's UZB-recorded imports over the same
+ * years. The sources genuinely differ by revisions and coverage, but past a
+ * few percent the likeliest cause is a units mistake in the data file, which
+ * this fails loudly. */
+{
+  const official = officialImportsOver(DEFAULT_FILTER.years);
+  check("official imports cover the default window", official !== null);
+  if (official) {
+    check("the running year is cut to the mirror book's reach",
+      official.partial !== null && official.partial.year === 2026 && official.partial.throughMonth >= 1 && official.partial.throughMonth <= 12,
+      JSON.stringify(official.partial));
+    const annualOnly = officialImportsOver([...meta.years]);
+    const mirrorUi = aggregate({ ...FULL }).observed.ui;
+    check("official and mirror imports agree within 5% over the annual window",
+      annualOnly !== null && Math.abs(annualOnly.usd - mirrorUi) / mirrorUi < 0.05,
+      `official ${annualOnly ? Math.round(annualOnly.usd) : "null"} vs mirror ${Math.round(mirrorUi)}`);
+  }
 }
 
 /* ---------------------------------------------------------------- */

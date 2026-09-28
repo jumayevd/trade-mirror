@@ -13,6 +13,7 @@ import cellsRaw from "@/data/cells.json";
 import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
 import annualizedRaw from "@/data/annualized-hs6.json";
+import officialImportsRaw from "@/data/official-imports.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
@@ -202,6 +203,56 @@ export const monthlyOnlyYears: number[] = monthlyYears.filter((y) => !annualYear
 export const isDerivedYear = (y: number): boolean => !annualYearSet.has(y);
 
 const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) => a - b);
+
+/*
+ * Uzbekistan's ACTUAL imports as published by the national statistics office
+ * (stat.uz) — not the UN Comtrade mirror the rest of this module reads. The
+ * overview quotes it as context: how large the recorded import flow really is,
+ * and what share of it the positive discrepancy amounts to. Annual totals for
+ * finished years; the running year carries the office's cumulative
+ * year-to-date series, and the sum aligns it to the last month Uzbekistan's
+ * own mirror book covers, so numerator and denominator describe the same
+ * stretch of time as closely as the two sources allow.
+ */
+interface OfficialImports {
+  source: string; retrievedAt: string;
+  annual: Record<string, number>;
+  cumulativeByMonth: Record<string, number[]>;
+}
+const officialImportsData = officialImportsRaw as unknown as OfficialImports;
+export const OFFICIAL_IMPORTS_SOURCE = {
+  name: officialImportsData.source,
+  retrievedAt: officialImportsData.retrievedAt,
+};
+
+/** The last calendar month of a year with any recorded import in the monthly
+ *  mirror book — how far Uzbekistan's own side actually reaches. */
+const lastUiMonth = (() => {
+  const m = new Map<number, number>();
+  for (const r of monthlyCells) if (r.ui > 0 && r.m > (m.get(r.y) ?? 0)) m.set(r.y, r.m);
+  return m;
+})();
+
+/**
+ * Official imports over a set of years, in USD. Returns null when any selected
+ * year has no published figure, so a partial denominator can never be printed
+ * as if it covered the selection.
+ */
+export function officialImportsOver(years: number[]): { usd: number; partial: { year: number; throughMonth: number } | null } | null {
+  let usd = 0;
+  let partial: { year: number; throughMonth: number } | null = null;
+  for (const y of years) {
+    const annual = officialImportsData.annual[String(y)];
+    if (annual !== undefined) { usd += annual; continue; }
+    const cum = officialImportsData.cumulativeByMonth[String(y)];
+    if (!cum || cum.length === 0) return null;
+    // align to the mirror book's own reach, never past what the office published
+    const through = Math.min(lastUiMonth.get(y) ?? cum.length, cum.length);
+    usd += cum[through - 1];
+    partial = { year: y, throughMonth: through };
+  }
+  return { usd, partial };
+}
 
 /** The whole window the dashboard covers, on the yearly basis. Distinct from
  *  meta.window (the annual workbook) and FITTED_WINDOW (the index's fit). */
