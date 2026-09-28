@@ -7,7 +7,7 @@ import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import EChart from "@/components/EChart";
 import { SectionTitle, QualityTag, TransitTag, Pill, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, partnerName, regionLabel, RISK_CONFIG, type PartnerMeta, DATA_WINDOW } from "@/lib/dataset";
+import { meta, partnerName, regionLabel, reportedYearsOf, RISK_CONFIG, yearsFor, type PartnerMeta, DATA_WINDOW } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { fmtNum, fmtPct, fmtUSDFull, COLORS } from "@/lib/format";
@@ -27,9 +27,13 @@ const LEVEL_CODE: Record<HsLevel, string> = { 2: "HS2", 4: "HS4", 6: "HS6" };
 type CellState = "reported" | "missing" | "stopMarker" | "stopped";
 
 function cellState(p: PartnerMeta, y: number): CellState {
-  if (p.reportedYears.includes(y)) return "reported";
-  if (p.lapse && y > p.lastReportedYear) {
-    return y === p.lastReportedYear + 1 ? "stopMarker" : "stopped";
+  // reportedYearsOf extends past the annual workbook: a partner whose monthly
+  // book covers 2025-2026 reports in those years, whatever the baked flag says
+  const reported = reportedYearsOf(p.iso3);
+  if (reported.includes(y)) return "reported";
+  const last = reported.length ? reported[reported.length - 1] : p.lastReportedYear;
+  if (p.lapse && y > last) {
+    return y === last + 1 ? "stopMarker" : "stopped";
   }
   return "missing";
 }
@@ -144,7 +148,7 @@ export default function QualityView() {
         m.set(yr.y, e);
       }
     }
-    return meta.years.map((y) => ({ y, count: m.get(y)?.count ?? 0, pe: m.get(y)?.pe ?? 0 }));
+    return yearsFor("year").map((y) => ({ y, count: m.get(y)?.count ?? 0, pe: m.get(y)?.pe ?? 0 }));
   }, [levelChannels]);
 
   // Single measure on the axis (channel counts); partner-reported USD value is a
@@ -211,7 +215,7 @@ export default function QualityView() {
             <thead>
               <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-faint">
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
-                {meta.years.map((y) => (
+                {yearsFor("year").map((y) => (
                   <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
                 ))}
                 <th className="px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
@@ -226,7 +230,7 @@ export default function QualityView() {
                       {p.name}
                     </Link>
                   </td>
-                  {meta.years.map((y) => (
+                  {yearsFor("year").map((y) => (
                     <td key={y} className="px-1.5 py-1.5 text-center">
                       <CoverageCell p={p} y={y} />
                     </td>

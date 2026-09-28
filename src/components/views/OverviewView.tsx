@@ -486,7 +486,8 @@ export default function OverviewView() {
         </div>
       </section>
 
-      {/* 3. overall dynamics */}
+      {/* 3+4. the two time series, side by side on wide screens */}
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
       <section>
         <SectionTitle
           title={t("ovw.dynamics.title")}
@@ -564,6 +565,7 @@ export default function OverviewView() {
 
         </div>
       </section>
+      </div>
 
         </div>
       )}
