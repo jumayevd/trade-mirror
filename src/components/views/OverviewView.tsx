@@ -227,7 +227,7 @@ export default function OverviewView() {
         if (yr.y !== drillYear) continue;
         const e = byPartner.get(c.partnerIso)
           ?? { name: c.partner, iso3: c.partnerIso, positive: 0, reverse: 0 };
-        if (yr.signed > 0) e.positive += yr.signed; else e.reverse += -yr.signed;
+        e.positive += yr.posY; e.reverse += yr.revY;
         byPartner.set(c.partnerIso, e);
       }
     }

@@ -297,6 +297,26 @@ for (const key of CONFIG_KEYS) {
 }
 
 /* ---------------------------------------------------------------- */
+/* one grain: every level reports the same money                       */
+/* ---------------------------------------------------------------- */
+/* The discrepancy is measured per partner × HS6 × period and coarser levels
+ * aggregate it, so the positive total, the reverse total and the comparable
+ * value totals must be identical at HS2, HS4 and HS6 — the defect this grain
+ * exists to prevent is three totals from one dataset. Checked at two freight
+ * rates so a re-derivation hiding in one branch cannot pass at the other. */
+for (const cif of [0, 0.10]) {
+  const a = aggregate({ ...FULL, cif });
+  const sum = (chs: Channel[], k: "posT" | "revT" | "peT" | "uiT") => chs.reduce((s, c) => s + c[k], 0);
+  for (const k of ["posT", "revT", "peT", "uiT"] as const) {
+    const two = sum(a.baseChannels, k), four = sum(a.baseChannels4, k), six = sum(a.baseChannels6, k);
+    check(`${k} identical across levels at ${Math.round(cif * 100)}%`,
+      near(two, six, 5) && near(four, six, 5), `${Math.round(two)} / ${Math.round(four)} / ${Math.round(six)}`);
+  }
+  check(`the headline is the level-independent total (${Math.round(cif * 100)}%)`,
+    near(a.kpis.positive.central, sum(a.baseChannels6, "posT"), 5));
+}
+
+/* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");

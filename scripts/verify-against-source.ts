@@ -17,21 +17,43 @@ const src: SrcCell[] = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "data", "raw", "excel-cells.json"), "utf8"),
 ).cells;
 
-/** The workbook does not carry HS4; it is the exact truncation of HS6. */
+/*
+ * ONE GRAIN, like the engine: HS6 is the measurement grain and every coarser
+ * level is its exact truncation OF THE WORKBOOK'S OWN HS6 ROWS. The workbook
+ * also carries its own HS2 layer, which differs per chapter by confidential
+ * trade re-allocated across chapters; the engine no longer reads it, and the
+ * delta is reported below as a reconciliation rather than silently absorbed.
+ */
 const rowsAt = (level: number): SrcCell[] => {
-  if (level !== 4) return src.filter((r) => r.l === level);
+  if (level === 6) return src.filter((r) => r.l === 6);
   const m = new Map<string, SrcCell>();
   for (const r of src) {
     if (r.l !== 6) continue;
-    const k = r.k.slice(0, 4);
+    const k = r.k.slice(0, level);
     const key = `${r.p}|${k}|${r.y}`;
-    const a = m.get(key) ?? { p: r.p, l: 4, k, y: r.y, pe: 0, ui: 0 };
+    const a = m.get(key) ?? { p: r.p, l: level, k, y: r.y, pe: 0, ui: 0 };
     a.pe += r.pe; a.ui += r.ui;
     m.set(key, a);
   }
   return [...m.values()];
 };
 const BY_LEVEL = new Map([2, 4, 6].map((l) => [l, rowsAt(l)]));
+
+// the workbook's own HS2 layer against the truncation the engine reports
+{
+  const own = new Map<string, number>();
+  for (const r of src) if (r.l === 2) own.set(r.k, (own.get(r.k) ?? 0) + r.pe + r.ui);
+  const derived = new Map<string, number>();
+  for (const r of BY_LEVEL.get(2)!) derived.set(r.k, (derived.get(r.k) ?? 0) + r.pe + r.ui);
+  let absDelta = 0, chaptersOff = 0;
+  for (const [k, v] of own) {
+    const d = Math.abs(v - (derived.get(k) ?? 0));
+    if (d > 1000) { chaptersOff++; absDelta += d; }
+  }
+  console.log(`note: the workbook's own HS2 layer differs from the truncation of its HS6 rows`);
+  console.log(`      in ${chaptersOff} chapters, ${(absDelta / 1e9).toFixed(2)}B USD of |value| re-allocated (confidential lines);`);
+  console.log(`      the engine reads the HS6 grain, so chapter slices below are checked against the truncation.`);
+}
 
 function expected(level: number, f: Filter, codes: string[]) {
   const years = new Set(f.years);
@@ -134,20 +156,50 @@ const monthlySrc: MonthSrc[] = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells.json"), "utf8"),
 ).cells;
 
+/* Monthly HS6 detail: injected the way the client receives it, then checked
+   at HS6 and at the derived HS4 truncation. */
+type Hs6Row = [string, string, number, number, number, number];
+const monthlyHs6: Hs6Row[] = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells-hs6.json"), "utf8"),
+).cells;
+loadMonthlyDetail(JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
+));
+
 function expectedMonthly(f: Filter, codes: string[]) {
+  // chapter slices on the monthly basis: the HS6 sheet truncated, the same
+  // grain the engine reads; the HS2 monthly sheet is checked for GLOBAL
+  // agreement separately below
   const years = new Set(f.years);
   const months = new Set(f.months);
   const partners = new Set(f.country);
   const codeSet = new Set(codes);
   let pe = 0, ui = 0;
-  for (const r of monthlySrc) {
-    if (years.size && !years.has(r.y)) continue;
-    if (months.size && !months.has(r.m)) continue;
-    if (partners.size && !partners.has(r.p)) continue;
-    if (codeSet.size && !codeSet.has(r.k)) continue;
-    pe += r.pe; ui += r.ui;
+  for (const r of monthlyHs6) {
+    if (years.size && !years.has(r[2])) continue;
+    if (months.size && !months.has(r[3])) continue;
+    if (partners.size && !partners.has(r[0])) continue;
+    if (codeSet.size && !codeSet.has(r[1].slice(0, 2))) continue;
+    pe += r[4]; ui += r[5];
   }
   return { pe, ui };
+}
+
+// the two monthly sheets must agree in aggregate, or the grain swap hid data.
+// The source itself carries a small export-side difference between its own
+// sheets (~$3.3M on $176B, 0.002%), so the guard fails only on a magnitude
+// that could mean lost data, and the measured delta is always reported.
+{
+  let pe2 = 0, ui2 = 0, pe6 = 0, ui6 = 0;
+  for (const r of monthlySrc) { pe2 += r.pe; ui2 += r.ui; }
+  for (const r of monthlyHs6) { pe6 += r[4]; ui6 += r[5]; }
+  const dPe = Math.abs(pe2 - pe6), dUi = Math.abs(ui2 - ui6);
+  console.log(`note: monthly HS2 sheet vs HS6 sheet: Δexports ${dPe.toLocaleString()} USD (${(100 * dPe / pe2).toFixed(4)}%), Δimports ${dUi.toLocaleString()} USD — a source-side difference, reported not absorbed`);
+  checks++;
+  if (dPe > pe2 * 1e-4 || dUi > ui2 * 1e-4) {
+    fails++;
+    console.log(`  FAIL monthly sheets diverge past 0.01%: pe ${pe2.toLocaleString()} vs ${pe6.toLocaleString()}, ui ${ui2.toLocaleString()} vs ${ui6.toLocaleString()}`);
+  }
 }
 
 const mbase = (): Filter => ({ ...base(), granularity: "month", months: [] });
@@ -162,16 +214,6 @@ const reportMonthly = (name: string, f: Filter, codes: string[]) => {
     console.log(`       workbook exports ${want.pe.toLocaleString()}  imports ${want.ui.toLocaleString()}`);
   }
 };
-
-/* Monthly HS6 detail: injected the way the client receives it, then checked
-   at HS6 and at the derived HS4 truncation. */
-type Hs6Row = [string, string, number, number, number, number];
-const monthlyHs6: Hs6Row[] = JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells-hs6.json"), "utf8"),
-).cells;
-loadMonthlyDetail(JSON.parse(
-  fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
-));
 
 function expectedMonthly6(f: Filter, level: number) {
   const years = new Set(f.years);

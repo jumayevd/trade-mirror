@@ -459,7 +459,8 @@ function YearDetail({ c, filter, years }: { c: Channel; filter: Filter; years: n
           <tbody>
             {years.map((y) => {
               const yr = byYear.get(y);
-              const gap = yr ? Math.max(0, yr.signed) : 0;
+              // the HS6-grain positive sum — at HS6 identical to the net's positive part
+              const gap = yr ? yr.posY : 0;
               return (
                 <tr key={y} className="border-b border-[var(--color-border-soft)]">
                   <td className={`${td} tabular`}>{y}</td>
