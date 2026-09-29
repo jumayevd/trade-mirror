@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  SectionTitle, BandBadge, RiskScore, RobustnessBadge,
+  SectionTitle, BandBadge, RiskScore,
 } from "@/components/ui";
-import { hs4Label, hsLabel, type RiskBand, type Robustness } from "@/lib/dataset";
-import { fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
+import { hs4Label, type RiskBand, type Robustness } from "@/lib/dataset";
+import { fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -32,7 +32,7 @@ export interface ChannelRow {
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
 const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
-const PAGE = 12;
+const PAGE = 10;
 
 /** Sorted unique values, preserving the first label seen for each key. */
 function options(pairs: [string, string][]): { code: string; label: string }[] {
@@ -42,9 +42,9 @@ function options(pairs: [string, string][]): { code: string; label: string }[] {
 }
 
 export default function PartnerChannels({
-  iso, partner, totalPos, chapters, rows,
+  iso, partner, rows,
 }: {
-  iso: string; partner: string; totalPos: number; chapters: ChapterRow[]; rows: ChannelRow[];
+  iso: string; partner: string; rows: ChannelRow[];
 }) {
   const { t } = useI18n();
   const [hs2, setHs2] = useState("all");
@@ -52,13 +52,6 @@ export default function PartnerChannels({
   const [hs6, setHs6] = useState("all");
   const [shown, setShown] = useState(PAGE);
 
-  const hs2Options = useMemo(
-    () => options([
-      ...chapters.map((c) => [c.chapter, c.label] as [string, string]),
-      ...rows.map((r) => [r.chapter, hsLabel(r.chapter)] as [string, string]),
-    ]),
-    [chapters, rows],
-  );
   const hs4Options = useMemo(
     () => options(rows.filter((r) => hs2 === "all" || r.chapter === hs2).map((r) => [r.hs4, hs4Label(r.hs4)] as [string, string])),
     [rows, hs2],
@@ -77,11 +70,6 @@ export default function PartnerChannels({
       && (hs6 === "all" || r.cmd === hs6)),
     [rows, hs2, hs4, hs6],
   );
-  const structure = useMemo(
-    () => chapters.filter((c) => hs2 === "all" || c.chapter === hs2).slice(0, 8),
-    [chapters, hs2],
-  );
-  const maxBar = structure[0]?.posT ?? 0;
   const narrowed = hs2 !== "all" || hs4 !== "all" || hs6 !== "all";
 
   const pick = (level: "hs2" | "hs4" | "hs6", v: string) => {
@@ -96,13 +84,6 @@ export default function PartnerChannels({
       {/* product-code narrowing */}
       <section className="card p-4">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-          <div className="flex flex-col gap-1">
-            <span className={lbl}>HS2</span>
-            <select className={sel} value={hs2} onChange={(e) => pick("hs2", e.target.value)} aria-label={t("prof.aria.hs2")}>
-              <option value="all">{t("filter.all")}</option>
-              {hs2Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
-            </select>
-          </div>
           <div className="flex flex-col gap-1">
             <span className={lbl}>HS4</span>
             <select className={sel} value={hs4} onChange={(e) => pick("hs4", e.target.value)} aria-label={t("prof.aria.hs4")}>
@@ -133,40 +114,9 @@ export default function PartnerChannels({
         </div>
       </section>
 
-      {/* HS2 structure */}
-      <section className="card p-5">
-        <SectionTitle
-          title={t("prof.structure.title")}
-          desc={`${t("prof.structure.descPre")} ${partner} ${t("prof.structure.descPost")} (${fmtUSD(totalPos)}). ${t("common.source")}.`}
-        />
-        {structure.length === 0 ? (
-          <p className="text-sm text-muted">
-            No HS2 chapter carries a positive discrepancy above the noise floor under this
-            product selection.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {structure.map((c) => (
-              <div key={c.chapter} className="flex items-center gap-3">
-                <span className="tabular w-8 shrink-0 text-xs text-faint">{c.chapter}</span>
-                <span className="w-52 shrink-0 truncate text-sm text-muted" title={c.label}>{c.label}</span>
-                <div className="h-5 flex-1 overflow-hidden rounded bg-[var(--color-panel-2)]">
-                  <div className="h-full rounded" style={{ width: `${Math.max(2, (c.posT / (maxBar || 1)) * 100)}%`, background: COLORS.positive }} />
-                </div>
-                <span className="tabular w-20 shrink-0 text-right text-sm" title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</span>
-                <span className="tabular hidden w-12 shrink-0 text-right text-xs text-faint sm:block">{fmtPct(totalPos > 0 ? c.posT / totalPos : 0, 0)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* HS6 signals */}
       <section>
-        <SectionTitle
-          title={t("prof.signals.title")}
-          desc={t("prof.signals.desc")}
-        />
+        <SectionTitle title={t("prof.signals.title")} />
         {filtered.length === 0 ? (
           <p className="card p-8 text-center text-sm text-muted">
             {fill(t("prof.signals.empty"), { partner })}
@@ -183,7 +133,6 @@ export default function PartnerChannels({
                     <th className={TH}>{t("prof.th.band")}</th>
                     <th className={TH}>{t("prof.th.code")}</th>
                     <th className={TH}>{t("prof.th.product")}</th>
-                    <th className={TH} title={t("prof.th.qualityTip")}>{t("prof.th.quality")}</th>
                     <th className={TH_NUM}>{t("prof.th.gap")}</th>
                   </tr>
                 </thead>
@@ -201,7 +150,6 @@ export default function PartnerChannels({
                           {c.label}
                         </Link>
                       </td>
-                      <td className="px-3 py-2 align-middle"><RobustnessBadge r={c.robustness} /></td>
                       <td className="tabular whitespace-nowrap px-3 py-2 text-right align-middle text-[13.5px]"
                         style={{ color: COLORS.positive }}
                         title={`${t("prof.tip.positiveDiscrepancy")}: ${fmtUSDFull(c.posT)}`}>

@@ -92,7 +92,9 @@ export default function OverviewView() {
   const pickGranularity = (g: Granularity) => {
     if (g === granularity) return;
     setGranularity(g);
-    setMonths([]);
+    // every month ticked, not an empty set meaning "all": the picker shows what
+    // is selected, and an empty one read as though no month had been chosen
+    setMonths(g === "month" ? Array.from({ length: 12 }, (_, i) => i + 1) : []);
     // keep only years the target basis actually carries; empty means the full window
     const window = yearsFor(g);
     const kept = years.filter((y) => window.includes(y));

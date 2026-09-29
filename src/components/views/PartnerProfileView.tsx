@@ -4,14 +4,14 @@ import { useMemo, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PartnerGaps from "@/components/charts/PartnerGaps";
-import PartnerChannels, { type ChannelRow, type ChapterRow } from "@/app/partners/[iso]/PartnerChannels";
-import { Stat, SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, Segmented } from "@/components/ui";
+import PartnerChannels, { type ChannelRow } from "@/app/partners/[iso]/PartnerChannels";
+import { Stat, SectionTitle, QualityTag, TransitTag, EmptyState, Segmented } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import {
-  aggregate, meta, DEFAULT_FILTER, needsMonthlyDetail, partnerMetaOf, isResidualChapter,
+  aggregate, meta, DEFAULT_FILTER, FREIGHT_SCENARIOS, needsMonthlyDetail, partnerMetaOf,
   yearsFor, yearsLabel, type Aggregate, type Filter, type Granularity,
   reportedYearsOf,
 } from "@/lib/dataset";
@@ -69,14 +69,6 @@ function codeOptions(rows: { cmd: string; cmdLabel: string }[]): SearchOption[] 
 const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
-type AltStatus = "unlikely" | "possible" | "material" | "cannot-assess";
-const ALT_STATUS: Record<AltStatus, { label: string; color: string }> = {
-  unlikely: { label: "prof.status.unlikely", color: COLORS.good },
-  possible: { label: "prof.status.possible", color: COLORS.warn },
-  material: { label: "prof.status.material", color: COLORS.goldDeep },
-  "cannot-assess": { label: "prof.status.cannotAssess", color: COLORS.axis },
-};
-
 export default function PartnerProfileView({ iso }: { iso: string }) {
   const { t, lang } = useI18n();
   const ISO = useMemo(() => iso.toUpperCase(), [iso]);
@@ -84,14 +76,18 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   /** The page's own controls, mirroring the Executive Overview's. */
   const [granularity, setGranularity] = useState<Granularity>("year");
-  const [years, setYears] = useState<number[]>(() => [...yearsFor("year")]);
+  const [years, setYears] = useState<number[]>(() => {
+    const w = yearsFor("year");
+    return [w[w.length - 1]];
+  });
   const [months, setMonths] = useState<number[]>([]);
   const [hs2Sel, setHs2Sel] = useState<string[]>([]);
   const [hs4Sel, setHs4Sel] = useState<string[]>([]);
   const [hs6Sel, setHs6Sel] = useState<string[]>([]);
+  const [cif, setCif] = useState<number>(DEFAULT_FILTER.cif);
   const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
 
-  const { full: BASE, snap: SNAP } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
+  const { full: BASE } = useMemo(() => labelsFor(lang, () => aggFor(lang)), [lang]);
 
   /** Everything the page shows follows these ticks, scoped to this partner. */
   const viewFilter = useMemo<Filter>(() => ({
@@ -101,10 +97,11 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
     granularity,
     years,
     months,
+    cif,
     hs2: hs2Sel,
     hs4: hs4Sel,
     hs6: hs6Sel,
-  }), [ISO, granularity, years, months, hs2Sel, hs4Sel, hs6Sel]);
+  }), [ISO, granularity, years, months, cif, hs2Sel, hs4Sel, hs6Sel]);
 
   const FULL = useMemo(
     () => labelsFor(lang, () => aggregate(viewFilter)),
@@ -168,6 +165,21 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       <MultiSelect values={hs2Sel} onChange={setHs2Sel} options={hs2Options} label={t("filter.hs2")} allLabel={t("filter.all")} />
       <MultiSelect values={hs4Sel} onChange={setHs4Sel} options={hs4Options} label={t("filter.hs4")} allLabel={t("filter.all")} />
       <MultiSelect values={hs6Sel} onChange={setHs6Sel} options={hs6Options} label={t("filter.hs6")} allLabel={t("filter.all")} />
+      <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
+        <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+        <select
+          aria-label={t("filter.freight")}
+          value={cif}
+          onChange={(e) => setCif(+e.target.value)}
+          className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+        >
+          {FREIGHT_SCENARIOS.map((f) => (
+            <option key={f} value={f}>
+              {f === 0 ? t("filter.freightNone") : `${Math.round(f * 100)}%`}
+            </option>
+          ))}
+        </select>
+      </div>
     </section>
   );
 
@@ -196,16 +208,12 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   }
 
   const pm = pm0;
-  const snap = SNAP.partners.find((x) => x.iso3 === p.iso3);
-  const cifPct = Math.round(FULL_FILTER.cif * 100);
+  const cifPct = Math.round(cif * 100);
 
-  const hs2 = FULL.channels.filter((c) => c.partnerIso === p.iso3);
   const hs6 = FULL.channels6.filter((c) => c.partnerIso === p.iso3);
-  // slim, serializable rows for the client-side HS2 › HS4 › HS6 narrowing
-  const structure: ChapterRow[] = [...hs2]
-    .filter((c) => c.posT > 0)
-    .sort((a, b) => b.posT - a.posT)
-    .map((c) => ({ chapter: c.chapter, label: c.cmdLabel, posT: Math.round(c.posT) }));
+  // the tile counts the products in the top band, which is what a reader
+  // scanning a partner wants to know before anything else
+  const criticalHs6 = hs6.filter((c) => c.band === "critical").length;
   const signalRows: ChannelRow[] = hs6.map((c) => ({
     // engine order is preserved: band → MTRS → size
     cmd: c.cmd, label: c.cmdLabel, chapter: c.chapter, hs4: c.cmd.slice(0, 4),
@@ -214,78 +222,10 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   }));
 
   // weight availability among this partner's HS6 channels, value-weighted (measured, optional)
-  const pe6 = hs6.reduce((s, c) => s + c.peT, 0);
-  const pe6w = hs6.reduce((s, c) => s + (c.uvYears > 0 ? c.peT : 0), 0);
-  const weightShare = pe6 > 0 ? pe6w / pe6 : null;
 
-  // positive channel-years only, so exports − adjusted imports = the positive discrepancy
-  const adjImport = p.uiPosT / (1 + FULL_FILTER.cif);
   const posShare = p.pePosT > 0 ? p.posT / p.pePosT : 0;
   const trendWord = t(p.trend > 1_000_000 ? "prof.trend.rising" : p.trend < -1_000_000 ? "prof.trend.declining" : "prof.trend.stable");
-  const topSector = structure[0];
 
-  // ---- executive summary (spec §6.6.1) — standardized cautious template from measured fields ----
-  const coverageSentence =
-    pm.lapse
-      ? fill(t("prof.sum.covLapse"), { name, year: pm.lastReportedYear, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })
-      : pm.coverage < 1
-        ? fill(t("prof.sum.covPartial"), { name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })
-        : fill(t("prof.sum.covFull"), { name });
-  const summary = [
-    fill(t("prof.sum.observed"), { start: meta.window.start, end: meta.window.end, name, pe: fmtUSD(p.observed.pe), ui: fmtUSD(p.observed.ui) }),
-    fill(t("prof.sum.screened"), { name, cif: cifPct, pePos: fmtUSD(p.pePosT), expected: fmtUSD(adjImport), uiPos: fmtUSD(p.uiPosT), pos: fmtUSD(p.posT) }),
-    topSector
-      ? fill(t("prof.sum.topSector"), { sector: topSector.label.toLowerCase(), chapter: topSector.chapter, value: fmtUSD(topSector.posT), trend: trendWord })
-      : fill(t("prof.sum.noSector"), { trend: trendWord }),
-    snap ? fill(t("prof.sum.snapYear"), { year: meta.defaultYear, value: fmtUSD(snap.posT) }) : "",
-    coverageSentence,
-    pm.transit ? fill(t("prof.sum.transit"), { name }) : "",
-  ].filter(Boolean).join(" ");
-
-  // ---- alternative explanations (spec §6.6.8) — partner-level, statuses from measured fields ----
-  const flipShare = hs2.length > 0 ? hs2.filter((c) => c.flipsAcrossFreight).length / hs2.length : 0;
-  const residualPos = hs2.filter((c) => isResidualChapter(c.chapter)).reduce((s, c) => s + c.posT, 0);
-  const residualShare = p.posT > 0 ? residualPos / p.posT : 0;
-  const weakReporter = pm.lapse || pm.coverage < 0.8;
-  const alternatives: { title: string; status: AltStatus; note: string }[] = [
-    {
-      title: t("prof.alt.cif.title"),
-      status: flipShare >= 0.3 ? "material" : "possible",
-      note: fill(t("prof.alt.cif.note"), { cif: cifPct, name, pct: fmtPct(flipShare, 0) }) + (flipShare >= 0.3 ? ` ${t("prof.alt.cif.material")}` : ""),
-    },
-    {
-      title: t("prof.alt.transit.title"),
-      status: pm.transit ? "material" : "unlikely",
-      note: pm.transit ? fill(t("prof.alt.transit.yes"), { name }) : fill(t("prof.alt.transit.no"), { name }),
-    },
-    {
-      title: t("prof.alt.reporting.title"),
-      status: weakReporter ? "material" : pm.coverage < 1 ? "possible" : "unlikely",
-      note: weakReporter
-        ? fill(t("prof.alt.reporting.weak"), {
-            name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length,
-            lapse: pm.lapse ? fill(t("prof.alt.reporting.lastReport"), { year: pm.lastReportedYear }) : "",
-          })
-        : fill(t(pm.coverage < 1 ? "prof.alt.reporting.okPartial" : "prof.alt.reporting.okFull"), { name, k: reportedYearsOf(pm.iso3).length, n: WINDOW.length }),
-    },
-    {
-      title: t("prof.alt.classification.title"),
-      status: "cannot-assess",
-      note: t("prof.alt.classification.note"),
-    },
-    {
-      title: t("prof.alt.timing.title"),
-      status: "possible",
-      note: t("prof.alt.timing.note"),
-    },
-    {
-      title: t("prof.alt.residual.title"),
-      status: residualShare >= 0.1 ? "material" : residualShare > 0 ? "possible" : "unlikely",
-      note: residualShare > 0
-        ? fill(t("prof.alt.residual.some"), { pct: fmtPct(residualShare, 0), name })
-        : fill(t("prof.alt.residual.none"), { name }),
-    },
-  ];
 
   // ---- downloads (spec §6.6.9): server-rendered data-URI link, no client JS needed ----
   const csv = channelsToCsv(hs6, viewFilter);
@@ -306,13 +246,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
       {controls}
 
-      <ContextLine filter={viewFilter} />
 
-      {/* 1. executive summary */}
-      <section className="card border-l-2 border-l-[var(--color-primary)] p-5">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">{t("prof.execSummary")}</h2>
-        <p className="text-[15px] leading-relaxed text-muted">{summary}</p>
-      </section>
 
       {/* 2. key indicators */}
       <section className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -322,9 +256,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         <Stat label={t("prof.stat.coverage")} value={`${reportedYearsOf(pm.iso3).length}/${WINDOW.length} ${t("prof.unit.yrs")}`}
           sub={pm.lapse ? fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear }) : fill(t("prof.stat.coverageSub"), { pct: fmtPct(reportedYearsOf(pm.iso3).length / WINDOW.length, 0) })}
           info={t("prof.stat.coverage.info")} />
-        <Stat label={t("prof.stat.hs2Sectors")} value={String(hs2.length)}
+        <Stat label={t("prof.stat.criticalHs6")} value={String(criticalHs6)}
           sub={fill(t("prof.stat.trendSub"), { trend: trendWord })}
-          info={t("prof.stat.hs2Sectors.info")} />
+          info={t("prof.stat.criticalHs6.info")} />
         <Stat label={t("prof.stat.hs6Channels")} value={String(hs6.length)}
           sub={fill(t("prof.stat.flaggedSub"), { n: p.flagged })}
           info={t("prof.stat.hs6Channels.info")} />
@@ -334,7 +268,6 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       <section className="card p-5">
         <SectionTitle
           title={t("prof.quality.title")}
-          desc={t("prof.quality.desc")}
           right={pm.lapse ? (
             <span className="rounded-md border px-2 py-1 text-xs font-medium" style={{ color: COLORS.warn, borderColor: `color-mix(in srgb, ${COLORS.warn} 40%, transparent)` }}
               title={fill(t("prof.quality.stopBadgeTip"), { name, year: pm.lastReportedYear })}>
@@ -359,31 +292,16 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
             );
           })}
         </div>
-        <p className="mt-3 max-w-3xl text-sm text-muted">
-          {weightShare != null
-            ? fill(t("prof.quality.weightYes"), { pct: fmtPct(weightShare, 0), name })
-            : fill(t("prof.quality.weightNo"), { name })}
-          {" "}{t("prof.quality.hollow")}
-        </p>
       </section>
 
       {/* 4. reported vs recorded chart */}
       <section>
-        <SectionTitle
-          title={t("prof.byYear.title")}
-          desc={fill(t("prof.byYear.desc"), { period, name, cif: cifPct })}
-        />
+        <SectionTitle title={t("prof.byYear.title")} />
         <PartnerGaps byYear={p.byYear} partner={name} />
       </section>
 
       {/* 5+6. product-code narrowing over the HS2 structure and HS6 signals */}
-      <PartnerChannels
-        iso={p.iso3}
-        partner={name}
-        totalPos={p.posT}
-        chapters={structure}
-        rows={signalRows}
-      />
+      <PartnerChannels iso={p.iso3} partner={name} rows={signalRows} />
 
       {/* 7. transit & attribution note */}
       {pm.transit && (
@@ -396,29 +314,6 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           </p>
         </section>
       )}
-
-      {/* 8. alternative explanations */}
-      <section className="card p-5">
-        <SectionTitle
-          title={t("prof.alt.title")}
-          desc={t("prof.alt.desc")}
-        />
-        <ul className="space-y-3">
-          {alternatives.map((a) => {
-            const s = ALT_STATUS[a.status];
-            return (
-              <li key={a.title} className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
-                <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center text-[12px] font-medium"
-                  style={{ color: s.color, borderColor: `color-mix(in srgb, ${s.color} 40%, transparent)`, background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
-                  {t(s.label as never)}
-                </span>
-                <span className="min-w-[12rem] font-medium">{a.title}</span>
-                <span className="basis-full text-muted md:min-w-0 md:flex-1 md:basis-0">{a.note}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
 
       {/* 9. downloads */}
       <section className="card flex flex-wrap items-center gap-4 p-5">

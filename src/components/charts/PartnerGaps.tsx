@@ -24,7 +24,6 @@ export default function PartnerGaps({
 }) {
   const { t } = useI18n();
   const reported = useMemo(() => byYear.filter((y) => y.reported), [byYear]);
-  const missing = useMemo(() => byYear.filter((y) => !y.reported).map((y) => y.year), [byYear]);
 
   const ptnLabel = `${partner} — ${t("ctry.chart.reportedExportsFob")}`;
   const uzbLabel = t("ctry.chart.uzbRecordedImportsCif");
@@ -110,13 +109,6 @@ export default function PartnerGaps({
       <div className="card p-3" style={{ height: 340 }}>
         <EChart option={option} />
       </div>
-      {missing.length > 0 && (
-        <p className="mt-2 text-xs text-faint">
-          {t("ctry.chart.notDrawn")}: {missing.join(", ")} — {partner}{" "}
-          {missing.length === 1 ? t("ctry.chart.notDrawnOne") : t("ctry.chart.notDrawnMany")}{" "}
-          {t("common.source")}.
-        </p>
-      )}
     </div>
   );
 }
