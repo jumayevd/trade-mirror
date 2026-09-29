@@ -173,11 +173,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
           <h1 className="text-2xl font-semibold tracking-tight">
             <Link href={`/partners/${channel.partnerIso.toLowerCase()}`} className="hover:underline">{partner}</Link>
             <span className="text-faint"> × </span>
-            {product ? (
-              <Link href={`/products/${channel.cmd}`} className="hover:underline">{channel.cmdLabel}</Link>
-            ) : (
-              <span title={t("chan.noProfile")}>{channel.cmdLabel}</span>
-            )}
+            <span>{channel.cmdLabel}</span>
           </h1>
           <span className="tabular rounded bg-[var(--color-panel-2)] px-2 py-0.5 text-xs text-faint">HS {channel.cmd}</span>
         </div>

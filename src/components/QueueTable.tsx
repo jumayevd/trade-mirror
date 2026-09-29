@@ -8,7 +8,7 @@ import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/com
 import type { SearchOption } from "@/components/SearchSelect";
 import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { hsFullLabel, productByCmd, yearsLabel, type Channel, type Filter } from "@/lib/dataset";
+import { hsFullLabel, yearsLabel, type Channel, type Filter } from "@/lib/dataset";
 import type { LocaleKey } from "@/lib/locales";
 
 /**
@@ -296,7 +296,6 @@ export default function QueueTable({
               {pageRows.map((c) => {
                 const key = keyOf(c);
                 const open = expanded === key;
-                const product = c.level === 6 ? productByCmd(c.cmd) : undefined;
                 const pct = gapPct(c);
                 return [
                   <tr
@@ -328,20 +327,9 @@ export default function QueueTable({
                     <td className={`${td} max-w-[280px]`}>
                       {/* the column is narrow, so the cell abbreviates; hover carries the
                           complete nomenclature line, not the extract's 90-char cut */}
-                      {product ? (
-                        <Link
-                          href={`/products/${c.cmd}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="hover:underline"
-                          title={hsFullLabel(c.cmd)}
-                        >
-                          {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
-                        </Link>
-                      ) : (
-                        <span title={hsFullLabel(c.cmd)}>
-                          {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
-                        </span>
-                      )}
+                      <span title={hsFullLabel(c.cmd)}>
+                        {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
+                      </span>
                     </td>
                     <td className={td}><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
                     {/* imports divided down to an FOB basis at the selected freight

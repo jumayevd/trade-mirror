@@ -83,7 +83,7 @@ export default function OverviewView() {
     }
     const products: TreemapItem[] = [...byCmd.entries()]
       .sort((a, b) => b[1].value - a[1].value)
-      .map(([cmd, e]) => ({ key: cmd, label: `${cmd} · ${e.label}`, value: e.value, href: `/products/${cmd}` }));
+      .map(([cmd, e]) => ({ key: cmd, label: `${cmd} · ${e.label}`, value: e.value, href: `/products?hs6=${cmd}` }));
     return { countries, products, total: k.positive.central };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);

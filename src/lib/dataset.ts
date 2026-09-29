@@ -112,29 +112,44 @@ const cells: Cell[] = (() => {
   }
 
   /*
-   * Derive the HS4 layer here rather than shipping it. HS4 is defined as the
-   * truncation of HS6, so rebuilding it in one pass is both smaller over the
-   * wire and impossible to drift out of step with its children.
+   * Derive HS4 AND HS2 from HS6 by truncation, rather than shipping either.
+   *
+   * HS4 was always derived — it is defined as the truncation of HS6. HS2 used to
+   * be the workbook's own chapter sheet, which is a separate UN Comtrade
+   * aggregation of the same trade and does not agree with HS6 cell by cell: a
+   * flow booked to a named chapter at HS2 can sit under 999999 at HS6. The grand
+   * totals matched, but a reader who switched level saw the reported exports and
+   * recorded imports for one chapter change under them, which reads as an error
+   * in the data rather than as two different Comtrade queries.
+   *
+   * Deriving both from the HS6 grain buys that consistency: every level is now
+   * the same trade, summed differently, and a chapter is exactly its products.
+   * The cost is that the HS2 view no longer reconciles against a raw Comtrade
+   * HS2 query — it reconciles against this dashboard's own HS6 view instead.
    */
-  const h4 = new Map<string, Cell>();
+  const rolled = new Map<string, Cell>();
   for (const r of out) {
     if (r.l !== 6) continue;
-    const code = r.k.slice(0, 4);
-    const key = `${r.p}|${code}|${r.y}`;
-    let agg = h4.get(key);
-    if (!agg) {
-      agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
-      h4.set(key, agg);
-    }
-    agg.pe += r.pe;
-    agg.ui += r.ui;
-    if (r.uw !== undefined && r.pw !== undefined) {
-      agg.uw = (agg.uw ?? 0) + r.uw;
-      agg.pw = (agg.pw ?? 0) + r.pw;
+    for (const width of [4, 2] as const) {
+      const code = r.k.slice(0, width);
+      const key = `${width}|${r.p}|${code}|${r.y}`;
+      let agg = rolled.get(key);
+      if (!agg) {
+        agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: width, y: r.y, pe: 0, ui: 0 };
+        rolled.set(key, agg);
+      }
+      agg.pe += r.pe;
+      agg.ui += r.ui;
+      if (r.uw !== undefined && r.pw !== undefined) {
+        agg.uw = (agg.uw ?? 0) + r.uw;
+        agg.pw = (agg.pw ?? 0) + r.pw;
+      }
     }
   }
-  for (const cell of h4.values()) out.push(cell);
-  return out;
+  // the shipped chapter rows go, replaced by the rollup of their own products
+  const derived = out.filter((r) => r.l !== 2);
+  for (const cell of rolled.values()) derived.push(cell);
+  return derived;
 })();
 
 /* ------------------------------------------------------------------ */
