@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
-import { officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
+import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
@@ -358,16 +358,23 @@ export default function OverviewView() {
 
   return (
     <div className="space-y-6">
-      {/* 1. heading + one quiet line */}
-      <section className="space-y-1.5">
+      {/* 1. heading, and the window the data covers — stated once, above the controls */}
+      <section className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.overview")}</h1>
-        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-          {t("ov.question")} {t("ovw.intro.whole")} {periodLabel} {t("ovw.intro.windowAll")}{" "}
-          {fmtNum(meta.partners.length)} {t("ovw.intro.reportingPartners")}{" "}
-          <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">
-            {t("nav.methodology")} →
-          </Link>
-        </p>
+        {/*
+          The window is a property of the dataset, not of the period picked below
+          it, so it reads the data window rather than the selection and does not
+          move when the reader filters.
+        */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">
+            {t("ovw.stat.yearsCovered")}
+          </span>
+          <span className="tabular text-[15px] font-semibold">
+            {DATA_WINDOW.start}–{DATA_WINDOW.end}
+          </span>
+          <InfoTip text={t("ovw.stat.yearsCovered.info")} />
+        </div>
       </section>
 
       {/* 2. time basis + period — dropdowns of ticks — and the view switch beside them */}
@@ -411,7 +418,91 @@ export default function OverviewView() {
         />
       </section>
 
-      {tab === "profile" && <StatisticalProfile agg={data} />}
+      {tab === "profile" && (
+        <div className="space-y-6">
+        {/* 3+4. the two time series, side by side on wide screens */}
+        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <section>
+          <SectionTitle
+            title={t("ovw.dynamics.title")}
+            desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
+            right={<InfoTip text={t("ovw.dynamics.info")} />}
+          />
+          <div className="card p-4">
+            <EChart option={annualOption} style={{ height: 300 }} />
+          </div>
+        </section>
+  
+        {/* 3b. the same window, both directions — the one place the reverse side is shown */}
+        <section>
+          <SectionTitle
+            title={t("ovw.twoSided.title")}
+            desc={t("ovw.twoSided.desc")}
+            right={<InfoTip text={t("ovw.twoSided.info")} />}
+          />
+          <div className="card p-4">
+            <EChart
+              option={twoSidedOption}
+              style={{ height: 300 }}
+              onEvents={{
+                click: (p) => {
+                  // periods carry the year in the label ("2023" or "2023-05")
+                  const label = (p as { name?: string }).name ?? "";
+                  const year = Number(label.slice(0, 4));
+                  setDrillYear((cur) => (Number.isFinite(year) && cur !== year ? year : null));
+                },
+              }}
+            />
+            {/* The chart itself is a canvas, so the click above is mouse-only. The same
+                drill-down is offered as buttons: keyboard-reachable, and it names the
+                periods rather than asking the reader to guess that bars are clickable. */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
+              {drillPeriods.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
+                  aria-pressed={drillYear === y}
+                  className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
+                    drillYear === y
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                      : "border-[var(--color-border)] text-muted hover:text-foreground"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+  
+            {/* the clicked period, by partner — same two directions, so the reader can
+                see whether the offsetting they just saw survives country by country */}
+            {drillYear != null && (
+              <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
+                <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-[13px] font-semibold">
+                    {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
+                  </h3>
+                  <button
+                    onClick={() => setDrillYear(null)}
+                    className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
+                  >
+                    {t("ovw.twoSided.close")} ✕
+                  </button>
+                </div>
+                {drillRows.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <EChart option={drillOption} style={{ height: 280 }} />
+                )}
+              </div>
+            )}
+  
+          </div>
+        </section>
+        </div>
+          <StatisticalProfile agg={data} />
+        </div>
+      )}
 
       {tab === "summary" && (
         <div className="space-y-6">
@@ -420,13 +511,23 @@ export default function OverviewView() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {official && (
             <>
+              {/*
+                How much of the country's actual import bill this dataset can see.
+                The card used to print the official total itself, which told the
+                reader the size of a number they had not asked about; what decides
+                whether the rest of the page is worth reading is the share of that
+                bill the mirror data covers. The official figure stays in the
+                tooltip, as the denominator it is.
+              */}
               <Stat
-                label={t("ovw.stat.actualImports")}
-                value={fmtUSD(official.usd)}
-                sub={official.partial
-                  ? `${t("ovw.stat.actualImports.through")} ${official.partial.year}-${String(official.partial.throughMonth).padStart(2, "0")} · stat.uz`
-                  : `${periodLabel} · stat.uz`}
-                info={`${t("ovw.stat.actualImports.info")} ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
+                label={t("ovw.stat.coverage")}
+                value={fmtPct(data.observed.ui / official.usd, 1)}
+                sub={t("ovw.stat.coverageOfOfficial")}
+                info={`${t("ovw.stat.coverage.info")} ${fmtUSD(official.usd)}${
+                  official.partial
+                    ? ` (${t("ovw.stat.actualImports.through")} ${official.partial.year}-${String(official.partial.throughMonth).padStart(2, "0")})`
+                    : ""
+                } — ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
                 accent={COLORS.navy2}
               />
               <Stat
@@ -451,121 +552,33 @@ export default function OverviewView() {
             info={t("ovw.stat.partnersCovered.info")}
             accent={COLORS.navy2}
           />
-          <Stat
-            label={t("ovw.stat.yearsCovered")}
-            value={periodLabel}
-            sub={`${fmtNum(years.length)} ${t("ovw.stat.unit.years")} · ${fmtPct(k.coveragePct, 0)} ${t("ovw.stat.coverageSub")}`}
-            info={t("ovw.stat.yearsCovered.info")}
-            accent={COLORS.navy3}
-          />
         </div>
       </section>
 
-      {/* 2b. where the discrepancy sits — the first thing after the numbers */}
+      {/*
+        2b. the treemaps. They carry no section heading of their own: each panel
+        title already says what it ranks, and the prose above them repeated it.
+        The titles therefore have to do that work on their own, so they are set
+        as headings rather than as faint captions.
+      */}
       <section>
-        <SectionTitle
-          title={t("ovw.treemap.title")}
-          desc={t("ovw.treemap.desc")}
-          right={<InfoTip text={t("ovw.treemap.info")} />}
-        />
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.countries")}</span>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
               <Link href="/partners" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
             <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
           </div>
           <div>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-faint">{t("ovw.treemap.products")}</span>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
               <Link href="/products" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
             <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
           </div>
         </div>
       </section>
-
-      {/* 3+4. the two time series, side by side on wide screens */}
-      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-      <section>
-        <SectionTitle
-          title={t("ovw.dynamics.title")}
-          desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
-          right={<InfoTip text={t("ovw.dynamics.info")} />}
-        />
-        <div className="card p-4">
-          <EChart option={annualOption} style={{ height: 300 }} />
-        </div>
-      </section>
-
-      {/* 3b. the same window, both directions — the one place the reverse side is shown */}
-      <section>
-        <SectionTitle
-          title={t("ovw.twoSided.title")}
-          desc={t("ovw.twoSided.desc")}
-          right={<InfoTip text={t("ovw.twoSided.info")} />}
-        />
-        <div className="card p-4">
-          <EChart
-            option={twoSidedOption}
-            style={{ height: 300 }}
-            onEvents={{
-              click: (p) => {
-                // periods carry the year in the label ("2023" or "2023-05")
-                const label = (p as { name?: string }).name ?? "";
-                const year = Number(label.slice(0, 4));
-                setDrillYear((cur) => (Number.isFinite(year) && cur !== year ? year : null));
-              },
-            }}
-          />
-          {/* The chart itself is a canvas, so the click above is mouse-only. The same
-              drill-down is offered as buttons: keyboard-reachable, and it names the
-              periods rather than asking the reader to guess that bars are clickable. */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
-            {drillPeriods.map((y) => (
-              <button
-                key={y}
-                onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
-                aria-pressed={drillYear === y}
-                className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
-                  drillYear === y
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                    : "border-[var(--color-border)] text-muted hover:text-foreground"
-                }`}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
-
-          {/* the clicked period, by partner — same two directions, so the reader can
-              see whether the offsetting they just saw survives country by country */}
-          {drillYear != null && (
-            <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
-              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="text-[13px] font-semibold">
-                  {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
-                </h3>
-                <button
-                  onClick={() => setDrillYear(null)}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
-                >
-                  {t("ovw.twoSided.close")} ✕
-                </button>
-              </div>
-              {drillRows.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <EChart option={drillOption} style={{ height: 280 }} />
-              )}
-            </div>
-          )}
-
-        </div>
-      </section>
-      </div>
 
         </div>
       )}
