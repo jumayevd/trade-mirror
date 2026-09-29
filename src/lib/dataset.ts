@@ -629,6 +629,13 @@ export interface Filter {
   category: string; // "all" | key
   minGap: number; // materiality floor on the positive discrepancy
   band: "all" | RiskBand;
+  /**
+   * Force the level the partner and chapter rollups are cut at. Left undefined
+   * it follows the HS selection, which is what every page wanted while the
+   * rollup was only ever a by-product of filtering. Country Analysis ranks at
+   * HS6 outright, so it asks for the level rather than filtering to reach it.
+   */
+  rollupLevel?: 2 | 4 | 6;
 }
 export const DEFAULT_FILTER: Filter = {
   granularity: "year",
@@ -638,7 +645,14 @@ export const DEFAULT_FILTER: Filter = {
    * rather than hiding them. Partial years are partial — the picker and the
    * views label them, and a reader who wants the settled vintage unticks them.
    */
-  years: [...yearlyYears],
+  /*
+   * The newest year, not the whole window. The dashboard is read to answer
+   * "what is happening now", and a default spanning ten years answered a
+   * different question; the rest of the window is one tick away, and the
+   * statistical profile still opens on all of it because a distribution needs
+   * the years.
+   */
+  years: [yearlyYears[yearlyYears.length - 1]],
   months: [],
   /*
    * No freight adjustment by default: the dashboard opens on the two books
@@ -715,11 +729,19 @@ export interface Channel {
   trend: number;
 }
 
+/**
+ * Trend: the last period minus the first.
+ *
+ * It used to average the three periods at each end. That hid the two in the
+ * middle entirely — for a partner with eight years the arithmetic never looked
+ * at years four and five — and on a short series the two windows overlapped, so
+ * one period was counted on both sides and partly cancelled itself. End minus
+ * start is what the sparkline beside it draws, and it uses every point the
+ * reader can see.
+ */
 function trendOf(series: { y: number; v: number }[]) {
   if (series.length < 2) return 0;
-  const n = Math.min(3, Math.floor(series.length / 2) || 1);
-  const mean = (a: { v: number }[]) => a.reduce((s, x) => s + x.v, 0) / a.length;
-  return mean(series.slice(-n)) - mean(series.slice(0, n));
+  return series[series.length - 1].v - series[0].v;
 }
 
 /** Percentile rank in [0,1], ties averaged — the fitted index's normalization. */
@@ -1228,7 +1250,7 @@ export function aggregate(f: Filter): Aggregate {
   // Roll up at the most specific HS level the user picked: selecting a product
   // must report that product, not its whole chapter. With no HS filter the
   // rollup stays at HS2, which is the stable chapter-level view.
-  const rollupLevel = f.hs6.length > 0 ? 6 : f.hs4.length > 0 ? 4 : 2;
+  const rollupLevel = f.rollupLevel ?? (f.hs6.length > 0 ? 6 : f.hs4.length > 0 ? 4 : 2);
   const observed = sumObserved(fc);
   const rollup = rollupLevel === 6 ? channels6 : rollupLevel === 4 ? channels4 : channels;
   const rollupBase = rollupLevel === 6 ? baseChannels6 : rollupLevel === 4 ? baseChannels4 : baseChannels;

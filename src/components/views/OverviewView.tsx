@@ -37,9 +37,15 @@ export default function OverviewView() {
   const { t } = useI18n();
   /** Overview's controls: the time basis and which periods the summary covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
-  const [years, setYears] = useState<number[]>(() => [...yearsFor("year")]);
+  const [summaryYears, setSummaryYears] = useState<number[]>(() => {
+    const w = yearsFor("year");
+    return [w[w.length - 1]];
+  });
+  const [profileYears, setProfileYears] = useState<number[]>(() => [...yearsFor("year")]);
   const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
+  const years = tab === "profile" ? profileYears : summaryYears;
+  const setYears = tab === "profile" ? setProfileYears : setSummaryYears;
   // The HS4/HS6 detail backs both the monthly basis and any year the annual
   // workbook never reached, so either one has to trigger the fetch.
   const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
@@ -421,7 +427,7 @@ export default function OverviewView() {
       {tab === "profile" && (
         <div className="space-y-6">
         {/* 3+4. the two time series, side by side on wide screens */}
-        <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <div className="space-y-6">
         <section>
           <SectionTitle
             title={t("ovw.dynamics.title")}

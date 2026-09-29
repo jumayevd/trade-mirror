@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import Sparkline from "@/components/charts/Sparkline";
-import RiskMap, { MAP_METRIC_KEYS, type MapMetric } from "@/components/charts/RiskMap";
-import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue, Segmented } from "@/components/ui";
+import RiskMap from "@/components/charts/RiskMap";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
+import { aggregate, type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
 
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
@@ -21,10 +22,9 @@ import { useI18n } from "@/lib/i18n";
  */
 
 type SortKey = "positive" | "share" | "channels";
-type HeroMode = "map" | "table";
 
 const MAX_COMPARE = 4;
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 
 /** Same noise floor the engine screens on — quoted in the ranking footnote. */
@@ -102,9 +102,9 @@ function MoverColumn({
               </span>
               <span className="shrink-0">
                 {m.series.length >= 2 ? (
-                  <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={88} height={26} />
+                  <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={150} height={30} />
                 ) : (
-                  <span className="inline-block w-[88px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
+                  <span className="inline-block w-[150px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
                 )}
               </span>
               <span className="tabular w-16 shrink-0 text-right text-[13px] font-medium" style={{ color: deltaColor }}
@@ -120,12 +120,15 @@ function MoverColumn({
 }
 
 export default function PartnersView() {
-  const { data, series, filter } = useFilter();
-  const { t } = useI18n();
+  const { filter } = useFilter();
+  const { lang, t } = useI18n();
+  const data = useMemo(() => labelsFor(lang, () => aggregate({ ...filter, rollupLevel: 6 })), [filter, lang]);
+  const series = useMemo(
+    () => labelsFor(lang, () => aggregate({ ...filter, years: [], rollupLevel: 6 })),
+    [filter, lang],
+  );
   const [sort, setSort] = useState<SortKey>("positive");
   const [sel, setSel] = useState<string[]>([]);
-  const [heroMode, setHeroMode] = useState<HeroMode>("map");
-  const [mapMetric, setMapMetric] = useState<MapMetric>("total");
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
 
   /* ------------------------------------------------------------------ */
@@ -149,6 +152,10 @@ export default function PartnersView() {
     }
     return m;
   }, [series.partners]);
+  const trendByIso = useMemo(
+    () => new Map(series.partners.map((p) => [p.iso3, p.trend])),
+    [series.partners],
+  );
 
   // pagination is derived: it falls back to page 0 whenever the list length or
   // sort has changed since the user last paged — no reset effect needed
@@ -185,7 +192,7 @@ export default function PartnersView() {
     [series.movers.countries],
   );
   const exportCsv = () =>
-    downloadCsv("country_analysis_hs2_channels.csv", channelsToCsv(data.channels, filter));
+    downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
   const K = 1 + filter.cif;
 
@@ -259,12 +266,12 @@ export default function PartnersView() {
                   <td className={`${td} whitespace-nowrap`}>
                     <span className="inline-flex items-center gap-2">
                       {spark.length >= 2 ? (
-                        <Sparkline type="line" data={spark} color={COLORS.positive} width={72} height={22} />
+                        <Sparkline type="line" data={spark} color={COLORS.positive} width={120} height={26} />
                       ) : (
-                        <span className="inline-block w-[72px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
+                        <span className="inline-block w-[120px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
                       )}
-                      <span className="tabular w-14 text-right text-[13px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(p.trend)}`}>
-                        {fmtUSD(p.trend, { sign: true })}
+                      <span className="tabular w-14 text-right text-[13px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(trendByIso.get(p.iso3) ?? 0)}`}>
+                        {fmtUSD(trendByIso.get(p.iso3) ?? 0, { sign: true })}
                       </span>
                     </span>
                   </td>
@@ -295,10 +302,6 @@ export default function PartnersView() {
             </tr>
           </tfoot>
         </table>
-        {/* why a partner row can fall short of the total row below it */}
-        <p className="border-t border-[var(--color-border-soft)] px-3 py-2 text-[12px] leading-relaxed text-faint">
-          {t("ctry.rank.floorNote")}
-        </p>
         <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>
     );
@@ -326,17 +329,11 @@ export default function PartnersView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[12px] font-medium text-faint">
-              {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {DATA_WINDOW.start}–{DATA_WINDOW.end}
-            </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-            <p className="text-[13px] text-muted">
-              <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
-            </p>
           </div>
           <button
             onClick={exportCsv}
-            disabled={data.channels.length === 0}
+            disabled={data.channels6.length === 0}
             className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={t("ctry.exportTip")}
           >
@@ -347,52 +344,20 @@ export default function PartnersView() {
 
       {/* 2. filters + context */}
       <FilterBar />
-      <ContextLine filter={filter} />
 
       {/* 3. map hero */}
       <section className="space-y-3">
         <SectionTitle
           title={t("ctry.geo.title")}
           desc={t("ctry.geo.desc")}
-          right={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <InfoTip text={t("ctry.geo.info")} />
-              <Segmented<MapMetric>
-                ariaLabel={t("ctry.geo.metricAria")}
-                value={mapMetric}
-                onChange={setMapMetric}
-                options={(Object.keys(MAP_METRIC_KEYS) as MapMetric[]).map((k) => ({
-                  key: k,
-                  label: t(MAP_METRIC_KEYS[k] as never),
-                  tip: k === "total" ? t("ctry.map.tipTotal") : t("ctry.map.tipChannels"),
-                }))}
-              />
-              <Segmented<HeroMode>
-                ariaLabel={t("ctry.geo.viewAria")}
-                value={heroMode}
-                onChange={setHeroMode}
-                options={[
-                  { key: "map", label: t("ctry.geo.map"), tip: t("ctry.geo.mapTip") },
-                  { key: "table", label: t("ctry.geo.table"), tip: t("ctry.geo.tableTip") },
-                ]}
-              />
-            </div>
-          }
+          right={<InfoTip text={t("ctry.geo.info")} />}
         />
         <p className="max-w-3xl text-[13px] text-muted">
           <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
         </p>
-        {heroMode === "map" ? (
-          data.partners.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <RiskMap partners={data.partners} metric={mapMetric} />
-          )
-        ) : (
-          <>{rankingTable}<div className="mt-3">{reExportNote}</div></>
-        )}
+        {data.partners.length === 0 ? <EmptyState /> : <RiskMap partners={data.partners} metric="total" />}
       </section>
 
       {/* 4. compare panel (rendered as soon as anything is selected) */}
@@ -460,18 +425,15 @@ export default function PartnersView() {
         </section>
       )}
 
-      {/* 5. country ranking (below the map; in Table mode it already IS the hero) */}
-      {heroMode === "map" && (
-        <section className="space-y-3">
-          <SectionTitle
-            title={t("ctry.rank.title")}
-            desc={t("ctry.rank.desc")}
-            right={<InfoTip text={t("ctry.rank.info")} />}
-          />
-          {rankingTable}
-          {reExportNote}
-        </section>
-      )}
+      {/* 5. country ranking */}
+      <section className="space-y-3">
+        <SectionTitle
+          title={t("ctry.rank.title")}
+          desc={t("ctry.rank.desc")}
+          right={<InfoTip text={t("ctry.rank.info")} />}
+        />
+        {rankingTable}
+      </section>
 
       {/* 6. dynamics (re-homed from the former Trends page) */}
       <section className="space-y-3">
@@ -494,7 +456,6 @@ export default function PartnersView() {
       <section className="space-y-3">
         <SectionTitle
           title={t("ctry.annual.title")}
-          desc={t("ctry.annual.desc")}
           right={<InfoTip text={`${t("ctry.annual.info")} ${t("common.source")}.`} />}
         />
         {data.annual.length === 0 ? (
@@ -539,6 +500,8 @@ export default function PartnersView() {
         )}
       </section>
 
+      {/* 8. the two rows that read differently */}
+      {reExportNote}
     </div>
   );
 }
