@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import type { EChartsOption, YAXisComponentOption } from "echarts";
 import EChart from "@/components/EChart";
-import LevelTabs, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/LevelTabs";
+import { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/LevelTabs";
 import { EmptyState, InfoTip, SectionTitle, Stat, TransitTag } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
-import { meta, yearsLabel, type Aggregate, type Channel } from "@/lib/dataset";
+import { type Aggregate, type Channel } from "@/lib/dataset";
 import { BAR_SPEC, CHART_FONT, baseGrid, baseTooltip, catAxis } from "@/lib/echartBase";
 
 /**
@@ -38,8 +38,18 @@ function HeadDot({ color }: { color: string }) {
   );
 }
 
-const levelBase = (a: Aggregate, level: HsLevel): Channel[] =>
-  level === 2 ? a.baseChannels : level === 4 ? a.baseChannels4 : a.baseChannels6;
+/*
+ * The profile is measured at HS6 and only at HS6.
+ *
+ * It used to offer HS2 / HS4 / HS6 tabs, and every statistic on the page moved
+ * when the reader switched: one chapter channel becomes dozens of HS6 lines,
+ * each necessarily smaller, so the mean and the percentiles fall although not a
+ * dollar of trade has changed. That needed two paragraphs of explanation to
+ * stop it reading as a finding. HS6 is the grain the gap is measured at, so the
+ * page states one distribution and needs no such warning.
+ */
+const LEVEL: HsLevel = 6;
+const levelBase = (a: Aggregate): Channel[] => a.baseChannels6;
 
 /** Percentile with linear interpolation over an ascending-sorted array. */
 function quantile(sortedAsc: number[], q: number): number {
@@ -70,10 +80,8 @@ const HIST_LABELS = ["< $100K", "$100K–1M", "$1M–10M", "$10M–100M", "$100M
 
 export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
   const { t } = useI18n();
-  const [level, setLevel] = useState<HsLevel>(2);
-  const base = levelBase(agg, level);
+  const base = levelBase(agg);
   const n = base.length;
-  const filter = agg.filter;
 
   /* ---- (a) distribution of the gap ---- */
   const dist = useMemo(() => {
@@ -178,36 +186,15 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
     [base, n],
   );
 
-  const header = (
-    <div className="flex flex-wrap items-start justify-between gap-3">
-      <div className="max-w-3xl space-y-1.5">
-        <p className="text-[13px] leading-relaxed text-muted">
-          {t("risk.profile.introA")} <strong className="text-foreground">{t("risk.profile.baseWord")}</strong>{" "}
-          {t("risk.profile.introB")} {t("risk.profile.channelDef")} {t(LEVEL_LABEL_KEYS[level])} ·{" "}
-          {yearsLabel(filter.years)} · {fmtNum(n)} {t("risk.channelsCount")}.
-        </p>
-        {/* the level tabs and the page filters both change WHICH channels these
-            statistics describe, which is the usual source of confusion here */}
-        <p className="text-[12.5px] leading-relaxed text-faint">{t("risk.profile.whyChanges")}</p>
-      </div>
-      <LevelTabs level={level} onChange={setLevel} label={null} />
-    </div>
-  );
-
   if (n === 0) {
-    return <div className="space-y-4">{header}<EmptyState /></div>;
+    return <EmptyState />;
   }
 
   return (
     <div className="space-y-6">
-      {header}
-
       {/* (a) distribution */}
       <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.dist.title")}
-          desc={`${t("risk.dist.desc")} ${Math.round(filter.cif * 100)}%. ${t("risk.dist.descTail")}`}
-        />
+        <SectionTitle title={t("risk.dist.title")} />
         {dist && (
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Stat
@@ -239,14 +226,11 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
         <div className="card p-3" style={{ height: 300 }}>
           <EChart option={histOption} />
         </div>
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.dist.footnote")} {t("common.source")}.
-        </p>
       </section>
 
       {/* (b) thresholds */}
       <section className="space-y-3">
-        <SectionTitle title={t("risk.thres.title")} desc={t("risk.thres.desc")} />
+        <SectionTitle title={t("risk.thres.title")} />
         <div className="card overflow-x-auto">
           <table className="w-full border-collapse">
             <thead className="border-b border-[var(--color-border)]">
@@ -282,7 +266,6 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.persist.title")}
-          desc={`${t(LEVEL_LABEL_KEYS[level])} · ${yearsLabel(filter.years)}. ${t("risk.persist.desc")}`}
           right={<InfoTip text={`${t("risk.persist.info")} ${fmtPct(persistentShare, 0)} (N = ${fmtNum(n)}).`} />}
         />
         {persistent.length === 0 ? (
@@ -293,7 +276,7 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
               <thead className="border-b border-[var(--color-border)]">
                 <tr>
                   <th className={TH}>{t("common.partner")}</th>
-                  <th className={TH}>{t(LEVEL_LABEL_KEYS[level])} · {t("risk.th.code")}</th>
+                  <th className={TH}>{t(LEVEL_LABEL_KEYS[LEVEL])} · {t("risk.th.code")}</th>
                   <th className={TH_NUM} title={t("risk.persist.streakTip")}>{t("risk.th.streak")}</th>
                   <th className={TH_NUM} title={t("risk.persist.gapYearsTip")}>{t("risk.th.gapCompYrs")}</th>
                   <th className={TH_NUM} title={t("risk.persist.totalGapTip")}><HeadDot color={COLORS.positive} />{t("risk.th.totalGap")}</th>
@@ -321,9 +304,6 @@ export default function StatisticalProfile({ agg }: { agg: Aggregate }) {
             </table>
           </div>
         )}
-        <p className="max-w-3xl text-xs text-faint">
-          {t("risk.persist.footnote")} {t("common.source")}. {meta.window.start}–{meta.window.end}.
-        </p>
       </section>
     </div>
   );
