@@ -152,7 +152,7 @@ export default function QueueTable({
           onChange={(e) => controls(() => setQuery(e.target.value))}
           placeholder={t("risk.search.placeholder")}
           aria-label={t("risk.a11y.search")}
-          className="h-[33px] w-60 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
+          className="h-[33px] w-60 max-w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
         <MultiSelect
@@ -171,12 +171,12 @@ export default function QueueTable({
           allLabel={t("filter.all")}
         />
 
-        <label className="flex items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px] text-muted">
           {t("risk.sortLabel")}
           <select
             value={sort}
             onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-            className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
@@ -187,7 +187,7 @@ export default function QueueTable({
             onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
             aria-label={t("risk.sortDir")}
             title={t("risk.sortDir")}
-            className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
             <option value="asc">{t("risk.sortAsc")}</option>
@@ -267,7 +267,7 @@ export default function QueueTable({
             <select
               value={pageSize}
               onChange={(e) => controls(() => setPageSize(+e.target.value))}
-              className="h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+              className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
             >
               {PAGE_SIZES.map((n) => (
                 <option key={n} value={n}>{n}</option>

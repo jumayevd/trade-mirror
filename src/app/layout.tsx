@@ -32,7 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Sidebar />
             <div className="flex min-w-0 flex-1 flex-col">
               <header className="no-print sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-panel)_94%,transparent)] backdrop-blur">
-                <div className="mx-auto flex w-full max-w-[var(--shell-max)] items-center justify-between gap-3 px-5 py-2">
+                <div className="mx-auto flex w-full max-w-[var(--shell-max)] flex-wrap items-center justify-between gap-x-3 gap-y-1.5 px-5 py-2">
                   <MobileNav />
                   <HeaderStrapline />
                   <HeaderMeta />

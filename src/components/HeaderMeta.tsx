@@ -44,7 +44,7 @@ export default function HeaderMeta() {
   useEffect(() => { applyZoom(zoom); }, [zoom]);
 
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1.5 text-xs">
       <Link href="/methodology" className="rounded-md border border-[var(--color-primary)] px-2 py-1 font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]">
         {t("header.howto")}
       </Link>
