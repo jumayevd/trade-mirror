@@ -4,27 +4,29 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
-import { COLORS, fmtUSD, fmtUSDFull, fmtPct } from "@/lib/format";
+import { COLORS, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { CHART_FONT, baseTooltip } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
 /**
  * Top-five treemap for the Overview: who and what carry the positive
- * discrepancy. Tiles are sized by the cumulative positive gap over the selected
- * period and shaded blue → teal → green by rank — the deeper the
- * colour, the larger the gap. The share printed on each tile divides by the WHOLE
- * positive total, not the five shown, so the five tiles visibly do not sum to
- * 100% and cannot be misread as the whole story.
+ * discrepancy. Tile area is the cumulative positive gap over the selected
+ * period, shaded blue → teal → green by rank. Each tile carries a name and an
+ * amount and nothing else — the area already says how the five compare, so a
+ * printed share only added a number to read.
  *
  * One component serves both panels (countries and HS6 products); a tile click
- * opens the profile page for that country or product.
+ * opens the page for that country or product.
  */
 
 export interface TreemapItem {
   key: string;
+  /** What the tile prints — kept short enough to fit. */
   label: string;
   value: number;
   href: string;
+  /** The full wording for the tooltip, when the label is a shortening of it. */
+  detail?: string;
 }
 
 /*
@@ -37,12 +39,10 @@ const RAMP = ["#1e40af", "#2563eb", "#0891b2", "#0d9488", "#34d399"];
 const INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#0b3527"];
 
 export default function GapTreemap({
-  items, total, ariaLabel,
+  items, ariaLabel,
 }: {
   /** Already ranked descending; only the first five are drawn. */
   items: TreemapItem[];
-  /** The whole positive total the shares divide by. */
-  total: number;
   ariaLabel: string;
 }) {
   const router = useRouter();
@@ -54,12 +54,12 @@ export default function GapTreemap({
     tooltip: {
       ...baseTooltip(),
       formatter: (p: unknown) => {
-        const it = p as { name: string; value: number };
-        const share = total > 0 ? it.value / total : 0;
+        const it = top[(p as { dataIndex: number }).dataIndex];
+        if (!it) return "";
         return [
-          `<b>${it.name}</b>`,
+          `<b>${it.label}</b>`,
+          ...(it.detail ? [`<span style="font-size:0.9em;color:${COLORS.text}">${it.detail}</span>`] : []),
           `${t("ovw.treemap.gapWord")}: <b style="color:${COLORS.positive}">${fmtUSDFull(it.value)}</b>`,
-          `${t("ovw.treemap.shareWord")}: <b>${fmtPct(share, 1)}</b>`,
           `<span style="font-size:0.9em;color:${COLORS.text}">${t("ovw.treemap.click")}</span>`,
         ].join("<br/>");
       },
@@ -77,8 +77,7 @@ export default function GapTreemap({
         show: true,
         formatter: (p: unknown) => {
           const it = p as { name: string; value: number };
-          const share = total > 0 ? it.value / total : 0;
-          return `${it.name}\n${fmtUSD(it.value)} · ${fmtPct(share, 0)}`;
+          return `${it.name}\n${fmtUSD(it.value)}`;
         },
         fontSize: CHART_FONT.legend,
         lineHeight: CHART_FONT.legend + 5,
@@ -91,12 +90,13 @@ export default function GapTreemap({
         label: { color: INK[i] },
       })),
     }],
-  }), [top, total, t]);
+  }), [top, t]);
 
+  // resolved by position, not by name: short names need not be unique to
+  // navigate to the right place
   const onEvents = useMemo(() => ({
     click: (params: unknown) => {
-      const it = params as { name?: string };
-      const hit = top.find((x) => x.label === it.name);
+      const hit = top[(params as { dataIndex?: number }).dataIndex ?? -1];
       if (hit) router.push(hit.href);
     },
   }), [top, router]);

@@ -6,10 +6,10 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
 import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
+import { hs6ShortLabel } from "@/lib/short-labels";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
-import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
   aggregate, DEFAULT_FILTER, meta, needsMonthlyDetail, yearsFor, yearsLabel,
@@ -34,7 +34,7 @@ const DRILL_TOP = 10;
 type OverviewTab = "summary" | "profile";
 
 export default function OverviewView() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   /** Overview's controls: the time basis and which periods the summary covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
   const [summaryYears, setSummaryYears] = useState<number[]>(() => {
@@ -69,6 +69,11 @@ export default function OverviewView() {
    * silently covered fewer years than its label would be worse than none.
    */
   const official = useMemo(() => officialImportsOver(years), [years]);
+  const throughNote = official?.partial
+    ? ` (${t(years.length > 1 ? "ovw.stat.throughMonth" : "ovw.stat.throughMonthOnly")
+        .split("{year}").join(String(official.partial.year))
+        .split("{month}").join(t(`month.${official.partial.throughMonth}` as never))})`
+    : "";
 
   const treemap = useMemo(() => {
     const countries: TreemapItem[] = [...data.partners]
@@ -83,10 +88,17 @@ export default function OverviewView() {
     }
     const products: TreemapItem[] = [...byCmd.entries()]
       .sort((a, b) => b[1].value - a[1].value)
-      .map(([cmd, e]) => ({ key: cmd, label: `${cmd} · ${e.label}`, value: e.value, href: `/products?hs6=${cmd}` }));
-    return { countries, products, total: k.positive.central };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data]);
+      .map(([cmd, e]) => ({
+        key: cmd,
+        // a few recognisable words on the tile; the code and the full official
+        // description move to the tooltip, where there is room for them
+        label: hs6ShortLabel(cmd, lang, e.label),
+        detail: `HS ${cmd} · ${e.label}`,
+        value: e.value,
+        href: `/products?hs6=${cmd}`,
+      }));
+    return { countries, products };
+  }, [data, lang]);
   const periodLabel = yearsLabel(years);
 
   const pickGranularity = (g: Granularity) => {
@@ -508,56 +520,54 @@ export default function OverviewView() {
           </div>
         </section>
         </div>
-          <StatisticalProfile agg={data} />
         </div>
       )}
 
       {tab === "summary" && (
         <div className="space-y-6">
-      {/* 3. headline tiles */}
+      {/* 3. headline tiles — two rows of three: what the import bill is and how
+          much of it this dataset sees; then what the discrepancy is on it */}
       <section>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {official && (
             <>
-              {/*
-                How much of the country's actual import bill this dataset can see.
-                The card used to print the official total itself, which told the
-                reader the size of a number they had not asked about; what decides
-                whether the rest of the page is worth reading is the share of that
-                bill the mirror data covers. The official figure stays in the
-                tooltip, as the denominator it is.
-              */}
               <Stat
-                label={t("ovw.stat.coverage")}
-                value={fmtPct(data.observed.ui / official.usd, 1)}
-                sub={t("ovw.stat.coverageOfOfficial")}
-                info={`${t("ovw.stat.coverage.info")} ${fmtUSD(official.usd)}${
-                  official.partial
-                    ? ` (${t("ovw.stat.actualImports.through")} ${official.partial.year}-${String(official.partial.throughMonth).padStart(2, "0")})`
-                    : ""
-                } — ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
+                label={t("ovw.stat.officialImports")}
+                value={fmtUSD(official.usd)}
+                info={`${t("ovw.stat.officialImports.info")} ${periodLabel}${throughNote}. ${t("ovw.stat.sourceWord")}: ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
                 accent={COLORS.navy2}
               />
               <Stat
-                label={t("ovw.stat.gapShare")}
-                value={fmtPct(k.positive.central / official.usd, 1)}
-                sub={t("ovw.stat.gapShareSub")}
-                info={t("ovw.stat.gapShare.info")}
-                accent={COLORS.positive}
+                label={t("ovw.stat.comtradeImports")}
+                value={fmtUSD(data.observed.ui)}
+                info={`${t("ovw.stat.comtradeImports.info")} ${periodLabel}.`}
+                accent={COLORS.navy2}
+              />
+              <Stat
+                label={t("ovw.stat.coverage")}
+                value={fmtPct(data.observed.ui / official.usd, 1)}
+                info={`${t("ovw.stat.coverage.info2")} ${fmtUSDFull(data.observed.ui)} ÷ ${fmtUSDFull(official.usd)}${throughNote}.`}
+                accent={COLORS.navy3}
               />
             </>
           )}
+          <Stat
+            label={t("ovw.stat.gapShareComtrade")}
+            value={data.observed.ui > 0 ? fmtPct(k.positive.central / data.observed.ui, 1) : "—"}
+            info={`${t("ovw.stat.gapShareComtrade.info")} ${fmtUSDFull(k.positive.central)} ÷ ${fmtUSDFull(data.observed.ui)}.`}
+            accent={COLORS.positive}
+          />
           <HeroStat
             label={t("kpi.positive")}
             value={fmtUSD(k.positive.central)}
-            sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}`}
-            info={t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))}
+            info={`${t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))} ${t("ovw.stat.positiveBand")}: ${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}.`}
           />
           <Stat
             label={t("ovw.stat.partnersCovered")}
             value={fmtNum(k.partnerCount)}
-            sub={`${t("ovw.stat.partnersOf")} ${fmtNum(meta.partners.length)} ${t("ovw.stat.partnersInDataset")}`}
-            info={t("ovw.stat.partnersCovered.info")}
+            info={`${t("ovw.stat.partnersOfTotal")
+              .split("{n}").join(fmtNum(k.partnerCount))
+              .split("{total}").join(fmtNum(meta.partners.length))} ${t("ovw.stat.partnersCovered.info")}`}
             accent={COLORS.navy2}
           />
         </div>
@@ -576,14 +586,14 @@ export default function OverviewView() {
               <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
               <Link href="/partners" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
-            <GapTreemap items={treemap.countries} total={treemap.total} ariaLabel={t("ovw.treemap.countries")} />
+            <GapTreemap items={treemap.countries} ariaLabel={t("ovw.treemap.countries")} />
           </div>
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
               <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
               <Link href="/products" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
-            <GapTreemap items={treemap.products} total={treemap.total} ariaLabel={t("ovw.treemap.products")} />
+            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} />
           </div>
         </div>
       </section>
