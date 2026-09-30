@@ -56,6 +56,7 @@ export function baseTooltip(): TooltipComponentOption {
     // no glide: the default 0.4s easing makes the tooltip trail the cursor,
     // which reads as lag and as pointing at the previous mark
     transitionDuration: 0,
+    appendToBody: true,
     extraCssText: "border-radius:8px;box-shadow:0 6px 20px rgba(22,35,59,.12)",
   };
 }

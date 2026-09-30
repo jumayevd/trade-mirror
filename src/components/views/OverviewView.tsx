@@ -551,16 +551,16 @@ export default function OverviewView() {
               />
             </>
           )}
+          <HeroStat
+            label={t("kpi.positive")}
+            value={fmtUSD(k.positive.central)}
+            info={`${t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))} ${t("ovw.stat.positiveBand")}: ${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}.`}
+          />
           <Stat
             label={t("ovw.stat.gapShareComtrade")}
             value={data.observed.ui > 0 ? fmtPct(k.positive.central / data.observed.ui, 1) : "—"}
             info={`${t("ovw.stat.gapShareComtrade.info")} ${fmtUSDFull(k.positive.central)} ÷ ${fmtUSDFull(data.observed.ui)}.`}
             accent={COLORS.positive}
-          />
-          <HeroStat
-            label={t("kpi.positive")}
-            value={fmtUSD(k.positive.central)}
-            info={`${t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))} ${t("ovw.stat.positiveBand")}: ${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}.`}
           />
           <Stat
             label={t("ovw.stat.partnersCovered")}
