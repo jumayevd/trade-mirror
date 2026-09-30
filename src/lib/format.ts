@@ -78,7 +78,7 @@ export function fmtNum(v: number): string {
  * series on a navy ground, so the navy slots lighten; gold holds; the alert
  * red and greens lift just enough to read on #18202f.
  */
-const IS_DARK = typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
+export const IS_DARK = typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
 
 const NAVY_DEEP = IS_DARK ? "#51719f" : "#16233b";
 const NAVY = IS_DARK ? "#7da2e0" : "#1e3a6e";

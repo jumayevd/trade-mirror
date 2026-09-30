@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { partnerMetaOf, type PartnerAgg } from "@/lib/dataset";
-import { COLORS, fmtNum, fmtUSD } from "@/lib/format";
+import { COLORS, IS_DARK, fmtNum, fmtUSD } from "@/lib/format";
 import { CHART_FONT, baseTooltip } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
@@ -70,12 +70,28 @@ const GEO_NAME: Record<string, string> = {
 const ISO_BY_GEO: Record<string, string> = Object.fromEntries(Object.entries(GEO_NAME).map(([iso, n]) => [n, iso]));
 
 /*
- * Six classes on a multi-hue sequential ramp, low → high: yellow through
- * green and teal to deep indigo (the viridis family — ordered, legible for
- * colour-blind readers, and without the red the Critical band reserves).
- * The largest gaps take the deep blues, rhyming with the Overview treemap.
+ * Six classes on a single-hue sequential ramp, low → high: the house navy,
+ * stepped by lightness alone.
+ *
+ * Magnitude is a sequential job, and one hue says "more of the same thing"
+ * where a multi-hue ramp invites the reader to look for a boundary at each
+ * hue change. It also leaves gold to the accents the interface reserves it for.
+ *
+ * Dark mode gets its own steps rather than an inverted copy: the ramp must
+ * separate from the chart surface AND from the inert fill used for countries
+ * outside the partner set, and on a dark ground a deep-navy low end vanishes
+ * into both, so there it runs light-ward instead.
+ *
+ * Checked for what a sequential ramp needs — strictly monotonic lightness,
+ * evenly spaced steps (max/min 1.43 and 1.48), a total OKLab-L range of 0.51
+ * and 0.44, and a low end clear of the no-data fill (ΔE 12.8 and 11.6). The
+ * categorical validator does not apply: its adjacent-pair separation check
+ * asks for the opposite of what one hue stepped by lightness wants, and its
+ * own output says as much.
  */
-const RAMP = ["#fde725", "#7ad151", "#22a884", "#2a788e", "#414487", "#440154"];
+const RAMP = IS_DARK
+  ? ["#344c79", "#41608f", "#5179ac", "#6b95c8", "#8db3de", "#b7d2f2"]
+  : ["#b7cbe8", "#95b3da", "#6e92c5", "#4a72ab", "#2d5286", "#19335e"];
 
 /** Two significant figures, so class edges read as $1.2M rather than $1,187,433. */
 function niceRound(x: number): number {
