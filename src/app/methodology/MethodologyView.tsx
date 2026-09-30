@@ -237,6 +237,37 @@ export default function MethodologyView() {
           {meta.window.start}–{meta.window.end}: {tr("meth.measures.headline")} {fmtUSD(k.positive.central)}{" "}
           ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · {tr("meth.measures.coverage")} {fmtPct(k.coveragePct, 0)}
         </p>
+
+        {/*
+          Which cells each figure counts. Two of the numbers on the dashboard are
+          import totals and they differ by two orders of magnitude, which reads as
+          a contradiction until the populations are named side by side.
+        */}
+        <h3 className="pt-2 text-[14px] font-semibold">{tr("meth.pop.title")}</h3>
+        <p className="max-w-3xl text-[13.5px] leading-relaxed text-muted">{tr("meth.pop.desc")}</p>
+        <div className="card max-w-4xl overflow-x-auto">
+          <table className="w-full min-w-[620px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)]">
+                <th className={TH}>{tr("meth.pop.colFigure")}</th>
+                <th className={TH}>{tr("meth.pop.colPopulation")}</th>
+                <th className={TH}>{tr("meth.pop.colWhere")}</th>
+              </tr>
+            </thead>
+            <tbody className="zebra">
+              {["total", "gapYears", "discrepancy"].map((key) => (
+                <tr key={key} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>
+                    {tr(`meth.pop.${key}.name` as never)}
+                  </td>
+                  <td className={TD}>{tr(`meth.pop.${key}.pop` as never)}</td>
+                  <td className={TD}>{tr(`meth.pop.${key}.where` as never)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="max-w-3xl text-[12.5px] leading-relaxed text-faint">{tr("meth.pop.note")}</p>
       </Section>
 
       {/* 4. the risk score ---------------------------------------------- */}
