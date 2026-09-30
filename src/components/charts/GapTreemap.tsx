@@ -54,7 +54,7 @@ export default function GapTreemap({
     tooltip: {
       ...baseTooltip(),
       formatter: (p: unknown) => {
-        const it = top[(p as { dataIndex: number }).dataIndex];
+        const it = (p as { data?: { item?: TreemapItem } }).data?.item;
         if (!it) return "";
         return [
           `<b>${it.label}</b>`,
@@ -86,23 +86,29 @@ export default function GapTreemap({
       data: top.map((it, i) => ({
         name: it.label,
         value: it.value,
+        // the tile carries its own item, so hit-testing never depends on an index
+        item: it,
         itemStyle: { color: RAMP[i] },
         label: { color: INK[i] },
       })),
     }],
   }), [top, t]);
 
-  // resolved by position, not by name: short names need not be unique to
-  // navigate to the right place
+  // resolved from the tile's own item, for the same reason the tooltip is
   const onEvents = useMemo(() => ({
     click: (params: unknown) => {
-      const hit = top[(params as { dataIndex?: number }).dataIndex ?? -1];
+      const hit = (params as { data?: { item?: TreemapItem } }).data?.item;
       if (hit) router.push(hit.href);
     },
-  }), [top, router]);
+  }), [router]);
 
   return (
-    <div className="card overflow-hidden" style={{ height: 280 }} role="img" aria-label={ariaLabel}>
+    <div
+      className="card overflow-hidden"
+      style={{ height: "clamp(230px, 30vh, 420px)" }}
+      role="img"
+      aria-label={ariaLabel}
+    >
       <EChart option={option} onEvents={onEvents} />
     </div>
   );
