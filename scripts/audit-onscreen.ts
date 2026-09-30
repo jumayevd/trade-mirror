@@ -528,6 +528,63 @@ for (const cif of [0, 0.10]) {
 }
 
 /* ---------------------------------------------------------------- */
+/* Product Analysis: frames and the per-code table                     */
+/* ---------------------------------------------------------------- */
+/* The page groups the listed partner × code pairs by code at each level.
+ *   - every row: Export − Import ÷ (1 + f) = Positive discrepancy
+ *   - an HS2 row = the sum of its HS4 rows = the sum of its HS6 rows, on all
+ *     three values, and on the partner count (partners with a positive line)
+ *   - the frames (sum of the rows) are the same at HS2, HS4 and HS6, and
+ *     equal the headline positive discrepancy */
+{
+  type Row = { pe: number; ui: number; pos: number; partners: Set<string>; mtrs: number };
+  const byCode = (chs: Channel[]) => {
+    const m = new Map<string, Row>();
+    for (const c of chs) {
+      const r = m.get(c.cmd) ?? m.set(c.cmd, { pe: 0, ui: 0, pos: 0, partners: new Set(), mtrs: -1 }).get(c.cmd)!;
+      r.pe += c.pePosT; r.ui += c.uiPosT; r.pos += c.posT; r.partners.add(c.partnerIso);
+      r.mtrs = Math.max(r.mtrs, c.mtrs);
+    }
+    return m;
+  };
+  const windows: [string, number[]][] = [["newest year", [...DEFAULT_FILTER.years]], ["2017–2026", [...yearsFor("year")]]];
+  for (const [wname, years] of windows) {
+    for (const cif of [0, 0.10]) {
+      const Kc = 1 + cif;
+      const tag = `${wname}, ${Math.round(cif * 100)}%`;
+      const d = aggregate({ ...DEFAULT_FILTER, years, cif });
+      const levels = [[2, byCode(d.channels)], [4, byCode(d.channels4)], [6, byCode(d.channels6)]] as const;
+      let rowFails = 0, derivFails = 0;
+      const tot: number[][] = [];
+      for (const [lvl, rows] of levels) {
+        let pe = 0, ui = 0, pos = 0;
+        for (const r of rows.values()) {
+          if (!near(r.pe - r.ui / Kc, r.pos, 2)) rowFails++;
+          pe += r.pe; ui += r.ui; pos += r.pos;
+        }
+        tot.push([pe, ui, pos]);
+        if (lvl === 6) continue;
+        for (const [cmd, r] of rows) {
+          for (const [, finer] of levels.filter(([l]) => l > lvl)) {
+            let fpe = 0, fui = 0, fpos = 0;
+            const fp = new Set<string>();
+            for (const [k, x] of finer) if (k.startsWith(cmd)) { fpe += x.pe; fui += x.ui; fpos += x.pos; x.partners.forEach((p) => fp.add(p)); }
+            if (!near(fpe, r.pe, 2) || !near(fui, r.ui, 2) || !near(fpos, r.pos, 2) || fp.size !== r.partners.size) derivFails++;
+          }
+        }
+      }
+      check(`products: Export − Import ÷ (1+f) = positive on every row (${tag})`, rowFails === 0, `${rowFails} rows off`);
+      check(`products: HS2 rows = sums of their HS4 and HS6 rows, partners included (${tag})`, derivFails === 0, `${derivFails} rows off`);
+      for (const i of [0, 1, 2]) {
+        check(`products: frames equal at HS2, HS4 and HS6 (${tag}, ${["export", "import", "positive"][i]})`,
+          near(tot[0][i], tot[2][i], 5) && near(tot[1][i], tot[2][i], 5));
+      }
+      check(`products: positive frame = the headline (${tag})`, near(tot[2][2], d.kpis.positive.central, 5));
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");
