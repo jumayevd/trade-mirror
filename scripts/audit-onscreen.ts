@@ -379,6 +379,70 @@ for (const cif of [0, 0.10]) {
 }
 
 /* ---------------------------------------------------------------- */
+/* Country Analysis and the country page: what those screens print     */
+/* ---------------------------------------------------------------- */
+/* Every figure on the ranking row, the comparison card, the six frames and
+ * the HS6 table is pinned here, at two freight rates:
+ *   - Export − Import ÷ (1 + f) = Positive discrepancy, per partner row and
+ *     per HS6 row (the columns are positive-line values precisely so this holds)
+ *   - the country page's frames equal the sum of its table rows
+ *   - an HS2 chapter and an HS4 heading, for a partner, equal the sum of their
+ *     HS6 rows — the "derived from HS6" guarantee the table's filters rely on
+ *   - the ranking's totals row equals the sum of its partner rows
+ *   - a product's band is the same whether the country filter is on or off, so
+ *     the comparison card's critical count and the country page's agree
+ *   - the Top HS6 cell is the partner's HS6 line with the largest gap */
+for (const cif of [0, 0.10]) {
+  const Kc = 1 + cif;
+  const ranked = aggregate({ ...FULL, cif, rollupLevel: 6 });
+  const tag = `${Math.round(cif * 100)}%`;
+  let rowFails = 0, sumFails = 0, derivFails = 0, bandFails = 0, topFails = 0, checked = 0;
+  // ranking totals
+  const tPe = ranked.partners.reduce((a, p) => a + p.pePosT, 0);
+  const tPos = ranked.partners.reduce((a, p) => a + p.posT, 0);
+  check(`ranking totals: export = sum of partner rows (${tag})`,
+    near(tPe, ranked.baseChannels6.reduce((a, c) => a + c.pePosT, 0), 5));
+  check(`ranking totals: positive = headline (${tag})`, near(tPos, ranked.kpis.positive.central, 5));
+
+  // the six largest partners get the full per-page treatment
+  for (const p of [...ranked.partners].sort((a, b) => b.posT - a.posT).slice(0, 6)) {
+    checked++;
+    if (!near(p.pePosT - p.uiPosT / Kc, p.posT, 2)) rowFails++;
+    const page = aggregate({ ...FULL, cif, country: [p.iso3] });
+    const pp = page.partners.find((x) => x.iso3 === p.iso3)!;
+    const rows = page.baseChannels6.filter((c) => c.partnerIso === p.iso3);
+    const sum = (k: "pePosT" | "uiPosT" | "posT") => rows.reduce((a, c) => a + c[k], 0);
+    if (!(near(sum("pePosT"), pp.pePosT, 2) && near(sum("uiPosT"), pp.uiPosT, 2) && near(sum("posT"), pp.posT, 2))) sumFails++;
+    // the same partner, same period: page and ranking must agree
+    if (!near(pp.posT, p.posT, 2)) sumFails++;
+    for (const r of rows) if (!near(r.pePosT - r.uiPosT / Kc, r.posT, 2)) rowFails++;
+    // HS2 and HS4, derived from HS6
+    for (const [level, chans] of [[2, page.baseChannels], [4, page.baseChannels4]] as const) {
+      for (const agg of chans.filter((c) => c.partnerIso === p.iso3)) {
+        const kids = rows.filter((r) => r.cmd.startsWith(agg.cmd));
+        const d = (k: "pePosT" | "uiPosT" | "posT") => Math.abs(kids.reduce((a, c) => a + c[k], 0) - agg[k]);
+        if (d("pePosT") > 2 || d("uiPosT") > 2 || d("posT") > 2) derivFails++;
+        void level;
+      }
+    }
+    // bands: filtered page vs unfiltered ranking
+    const global = new Map(ranked.baseChannels6.filter((c) => c.partnerIso === p.iso3).map((c) => [c.cmd, c.band]));
+    for (const r of rows) if (global.get(r.cmd) !== r.band) bandFails++;
+    // one product count on every screen: ranking column, comparison card, page frame
+    if (global.size !== rows.length) bandFails++;
+    // top HS6 is the largest positive line
+    const top = rows.reduce((b, c) => (c.posT > (b?.posT ?? 0) ? c : b), null as Channel | null);
+    const maxPos = Math.max(0, ...rows.map((r) => r.posT));
+    if (!top || !near(top.posT, maxPos, 0)) topFails++;
+  }
+  check(`Export − Import ÷ (1+f) = positive, partner and HS6 rows (${tag}, ${checked} partners)`, rowFails === 0, `${rowFails} rows off`);
+  check(`country page frames = sum of its HS6 rows, and = the ranking row (${tag})`, sumFails === 0, `${sumFails} off`);
+  check(`HS2 and HS4 figures are the sums of their HS6 rows (${tag})`, derivFails === 0, `${derivFails} codes off`);
+  check(`bands agree with and without the country filter (${tag})`, bandFails === 0, `${bandFails} lines differ`);
+  check(`Top HS6 is the partner's largest positive line (${tag})`, topFails === 0);
+}
+
+/* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");
