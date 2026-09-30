@@ -585,6 +585,54 @@ for (const cif of [0, 0.10]) {
 }
 
 /* ---------------------------------------------------------------- */
+/* Data Quality table and Methodology's product coverage               */
+/* ---------------------------------------------------------------- */
+/* The table lists partners with at least one reported year in the window:
+ *   - coverage = reported years ÷ window years, exactly what the marks show
+ *   - the last reported year is the latest mark, and a lapsed partner has
+ *     none after it; lapse and tier follow the workbook rule on those years
+ * The chart counts partner × code pairs with data per year:
+ *   - an HS2 or HS4 pair has data in a year exactly when one of its HS6
+ *     lines does, and the partner-reported value is equal at every level */
+{
+  const W = yearsFor("year");
+  const listed = meta.partners.filter((p) => p.reportedYears.length > 0);
+  let bad = 0;
+  for (const p of listed) {
+    const r = p.reportedYears;
+    const last = r[r.length - 1];
+    const lapse = last < meta.window.end;
+    const tier = p.coverage >= 0.8 && !lapse ? "High" : p.coverage >= 0.5 && !lapse ? "Medium" : "Low";
+    if (r.some((y) => !W.includes(y))) bad++;
+    if (p.coverage !== r.length / W.length || p.lastReportedYear !== last || p.lapse !== lapse || p.tier !== tier) bad++;
+    if (!near(r.length, new Set(r).size, 0)) bad++;
+  }
+  check(`quality table: coverage, last year, lapse and tier follow the marks (${listed.length} partners)`, bad === 0, `${bad} partners off`);
+  check("quality table: every partner with a mark is listed, none without",
+    listed.length + meta.partners.filter((p) => p.reportedYears.length === 0).length === meta.partners.length && listed.length > 0);
+
+  const whole = aggregate({ ...DEFAULT_FILTER, years: [...W], minGap: 0 });
+  const perYear = (chs: Channel[]) => {
+    const m = new Map<number, { n: number; pe: number }>();
+    for (const c of chs) for (const y of c.years) {
+      const e = m.get(y.y) ?? m.set(y.y, { n: 0, pe: 0 }).get(y.y)!;
+      e.n++; e.pe += y.pe;
+    }
+    return m;
+  };
+  const lv = { 2: perYear(whole.baseChannels), 4: perYear(whole.baseChannels4), 6: perYear(whole.baseChannels6) };
+  for (const y of W) {
+    for (const d of [2, 4] as const) {
+      const keys = new Set<string>();
+      for (const c of whole.baseChannels6) if (c.years.some((x) => x.y === y)) keys.add(`${c.partnerIso}|${c.cmd.slice(0, d)}`);
+      check(`product coverage ${y}: HS${d} pairs = distinct HS6 prefixes with data`, (lv[d].get(y)?.n ?? 0) === keys.size,
+        `${lv[d].get(y)?.n ?? 0} vs ${keys.size}`);
+      check(`product coverage ${y}: HS${d} value = HS6 value`, near(lv[d].get(y)?.pe ?? 0, lv[6].get(y)?.pe ?? 0, 5));
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- */
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");

@@ -317,6 +317,29 @@ export const reportedYearsOf = (iso: string): number[] => {
   return extra ? [...new Set([...base, ...extra])].sort((a, b) => a - b) : base;
 };
 
+/*
+ * Partner reliability, measured over the window the dashboard shows. The
+ * workbook bakes coverage over its own eight years, so beside ten years of
+ * reporting marks a partner filing 2017–2024 read 100%, one that resumed in
+ * 2025 still read "stopped", and 3 of 8 years showed as 38%. Coverage is now
+ * the reported years out of the whole window, and lapse and tier follow the
+ * workbook's own rule (scripts/build-from-excel.ts) on those years: a partner
+ * has lapsed when it last reported before the workbook's final year.
+ */
+for (const p of meta.partners) {
+  const years = [...new Set([...p.reportedYears, ...(derivedReportedYears.get(p.iso3) ?? [])])]
+    .filter((y) => yearlyYears.includes(y))
+    .sort((a, b) => a - b);
+  const coverage = years.length / yearlyYears.length;
+  const last = years.length ? years[years.length - 1] : 0;
+  const lapse = years.length > 0 && last < meta.window.end;
+  p.reportedYears = years;
+  p.coverage = coverage;
+  p.lastReportedYear = last;
+  p.lapse = lapse;
+  p.tier = coverage >= 0.8 && !lapse ? "High" : coverage >= 0.5 && !lapse ? "Medium" : "Low";
+}
+
 /**
  * Months of a year BOTH books reported.
  *

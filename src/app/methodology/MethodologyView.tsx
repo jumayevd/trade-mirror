@@ -7,13 +7,15 @@ import { fmtNum, fmtPct, fmtUSD } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
 import { Cite, REFERENCES } from "@/lib/references";
+import { ProductCoverage, TransitPartners } from "./CoverageSections";
 
 /**
  * Methodology — the shortest honest account of what the numbers are.
  *
  * Order: why a positive mirror gap is worth reading at all, the literature the
  * reading rests on, the measures the dashboard shows, how the risk score is
- * built, what the score diagnostics say, and the bibliography.
+ * built, what the score diagnostics say, how much product detail each year
+ * carries, which partners are transit hubs, and the bibliography.
  */
 
 const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
@@ -325,9 +327,21 @@ export default function MethodologyView() {
         </div>
       </section>
 
-      {/* 6. references ------------------------------------------------------ */}
+      {/* 6. product-level coverage ------------------------------------------ */}
+      <section className="space-y-2">
+        <SectionHead n="6" title={tr("qual.level.title")} desc={tr("qual.level.sectionDesc")} />
+        <ProductCoverage />
+      </section>
+
+      {/* 7. transit hubs ---------------------------------------------------- */}
+      <section className="space-y-2">
+        <SectionHead n="7" title={tr("qual.transit.title")} desc={tr("qual.transit.desc")} />
+        <TransitPartners />
+      </section>
+
+      {/* 8. references ------------------------------------------------------ */}
       <section className="max-w-4xl space-y-2">
-        <SectionHead n="6" title={tr("meth.refs.title")} />
+        <SectionHead n="8" title={tr("meth.refs.title")} />
         <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted lg:columns-2 lg:gap-8">
           {/* the annotated readings live in the Literature findings table — the
               list here is the bare citation, only for sources actually used */}
