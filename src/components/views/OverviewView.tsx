@@ -4,18 +4,19 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
+import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
+import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
+import { hs6ShortLabel } from "@/lib/short-labels";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
-import StatisticalProfile from "@/components/views/StatisticalProfile";
 import YearSelect from "@/components/YearSelect";
 import {
-  aggregate, DEFAULT_FILTER, meta, hsLabel, isDerivedYear, productByCmd, yearsFor, yearsLabel,
-  type Channel, type Granularity,
+  aggregate, DEFAULT_FILTER, meta, needsMonthlyDetail, yearsFor, yearsLabel,
+  type Granularity,
 } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
-import type { LocaleKey } from "@/lib/locales";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } from "@/lib/echartBase";
 
@@ -26,69 +27,86 @@ import { CHART_FONT, baseGrid, baseTextStyle, baseTooltip, catAxis, valueAxis } 
  * reading the shared filter context, so partner and HS selections made elsewhere
  * never reshape it.
  */
-const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...meta.years] };
-const TOP_N = 10;
+const FULL_WINDOW = { ...DEFAULT_FILTER, years: [...yearsFor("year")] };
+/** How many partners the two-sided chart's drill-down lists per period. */
+const DRILL_TOP = 10;
 
 type OverviewTab = "summary" | "profile";
 
-interface RankRow {
-  key: string;
-  code: string;
-  label: string;
-  value: number;
-  href?: string;
-  note: string;
-}
-
-type Translate = (key: LocaleKey) => string;
-
-/** Group partner × code channels by code, summing the positive discrepancy across partners. */
-function topByCode(chs: Channel[], link: boolean, t: Translate): { rows: RankRow[]; total: number } {
-  const m = new Map<string, { value: number; partners: Set<string>; label: string }>();
-  for (const c of chs) {
-    const e = m.get(c.cmd) ?? { value: 0, partners: new Set<string>(), label: hsLabel(c.cmd) };
-    e.value += c.posT;
-    e.partners.add(c.partnerIso);
-    m.set(c.cmd, e);
-  }
-  const all = [...m.entries()].filter(([, e]) => e.value > 0);
-  const total = all.reduce((s, [, e]) => s + e.value, 0);
-  const rows = all
-    .sort((a, b) => b[1].value - a[1].value)
-    .slice(0, TOP_N)
-    .map(([cmd, e]) => ({
-      key: cmd,
-      code: cmd,
-      label: e.label,
-      value: e.value,
-      href: link && productByCmd(cmd) ? `/products/${cmd}` : undefined,
-      note: `${fmtNum(e.partners.size)} ${e.partners.size === 1 ? t("ovw.note.partner") : t("ovw.note.partners")}`,
-    }));
-  return { rows, total };
-}
-
 export default function OverviewView() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   /** Overview's controls: the time basis and which periods the summary covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
-  const [years, setYears] = useState<number[]>(() => [...meta.years]);
+  const [summaryYears, setSummaryYears] = useState<number[]>(() => {
+    const w = yearsFor("year");
+    return [w[w.length - 1]];
+  });
+  const [profileYears, setProfileYears] = useState<number[]>(() => [...yearsFor("year")]);
   const [months, setMonths] = useState<number[]>([]);
   const [tab, setTab] = useState<OverviewTab>("summary");
+  const years = tab === "profile" ? profileYears : summaryYears;
+  const setYears = tab === "profile" ? setProfileYears : setSummaryYears;
   // The HS4/HS6 detail backs both the monthly basis and any year the annual
   // workbook never reached, so either one has to trigger the fetch.
-  const detailVer = useMonthlyDetail(granularity === "month" || years.some(isDerivedYear));
+  const detailVer = useMonthlyDetail(granularity === "month" || years.some(needsMonthlyDetail));
   const data = useMemo(
     () => aggregate({ ...FULL_WINDOW, granularity, years, months }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [granularity, years, months, detailVer],
   );
   const k = data.kpis;
+
+  /*
+   * The two treemap panels: who and what carry the positive discrepancy over
+   * the selected period. Countries come off the partner rollup; products are
+   * the HS6 channels grouped by code across partners — the measurement grain,
+   * so these tiles sum against the same total the headline shows.
+   */
+  /*
+   * The actual import flow as the statistics office publishes it — the context
+   * the mirror numbers sit inside. Null when a selected year has no published
+   * figure yet, in which case the two cards simply do not render: a KPI that
+   * silently covered fewer years than its label would be worse than none.
+   */
+  const official = useMemo(() => officialImportsOver(years), [years]);
+  const throughNote = official?.partial
+    ? ` (${t(years.length > 1 ? "ovw.stat.throughMonth" : "ovw.stat.throughMonthOnly")
+        .split("{year}").join(String(official.partial.year))
+        .split("{month}").join(t(`month.${official.partial.throughMonth}` as never))})`
+    : "";
+
+  const treemap = useMemo(() => {
+    const countries: TreemapItem[] = [...data.partners]
+      .sort((a, b) => b.posT - a.posT)
+      .map((p) => ({ key: p.iso3, label: p.name, value: p.posT, href: `/partners/${p.iso3.toLowerCase()}` }));
+    const byCmd = new Map<string, { label: string; value: number }>();
+    for (const c of data.baseChannels6) {
+      if (c.posT <= 0) continue;
+      const e = byCmd.get(c.cmd) ?? { label: c.cmdLabel, value: 0 };
+      e.value += c.posT;
+      byCmd.set(c.cmd, e);
+    }
+    const products: TreemapItem[] = [...byCmd.entries()]
+      .sort((a, b) => b[1].value - a[1].value)
+      .map(([cmd, e]) => ({
+        key: cmd,
+        // a few recognisable words on the tile; the code and the full official
+        // description move to the tooltip, where there is room for them
+        label: hs6ShortLabel(cmd, lang, e.label),
+        detail: `HS ${cmd} · ${e.label}`,
+        value: e.value,
+        href: `/products?hs6=${cmd}`,
+      }));
+    return { countries, products };
+  }, [data, lang]);
   const periodLabel = yearsLabel(years);
 
   const pickGranularity = (g: Granularity) => {
     if (g === granularity) return;
     setGranularity(g);
-    setMonths([]);
+    // every month ticked, not an empty set meaning "all": the picker shows what
+    // is selected, and an empty one read as though no month had been chosen
+    setMonths(g === "month" ? Array.from({ length: 12 }, (_, i) => i + 1) : []);
     // keep only years the target basis actually carries; empty means the full window
     const window = yearsFor(g);
     const kept = years.filter((y) => window.includes(y));
@@ -102,24 +120,6 @@ export default function OverviewView() {
     })),
     [t],
   );
-
-  const partners = useMemo(() => {
-    const all = data.partners.filter((p) => p.posT > 0);
-    const total = all.reduce((s, p) => s + p.posT, 0);
-    const rows: RankRow[] = all.slice(0, TOP_N).map((p) => ({
-      key: p.iso3,
-      code: p.iso3,
-      label: p.transit ? `${p.name} ⇄` : p.name,
-      value: p.posT,
-      href: `/partners/${p.iso3.toLowerCase()}`,
-      note: `${fmtNum(p.channels)} ${p.channels === 1 ? t("ovw.note.chapter") : t("ovw.note.chapters")}`,
-    }));
-    return { rows, total };
-  }, [data, t]);
-
-  const hs2 = useMemo(() => topByCode(data.channels, false, t), [data, t]);
-  const hs4 = useMemo(() => topByCode(data.channels4, false, t), [data, t]);
-  const hs6 = useMemo(() => topByCode(data.channels6, true, t), [data, t]);
 
   const annualOption = useMemo<EChartsOption>(() => {
     // Uzbekistan's monthly book only starts partway into the window (2019-01):
@@ -227,13 +227,13 @@ export default function OverviewView() {
         if (yr.y !== drillYear) continue;
         const e = byPartner.get(c.partnerIso)
           ?? { name: c.partner, iso3: c.partnerIso, positive: 0, reverse: 0 };
-        if (yr.signed > 0) e.positive += yr.signed; else e.reverse += -yr.signed;
+        e.positive += yr.posY; e.reverse += yr.revY;
         byPartner.set(c.partnerIso, e);
       }
     }
     return [...byPartner.values()]
       .sort((a, b) => (b.positive + b.reverse) - (a.positive + a.reverse))
-      .slice(0, TOP_N);
+      .slice(0, DRILL_TOP);
   }, [data, drillYear]);
 
   /**
@@ -378,16 +378,23 @@ export default function OverviewView() {
 
   return (
     <div className="space-y-6">
-      {/* 1. heading + one quiet line */}
-      <section className="space-y-1.5">
+      {/* 1. heading, and the window the data covers — stated once, above the controls */}
+      <section className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.overview")}</h1>
-        <p className="max-w-3xl text-[13px] leading-relaxed text-muted">
-          {t("ov.question")} {t("ovw.intro.whole")} {periodLabel} {t("ovw.intro.windowAll")}{" "}
-          {fmtNum(meta.partners.length)} {t("ovw.intro.reportingPartners")}{" "}
-          <Link href="/methodology" className="font-medium text-[var(--color-primary)] hover:underline">
-            {t("nav.methodology")} →
-          </Link>
-        </p>
+        {/*
+          The window is a property of the dataset, not of the period picked below
+          it, so it reads the data window rather than the selection and does not
+          move when the reader filters.
+        */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">
+            {t("ovw.stat.yearsCovered")}
+          </span>
+          <span className="tabular text-[15px] font-semibold">
+            {DATA_WINDOW.start}–{DATA_WINDOW.end}
+          </span>
+          <InfoTip text={t("ovw.stat.yearsCovered.info")} />
+        </div>
       </section>
 
       {/* 2. time basis + period — dropdowns of ticks — and the view switch beside them */}
@@ -431,158 +438,166 @@ export default function OverviewView() {
         />
       </section>
 
-      {tab === "profile" && <StatisticalProfile agg={data} />}
+      {tab === "profile" && (
+        <div className="space-y-6">
+        {/* 3+4. the two time series, side by side on wide screens */}
+        <div className="space-y-6">
+        <section>
+          <SectionTitle
+            title={t("ovw.dynamics.title")}
+            desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
+            right={<InfoTip text={t("ovw.dynamics.info")} />}
+          />
+          <div className="card p-4">
+            <EChart option={annualOption} style={{ height: 300 }} />
+          </div>
+        </section>
+  
+        {/* 3b. the same window, both directions — the one place the reverse side is shown */}
+        <section>
+          <SectionTitle
+            title={t("ovw.twoSided.title")}
+            desc={t("ovw.twoSided.desc")}
+            right={<InfoTip text={t("ovw.twoSided.info")} />}
+          />
+          <div className="card p-4">
+            <EChart
+              option={twoSidedOption}
+              style={{ height: 300 }}
+              onEvents={{
+                click: (p) => {
+                  // periods carry the year in the label ("2023" or "2023-05")
+                  const label = (p as { name?: string }).name ?? "";
+                  const year = Number(label.slice(0, 4));
+                  setDrillYear((cur) => (Number.isFinite(year) && cur !== year ? year : null));
+                },
+              }}
+            />
+            {/* The chart itself is a canvas, so the click above is mouse-only. The same
+                drill-down is offered as buttons: keyboard-reachable, and it names the
+                periods rather than asking the reader to guess that bars are clickable. */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
+              {drillPeriods.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
+                  aria-pressed={drillYear === y}
+                  className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
+                    drillYear === y
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                      : "border-[var(--color-border)] text-muted hover:text-foreground"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+  
+            {/* the clicked period, by partner — same two directions, so the reader can
+                see whether the offsetting they just saw survives country by country */}
+            {drillYear != null && (
+              <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
+                <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="text-[13px] font-semibold">
+                    {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
+                  </h3>
+                  <button
+                    onClick={() => setDrillYear(null)}
+                    className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
+                  >
+                    {t("ovw.twoSided.close")} ✕
+                  </button>
+                </div>
+                {drillRows.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <EChart option={drillOption} style={{ height: 280 }} />
+                )}
+              </div>
+            )}
+  
+          </div>
+        </section>
+        </div>
+        </div>
+      )}
 
       {tab === "summary" && (
         <div className="space-y-6">
-      {/* 3. headline tiles */}
+      {/* 3. headline tiles — two rows of three: what the import bill is and how
+          much of it this dataset sees; then what the discrepancy is on it */}
       <section>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {official && (
+            <>
+              <Stat
+                label={t("ovw.stat.officialImports")}
+                value={fmtUSD(official.usd)}
+                info={`${t("ovw.stat.officialImports.info")} ${periodLabel}${throughNote}. ${t("ovw.stat.sourceWord")}: ${OFFICIAL_IMPORTS_SOURCE.name} (${OFFICIAL_IMPORTS_SOURCE.retrievedAt}).`}
+                accent={COLORS.navy2}
+              />
+              <Stat
+                label={t("ovw.stat.comtradeImports")}
+                value={fmtUSD(data.observed.ui)}
+                info={`${t("ovw.stat.comtradeImports.info")} ${periodLabel}.`}
+                accent={COLORS.navy2}
+              />
+              <Stat
+                label={t("ovw.stat.coverage")}
+                value={fmtPct(data.observed.ui / official.usd, 1)}
+                info={`${t("ovw.stat.coverage.info2")} ${fmtUSDFull(data.observed.ui)} ÷ ${fmtUSDFull(official.usd)}${throughNote}.`}
+                accent={COLORS.navy3}
+              />
+            </>
+          )}
+          <Stat
+            label={t("ovw.stat.gapShareComtrade")}
+            value={data.observed.ui > 0 ? fmtPct(k.positive.central / data.observed.ui, 1) : "—"}
+            info={`${t("ovw.stat.gapShareComtrade.info")} ${fmtUSDFull(k.positive.central)} ÷ ${fmtUSDFull(data.observed.ui)}.`}
+            accent={COLORS.positive}
+          />
           <HeroStat
             label={t("kpi.positive")}
             value={fmtUSD(k.positive.central)}
-            sub={`${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}`}
-            info={t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))}
+            info={`${t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))} ${t("ovw.stat.positiveBand")}: ${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}.`}
           />
           <Stat
             label={t("ovw.stat.partnersCovered")}
             value={fmtNum(k.partnerCount)}
-            sub={`${t("ovw.stat.partnersOf")} ${fmtNum(meta.partners.length)} ${t("ovw.stat.partnersInDataset")}`}
-            info={t("ovw.stat.partnersCovered.info")}
+            info={`${t("ovw.stat.partnersOfTotal")
+              .split("{n}").join(fmtNum(k.partnerCount))
+              .split("{total}").join(fmtNum(meta.partners.length))} ${t("ovw.stat.partnersCovered.info")}`}
             accent={COLORS.navy2}
           />
-          <Stat
-            label={t("ovw.stat.yearsCovered")}
-            value={periodLabel}
-            sub={`${fmtNum(years.length)} ${t("ovw.stat.unit.years")} · ${fmtPct(k.coveragePct, 0)} ${t("ovw.stat.coverageSub")}`}
-            info={t("ovw.stat.yearsCovered.info")}
-            accent={COLORS.navy3}
-          />
         </div>
       </section>
 
-      {/* 3. overall dynamics */}
+      {/*
+        2b. the treemaps. They carry no section heading of their own: each panel
+        title already says what it ranks, and the prose above them repeated it.
+        The titles therefore have to do that work on their own, so they are set
+        as headings rather than as faint captions.
+      */}
       <section>
-        <SectionTitle
-          title={t("ovw.dynamics.title")}
-          desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
-          right={<InfoTip text={t("ovw.dynamics.info")} />}
-        />
-        <div className="card p-4">
-          <EChart option={annualOption} style={{ height: 300 }} />
-        </div>
-      </section>
-
-      {/* 3b. the same window, both directions — the one place the reverse side is shown */}
-      <section>
-        <SectionTitle
-          title={t("ovw.twoSided.title")}
-          desc={t("ovw.twoSided.desc")}
-          right={<InfoTip text={t("ovw.twoSided.info")} />}
-        />
-        <div className="card p-4">
-          <EChart
-            option={twoSidedOption}
-            style={{ height: 300 }}
-            onEvents={{
-              click: (p) => {
-                // periods carry the year in the label ("2023" or "2023-05")
-                const label = (p as { name?: string }).name ?? "";
-                const year = Number(label.slice(0, 4));
-                setDrillYear((cur) => (Number.isFinite(year) && cur !== year ? year : null));
-              },
-            }}
-          />
-          {/* The chart itself is a canvas, so the click above is mouse-only. The same
-              drill-down is offered as buttons: keyboard-reachable, and it names the
-              periods rather than asking the reader to guess that bars are clickable. */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
-            {drillPeriods.map((y) => (
-              <button
-                key={y}
-                onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
-                aria-pressed={drillYear === y}
-                className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
-                  drillYear === y
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                    : "border-[var(--color-border)] text-muted hover:text-foreground"
-                }`}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
-
-          {/* the clicked period, by partner — same two directions, so the reader can
-              see whether the offsetting they just saw survives country by country */}
-          {drillYear != null && (
-            <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
-              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                <h3 className="text-[13px] font-semibold">
-                  {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
-                </h3>
-                <button
-                  onClick={() => setDrillYear(null)}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
-                >
-                  {t("ovw.twoSided.close")} ✕
-                </button>
-              </div>
-              {drillRows.length === 0 ? (
-                <EmptyState />
-              ) : (
-                <EChart option={drillOption} style={{ height: 280 }} />
-              )}
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
+              <Link href="/partners" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
-          )}
-
-          <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-faint">{t("ovw.twoSided.note")}</p>
+            <GapTreemap items={treemap.countries} ariaLabel={t("ovw.treemap.countries")} />
+          </div>
+          <div>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
+              <Link href="/products" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
+            </div>
+            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} />
+          </div>
         </div>
       </section>
 
-      {/* 4. top partner countries */}
-      <section>
-        <SectionTitle
-          title={t("ovw.topPartners.title")}
-          desc={t("ovw.topPartners.desc")}
-        />
-        <RankedList rows={partners.rows} total={partners.total} codeWidth="w-10" />
-      </section>
-
-      {/* 5. top products at each HS level */}
-      <section className="space-y-5">
-        <SectionTitle
-          title={t("ovw.topProducts.title")}
-          desc={t("ovw.topProducts.desc")}
-          right={
-            <Link href="/products" className="text-sm font-medium text-[var(--color-primary)] hover:underline">
-              {t("nav.products")} →
-            </Link>
-          }
-        />
-        <RankedBlock
-          title={t("ovw.hs2.title")}
-          hint={t("ovw.hs2.hint")}
-          rows={hs2.rows}
-          total={hs2.total}
-          codeWidth="w-8"
-        />
-        <RankedBlock
-          title={t("ovw.hs4.title")}
-          hint={t("ovw.hs4.hint")}
-          rows={hs4.rows}
-          total={hs4.total}
-          codeWidth="w-12"
-        />
-        <RankedBlock
-          title={t("ovw.hs6.title")}
-          hint={t("ovw.hs6.hint")}
-          rows={hs6.rows}
-          total={hs6.total}
-          codeWidth="w-14"
-        />
-      </section>
         </div>
       )}
     </div>
@@ -606,76 +621,6 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
         </span>
       </div>
       {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Ranked list: rank · code · label · bar · value · share              */
-/* ------------------------------------------------------------------ */
-
-function RankedList({ rows, total, codeWidth }: { rows: RankRow[]; total: number; codeWidth: string }) {
-  const { t } = useI18n();
-  if (rows.length === 0) return <EmptyState />;
-  const max = rows[0].value || 1;
-  return (
-    <div className="card space-y-1.5 p-4">
-      {rows.map((r, i) => (
-        <div key={r.key} className="flex items-center gap-3 text-[13px]">
-          <span className="tabular w-4 shrink-0 text-right text-[12px] text-faint">{i + 1}</span>
-          <span className={`tabular ${codeWidth} shrink-0 text-[12px] text-faint`}>{r.code}</span>
-          <span className="w-52 shrink-0 truncate" title={r.label}>
-            {r.href ? (
-              <Link href={r.href} className="font-medium hover:underline">
-                {r.label}
-              </Link>
-            ) : (
-              r.label
-            )}
-          </span>
-          <span className="relative h-3.5 min-w-0 flex-1 overflow-hidden rounded-sm bg-[var(--color-panel-2)]">
-            <span
-              className="absolute inset-y-0 left-0"
-              style={{
-                width: `${Math.max(1.5, (r.value / max) * 100)}%`,
-                background: COLORS.positive,
-                opacity: 0.65,
-                borderRadius: "0 4px 4px 0",
-                boxShadow: `0 0 0 1px ${COLORS.surface}`,
-              }}
-              title={fmtUSDFull(r.value)}
-            />
-          </span>
-          <span className="tabular w-20 shrink-0 text-right font-medium" title={fmtUSDFull(r.value)}>
-            {fmtUSD(r.value)}
-          </span>
-          <span
-            className="tabular w-12 shrink-0 text-right text-[12px] text-faint"
-            title={t("ovw.share.tip")}
-          >
-            {total > 0 ? fmtPct(r.value / total, 0) : "—"}
-          </span>
-          <span className="hidden w-20 shrink-0 text-right text-[12px] text-faint sm:block">{r.note}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function RankedBlock({
-  title, hint, rows, total, codeWidth,
-}: {
-  title: string; hint: string; rows: RankRow[]; total: number; codeWidth: string;
-}) {
-  return (
-    <div>
-      {/* the HS tier is the reader's orientation inside the top-10 block, so it
-          carries ink weight rather than sitting as a faint micro-label */}
-      <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-        {title}
-        <InfoTip text={hint} />
-      </p>
-      <RankedList rows={rows} total={total} codeWidth={codeWidth} />
     </div>
   );
 }

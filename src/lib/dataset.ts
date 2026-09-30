@@ -12,6 +12,8 @@
 import cellsRaw from "@/data/cells.json";
 import metaRaw from "@/data/meta.json";
 import monthlyRaw from "@/data/monthly.json";
+import annualizedRaw from "@/data/annualized-hs6.json";
+import officialImportsRaw from "@/data/official-imports.json";
 import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
@@ -110,29 +112,44 @@ const cells: Cell[] = (() => {
   }
 
   /*
-   * Derive the HS4 layer here rather than shipping it. HS4 is defined as the
-   * truncation of HS6, so rebuilding it in one pass is both smaller over the
-   * wire and impossible to drift out of step with its children.
+   * Derive HS4 AND HS2 from HS6 by truncation, rather than shipping either.
+   *
+   * HS4 was always derived — it is defined as the truncation of HS6. HS2 used to
+   * be the workbook's own chapter sheet, which is a separate UN Comtrade
+   * aggregation of the same trade and does not agree with HS6 cell by cell: a
+   * flow booked to a named chapter at HS2 can sit under 999999 at HS6. The grand
+   * totals matched, but a reader who switched level saw the reported exports and
+   * recorded imports for one chapter change under them, which reads as an error
+   * in the data rather than as two different Comtrade queries.
+   *
+   * Deriving both from the HS6 grain buys that consistency: every level is now
+   * the same trade, summed differently, and a chapter is exactly its products.
+   * The cost is that the HS2 view no longer reconciles against a raw Comtrade
+   * HS2 query — it reconciles against this dashboard's own HS6 view instead.
    */
-  const h4 = new Map<string, Cell>();
+  const rolled = new Map<string, Cell>();
   for (const r of out) {
     if (r.l !== 6) continue;
-    const code = r.k.slice(0, 4);
-    const key = `${r.p}|${code}|${r.y}`;
-    let agg = h4.get(key);
-    if (!agg) {
-      agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
-      h4.set(key, agg);
-    }
-    agg.pe += r.pe;
-    agg.ui += r.ui;
-    if (r.uw !== undefined && r.pw !== undefined) {
-      agg.uw = (agg.uw ?? 0) + r.uw;
-      agg.pw = (agg.pw ?? 0) + r.pw;
+    for (const width of [4, 2] as const) {
+      const code = r.k.slice(0, width);
+      const key = `${width}|${r.p}|${code}|${r.y}`;
+      let agg = rolled.get(key);
+      if (!agg) {
+        agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: width, y: r.y, pe: 0, ui: 0 };
+        rolled.set(key, agg);
+      }
+      agg.pe += r.pe;
+      agg.ui += r.ui;
+      if (r.uw !== undefined && r.pw !== undefined) {
+        agg.uw = (agg.uw ?? 0) + r.uw;
+        agg.pw = (agg.pw ?? 0) + r.pw;
+      }
     }
   }
-  for (const cell of h4.values()) out.push(cell);
-  return out;
+  // the shipped chapter rows go, replaced by the rollup of their own products
+  const derived = out.filter((r) => r.l !== 2);
+  for (const cell of rolled.values()) derived.push(cell);
+  return derived;
 })();
 
 /* ------------------------------------------------------------------ */
@@ -202,6 +219,104 @@ export const isDerivedYear = (y: number): boolean => !annualYearSet.has(y);
 
 const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) => a - b);
 
+/*
+ * Uzbekistan's ACTUAL imports as published by the national statistics office
+ * (stat.uz) — not the UN Comtrade mirror the rest of this module reads. The
+ * overview quotes it as context: how large the recorded import flow really is,
+ * and what share of it the positive discrepancy amounts to. Annual totals for
+ * finished years; the running year carries the office's cumulative
+ * year-to-date series, and the sum aligns it to the last month Uzbekistan's
+ * own mirror book covers, so numerator and denominator describe the same
+ * stretch of time as closely as the two sources allow.
+ */
+interface OfficialImports {
+  source: string; retrievedAt: string;
+  annual: Record<string, number>;
+  cumulativeByMonth: Record<string, number[]>;
+}
+const officialImportsData = officialImportsRaw as unknown as OfficialImports;
+export const OFFICIAL_IMPORTS_SOURCE = {
+  name: officialImportsData.source,
+  retrievedAt: officialImportsData.retrievedAt,
+};
+
+/** The last calendar month of a year with any recorded import in the monthly
+ *  mirror book — how far Uzbekistan's own side actually reaches. */
+const lastUiMonth = (() => {
+  const m = new Map<number, number>();
+  for (const r of monthlyCells) if (r.ui > 0 && r.m > (m.get(r.y) ?? 0)) m.set(r.y, r.m);
+  return m;
+})();
+
+/**
+ * Official imports over a set of years, in USD. Returns null when any selected
+ * year has no published figure, so a partial denominator can never be printed
+ * as if it covered the selection.
+ */
+export function officialImportsOver(years: number[]): { usd: number; partial: { year: number; throughMonth: number } | null } | null {
+  let usd = 0;
+  let partial: { year: number; throughMonth: number } | null = null;
+  for (const y of years) {
+    const annual = officialImportsData.annual[String(y)];
+    if (annual !== undefined) { usd += annual; continue; }
+    const cum = officialImportsData.cumulativeByMonth[String(y)];
+    if (!cum || cum.length === 0) return null;
+    // align to the mirror book's own reach, never past what the office published
+    const through = Math.min(lastUiMonth.get(y) ?? cum.length, cum.length);
+    usd += cum[through - 1];
+    partial = { year: y, throughMonth: through };
+  }
+  return { usd, partial };
+}
+
+/** The whole window the dashboard covers, on the yearly basis. Distinct from
+ *  meta.window (the annual workbook) and FITTED_WINDOW (the index's fit). */
+export const DATA_WINDOW = { start: yearlyYears[0], end: yearlyYears[yearlyYears.length - 1] };
+
+/*
+ * The derived years' HS6 cells, annualized at build time from the same monthly
+ * book monthlySource() folds (scripts/build-annualized.ts — the audit asserts
+ * the two agree). Shipping them lets the yearly basis carry 2025–2026 on every
+ * page, including the statically generated profiles, with no runtime fetch.
+ */
+const annualizedCells: Cell[] = (() => {
+  const packed = annualizedRaw as unknown as PackedCells;
+  const out: Cell[] = new Array(packed.r.length);
+  for (let i = 0; i < packed.r.length; i++) {
+    const row = packed.r[i];
+    const k = packed.k[row[1]];
+    const c = k.slice(0, 2);
+    out[i] = {
+      p: packed.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6,
+      y: packed.y0 + row[2], pe: row[3], ui: row[4],
+    };
+  }
+  return out;
+})();
+const annualizedYears = new Set(annualizedCells.map((r) => r.y));
+/** True when a derived year's yearly figures need the monthly detail after all
+ *  — only when the annualized layer is stale relative to the monthly book. */
+export const needsMonthlyDetail = (y: number): boolean => !annualYearSet.has(y) && !annualizedYears.has(y);
+
+/** Years a partner shows up in, extended past the annual workbook: the derived
+ *  years count when the partner's export book has anything in them. */
+const derivedReportedYears = (() => {
+  const m = new Map<string, Set<number>>();
+  for (const r of annualizedCells) {
+    if (r.pe <= 0) continue;
+    let set = m.get(r.p);
+    if (!set) { set = new Set(); m.set(r.p, set); }
+    set.add(r.y);
+  }
+  return m;
+})();
+export const reportedYearsOf = (iso: string): number[] => {
+  // pMeta is declared below; this is only ever called after module init
+  const base = pMeta.get(iso)?.reportedYears ?? [];
+  const extra = derivedReportedYears.get(iso);
+  return extra ? [...new Set([...base, ...extra])].sort((a, b) => a - b) : base;
+};
+
 /**
  * Months of a year BOTH books reported.
  *
@@ -211,12 +326,26 @@ const yearlyYears: number[] = [...meta.years, ...monthlyOnlyYears].sort((a, b) =
  * month only one side filed can never be compared.
  */
 const comparableMonths = (() => {
-  const acc = new Map<number, Set<number>>();
+  /*
+   * Both books are tested per CELL-month, aggregated first: the extension
+   * fetched from the live API appends import-only rows beside the workbook's
+   * partner rows, so one (partner × code × month) can span two rows and a
+   * per-row test would call a genuinely two-sided month one-sided. Folding
+   * downstream sums the same way, so this stays the grain the channels use.
+   */
+  const cellAcc = new Map<string, { y: number; m: number; pe: number; ui: number }>();
   for (const r of monthlyCells) {
-    if (r.pe <= NOISE || r.ui <= NOISE) continue;
-    let set = acc.get(r.y);
-    if (!set) { set = new Set<number>(); acc.set(r.y, set); }
-    set.add(r.m);
+    const key = `${r.p}|${r.k}|${r.y * 100 + r.m}`;
+    const e = cellAcc.get(key) ?? { y: r.y, m: r.m, pe: 0, ui: 0 };
+    e.pe += r.pe; e.ui += r.ui;
+    cellAcc.set(key, e);
+  }
+  const acc = new Map<number, Set<number>>();
+  for (const e of cellAcc.values()) {
+    if (e.pe <= NOISE || e.ui <= NOISE) continue;
+    let set = acc.get(e.y);
+    if (!set) { set = new Set<number>(); acc.set(e.y, set); }
+    set.add(e.m);
   }
   return new Map<number, number[]>([...acc].map(([y, set]) => [y, [...set].sort((a, b) => a - b)]));
 })();
@@ -357,12 +486,18 @@ function monthlySource(f: Filter): Cell[] {
 function sourceCells(f: Filter): Cell[] {
   if (f.granularity === "month") return monthlySource(f);
   // Past the workbook's last year the only record is the monthly book, so those
-  // years' yearly cells are their months summed. Only years the caller actually
-  // ticked are pulled in — an empty selection stays the annual window, so no
-  // default view silently mixes the two vintages.
+  // years' yearly cells are their months summed — precomputed at build time
+  // (annualized-hs6.json), so the derived years are available everywhere the
+  // annual ones are, static pages included. The picker labels them as derived:
+  // they are a different vintage, months still filling up.
   const derived = f.years.filter((y) => !annualYearSet.has(y));
   if (derived.length === 0) return cells;
-  return [...cells, ...monthlySource({ ...f, years: derived, months: [] })];
+  const want = new Set(derived.filter((y) => annualizedYears.has(y)));
+  const extra: Cell[] = annualizedCells.filter((r) => want.has(r.y));
+  // a derived year the build has not annualized yet still folds live
+  const missing = derived.filter((y) => !annualizedYears.has(y));
+  if (missing.length) extra.push(...monthlySource({ ...f, years: missing, months: [] }));
+  return [...cells, ...extra];
 }
 
 const pMeta = new Map(meta.partners.map((p) => [p.iso3, p]));
@@ -417,11 +552,22 @@ export const isResidualChapter = (c: string) => c === "98" || c === "99";
 // from one side alone would look like it had history.
 const histYears = (() => {
   const m = new Map<string, number>();
-  for (const r of cells) {
+  // one grain here too: a coarse cell's history is the distinct years in which
+  // any of its HS6 lines was comparable
+  const seen = new Map<string, Set<number>>();
+  const mark = (key: string, y: number) => {
+    let set = seen.get(key);
+    if (!set) { set = new Set(); seen.set(key, set); }
+    set.add(y);
+  };
+  for (const r of [...cells, ...annualizedCells]) {
+    if (r.l !== 6) continue;
     if (r.pe <= NOISE || r.ui <= NOISE) continue;
-    const key = `${r.l}|${r.p}|${r.k}`;
-    m.set(key, (m.get(key) ?? 0) + 1);
+    mark(`6|${r.p}|${r.k}`, r.y);
+    mark(`4|${r.p}|${r.k.slice(0, 4)}`, r.y);
+    mark(`2|${r.p}|${r.k.slice(0, 2)}`, r.y);
   }
+  for (const [key, set] of seen) m.set(key, set.size);
   return m;
 })();
 
@@ -498,10 +644,30 @@ export interface Filter {
   category: string; // "all" | key
   minGap: number; // materiality floor on the positive discrepancy
   band: "all" | RiskBand;
+  /**
+   * Force the level the partner and chapter rollups are cut at. Left undefined
+   * it follows the HS selection, which is what every page wanted while the
+   * rollup was only ever a by-product of filtering. Country Analysis ranks at
+   * HS6 outright, so it asks for the level rather than filtering to reach it.
+   */
+  rollupLevel?: 2 | 4 | 6;
 }
 export const DEFAULT_FILTER: Filter = {
   granularity: "year",
-  years: [...meta.years],
+  /*
+   * The whole window, derived years included: the dashboard covers 2017 to the
+   * newest months the monthly book carries, and says which years are derived
+   * rather than hiding them. Partial years are partial — the picker and the
+   * views label them, and a reader who wants the settled vintage unticks them.
+   */
+  /*
+   * The newest year, not the whole window. The dashboard is read to answer
+   * "what is happening now", and a default spanning ten years answered a
+   * different question; the rest of the window is one tick away, and the
+   * statistical profile still opens on all of it because a distribution needs
+   * the years.
+   */
+  years: [yearlyYears[yearlyYears.length - 1]],
   months: [],
   /*
    * No freight adjustment by default: the dashboard opens on the two books
@@ -525,7 +691,20 @@ const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
 const pos = (x: number) => Math.max(0, x);
 const sgn = (x: number) => (x > NOISE ? 1 : x < -NOISE ? -1 : 0);
 
-export interface YearRow { y: number; pe: number; ui: number; signed: number; uvOk: boolean }
+export interface YearRow {
+  y: number;
+  /** Comparable value totals for the year — HS6 lines both books reported. */
+  pe: number; ui: number;
+  /** Net discrepancy, pe − ui ÷ (1 + f): what the by-year charts draw. */
+  signed: number;
+  /** HS6-grain directional sums — posY is what every positive total accumulates. */
+  posY: number; revY: number;
+  /** The positive lines' own values, so pePosY − uiPosY ÷ (1 + f) = posY exactly. */
+  pePosY: number; uiPosY: number;
+  /** posY at the documented band endpoints, for the sensitivity range. */
+  posLoY: number; posHiY: number;
+  uvOk: boolean;
+}
 export interface Channel {
   partner: string; partnerIso: string; region: string; transit: boolean; tier: Tier;
   chapter: string; cmd: string; cmdLabel: string; level: number; category: string;
@@ -541,6 +720,8 @@ export interface Channel {
    */
   pePosT: number; uiPosT: number;
   signedT: number; posT: number; revT: number; absT: number;
+  /** posT at the low/high freight endpoints — the KPI band sums these. */
+  posLoT: number; posHiT: number;
   boundedAsymmetry: number; positiveShare: number;
   comparableYears: number; posYears: number; revYears: number; longestPosStreak: number;
   flipsAcrossFreight: boolean;
@@ -563,11 +744,19 @@ export interface Channel {
   trend: number;
 }
 
+/**
+ * Trend: the last period minus the first.
+ *
+ * It used to average the three periods at each end. That hid the two in the
+ * middle entirely — for a partner with eight years the arithmetic never looked
+ * at years four and five — and on a short series the two windows overlapped, so
+ * one period was counted on both sides and partly cancelled itself. End minus
+ * start is what the sparkline beside it draws, and it uses every point the
+ * reader can see.
+ */
 function trendOf(series: { y: number; v: number }[]) {
   if (series.length < 2) return 0;
-  const n = Math.min(3, Math.floor(series.length / 2) || 1);
-  const mean = (a: { v: number }[]) => a.reduce((s, x) => s + x.v, 0) / a.length;
-  return mean(series.slice(-n)) - mean(series.slice(0, n));
+  return series[series.length - 1].v - series[0].v;
 }
 
 /** Percentile rank in [0,1], ties averaged — the fitted index's normalization. */
@@ -665,8 +854,10 @@ function applyScores(cs: Channel[], scores: LevelScores): void {
 const scoreCache = new Map<string, LevelScores>();
 const SCORE_CACHE_MAX = 24;
 
-function levelScores(f: Filter, level: number, periodCells: Cell[], ready: Channel[] | null): LevelScores {
-  const years = f.years.length ? f.years : yearsFor(f.granularity);
+function levelScores(f: Filter, level: number, years: number[], periodCells: Cell[], ready: Channel[] | null): LevelScores {
+  // `years` must be the period aggregate() resolved, not re-derived from the
+  // filter: an empty yearly tick means the workbook years only, and keying it
+  // as the whole window served eight-year scores to ten-year views.
   const key = `${level}|${f.granularity}|${f.cif}|${years.join(",")}|${f.months.join(",")}|${monthlyDetailVersion}`;
   const hit = scoreCache.get(key);
   if (hit) return hit;
@@ -680,66 +871,95 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
   const K = 1 + f.cif;
   const Klo = 1 + meta.cif.low;
   const Khi = 1 + meta.cif.high;
-  const groups = new Map<string, Cell[]>();
-  for (const r of fc) {
-    if (r.l !== level) continue;
-    const key = `${r.p}|${r.k}`;
-    (groups.get(key) ?? groups.set(key, []).get(key)!).push(r);
+  /*
+   * ONE GRAIN. The discrepancy is measured once, per partner × HS6 × period —
+   * the finest cell both books actually report — and every coarser level
+   * aggregates those measurements. Levels used to be computed independently,
+   * each taking the positive part of its own nets, and offsetting HS6 gaps
+   * cancelled inside a coarser cell before max(0,·) was applied: the same
+   * dataset answered $30.4B at HS2, $42.3B at HS4 and $48.1B at HS6 over
+   * 2017–2024 at 0% freight. Now a chapter is exactly the sum of its lines and
+   * the total is the total, identical at every level.
+   *
+   * Comparability is judged at the same grain: an HS6 line only one book
+   * reported is one-sided even when the other book reported a neighbouring
+   * line of the same chapter. The workbook's own HS2 layer is no longer read —
+   * its chapter values differ from the sum of its own HS6 lines by confidential
+   * trade re-allocated across chapters (±$1.8B, mostly HS99 against 84/85/87/88),
+   * and a level that cannot tie to the level below it is what this removes.
+   */
+  interface YearAcc {
+    pe: number; ui: number; posY: number; revY: number;
+    pePosY: number; uiPosY: number; posLoY: number; posHiY: number;
+    uw: number; pw: number; uwv: number; pwv: number; uvOk: boolean;
   }
+  const groups = new Map<string, Map<number, YearAcc>>();
+  const groupCell = new Map<string, Cell>();
+  for (const r of fc) {
+    if (r.l !== 6) continue;
+    // both books at the measurement grain, or the line is one-sided
+    if (r.pe <= NOISE || r.ui <= NOISE) continue;
+    const key = `${r.p}|${level === 6 ? r.k : r.k.slice(0, level)}`;
+    let byYear = groups.get(key);
+    if (!byYear) { byYear = new Map(); groups.set(key, byYear); groupCell.set(key, r); }
+    let a = byYear.get(r.y);
+    if (!a) {
+      a = { pe: 0, ui: 0, posY: 0, revY: 0, pePosY: 0, uiPosY: 0, posLoY: 0, posHiY: 0, uw: 0, pw: 0, uwv: 0, pwv: 0, uvOk: false };
+      byYear.set(r.y, a);
+    }
+    // Both books on an FOB basis: the partner's export is already FOB, so it is
+    // Uzbekistan's CIF import that is divided down by the freight factor.
+    const signed = r.pe - r.ui / K;
+    a.pe += r.pe; a.ui += r.ui;
+    a.posY += pos(signed); a.revY += pos(-signed);
+    if (signed > 0) { a.pePosY += r.pe; a.uiPosY += r.ui; }
+    a.posLoY += pos(r.pe - r.ui / Klo);
+    a.posHiY += pos(r.pe - r.ui / Khi);
+    if (r.uw && r.pw) { a.uvOk = true; a.uw += r.uw; a.pw += r.pw; a.uwv += r.ui; a.pwv += r.pe; }
+  }
+
   const out: Channel[] = [];
-  for (const [, rs] of groups) {
-    const r0 = rs[0];
+  for (const [key, byYear] of groups) {
+    const r0 = groupCell.get(key)!;
     const pm = pMeta.get(r0.p);
     if (!pm) continue;
-    rs.sort((a, b) => a.y - b.y);
+    const code = level === 6 ? r0.k : r0.k.slice(0, level);
 
     const years: YearRow[] = [];
-    let peT = 0, uiT = 0, posT = 0, revT = 0, pePosT = 0, uiPosT = 0;
+    let peT = 0, uiT = 0, posT = 0, revT = 0, pePosT = 0, uiPosT = 0, posLoT = 0, posHiT = 0;
     let posYears = 0, revYears = 0, streak = 0, longest = 0;
     let uvYears = 0, uw = 0, pw = 0, uwv = 0, pwv = 0;
-    for (const r of rs) {
-      // A mirror comparison needs BOTH books. A channel-year where only one side
-      // reported cannot be a discrepancy — the whole of the reported side would be
-      // booked as a gap, which is a false positive, not a signal. Such years are
-      // dropped here and surface instead as one-sided flows on Data Quality.
-      if (r.pe <= NOISE || r.ui <= NOISE) continue;
-      // Both books on an FOB basis: the partner's export is already FOB, so it is
-      // Uzbekistan's CIF import that is divided down by the freight factor. The
-      // earlier form raised the export to CIF instead, which stated the same gap
-      // in CIF money — the same sign and ordering, a factor of (1 + f) larger.
-      const signed = r.pe - r.ui / K;
-      years.push({ y: r.y, pe: r.pe, ui: r.ui, signed, uvOk: !!(r.uw && r.pw) });
-      peT += r.pe; uiT += r.ui;
-      posT += pos(signed); revT += pos(-signed);
-      if (signed > 0) { pePosT += r.pe; uiPosT += r.ui; }
-      if (signed > NOISE) { posYears++; streak++; longest = Math.max(longest, streak); } else streak = 0;
-      if (signed < -NOISE) revYears++;
-      if (r.uw && r.pw) { uvYears++; uw += r.uw; pw += r.pw; uwv += r.ui; pwv += r.pe; }
+    for (const [y, a] of [...byYear.entries()].sort((x, z) => x[0] - z[0])) {
+      years.push({
+        y, pe: a.pe, ui: a.ui, signed: a.pe - a.ui / K,
+        posY: a.posY, revY: a.revY, pePosY: a.pePosY, uiPosY: a.uiPosY,
+        posLoY: a.posLoY, posHiY: a.posHiY, uvOk: a.uvOk,
+      });
+      peT += a.pe; uiT += a.ui;
+      posT += a.posY; revT += a.revY;
+      pePosT += a.pePosY; uiPosT += a.uiPosY;
+      posLoT += a.posLoY; posHiT += a.posHiY;
+      if (a.posY > NOISE) { posYears++; streak++; longest = Math.max(longest, streak); } else streak = 0;
+      if (a.revY > NOISE) revYears++;
+      if (a.uvOk) { uvYears++; uw += a.uw; pw += a.pw; uwv += a.uwv; pwv += a.pwv; }
     }
-    if (years.length === 0) continue; // no year with both books reporting
+    const n = years.length;
     const adjUiT = uiT / K;
     const signedT = peT - adjUiT;
     const absT = posT + revT;
-    const n = years.length;
 
     const boundedAsymmetry = Math.max(peT, adjUiT) > 0 ? clamp(absT / Math.max(peT, adjUiT)) : 0;
     const positiveShare = peT > 0 ? clamp(posT / peT) : 0;
     const uvRatio = uvYears >= 2 && uw > 0 && pw > 0 && pwv > 0 ? (uwv / uw) / (pwv / pw) : null;
 
-    // scenario robustness: does the direction-relevant sign hold across 6/10/15%?
-    // a lower freight factor deflates the import less, so it shrinks the gap —
-    // the same direction the old form moved in, so lo/hi still bracket the middle
+    // scenario robustness of the NET: does its sign hold across the band?
     const netSigns = [sgn(peT - uiT / Klo), sgn(signedT), sgn(peT - uiT / Khi)];
-    const flipsAcrossFreight = new Set(netSigns.filter((s) => s !== 0)).size > 1 || netSigns.includes(0);
+    const flipsAcrossFreight = new Set(netSigns.filter((x) => x !== 0)).size > 1 || netSigns.includes(0);
 
     /*
      * Mean annual trade over the comparable years, as the mean of the two
-     * reported sides: Σ((pe + ui) / 2) ÷ n, which is (peT + uiT) ÷ 2n. This is
-     * the quantity the fitted index measures smallness by, computed the same
-     * way and against the floor it was built with, so a cell the build counts
-     * as small is exactly a cell flagged as small here. Taken before the
-     * freight adjustment, so the label does not move when the reader changes
-     * the scenario.
+     * reported sides: (peT + uiT) ÷ 2n — the quantity the fitted index measures
+     * smallness by, against the floor it published.
      */
     const meanAnnualValue = (peT + uiT) / (2 * n);
 
@@ -751,48 +971,34 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     if (pm.coverage < 0.5) flags.push("sparse-reporter");
     if (uvYears === 0 && level === 6) flags.push("missing-weight");
     if (flipsAcrossFreight) flags.push("freight-sensitive");
-    /*
-     * Small by value, not wrong. The score is scale-free — G ranks the gap RATE
-     * and P counts persistence, so a cell trading a few thousand dollars can
-     * rank beside one trading hundreds of millions. Nothing is hidden for being
-     * small; the reader is told which rows those are.
-     */
     if (meanAnnualValue < RISK_CONFIG.materialityFloor) flags.push("small-cell");
 
-    const nHist = histYears.get(`${level}|${r0.p}|${r0.k}`) ?? n; // full-window comparable years
+    const nHist = histYears.get(`${level}|${r0.p}|${code}`) ?? n; // full-window comparable years
     const robustness: Robustness =
       nHist < 2 ? "insufficient"
         : flipsAcrossFreight ? "freight-sensitive"
           : pm.lapse || pm.coverage < 0.5 ? "coverage-sensitive"
             : "robust";
 
-    // (label resolution handles HS2 / derived HS4 / HS6 uniformly)
     // the dashboard screens the positive discrepancy only
     const primary = posT;
-    const trend = trendOf(years.map((x) => ({ y: x.y, v: pos(x.signed) })));
+    const trend = trendOf(years.map((x) => ({ y: x.y, v: x.posY })));
 
-    /*
-     * The score is filled in by scoreCrossSection once the level's whole
-     * cross-section exists, because G is a rank and a rank needs its peers.
-     * Only the cell's own cumulative gap can be summed here. It mirrors the rule
-     * the index counts a positive year by, which with NOISE at zero is the same
-     * set of years posT sums - the two now agree by construction rather than by
-     * coincidence, and the loop is kept so they stay tied if the rule moves.
-     */
+    // ties to what posT sums by construction; kept as a loop so they stay tied
     let excessGap = 0;
-    for (const yr of years) if (yr.signed > NOISE) excessGap += yr.signed;
+    for (const yr of years) if (yr.posY > NOISE) excessGap += yr.posY;
 
     out.push({
       partner: partnerName(pm.iso3), partnerIso: pm.iso3, region: regionLabel(pm.region), transit: pm.transit, tier: pm.tier,
-      chapter: r0.c, cmd: r0.k, cmdLabel: hsLabel(r0.k),
+      chapter: r0.c, cmd: code, cmdLabel: hsLabel(code),
       level, category: r0.cat,
-      years, peT, uiT, adjUiT, pePosT, uiPosT, signedT, posT, revT, absT,
+      years, peT, uiT, adjUiT, pePosT, uiPosT, signedT, posT, revT, absT, posLoT, posHiT,
       boundedAsymmetry, positiveShare,
       comparableYears: n, posYears, revYears, longestPosStreak: longest,
       flipsAcrossFreight, uvYears, uvRatio,
       robustness, flags,
       mtrs: 0, abnormalGap: 0, persistence: 0, excessGap,
-      band: "low", scored: years.length > 0,
+      band: "low", scored: n > 0,
       primary, trend,
     });
   }
@@ -933,10 +1139,13 @@ function filterCells(f: Filter): Cell[] {
   );
 }
 
-function sumObserved(rows: Cell[], level: number, codePrefix?: string): ObservedTotals {
+function sumObserved(rows: Cell[], codePrefix?: string): ObservedTotals {
+  // As-reported totals are read at the HS6 grain like everything else, so the
+  // same slice reports the same money at every level; a code prefix narrows by
+  // truncation. Global totals are unchanged — the layers agreed in aggregate.
   let pe = 0, ui = 0, n = 0, oneSidedPe = 0, oneSidedUi = 0, oneSidedCells = 0;
   for (const r of rows) {
-    if (r.l !== level) continue;
+    if (r.l !== 6) continue;
     if (codePrefix && !r.k.startsWith(codePrefix)) continue;
     pe += r.pe; ui += r.ui; n++;
     // one book only: counted as reported trade, excluded from every gap measure
@@ -953,8 +1162,8 @@ function sumObserved(rows: Cell[], level: number, codePrefix?: string): Observed
  * figures read from here rather than from the paired channels — otherwise the
  * headline totals under-report and cannot be reconciled against UN Comtrade.
  */
-export function observedTotals(f: Filter, level: number, codePrefix?: string): ObservedTotals {
-  return sumObserved(filterCells(f), level, codePrefix);
+export function observedTotals(f: Filter, _level: number, codePrefix?: string): ObservedTotals {
+  return sumObserved(filterCells(f), codePrefix);
 }
 
 /**
@@ -1044,7 +1253,7 @@ export function aggregate(f: Filter): Aggregate {
   const periodCells = wholeCrossSection ? fc : sourceCells(f).filter((r) => picked.has(r.y) && pMeta.has(r.p));
   const bandCuts: Record<number, BandCuts> = {};
   for (const [lvl, base] of [[2, baseChannels], [4, baseChannels4], [6, baseChannels6]] as const) {
-    const scores = levelScores(f, lvl, periodCells, wholeCrossSection ? base : null);
+    const scores = levelScores(f, lvl, years, periodCells, wholeCrossSection ? base : null);
     applyScores(base, scores);
     bandCuts[lvl] = scores.cuts;
   }
@@ -1058,8 +1267,8 @@ export function aggregate(f: Filter): Aggregate {
   // Roll up at the most specific HS level the user picked: selecting a product
   // must report that product, not its whole chapter. With no HS filter the
   // rollup stays at HS2, which is the stable chapter-level view.
-  const rollupLevel = f.hs6.length > 0 ? 6 : f.hs4.length > 0 ? 4 : 2;
-  const observed = sumObserved(fc, rollupLevel);
+  const rollupLevel = f.rollupLevel ?? (f.hs6.length > 0 ? 6 : f.hs4.length > 0 ? 4 : 2);
+  const observed = sumObserved(fc);
   const rollup = rollupLevel === 6 ? channels6 : rollupLevel === 4 ? channels4 : channels;
   const rollupBase = rollupLevel === 6 ? baseChannels6 : rollupLevel === 4 ? baseChannels4 : baseChannels;
 
@@ -1085,7 +1294,7 @@ export function aggregate(f: Filter): Aggregate {
     const byYearMap = new Map<number, { pe: number; ui: number; positive: number }>();
     for (const c of pBaseMap.get(iso) ?? []) for (const yr of c.years) {
       const e = byYearMap.get(yr.y) ?? { pe: 0, ui: 0, positive: 0 };
-      e.pe += yr.pe; e.ui += yr.ui; e.positive += pos(yr.signed);
+      e.pe += yr.pe; e.ui += yr.ui; e.positive += yr.posY;
       byYearMap.set(yr.y, e);
     }
     const posTotal = cs.reduce((s, c) => s + c.posT, 0);
@@ -1098,7 +1307,7 @@ export function aggregate(f: Filter): Aggregate {
       coverage: pm.coverage, lapse: pm.lapse, lastReportedYear: pm.lastReportedYear, reportedYears: pm.reportedYears,
       peT: cs.reduce((s, c) => s + c.peT, 0), uiT: cs.reduce((s, c) => s + c.uiT, 0),
       pePosT: cs.reduce((s, c) => s + c.pePosT, 0), uiPosT: cs.reduce((s, c) => s + c.uiPosT, 0),
-      observed: sumObserved(obsByPartner.get(iso) ?? [], rollupLevel),
+      observed: sumObserved(obsByPartner.get(iso) ?? []),
       posT: posTotal, signedT: cs.reduce((s, c) => s + c.signedT, 0),
       channels: cs.length,
       flagged: cs.filter((c) => c.band === "critical" || c.band === "high").length,
@@ -1119,7 +1328,7 @@ export function aggregate(f: Filter): Aggregate {
   for (const [chapter, cs] of cMap) {
     const byYear = new Map<number, number>();
     for (const c of cs) for (const yr of c.years) {
-      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + pos(yr.signed));
+      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + yr.posY);
     }
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const peT = cs.reduce((s, c) => s + c.peT, 0);
@@ -1149,9 +1358,9 @@ export function aggregate(f: Filter): Aggregate {
   for (const c of rollupBase) for (const yr of c.years) {
     const e = yAgg.get(yr.y) ?? emptyYear();
     e.pe += yr.pe; e.ui += yr.ui;
-    e.positive += pos(yr.signed); e.reverse += pos(-yr.signed);
+    e.positive += yr.posY; e.reverse += yr.revY;
     e.partners.add(c.partnerIso);
-    if (yr.signed > 0) { e.pePos += yr.pe; e.uiPos += yr.ui; }
+    e.pePos += yr.pePosY; e.uiPos += yr.uiPosY;
     yAgg.set(yr.y, e);
   }
   const annual: Aggregate["annual"] = years.map((y) => {
@@ -1182,26 +1391,19 @@ export function aggregate(f: Filter): Aggregate {
       }
       mAgg.set(key, e);
     };
-    if (rollupLevel === 2) {
-      for (const r of monthlyCells) {
-        if (!picked.has(r.y)) continue;
-        if (wantM && !wantM.has(r.m)) continue;
-        if (!allowPartner(r.p)) continue;
-        if (!allowCode({ ...r, l: 2 } as Cell)) continue;
-        bump((r.y - monthlyPacked.y0) * 12 + (r.m - 1), r.p, r.pe, r.ui);
-      }
-    } else if (monthlyDetail) {
-      // an HS4/HS6 selection rolls the series up from the detail rows — the HS2
-      // sheet is a separate aggregation and would not tie to the totals above.
-      // Per-code and per-partner verdicts are precomputed so the 1.9M-row walk
-      // stays cheap. Rows first fold to (partner × rollup code × month) cells so
+    if (monthlyDetail) {
+      // The series is built from the detail rows at the HS6 grain whatever the
+      // rollup level — the HS2 sheet is a separate aggregation and would not
+      // tie to the totals above. Until the detail arrives the series stays
+      // empty, like the channels: a number shown then replaced is worse than a
+      // moment of loading. Rows first fold to (partner × HS6 × month) cells so
       // the both-books rule tests the same grain the channels use.
       const det = monthlyDetail;
       const codeOk = det.k.map((k) => {
         const c = k.slice(0, 2);
         return matchesCode({ p: "", k, c, cat: categoryOfChapter(c), l: 6, y: 0, pe: 0, ui: 0 }, f);
       });
-      const groupOf = det.k.map((k) => (rollupLevel === 4 ? k.slice(0, 4) : k));
+      const groupOf = det.k; // the measurement grain: HS6 itself
       const pOk = det.p.map((iso) => allowPartner(iso));
       const detY0 = det.y0 - monthlyPacked.y0; // align month offsets to the chapter series' epoch
       const cellAgg = new Map<string, { p: string; off: number; pe: number; ui: number }>();
@@ -1247,7 +1449,7 @@ export function aggregate(f: Filter): Aggregate {
     // read the same set the chapter rollup was built from, or the sector series
     // would contradict the chapter totals shown beside it
     for (const ch of rollup) if (ch.chapter === c.chapter) for (const yr of ch.years) {
-      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + pos(yr.signed));
+      byYear.set(yr.y, (byYear.get(yr.y) ?? 0) + yr.posY);
     }
     const series = years.filter((y) => byYear.has(y)).map((y) => ({ y, v: byYear.get(y)! }));
     const total = series.reduce((s, x) => s + x.v, 0);
@@ -1269,20 +1471,17 @@ export function aggregate(f: Filter): Aggregate {
     comparableChannels: rollupBase.length,
     comparableValue: rollupBase.reduce((s, c) => s + c.peT, 0),
   };
-  const Klo = 1 + meta.cif.low;
-  const Khi = 1 + meta.cif.high;
-  // FOB basis on both sides, matching the live identity: the CIF import is
-  // divided down to FOB, never the export raised. Endpoints computed any other
-  // way do not bracket the figure the filter produces.
-  const posAt = (mult: number) =>
-    rollupBase.reduce((s, c) => s + c.years.reduce((t, yr) => t + pos(yr.pe - yr.ui / mult), 0), 0);
+  // the endpoints are accumulated per HS6 line inside buildChannels, so they
+  // are the same identity at the band rates — never a re-derivation
+  const posAt = (which: "lo" | "hi") =>
+    rollupBase.reduce((s, c) => s + (which === "lo" ? c.posLoT : c.posHiT), 0);
   const activePartners = meta.partners.filter((p) => allowPartner(p.iso3));
   const possiblePY = activePartners.length * yearsInRange || 1;
   const comparablePY = activePartners.reduce((s, p) => s + p.reportedYears.filter((y) => picked.has(y)).length, 0);
 
   const kpis = {
     comparableTrade: rollupBase.reduce((s, c) => s + c.peT, 0),
-    positive: { low: posAt(Klo), central: rollupBase.reduce((s, c) => s + c.posT, 0), high: posAt(Khi) },
+    positive: { low: posAt("lo"), central: rollupBase.reduce((s, c) => s + c.posT, 0), high: posAt("hi") },
     coveragePct: comparablePY / possiblePY,
     channelCount: channels.length, partnerCount: partners.length,
     top5Share: sorted.slice(0, 5).reduce((s, c) => s + dirVal(c), 0) / dirTotal,

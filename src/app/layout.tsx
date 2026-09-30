@@ -7,6 +7,7 @@ import HeaderMeta from "@/components/HeaderMeta";
 import { HeaderStrapline, SiteFooter } from "@/components/Chrome";
 import { FilterProvider } from "@/lib/filter-context";
 import { I18nProvider } from "@/lib/i18n";
+import { THEME_BOOTSTRAP } from "@/lib/theme-store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -19,7 +20,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        {/* set data-theme before any paint or bundle: no white flash for dark
+            readers, and the canvas palettes read the attribute at module init */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
       <body className="min-h-full">
         <I18nProvider>
           <div className="flex min-h-screen">

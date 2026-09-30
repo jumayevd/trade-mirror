@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { partnerMetaOf, type PartnerAgg } from "@/lib/dataset";
-import { COLORS, fmtNum, fmtUSD } from "@/lib/format";
+import { COLORS, IS_DARK, fmtNum, fmtUSD } from "@/lib/format";
 import { CHART_FONT, baseTooltip } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
@@ -69,8 +69,55 @@ const GEO_NAME: Record<string, string> = {
 };
 const ISO_BY_GEO: Record<string, string> = Object.fromEntries(Object.entries(GEO_NAME).map(([iso, n]) => [n, iso]));
 
-/** Sequential amber ramp derived from the positive-discrepancy data color (spec §10.1). */
-const RAMP_AMBER = ["#f3e3cf", "#e8c79e", "#d9a15e", "#c2701e", "#8f5010"];
+/*
+ * Six classes on a single-hue sequential ramp, low → high: the house navy,
+ * stepped by lightness alone.
+ *
+ * Magnitude is a sequential job, and one hue says "more of the same thing"
+ * where a multi-hue ramp invites the reader to look for a boundary at each
+ * hue change. It also leaves gold to the accents the interface reserves it for.
+ *
+ * Dark mode gets its own steps rather than an inverted copy: the ramp must
+ * separate from the chart surface AND from the inert fill used for countries
+ * outside the partner set, and on a dark ground a deep-navy low end vanishes
+ * into both, so there it runs light-ward instead.
+ *
+ * Checked for what a sequential ramp needs — strictly monotonic lightness,
+ * evenly spaced steps (max/min 1.43 and 1.48), a total OKLab-L range of 0.51
+ * and 0.44, and a low end clear of the no-data fill (ΔE 12.8 and 11.6). The
+ * categorical validator does not apply: its adjacent-pair separation check
+ * asks for the opposite of what one hue stepped by lightness wants, and its
+ * own output says as much.
+ */
+const RAMP = IS_DARK
+  ? ["#344c79", "#41608f", "#5179ac", "#6b95c8", "#8db3de", "#b7d2f2"]
+  : ["#b7cbe8", "#95b3da", "#6e92c5", "#4a72ab", "#2d5286", "#19335e"];
+
+/** Two significant figures, so class edges read as $1.2M rather than $1,187,433. */
+function niceRound(x: number): number {
+  if (!(x > 0)) return 0;
+  const p = Math.pow(10, Math.floor(Math.log10(x)) - 1);
+  return Math.round(x / p) * p;
+}
+
+/**
+ * Class edges at the quantiles of the values actually on the map. The old
+ * edges were fixed fractions of the largest value (50/20/5/1%), and with one
+ * partner far above the rest nearly every country fell below 1% of it —
+ * the palest bin — so the map read as a single colour. Quantile edges put
+ * roughly the same number of countries in each class.
+ */
+function quantileEdges(values: number[], classes: number): number[] {
+  const v = [...values].sort((a, b) => a - b);
+  if (v.length === 0) return [];
+  const edges: number[] = [];
+  for (let i = 1; i < classes; i++) {
+    const q = v[Math.min(v.length - 1, Math.floor((i * v.length) / classes))];
+    const e = niceRound(q);
+    if (e > 0 && (edges.length === 0 || e > edges[edges.length - 1])) edges.push(e);
+  }
+  return edges;
+}
 
 /** One map region. `silent` regions are outside the partner set: inert and never a pointer. */
 interface Region { name: string; value: number; cursor?: string; silent?: boolean }
@@ -117,21 +164,22 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
   }, [geoNames, byIso, metricOf]);
 
   const fmtMetric = metric === "channels" ? fmtNum : fmtUSD;
-  const mx = useMemo(
-    () => Math.max(...data.map((d) => d.value).filter((v) => Number.isFinite(v)), 1),
-    [data],
-  );
-
   const pieces = useMemo(() => {
-    const b = [0.5, 0.2, 0.05, 0.01].map((f) => f * mx);
-    return [
-      { min: b[0], label: `${t("ctry.map.over")} ${fmtMetric(b[0])}`, color: RAMP_AMBER[4] },
-      { min: b[1], max: b[0], label: `${fmtMetric(b[1])} – ${fmtMetric(b[0])}`, color: RAMP_AMBER[3] },
-      { min: b[2], max: b[1], label: `${fmtMetric(b[2])} – ${fmtMetric(b[1])}`, color: RAMP_AMBER[2] },
-      { min: b[3], max: b[2], label: `${fmtMetric(b[3])} – ${fmtMetric(b[2])}`, color: RAMP_AMBER[1] },
-      { max: b[3], label: `${t("ctry.map.under")} ${fmtMetric(b[3])}`, color: RAMP_AMBER[0] },
-    ];
-  }, [mx, fmtMetric, t]);
+    const values = data.map((d) => d.value).filter((v) => Number.isFinite(v) && v > 0);
+    const e = quantileEdges(values, RAMP.length);
+    if (e.length === 0) return [{ min: 0, label: t("ctry.map.under"), color: RAMP[0] }];
+    // highest class first, as the legend reads top-down; the ramp is indexed
+    // from the top so a short edge list (few countries) still ends on the
+    // deepest colour for the largest gaps
+    const top = RAMP.length - 1;
+    const out: { min?: number; max?: number; label: string; color: string }[] = [];
+    out.push({ min: e[e.length - 1], label: `${t("ctry.map.over")} ${fmtMetric(e[e.length - 1])}`, color: RAMP[top] });
+    for (let i = e.length - 1; i >= 1; i--) {
+      out.push({ min: e[i - 1], max: e[i], label: `${fmtMetric(e[i - 1])} – ${fmtMetric(e[i])}`, color: RAMP[top - (e.length - i)] });
+    }
+    out.push({ max: e[0], label: `${t("ctry.map.under")} ${fmtMetric(e[0])}`, color: RAMP[top - e.length] });
+    return out;
+  }, [data, fmtMetric, t]);
 
   const option = useMemo<EChartsOption>(
     () => ({
@@ -192,9 +240,9 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
           // partner regions are clickable, so they carry the hand cursor; regions
           // outside the partner set are silent and fall back to the arrow
           cursor: "pointer",
-          itemStyle: { areaColor: "#eef1ee", borderColor: "#d8ded9", borderWidth: 0.5 },
-          emphasis: { label: { show: false }, itemStyle: { areaColor: "#cfd8d1" } },
-          select: { itemStyle: { areaColor: "#cfd8d1" }, label: { show: false } },
+          itemStyle: { areaColor: COLORS.mapArea, borderColor: COLORS.mapBorder, borderWidth: 0.5 },
+          emphasis: { label: { show: false }, itemStyle: { areaColor: COLORS.mapEmphasis } },
+          select: { itemStyle: { areaColor: COLORS.mapEmphasis }, label: { show: false } },
           data,
         },
       ],

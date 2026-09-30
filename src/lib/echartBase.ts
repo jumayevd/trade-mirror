@@ -49,9 +49,9 @@ export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist
 export function baseTooltip(): TooltipComponentOption {
   return {
     backgroundColor: COLORS.surface,
-    borderColor: "rgba(22,35,59,0.16)",
+    borderColor: COLORS.baseline,
     borderWidth: 1,
-    textStyle: { color: "#141a26", fontSize: CHART_FONT.tooltip },
+    textStyle: { color: COLORS.text, fontSize: CHART_FONT.tooltip },
     padding: [8, 12],
     // no glide: the default 0.4s easing makes the tooltip trail the cursor,
     // which reads as lag and as pointing at the previous mark

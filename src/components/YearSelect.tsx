@@ -38,12 +38,22 @@ export default function YearSelect({
 }) {
   const { t } = useI18n();
   const options = available && available.length > 0 ? available : meta.years;
-  // an empty tick set reads as "all years", so show the summary that way too
-  const allOn = options.every((y) => years.includes(y)) && years.length >= options.length;
 
+  /*
+   * Every selected year is ticked, including when all of them are.
+   *
+   * This used to pass [] once the whole window was selected, borrowing the
+   * "empty means everything" convention the other filters use. The convention is
+   * right for a filter you clear; it is wrong for a picker whose boxes the
+   * reader is looking at. Ticking the last year emptied the list in front of
+   * them — every box cleared at the moment the set became complete — so the
+   * default, which is the whole window, opened with nothing ticked and the
+   * newest year looked excluded. Clearing the last box still means the whole
+   * window, which is handled below where it belongs.
+   */
   return (
     <MultiSelect
-      values={allOn ? [] : years.map(String)}
+      values={years.map(String)}
       onChange={(v) => onChange(v.length === 0 ? [...options] : v.map(Number).sort((a, b) => a - b))}
       options={options.map((y) => ({ value: String(y), label: yearLabel(y, t) }))}
       label={label ?? t("filter.period")}

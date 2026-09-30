@@ -1,7 +1,7 @@
 "use client";
 
 import { useI18n } from "@/lib/i18n";
-import { meta } from "@/lib/dataset";
+import { DATA_WINDOW } from "@/lib/dataset";
 
 /**
  * Localised page chrome. The root layout is a server component, so the header
@@ -12,7 +12,7 @@ export function HeaderStrapline() {
   const { t } = useI18n();
   return (
     <div className="hidden text-xs text-faint lg:block">
-      {t("chrome.strapline")} · {meta.window.start}–{meta.window.end}
+      {t("chrome.strapline")} · {DATA_WINDOW.start}–{DATA_WINDOW.end}
     </div>
   );
 }

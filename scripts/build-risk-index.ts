@@ -43,20 +43,35 @@ const cells: Cell[] = (() => {
     const k = packed.k[row[1]];
     return { p: packed.p[row[0]], k, c: k.slice(0, 2), l: k.length, y: packed.y0 + row[2], pe: row[3], ui: row[4] };
   });
-  // HS4 is derived from HS6 rather than shipped; rebuild it so this level is scored too
-  const h4 = new Map<string, Cell>();
-  for (const r of flat) {
-    if (r.l !== 6) continue;
-    const code = r.k.slice(0, 4);
-    const key = `${r.p}|${code}|${r.y}`;
-    const agg = h4.get(key) ?? { p: r.p, k: code, c: r.c, l: 4, y: r.y, pe: 0, ui: 0 };
-    agg.pe += r.pe; agg.ui += r.ui;
-    h4.set(key, agg);
-  }
-  return [...flat, ...h4.values()];
+  return flat;
 })();
 const meta: MetaFile = JSON.parse(fs.readFileSync(path.join(ROOT, "meta.json"), "utf8"));
 const K = 1 + meta.cif.central; // the central freight scenario, shared with the dashboard
+
+/*
+ * ONE GRAIN, mirroring src/lib/dataset.ts exactly: the discrepancy is measured
+ * per partner × HS6 × year, and levels 2 and 4 aggregate those measurements.
+ * Each returned row is a (partner × code × year) bucket of the comparable HS6
+ * lines under that code, carrying the value sums and the already-positive gap
+ * sum. The live engine and this fit must derive identically or the on-screen
+ * audit's cell-by-cell comparison fails — that audit is the contract.
+ */
+interface GrainRow { p: string; k: string; y: number; pe: number; ui: number; posY: number }
+function grainRows(level: number): GrainRow[] {
+  const acc = new Map<string, GrainRow>();
+  for (const r of cells) {
+    if (r.l !== 6) continue;
+    if (r.pe <= NOISE || r.ui <= NOISE) continue; // both books at the grain
+    const code = level === 6 ? r.k : r.k.slice(0, level);
+    const key = `${r.p}|${code}|${r.y}`;
+    let a = acc.get(key);
+    if (!a) { a = { p: r.p, k: code, y: r.y, pe: 0, ui: 0, posY: 0 }; acc.set(key, a); }
+    const signed = r.pe - r.ui / K;
+    a.pe += r.pe; a.ui += r.ui;
+    if (signed > 0) a.posY += signed;
+  }
+  return [...acc.values()];
+}
 
 /* ------------------------------------------------------------------ */
 /* Ranking helpers                                                     */
@@ -122,8 +137,6 @@ interface LevelResult {
 }
 
 function runLevel(level: number): LevelResult {
-  const atLevel = cells.filter((r) => r.l === level);
-
   /* ---- Step 0: matched set and the unmatched bucket ---- */
   interface CellAcc {
     p: string; k: string;
@@ -133,33 +146,34 @@ function runLevel(level: number): LevelResult {
     wLogGap: number; wSum: number;
   }
   const byCell = new Map<string, CellAcc>();
+  // One-sided coverage is a property of the measurement grain, counted once at
+  // HS6 whatever the level: a line only one book reported never rolls up.
   let orphanImport = 0, lostExport = 0, totalValue = 0, matchedValue = 0;
-  for (const r of atLevel) {
-    const bothSides = r.pe > NOISE && r.ui > NOISE;
+  for (const r of cells) {
+    if (r.l !== 6) continue;
     totalValue += (r.pe + r.ui) / 2;
-    if (!bothSides) {
+    if (r.pe <= NOISE || r.ui <= NOISE) {
       if (r.ui > NOISE) orphanImport++;
       if (r.pe > NOISE) lostExport++;
-      continue;
     }
-    const val = (r.pe + r.ui) / 2;
+  }
+  for (const row of grainRows(level)) {
+    const val = (row.pe + row.ui) / 2;
     matchedValue += val;
-    const kk = `${r.p}|${r.k}`;
+    const kk = `${row.p}|${row.k}`;
     let acc = byCell.get(kk);
     if (!acc) {
-      acc = { p: r.p, k: r.k, n: 0, kPos: 0, expected: 0, posSum: 0, value: 0, wLogGap: 0, wSum: 0 };
+      acc = { p: row.p, k: row.k, n: 0, kPos: 0, expected: 0, posSum: 0, value: 0, wLogGap: 0, wSum: 0 };
       byCell.set(kk, acc);
     }
-    // FOB basis on both sides: the CIF import is divided down, not the export raised
-    const adjUi = r.ui / K;
-    const signed = r.pe - adjUi;
-    acc.n++;
+    acc.n++; // a year with at least one comparable HS6 line under this code
     // the gap rate divides by what the partner says it shipped
-    acc.expected += r.pe;
+    acc.expected += row.pe;
     acc.value += val;
-    if (signed > NOISE) { acc.kPos++; acc.posSum += signed; }
+    // the year's positive sum was taken line by line inside grainRows
+    if (row.posY > NOISE) { acc.kPos++; acc.posSum += row.posY; }
     const w = Math.log(val);
-    acc.wLogGap += w * (Math.log(r.pe) - Math.log(r.ui));
+    acc.wLogGap += w * (Math.log(row.pe) - Math.log(row.ui));
     acc.wSum += w;
   }
 

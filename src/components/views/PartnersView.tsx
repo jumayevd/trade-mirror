@@ -3,14 +3,15 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
-import Sparkline from "@/components/charts/Sparkline";
-import RiskMap, { MAP_METRIC_KEYS, type MapMetric } from "@/components/charts/RiskMap";
-import { SectionTitle, ContextLine, QualityTag, TransitTag, EmptyState, InfoTip, MissingValue, Segmented } from "@/components/ui";
+import RiskMap from "@/components/charts/RiskMap";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
-import { meta, type PartnerAgg } from "@/lib/dataset";
+import { aggregate, type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
+import { hs6ShortLabel } from "@/lib/short-labels";
 
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
@@ -20,16 +21,22 @@ import { useI18n } from "@/lib/i18n";
  * Uzbekistan-recorded imports, accumulated over the years where it is positive.
  */
 
-type SortKey = "positive" | "share" | "channels";
-type HeroMode = "map" | "table";
+type SortKey = "export" | "import" | "positive" | "share" | "channels";
 
 const MAX_COMPARE = 4;
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 
 /** Same noise floor the engine screens on — quoted in the ranking footnote. */
 
-const gapRate = (p: PartnerAgg) => (p.peT > 0 ? p.posT / p.peT : 0);
+/*
+ * Positive discrepancy ÷ the exports printed beside it. Export and Import are
+ * the partner's HS6 lines where its exports exceed Uzbekistan's imports, so
+ * each row checks by hand: Export − Import ÷ (1 + freight) = Positive
+ * discrepancy, and this rate = Positive discrepancy ÷ Export. Dividing by ALL
+ * comparable exports, as before, gave a rate no figure on the row explained.
+ */
+const gapRate = (p: PartnerAgg) => (p.pePosT > 0 ? p.posT / p.pePosT : 0);
 
 /** Series-identity dot for column headers / labels — the text itself stays ink (rule 5). */
 function HeadDot({ color }: { color: string }) {
@@ -40,6 +47,8 @@ function HeadDot({ color }: { color: string }) {
 
 /** Locale keys for the column-sort tooltips — resolved through `t` at render time. */
 const SORT_TIP_KEYS: Record<SortKey, string> = {
+  export: "ctry.sortTip.export",
+  import: "ctry.sortTip.import",
   positive: "ctry.sortTip.positive",
   share: "ctry.sortTip.share",
   channels: "ctry.sortTip.channels",
@@ -68,87 +77,54 @@ function Pager({
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* Dynamics (re-homed from the deleted Trends page)                        */
-/* ---------------------------------------------------------------------- */
-
-interface CountryMover {
-  key: string; label: string; iso3: string; total: number; trend: number;
-  series: { y: number; v: number }[];
-}
-
-/** One quiet column of movers — Rising or Easing. */
-function MoverColumn({
-  title, rows, color, deltaColor,
-}: {
-  title: string; rows: CountryMover[]; color: string; deltaColor: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="card p-3.5">
-      <div className="mb-2 text-[12px] font-medium text-faint">{title}</div>
-      {rows.length === 0 ? (
-        <p className="py-4 text-center text-[13px] text-faint">{t("ctry.movers.empty")}</p>
-      ) : (
-        <ul className="divide-y divide-[var(--color-border-soft)]">
-          {rows.map((m) => (
-            <li key={m.key} className="flex items-center gap-3 py-1.5">
-              <Link href={`/partners/${m.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-[13px] font-medium hover:underline">
-                {m.label}
-              </Link>
-              <span className="tabular w-16 shrink-0 text-right text-[13px] text-muted"
-                title={`${t("ctry.movers.totalTip")}: ${fmtUSDFull(m.total)}`}>
-                {fmtUSD(m.total)}
-              </span>
-              <span className="shrink-0">
-                {m.series.length >= 2 ? (
-                  <Sparkline type="line" data={m.series.map((x) => Math.round(x.v))} color={color} width={88} height={26} />
-                ) : (
-                  <span className="inline-block w-[88px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
-                )}
-              </span>
-              <span className="tabular w-16 shrink-0 text-right text-[13px] font-medium" style={{ color: deltaColor }}
-                title={`${t("ctry.movers.trendTip")}: ${fmtUSDFull(m.trend)}`}>
-                {fmtUSD(m.trend, { sign: true })}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 export default function PartnersView() {
-  const { data, series, filter } = useFilter();
-  const { t } = useI18n();
+  const { filter } = useFilter();
+  const { lang, t } = useI18n();
+  const data = useMemo(() => labelsFor(lang, () => aggregate({ ...filter, rollupLevel: 6 })), [filter, lang]);
   const [sort, setSort] = useState<SortKey>("positive");
   const [sel, setSel] = useState<string[]>([]);
-  const [heroMode, setHeroMode] = useState<HeroMode>("map");
-  const [mapMetric, setMapMetric] = useState<MapMetric>("total");
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
+
+  /*
+   * Per-partner HS6 facts. The top product is the partner's HS6 line with the
+   * largest positive discrepancy — the column used to print an HS2 chapter under
+   * an "HS6" heading. "All HS6 products" counts every line both books reported
+   * in the period; the critical count and share are of those same lines.
+   */
+  const hs6Facts = useMemo(() => {
+    const m = new Map<string, { all: number; critical: number; top: { cmd: string; label: string; posT: number } | null }>();
+    const at = (iso: string) => {
+      let e = m.get(iso);
+      if (!e) { e = { all: 0, critical: 0, top: null }; m.set(iso, e); }
+      return e;
+    };
+    for (const c of data.baseChannels6) {
+      const e = at(c.partnerIso);
+      e.all++;
+      if (c.band === "critical") e.critical++;
+      if (c.posT > 0 && (!e.top || c.posT > e.top.posT)) e.top = { cmd: c.cmd, label: c.cmdLabel, posT: c.posT };
+    }
+    return m;
+  }, [data.baseChannels6]);
 
   /* ------------------------------------------------------------------ */
   /* Ranking rows (filtered partner rollups)                             */
   /* ------------------------------------------------------------------ */
   const rows = useMemo(() => {
     const by: Record<SortKey, (a: PartnerAgg, b: PartnerAgg) => number> = {
+      export: (a, b) => b.pePosT - a.pePosT,
+      import: (a, b) => b.uiPosT - a.uiPosT,
       positive: (a, b) => b.posT - a.posT,
       share: (a, b) => gapRate(b) - gapRate(a),
-      channels: (a, b) => b.channels - a.channels || b.posT - a.posT,
+      channels: (a, b) => (hs6Facts.get(b.iso3)?.all ?? 0) - (hs6Facts.get(a.iso3)?.all ?? 0) || b.posT - a.posT,
     };
     return [...data.partners].sort(by[sort]);
-  }, [data.partners, sort]);
+  }, [data.partners, sort, hs6Facts]);
 
-  // full-window series per partner — the ranking sparkline is independent of the
-  // ticked years, and only reported years are drawn (never a zero for a gap year)
-  const sparkByIso = useMemo(() => {
-    const m = new Map<string, number[]>();
-    for (const p of series.partners) {
-      m.set(p.iso3, p.byYear.filter((y) => y.reported).map((y) => Math.round(y.positive)));
-    }
-    return m;
-  }, [series.partners]);
+
+  const totals = useMemo(() => data.partners.reduce(
+    (acc, p) => ({ pe: acc.pe + p.pePosT, ui: acc.ui + p.uiPosT }), { pe: 0, ui: 0 },
+  ), [data.partners]);
 
   // pagination is derived: it falls back to page 0 whenever the list length or
   // sort has changed since the user last paged — no reset effect needed
@@ -172,22 +148,8 @@ export default function PartnersView() {
       s.includes(iso) ? s.filter((x) => x !== iso) : s.length >= MAX_COMPARE ? s : [...s, iso],
     );
 
-  /* ------------------------------------------------------------------ */
-  /* Dynamics — full-window country movers (engine already excludes      */
-  /* lapsed reporters, whose apparent declines are reporting artifacts)  */
-  /* ------------------------------------------------------------------ */
-  const risers = useMemo(
-    () => series.movers.countries.filter((m) => m.trend > 0).sort((a, b) => b.trend - a.trend).slice(0, 6),
-    [series.movers.countries],
-  );
-  const easers = useMemo(
-    () => series.movers.countries.filter((m) => m.trend < 0).sort((a, b) => a.trend - b.trend).slice(0, 6),
-    [series.movers.countries],
-  );
   const exportCsv = () =>
-    downloadCsv("country_analysis_hs2_channels.csv", channelsToCsv(data.channels, filter));
-
-  const K = 1 + filter.cif;
+    downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
   const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
@@ -220,18 +182,18 @@ export default function PartnersView() {
                 <span className="inline-flex items-center gap-1">{t("ctry.rank.cmp")} <InfoTip text={`${t("ctry.rank.cmpInfoPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpInfoPost")}`} /></span>
               </th>
               <th className={th}>{t("common.partner")}</th>
+              <th className={thNum} title={t("ctry.col.export.tip")}>{sortBtn("export", t("ctry.col.export"))}</th>
+              <th className={thNum} title={t("ctry.col.import.tip")}>{sortBtn("import", t("ctry.col.import"))}</th>
               <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", t("ctry.col.positive"))}</th>
               <th className={thNum}>{sortBtn("share", t("ctry.col.gapRate"))}</th>
               <th className={thNum}>{sortBtn("channels", t("ctry.col.channels"))}</th>
-              <th className={th} title={`${t("ctry.rank.trendTipPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.rank.trendTipPost")}`}>{t("ctry.col.trend")}</th>
               <th className={th} title={t("ctry.rank.topHs2Tip")}>{t("ctry.col.topHs2")}</th>
             </tr>
           </thead>
           <tbody className="zebra">
             {pagedRows.map((p) => {
-              const topCh = p.topChapters[0];
+              const top = hs6Facts.get(p.iso3)?.top ?? null;
               const checked = sel.includes(p.iso3);
-              const spark = sparkByIso.get(p.iso3) ?? [];
               return (
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]">
                   <td className={td}>
@@ -251,28 +213,18 @@ export default function PartnersView() {
                     <span className="ml-2 text-xs text-faint">{p.region}</span>
                     {p.transit && <span className="ml-2 align-middle"><TransitTag /></span>}
                   </td>
+                  <td className={tdNum} title={fmtUSDFull(p.pePosT)}>{fmtUSD(p.pePosT)}</td>
+                  <td className={tdNum} title={fmtUSDFull(p.uiPosT)}>{fmtUSD(p.uiPosT)}</td>
                   <td className={tdNum} title={`${t("kpi.positive")} (${t("kpi.positive.sub")}): ${fmtUSDFull(p.posT)}`}>
                     {fmtUSD(p.posT)}
                   </td>
                   <td className={tdNum} title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</td>
-                  <td className={tdNum} title={t("ctry.channelsTip")}>{fmtNum(p.channels)}</td>
-                  <td className={`${td} whitespace-nowrap`}>
-                    <span className="inline-flex items-center gap-2">
-                      {spark.length >= 2 ? (
-                        <Sparkline type="line" data={spark} color={COLORS.positive} width={72} height={22} />
-                      ) : (
-                        <span className="inline-block w-[72px] text-center text-[12px] text-faint" title={t("ctry.fewYears")}>—</span>
-                      )}
-                      <span className="tabular w-14 text-right text-[13px] text-muted" title={`${t("ctry.trendFullWindowTip")}: ${fmtUSDFull(p.trend)}`}>
-                        {fmtUSD(p.trend, { sign: true })}
-                      </span>
-                    </span>
-                  </td>
+                  <td className={tdNum} title={t("ctry.channelsTip")}>{fmtNum(hs6Facts.get(p.iso3)?.all ?? 0)}</td>
                   <td className={`${td} max-w-[220px]`}>
-                    {topCh ? (
-                      <span title={`HS ${topCh.chapter} · ${topCh.label} — ${fmtUSDFull(topCh.value)} (${fmtPct(topCh.share, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
-                        <span className="tabular mr-1.5 text-xs text-faint">{topCh.chapter}</span>
-                        <span className="text-[13px]">{topCh.label.length > 34 ? `${topCh.label.slice(0, 34)}…` : topCh.label}</span>
+                    {top ? (
+                      <span title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
+                        <span className="tabular mr-1.5 text-xs text-faint">{top.cmd}</span>
+                        <span className="text-[13px]">{hs6ShortLabel(top.cmd, lang, top.label)}</span>
                       </span>
                     ) : (
                       <span className="text-faint" title={t("ctry.rank.belowNoiseTip")}>{t("ctry.rank.belowNoise")}</span>
@@ -288,37 +240,19 @@ export default function PartnersView() {
               <td className={`${td} whitespace-nowrap`} title={t("ctry.rank.totalsTip")}>
                 {t("ctry.rank.totalsRow")}
               </td>
+              <td className={tdNum} title={fmtUSDFull(totals.pe)}>{fmtUSD(totals.pe)}</td>
+              <td className={tdNum} title={fmtUSDFull(totals.ui)}>{fmtUSD(totals.ui)}</td>
               <td className={tdNum} title={`${fmtUSDFull(data.kpis.positive.central)} (${t("ctry.rank.freightRangePre")} ${fmtUSD(data.kpis.positive.low)}–${fmtUSD(data.kpis.positive.high)} ${t("ctry.rank.freightRangePost")})`}>
                 {fmtUSD(data.kpis.positive.central)}
               </td>
-              <td className={tdNum} colSpan={4} />
+              <td className={tdNum}>{totals.pe > 0 ? fmtPct(data.kpis.positive.central / totals.pe, 0) : "—"}</td>
+              <td className={tdNum} colSpan={2} />
             </tr>
           </tfoot>
         </table>
-        {/* why a partner row can fall short of the total row below it */}
-        <p className="border-t border-[var(--color-border-soft)] px-3 py-2 text-[12px] leading-relaxed text-faint">
-          {t("ctry.rank.floorNote")}
-        </p>
         <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>
     );
-
-  /**
-   * Two partners in the ranking are re-export markets rather than suppliers, and
-   * their gap means something different from everyone else's. It rides with the
-   * table rather than sitting in its own section, because it is only meaningful
-   * next to the rows it qualifies.
-   */
-  const reExportNote = (
-    <div className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-3">
-      <h3 className="mb-1 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-        {t("ctry.reexport.title")}
-        <TransitTag />
-      </h3>
-      <p className="text-[13px] leading-relaxed text-muted">{t("ctry.reexport.body")}</p>
-      <p className="mt-1.5 text-[12px] leading-relaxed text-faint">{t("ctry.reexport.note")}</p>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -326,17 +260,11 @@ export default function PartnersView() {
       <section className="space-y-1.5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-[12px] font-medium text-faint">
-              {t("nav.explore")} · {t("ctry.eyebrow")} · UN Comtrade · {meta.window.start}–{meta.window.end}
-            </p>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-            <p className="text-[13px] text-muted">
-              <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
-            </p>
           </div>
           <button
             onClick={exportCsv}
-            disabled={data.channels.length === 0}
+            disabled={data.channels6.length === 0}
             className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={t("ctry.exportTip")}
           >
@@ -347,52 +275,20 @@ export default function PartnersView() {
 
       {/* 2. filters + context */}
       <FilterBar />
-      <ContextLine filter={filter} />
 
       {/* 3. map hero */}
       <section className="space-y-3">
         <SectionTitle
           title={t("ctry.geo.title")}
           desc={t("ctry.geo.desc")}
-          right={
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <InfoTip text={t("ctry.geo.info")} />
-              <Segmented<MapMetric>
-                ariaLabel={t("ctry.geo.metricAria")}
-                value={mapMetric}
-                onChange={setMapMetric}
-                options={(Object.keys(MAP_METRIC_KEYS) as MapMetric[]).map((k) => ({
-                  key: k,
-                  label: t(MAP_METRIC_KEYS[k] as never),
-                  tip: k === "total" ? t("ctry.map.tipTotal") : t("ctry.map.tipChannels"),
-                }))}
-              />
-              <Segmented<HeroMode>
-                ariaLabel={t("ctry.geo.viewAria")}
-                value={heroMode}
-                onChange={setHeroMode}
-                options={[
-                  { key: "map", label: t("ctry.geo.map"), tip: t("ctry.geo.mapTip") },
-                  { key: "table", label: t("ctry.geo.table"), tip: t("ctry.geo.tableTip") },
-                ]}
-              />
-            </div>
-          }
+          right={<InfoTip text={t("ctry.geo.info")} />}
         />
         <p className="max-w-3xl text-[13px] text-muted">
           <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
         </p>
-        {heroMode === "map" ? (
-          data.partners.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <RiskMap partners={data.partners} metric={mapMetric} />
-          )
-        ) : (
-          <>{rankingTable}<div className="mt-3">{reExportNote}</div></>
-        )}
+        {data.partners.length === 0 ? <EmptyState /> : <RiskMap partners={data.partners} metric="total" />}
       </section>
 
       {/* 4. compare panel (rendered as soon as anything is selected) */}
@@ -403,7 +299,7 @@ export default function PartnersView() {
             desc={t("ctry.compare.desc")}
             right={
               <span className="flex items-center gap-2">
-                <InfoTip text={`${t("ctry.compare.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.compare.infoPost")}`} />
+                <InfoTip text={`${t("ctry.compare.infoPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.compare.infoPost")}`} />
                 <button
                   onClick={() => setSel([])}
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground"
@@ -415,10 +311,7 @@ export default function PartnersView() {
           />
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {compare.map((p) => {
-              const full = series.partners.find((x) => x.iso3 === p.iso3);
-              const spark = (full ?? p).byYear
-                .filter((y) => y.reported)
-                .map((y) => Math.round(y.positive));
+              const f = hs6Facts.get(p.iso3) ?? { all: 0, critical: 0, top: null };
               return (
                 <div key={p.iso3} className="rounded-lg border border-[var(--color-border-soft)] p-3">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -428,13 +321,6 @@ export default function PartnersView() {
                     <QualityTag tier={p.tier} />
                     {p.transit && <TransitTag />}
                   </div>
-                  {spark.length >= 2 ? (
-                    <Sparkline data={spark} color={COLORS.positive} width={180} height={38} />
-                  ) : (
-                    <p className="text-[12px] text-faint">
-                      {t("ctry.fewYears")}
-                    </p>
-                  )}
                   <dl className="mt-2 space-y-1 text-[13px]">
                     <div className="flex justify-between gap-2">
                       <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
@@ -445,12 +331,16 @@ export default function PartnersView() {
                       <dd className="tabular" title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.compare.coverage")}</dt>
-                      <dd className="tabular">{fmtPct(p.coverage, 0)}{p.lapse ? ` · ${t("ctry.compare.stopped")} ${p.lastReportedYear}` : ""}</dd>
+                      <dt className="text-faint">{t("ctry.compare.allHs6")}</dt>
+                      <dd className="tabular" title={t("ctry.compare.allHs6.tip")}>{fmtNum(f.all)}</dd>
                     </div>
                     <div className="flex justify-between gap-2">
                       <dt className="text-faint">{t("ctry.compare.flaggedChannels")}</dt>
-                      <dd className="tabular">{p.flagged}</dd>
+                      <dd className="tabular">{fmtNum(f.critical)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt className="text-faint">{t("ctry.compare.criticalShare")}</dt>
+                      <dd className="tabular" title={`${fmtNum(f.critical)} ÷ ${fmtNum(f.all)}`}>{f.all > 0 ? fmtPct(f.critical / f.all, 1) : "—"}</dd>
                     </div>
                   </dl>
                 </div>
@@ -460,83 +350,14 @@ export default function PartnersView() {
         </section>
       )}
 
-      {/* 5. country ranking (below the map; in Table mode it already IS the hero) */}
-      {heroMode === "map" && (
-        <section className="space-y-3">
-          <SectionTitle
-            title={t("ctry.rank.title")}
-            desc={t("ctry.rank.desc")}
-            right={<InfoTip text={t("ctry.rank.info")} />}
-          />
-          {rankingTable}
-          {reExportNote}
-        </section>
-      )}
-
-      {/* 6. dynamics (re-homed from the former Trends page) */}
+      {/* 5. country ranking */}
       <section className="space-y-3">
         <SectionTitle
-          title={t("ctry.dyn.title")}
-          desc={t("ctry.dyn.desc")}
-          right={<InfoTip text={`${t("ctry.dyn.infoPre")} ${meta.window.start}–${meta.window.end} ${t("ctry.dyn.infoPost")} ${t("common.source")}.`} />}
+          title={t("ctry.rank.title")}
+          desc={t("ctry.rank.desc")}
+          right={<InfoTip text={t("ctry.rank.info")} />}
         />
-        {risers.length === 0 && easers.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            <MoverColumn title={t("ctry.dyn.rising")} rows={risers} color={COLORS.positive} deltaColor="var(--color-serious)" />
-            <MoverColumn title={t("ctry.dyn.easing")} rows={easers} color={COLORS.axis} deltaColor="var(--color-ok)" />
-          </div>
-        )}
-      </section>
-
-      {/* 7. summary statistics by year */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("ctry.annual.title")}
-          desc={t("ctry.annual.desc")}
-          right={<InfoTip text={`${t("ctry.annual.info")} ${t("common.source")}.`} />}
-        />
-        {data.annual.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="card overflow-x-auto">
-            <table className="w-full min-w-[820px] border-collapse">
-              <thead className="border-b border-[var(--color-border)]">
-                <tr>
-                  <th className={th}>{t("common.year")}</th>
-                  <th className={thNum} title={t("ctry.annual.comparablePartnersTip")}>{t("ctry.annual.comparablePartners")}</th>
-                  <th className={thNum} title={t("ctry.annual.partnerExportsTip")}>{t("ctry.partnerExportsFob")}</th>
-                  <th className={thNum} title={t("ctry.annual.uzbImportsTip")}>{t("ctry.uzbImportsCif")}</th>
-                  <th className={thNum} title={t("ctry.annual.positiveTip")}><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</th>
-                  <th className={thNum} title={`${t("ctry.annual.positiveShareTipPre")} ${K.toFixed(2)} ${t("ctry.annual.positiveShareTipPost")}`}>{t("ctry.annual.positiveShare")}</th>
-                </tr>
-              </thead>
-              <tbody className="zebra">
-                {data.annual.map((r) => {
-                  const noData = r.comparablePartners === 0;
-                  // the import column stays the raw CIF record, as its heading says;
-                  // the freight division happens inside the positive-share column
-                  const period = r.label ?? String(r.year);
-                  return (
-                    <tr key={period} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                      <td className={`${td} tabular font-medium`}>{period}</td>
-                      <td className={tdNum}>{noData ? <MissingValue kind="notComparable" /> : fmtNum(r.comparablePartners)}</td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.pePos)}>{noData ? <MissingValue /> : fmtUSD(r.pePos)}</td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.uiPos)}>{noData ? <MissingValue /> : fmtUSD(r.uiPos)}</td>
-                      <td className={tdNum} title={noData ? undefined : fmtUSDFull(r.positive)}>
-                        {noData ? <MissingValue /> : fmtUSD(r.positive)}
-                      </td>
-                      <td className={tdNum}>
-                        {noData || r.pePos <= 0 ? <MissingValue kind="notComparable" /> : fmtPct(r.positive / r.pePos, 1)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {rankingTable}
       </section>
 
     </div>

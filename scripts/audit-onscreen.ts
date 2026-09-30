@@ -11,10 +11,22 @@
  * Every assertion below mirrors one thing a reader can do with a mouse: read two
  * figures on the same screen and expect them to relate.
  */
-import { aggregate, DEFAULT_FILTER, meta, type Aggregate, type Channel, type Filter } from "../src/lib/dataset";
+import fs from "node:fs";
+import path from "node:path";
+import {
+  aggregate, DEFAULT_FILTER, loadMonthlyDetail, meta, monthlyOnlyYears, officialImportsOver, yearsFor,
+  type Aggregate, type Channel, type Filter, type RiskBand,
+} from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
 import diagRaw from "../src/data/diagnostics.json";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
+
+/* the monthly grain is gated on the detail layer, so the audit loads it the
+ * way the client eventually does — without this, every monthly assertion below
+ * would iterate zero rows and pass vacuously */
+loadMonthlyDetail(JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
+));
 
 /* the identity holds at whatever rate the default filter carries */
 const K = 1 + DEFAULT_FILTER.cif;
@@ -26,6 +38,26 @@ const near = (a: number, b: number, tol = 1) => Math.abs(a - b) <= tol;
 function check(name: string, ok: boolean, detail = "") {
   if (ok) pass++;
   else fails.push(`${name}${detail ? ` — ${detail}` : ""}`);
+}
+
+/* ---------------------------------------------------------------- */
+/* 0. scores are never served from another period                    */
+/* ---------------------------------------------------------------- */
+/* Runs first, on a rate nothing below uses, so the score cache is cold — the
+ * order the browser meets it in. The filter provider aggregates with no year
+ * ticked (the workbook years) before any page does; a page on the whole
+ * window must still get scores fitted on the whole window. P follows from a
+ * row's own years, so a row scored on another period, or left unscored,
+ * cannot match it. */
+{
+  const cold = 0.05;
+  aggregate({ ...DEFAULT_FILTER, years: [], cif: cold });
+  const whole = aggregate({ ...DEFAULT_FILTER, years: [...yearsFor("year")], cif: cold });
+  for (const [lvl, rows] of [[2, whole.channels], [4, whole.channels4], [6, whole.channels6]] as const) {
+    const off = rows.filter((c) =>
+      Math.abs(c.persistence - Math.round(((c.posYears + 1) / (c.comparableYears + 2)) * 1000) / 1000) > 0.0005).length;
+    check(`HS${lvl} scores fitted on the period in view after a workbook-years call`, off === 0, `${off} of ${rows.length} rows`);
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -140,7 +172,9 @@ for (const [key, row] of Object.entries(riskCells)) {
  * here means the runtime path and the fitted model have diverged.
  */
 {
-  const fitted = aggregate({ ...DEFAULT_FILTER, cif: riskConfig.freight });
+  // the index is fitted on the annual window; the comparison pins those years
+  // rather than inheriting the default window, which now runs past the fit
+  const fitted = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], cif: riskConfig.freight });
   const pairs: [Channel[], number][] = [[fitted.channels, 2], [fitted.channels4, 4], [fitted.channels6, 6]];
   let compared = 0, gDrift = 0, rsDrift = 0;
   for (const [cs, level] of pairs) {
@@ -293,6 +327,260 @@ for (const key of CONFIG_KEYS) {
     check(`HS${lvl} the small-cell flag hides nothing`,
       ranked.length === base.filter((c) => c.posT > 0).length,
       `${ranked.length} ranked vs ${base.filter((c) => c.posT > 0).length} with a positive gap`);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* one grain: every level reports the same money                       */
+/* ---------------------------------------------------------------- */
+/* The discrepancy is measured per partner × HS6 × period and coarser levels
+ * aggregate it, so the positive total, the reverse total and the comparable
+ * value totals must be identical at HS2, HS4 and HS6 — the defect this grain
+ * exists to prevent is three totals from one dataset. Checked at two freight
+ * rates so a re-derivation hiding in one branch cannot pass at the other. */
+for (const cif of [0, 0.10]) {
+  const a = aggregate({ ...FULL, cif });
+  const sum = (chs: Channel[], k: "posT" | "revT" | "peT" | "uiT") => chs.reduce((s, c) => s + c[k], 0);
+  for (const k of ["posT", "revT", "peT", "uiT"] as const) {
+    const two = sum(a.baseChannels, k), four = sum(a.baseChannels4, k), six = sum(a.baseChannels6, k);
+    check(`${k} identical across levels at ${Math.round(cif * 100)}%`,
+      near(two, six, 5) && near(four, six, 5), `${Math.round(two)} / ${Math.round(four)} / ${Math.round(six)}`);
+  }
+  check(`the headline is the level-independent total (${Math.round(cif * 100)}%)`,
+    near(a.kpis.positive.central, sum(a.baseChannels6, "posT"), 5));
+}
+
+/* ---------------------------------------------------------------- */
+/* derived years: the annualized layer IS the monthly fold              */
+/* ---------------------------------------------------------------- */
+/* 2025 and 2026 reach the yearly basis from a build-time annualization of the
+ * monthly HS6 book. The client folding those same months live must land on the
+ * same figures to the dollar, or the two vintage paths have diverged. */
+{
+  check("there are derived years to audit", monthlyOnlyYears.length > 0,
+    String(monthlyOnlyYears.length));
+  for (const y of monthlyOnlyYears) {
+    const yearly = aggregate({ ...DEFAULT_FILTER, years: [y], minGap: 0 });
+    const folded = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: [], minGap: 0 });
+    check(`derived ${y}: positive equals the monthly fold`,
+      near(yearly.kpis.positive.central, folded.kpis.positive.central, 1),
+      `${Math.round(yearly.kpis.positive.central)} vs ${Math.round(folded.kpis.positive.central)}`);
+    const v = (a: Aggregate) => a.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
+    check(`derived ${y}: comparable value equals the monthly fold`, near(v(yearly), v(folded), 1));
+  }
+  // and the monthly series must actually have rows — the vacuous-pass trap
+  const m = aggregate({ ...FULL, granularity: "month", months: [] });
+  check("the monthly series is populated under the audit", m.annual.length > 0, String(m.annual.length));
+}
+
+/* ---------------------------------------------------------------- */
+/* official imports: the stat.uz context figures                       */
+/* ---------------------------------------------------------------- */
+/* The overview quotes Uzbekistan's actual imports from the statistics office.
+ * Two things must hold: the sum covers every selected year (or the cards do
+ * not render at all — asserted by non-null), and the official series is the
+ * same order of magnitude as the mirror's UZB-recorded imports over the same
+ * years. The sources genuinely differ by revisions and coverage, but past a
+ * few percent the likeliest cause is a units mistake in the data file, which
+ * this fails loudly. */
+{
+  const official = officialImportsOver(DEFAULT_FILTER.years);
+  check("official imports cover the default window", official !== null);
+  if (official) {
+    check("the running year is cut to the mirror book's reach",
+      official.partial !== null && official.partial.year === 2026 && official.partial.throughMonth >= 1 && official.partial.throughMonth <= 12,
+      JSON.stringify(official.partial));
+    const annualOnly = officialImportsOver([...meta.years]);
+    const mirrorUi = aggregate({ ...FULL }).observed.ui;
+    check("official and mirror imports agree within 5% over the annual window",
+      annualOnly !== null && Math.abs(annualOnly.usd - mirrorUi) / mirrorUi < 0.05,
+      `official ${annualOnly ? Math.round(annualOnly.usd) : "null"} vs mirror ${Math.round(mirrorUi)}`);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Country Analysis and the country page: what those screens print     */
+/* ---------------------------------------------------------------- */
+/* Every figure on the ranking row, the comparison card, the six frames and
+ * the HS6 table is pinned here, at two freight rates:
+ *   - Export − Import ÷ (1 + f) = Positive discrepancy, per partner row and
+ *     per HS6 row (the columns are positive-line values precisely so this holds)
+ *   - the country page's frames equal the sum of its table rows
+ *   - an HS2 chapter and an HS4 heading, for a partner, equal the sum of their
+ *     HS6 rows — the "derived from HS6" guarantee the table's filters rely on
+ *   - the ranking's totals row equals the sum of its partner rows
+ *   - a product's band is the same whether the country filter is on or off, so
+ *     the comparison card's critical count and the country page's agree
+ *   - the Top HS6 cell is the partner's HS6 line with the largest gap */
+for (const cif of [0, 0.10]) {
+  const Kc = 1 + cif;
+  // the window both screens open on: every year the picker offers, derived ones included
+  const ranked = aggregate({ ...FULL, years: [...yearsFor("year")], cif, rollupLevel: 6 });
+  const tag = `${Math.round(cif * 100)}%`;
+  let rowFails = 0, sumFails = 0, derivFails = 0, bandFails = 0, topFails = 0, checked = 0;
+  // ranking totals
+  const tPe = ranked.partners.reduce((a, p) => a + p.pePosT, 0);
+  const tPos = ranked.partners.reduce((a, p) => a + p.posT, 0);
+  check(`ranking totals: export = sum of partner rows (${tag})`,
+    near(tPe, ranked.baseChannels6.reduce((a, c) => a + c.pePosT, 0), 5));
+  check(`ranking totals: positive = headline (${tag})`, near(tPos, ranked.kpis.positive.central, 5));
+
+  // the six largest partners get the full per-page treatment
+  for (const p of [...ranked.partners].sort((a, b) => b.posT - a.posT).slice(0, 6)) {
+    checked++;
+    if (!near(p.pePosT - p.uiPosT / Kc, p.posT, 2)) rowFails++;
+    const page = aggregate({ ...FULL, years: [...yearsFor("year")], cif, country: [p.iso3] });
+    const pp = page.partners.find((x) => x.iso3 === p.iso3)!;
+    const rows = page.baseChannels6.filter((c) => c.partnerIso === p.iso3);
+    const sum = (k: "pePosT" | "uiPosT" | "posT") => rows.reduce((a, c) => a + c[k], 0);
+    if (!(near(sum("pePosT"), pp.pePosT, 2) && near(sum("uiPosT"), pp.uiPosT, 2) && near(sum("posT"), pp.posT, 2))) sumFails++;
+    // the same partner, same period: page and ranking must agree
+    if (!near(pp.posT, p.posT, 2)) sumFails++;
+    for (const r of rows) if (!near(r.pePosT - r.uiPosT / Kc, r.posT, 2)) rowFails++;
+    // HS2 and HS4, derived from HS6
+    for (const [level, chans] of [[2, page.baseChannels], [4, page.baseChannels4]] as const) {
+      for (const agg of chans.filter((c) => c.partnerIso === p.iso3)) {
+        const kids = rows.filter((r) => r.cmd.startsWith(agg.cmd));
+        const d = (k: "pePosT" | "uiPosT" | "posT") => Math.abs(kids.reduce((a, c) => a + c[k], 0) - agg[k]);
+        if (d("pePosT") > 2 || d("uiPosT") > 2 || d("posT") > 2) derivFails++;
+        void level;
+      }
+    }
+    // bands: filtered page vs unfiltered ranking
+    const global = new Map(ranked.baseChannels6.filter((c) => c.partnerIso === p.iso3).map((c) => [c.cmd, c.band]));
+    for (const r of rows) if (global.get(r.cmd) !== r.band) bandFails++;
+    // one product count on every screen: ranking column, comparison card, page frame
+    if (global.size !== rows.length) bandFails++;
+    // top HS6 is the largest positive line
+    const top = rows.reduce((b, c) => (c.posT > (b?.posT ?? 0) ? c : b), null as Channel | null);
+    const maxPos = Math.max(0, ...rows.map((r) => r.posT));
+    if (!top || !near(top.posT, maxPos, 0)) topFails++;
+  }
+  check(`Export − Import ÷ (1+f) = positive, partner and HS6 rows (${tag}, ${checked} partners)`, rowFails === 0, `${rowFails} rows off`);
+  check(`country page frames = sum of its HS6 rows, and = the ranking row (${tag})`, sumFails === 0, `${sumFails} off`);
+  check(`HS2 and HS4 figures are the sums of their HS6 rows (${tag})`, derivFails === 0, `${derivFails} codes off`);
+  check(`bands agree with and without the country filter (${tag})`, bandFails === 0, `${bandFails} lines differ`);
+  check(`Top HS6 is the partner's largest positive line (${tag})`, topFails === 0);
+}
+
+/* ---------------------------------------------------------------- */
+/* Discrepancy & Risk: the frames and the products ranking             */
+/* ---------------------------------------------------------------- */
+/* The page lists every pair with a positive discrepancy at the active level.
+ *   - every listed row: Export − Import ÷ (1 + f) = Positive discrepancy
+ *   - an HS2 or HS4 row's Export, Import and discrepancy = the sums of the
+ *     HS6 products beneath it, for the same partner
+ *   - the three levels list the same trade: equal Export, Import and
+ *     discrepancy totals
+ *   - the four band frames add up to the rows listed, and the score frames
+ *     bracket every scored row */
+for (const cif of [0, 0.10]) {
+  const Kc = 1 + cif;
+  const tag = `${Math.round(cif * 100)}%`;
+  // the filter provider asks for its series with no year ticked (the workbook
+  // years) before any page aggregates; that call must not leave its scores
+  // behind for the whole-window view below
+  aggregate({ ...DEFAULT_FILTER, years: [], cif });
+  const q = aggregate({ ...DEFAULT_FILTER, years: [...yearsFor("year")], cif });
+  const byLevel = [[2, q.channels], [4, q.channels4], [6, q.channels6]] as const;
+  const hs6 = new Map<string, Channel[]>();
+  for (const c of q.baseChannels6) {
+    for (const k of [`${c.partnerIso}|${c.cmd.slice(0, 2)}`, `${c.partnerIso}|${c.cmd.slice(0, 4)}`]) {
+      (hs6.get(k) ?? hs6.set(k, []).get(k)!).push(c);
+    }
+  }
+  const totals: Record<number, [number, number, number]> = {};
+  for (const [lvl, rows] of byLevel) {
+    let rowFails = 0, derivFails = 0, bracketFails = 0, scoreFails = 0;
+    const counts = { critical: 0, high: 0, elevated: 0, low: 0 } as Record<RiskBand, number>;
+    const scored = rows.filter((c) => c.scored).map((c) => c.mtrs);
+    const hi = Math.max(...scored), lo = Math.min(...scored);
+    for (const c of rows) {
+      counts[c.band]++;
+      if (!(c.posT > 0)) rowFails++;
+      if (!near(c.pePosT - c.uiPosT / Kc, c.posT, 2)) rowFails++;
+      if (c.scored && (c.mtrs > hi || c.mtrs < lo)) bracketFails++;
+      // the score was fitted on this row's own period: P follows from its years
+      if (!near(c.persistence, Math.round(((c.posYears + 1) / (c.comparableYears + 2)) * 1000) / 1000, 0.0005)) scoreFails++;
+      if (lvl !== 6) {
+        const kids = hs6.get(`${c.partnerIso}|${c.cmd}`) ?? [];
+        const d = (k: "pePosT" | "uiPosT" | "posT") => Math.abs(kids.reduce((a, x) => a + x[k], 0) - c[k]);
+        if (kids.length === 0 || d("pePosT") > 2 || d("uiPosT") > 2 || d("posT") > 2) derivFails++;
+      }
+    }
+    totals[lvl] = [
+      rows.reduce((a, c) => a + c.pePosT, 0),
+      rows.reduce((a, c) => a + c.uiPosT, 0),
+      rows.reduce((a, c) => a + c.posT, 0),
+    ];
+    check(`risk page HS${lvl}: Export − Import ÷ (1+f) = positive on every listed row (${tag}, ${rows.length} rows)`, rowFails === 0, `${rowFails} rows off`);
+    if (lvl !== 6) check(`risk page HS${lvl}: rows are the sums of their HS6 products (${tag})`, derivFails === 0, `${derivFails} rows off`);
+    check(`risk page HS${lvl}: band frames add up to the rows listed (${tag})`,
+      counts.critical + counts.high + counts.elevated + counts.low === rows.length);
+    check(`risk page HS${lvl}: highest/lowest frames bracket every scored row (${tag})`, scored.length > 0 && bracketFails === 0);
+    check(`risk page HS${lvl}: every row is scored on the period in view (${tag})`, scoreFails === 0, `${scoreFails} rows carry another period's score`);
+  }
+  for (const i of [0, 1, 2]) {
+    check(`risk page: HS2, HS4 and HS6 list the same trade (${tag}, ${["export", "import", "positive"][i]})`,
+      near(totals[2][i], totals[6][i], 5) && near(totals[4][i], totals[6][i], 5));
+  }
+  check(`risk page: positive total = the headline (${tag})`, near(totals[6][2], q.kpis.positive.central, 5));
+}
+
+/* ---------------------------------------------------------------- */
+/* Product Analysis: frames and the per-code table                     */
+/* ---------------------------------------------------------------- */
+/* The page groups the listed partner × code pairs by code at each level.
+ *   - every row: Export − Import ÷ (1 + f) = Positive discrepancy
+ *   - an HS2 row = the sum of its HS4 rows = the sum of its HS6 rows, on all
+ *     three values, and on the partner count (partners with a positive line)
+ *   - the frames (sum of the rows) are the same at HS2, HS4 and HS6, and
+ *     equal the headline positive discrepancy */
+{
+  type Row = { pe: number; ui: number; pos: number; partners: Set<string>; mtrs: number };
+  const byCode = (chs: Channel[]) => {
+    const m = new Map<string, Row>();
+    for (const c of chs) {
+      const r = m.get(c.cmd) ?? m.set(c.cmd, { pe: 0, ui: 0, pos: 0, partners: new Set(), mtrs: -1 }).get(c.cmd)!;
+      r.pe += c.pePosT; r.ui += c.uiPosT; r.pos += c.posT; r.partners.add(c.partnerIso);
+      r.mtrs = Math.max(r.mtrs, c.mtrs);
+    }
+    return m;
+  };
+  const windows: [string, number[]][] = [["newest year", [...DEFAULT_FILTER.years]], ["2017–2026", [...yearsFor("year")]]];
+  for (const [wname, years] of windows) {
+    for (const cif of [0, 0.10]) {
+      const Kc = 1 + cif;
+      const tag = `${wname}, ${Math.round(cif * 100)}%`;
+      const d = aggregate({ ...DEFAULT_FILTER, years, cif });
+      const levels = [[2, byCode(d.channels)], [4, byCode(d.channels4)], [6, byCode(d.channels6)]] as const;
+      let rowFails = 0, derivFails = 0;
+      const tot: number[][] = [];
+      for (const [lvl, rows] of levels) {
+        let pe = 0, ui = 0, pos = 0;
+        for (const r of rows.values()) {
+          if (!near(r.pe - r.ui / Kc, r.pos, 2)) rowFails++;
+          pe += r.pe; ui += r.ui; pos += r.pos;
+        }
+        tot.push([pe, ui, pos]);
+        if (lvl === 6) continue;
+        for (const [cmd, r] of rows) {
+          for (const [, finer] of levels.filter(([l]) => l > lvl)) {
+            let fpe = 0, fui = 0, fpos = 0;
+            const fp = new Set<string>();
+            for (const [k, x] of finer) if (k.startsWith(cmd)) { fpe += x.pe; fui += x.ui; fpos += x.pos; x.partners.forEach((p) => fp.add(p)); }
+            if (!near(fpe, r.pe, 2) || !near(fui, r.ui, 2) || !near(fpos, r.pos, 2) || fp.size !== r.partners.size) derivFails++;
+          }
+        }
+      }
+      check(`products: Export − Import ÷ (1+f) = positive on every row (${tag})`, rowFails === 0, `${rowFails} rows off`);
+      check(`products: HS2 rows = sums of their HS4 and HS6 rows, partners included (${tag})`, derivFails === 0, `${derivFails} rows off`);
+      for (const i of [0, 1, 2]) {
+        check(`products: frames equal at HS2, HS4 and HS6 (${tag}, ${["export", "import", "positive"][i]})`,
+          near(tot[0][i], tot[2][i], 5) && near(tot[1][i], tot[2][i], 5));
+      }
+      check(`products: positive frame = the headline (${tag})`, near(tot[2][2], d.kpis.positive.central, 5));
+    }
   }
 }
 

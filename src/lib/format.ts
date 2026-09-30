@@ -66,19 +66,33 @@ export function fmtNum(v: number): string {
  * the #fcfcfb card surface. Chrome (grid, axis, baseline) stays neutral grey
  * and recessive; ink stays dark.
  */
-const NAVY_DEEP = "#16233b";
-const NAVY = "#1e3a6e";
-const NAVY_2 = "#2b4c8c";
-const NAVY_3 = "#4a6ea8";
+/*
+ * The canvas palettes. CSS variables cannot reach a canvas, so the chart
+ * colors are chosen HERE, once, at module init, from the data-theme attribute
+ * the layout's inline script set before any bundle ran. Toggling the theme
+ * reloads the page (see src/lib/theme-store.ts), which re-runs this choice —
+ * that is the whole synchronisation mechanism, so nothing else may cache a
+ * color across a theme change.
+ *
+ * Dark keeps the CBU identity with the ground inverted: navy cannot carry a
+ * series on a navy ground, so the navy slots lighten; gold holds; the alert
+ * red and greens lift just enough to read on #18202f.
+ */
+export const IS_DARK = typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
+
+const NAVY_DEEP = IS_DARK ? "#51719f" : "#16233b";
+const NAVY = IS_DARK ? "#7da2e0" : "#1e3a6e";
+const NAVY_2 = IS_DARK ? "#6b8fc9" : "#2b4c8c";
+const NAVY_3 = IS_DARK ? "#93b3e8" : "#4a6ea8";
 const GOLD = "#d99a2b";
-const GOLD_2 = "#b07d1e";
-const GOLD_INK = "#8f6212";
-const AMBER_HOT = "#a4560f";
-const ALERT_RED = "#b3261e";
-const GREEN = "#1a6b45";
-const GREEN_INK = "#155c3b";
-const SLATE = "#575c67";
-const GREY = "#898781";
+const GOLD_2 = IS_DARK ? "#d8b36a" : "#b07d1e";
+const GOLD_INK = IS_DARK ? "#d8b36a" : "#8f6212";
+const AMBER_HOT = IS_DARK ? "#d97f3e" : "#a4560f";
+const ALERT_RED = IS_DARK ? "#e0655c" : "#b3261e";
+const GREEN = IS_DARK ? "#3da875" : "#1a6b45";
+const GREEN_INK = IS_DARK ? "#4dbd8a" : "#155c3b";
+const SLATE = IS_DARK ? "#9aa2b1" : "#575c67";
+const GREY = IS_DARK ? "#8d96a8" : "#898781";
 
 /** MTRS band palette (fixed): never reused as series colors. */
 export const BAND_COLORS: Record<string, string> = {
@@ -117,10 +131,16 @@ export const COLORS = {
   accent: GOLD,
 
   // chrome & ink
-  grid: "#e5e4de",
-  baseline: "#c9c8c0",
+  grid: IS_DARK ? "#2a3447" : "#e5e4de",
+  baseline: IS_DARK ? "#3d4a63" : "#c9c8c0",
   axis: GREY,
-  text: "#3f3e3a",
-  surface: "#fcfcfb",
-  neutralMid: "#edece7",
+  text: IS_DARK ? "#c7cdd9" : "#3f3e3a",
+  surface: IS_DARK ? "#18202f" : "#fcfcfb",
+  neutralMid: IS_DARK ? "#223048" : "#edece7",
+
+  /* the geographic map's inert ground — themed here because a canvas cannot
+     read the CSS tokens the rest of the page uses */
+  mapArea: IS_DARK ? "#223048" : "#eef1ee",
+  mapBorder: IS_DARK ? "#33405a" : "#d8ded9",
+  mapEmphasis: IS_DARK ? "#2f3d58" : "#cfd8d1",
 };

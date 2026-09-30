@@ -1,8 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BAND_COLORS, COLORS } from "@/lib/format";
 import { yearsFor, yearsLabel, type Filter, type RiskBand, type Robustness, type Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
+import { readZoom } from "@/lib/zoom-store";
 
 /** Fill {placeholders} in a translated string with runtime values. */
 const fill = (s: string, vals: Record<string, string | number>) =>
@@ -48,11 +50,103 @@ export function Stat({
   );
 }
 
+/**
+ * The "i" beside a figure, and the panel it opens.
+ *
+ * This used to be a bare `title` attribute. That is a native tooltip: it waits
+ * about a second before appearing, cannot be reached from the keyboard, and on a
+ * touch screen never appears at all — so on a tablet the explanation behind
+ * every KPI on the dashboard was simply unreachable, and on a desktop most
+ * readers gave up before the delay elapsed.
+ *
+ * It is now a real tooltip. Hover peeks, click pins it open, Escape or a click
+ * outside closes it, and it is a button so Tab reaches it and Enter opens it.
+ *
+ * The panel is positioned `fixed` against the trigger's viewport rect rather
+ * than absolutely inside it, because the stat cards it usually sits in are
+ * `overflow: hidden` and would otherwise clip it away.
+ */
 export function InfoTip({ text }: { text: string }) {
+  const { t } = useI18n();
+  const btn = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const PANEL = 300;
+  const HEIGHT = 160; // enough for the longest tooltip; only decides which side to flip to
+  const place = useCallback(() => {
+    const r = btn.current?.getBoundingClientRect();
+    if (!r) return;
+    /*
+     * globals.css puts `zoom` on body, so the two coordinate systems differ:
+     * getBoundingClientRect reports rendered pixels, while a CSS `left` inside
+     * that subtree is multiplied by the zoom before it lands. Written straight
+     * across, the panel came out one zoom factor to the right — off the screen
+     * entirely at 1.25. EChart corrects the same mismatch the same way.
+     */
+    const z = readZoom();
+    const vw = window.innerWidth / z;
+    const vh = window.innerHeight / z;
+    // keep the panel on screen: flip above when it would run off the bottom,
+    // and pull it left when it would run off the right edge
+    const left = Math.max(8, Math.min(r.left / z, vw - PANEL - 8));
+    const below = r.bottom / z + 6;
+    const top = below + HEIGHT > vh && r.top / z > HEIGHT + 10 ? r.top / z - 6 - HEIGHT : below;
+    setPos({ top, left });
+  }, []);
+
+  const show = () => { place(); setOpen(true); };
+  const hide = () => { setPinned(false); setOpen(false); };
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { hide(); btn.current?.focus(); } };
+    const onDown = (e: MouseEvent) => { if (!btn.current?.contains(e.target as Node)) hide(); };
+    // a fixed panel does not travel with the page, so close rather than drift
+    const onMove = () => hide();
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("scroll", onMove, true);
+    window.addEventListener("resize", onMove);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("scroll", onMove, true);
+      window.removeEventListener("resize", onMove);
+    };
+  }, [open]);
+
   return (
-    <span className="inline-flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-[var(--color-border)] text-[11px] leading-none text-faint" title={text}>
-      i
-    </span>
+    <>
+      <button
+        ref={btn}
+        type="button"
+        aria-label={t("common.moreInfo")}
+        aria-expanded={open}
+        onClick={() => (pinned ? hide() : (setPinned(true), show()))}
+        onPointerEnter={show}
+        onPointerLeave={() => { if (!pinned) setOpen(false); }}
+        onFocus={show}
+        onBlur={() => { if (!pinned) setOpen(false); }}
+        className={`inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border text-[11px] leading-none transition-colors ${
+          open
+            ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+            : "border-[var(--color-border)] text-faint hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+        }`}
+      >
+        i
+      </button>
+      {open && pos && (
+        <span
+          role="tooltip"
+          style={{ top: pos.top, left: pos.left, width: PANEL }}
+          className="fixed z-50 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] p-2.5 text-[12.5px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-lg"
+        >
+          {text}
+        </span>
+      )}
+    </>
   );
 }
 
