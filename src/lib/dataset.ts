@@ -854,8 +854,10 @@ function applyScores(cs: Channel[], scores: LevelScores): void {
 const scoreCache = new Map<string, LevelScores>();
 const SCORE_CACHE_MAX = 24;
 
-function levelScores(f: Filter, level: number, periodCells: Cell[], ready: Channel[] | null): LevelScores {
-  const years = f.years.length ? f.years : yearsFor(f.granularity);
+function levelScores(f: Filter, level: number, years: number[], periodCells: Cell[], ready: Channel[] | null): LevelScores {
+  // `years` must be the period aggregate() resolved, not re-derived from the
+  // filter: an empty yearly tick means the workbook years only, and keying it
+  // as the whole window served eight-year scores to ten-year views.
   const key = `${level}|${f.granularity}|${f.cif}|${years.join(",")}|${f.months.join(",")}|${monthlyDetailVersion}`;
   const hit = scoreCache.get(key);
   if (hit) return hit;
@@ -1251,7 +1253,7 @@ export function aggregate(f: Filter): Aggregate {
   const periodCells = wholeCrossSection ? fc : sourceCells(f).filter((r) => picked.has(r.y) && pMeta.has(r.p));
   const bandCuts: Record<number, BandCuts> = {};
   for (const [lvl, base] of [[2, baseChannels], [4, baseChannels4], [6, baseChannels6]] as const) {
-    const scores = levelScores(f, lvl, periodCells, wholeCrossSection ? base : null);
+    const scores = levelScores(f, lvl, years, periodCells, wholeCrossSection ? base : null);
     applyScores(base, scores);
     bandCuts[lvl] = scores.cuts;
   }
