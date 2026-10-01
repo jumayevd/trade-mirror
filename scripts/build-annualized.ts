@@ -25,6 +25,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { appendMonthlyPartners } from "./reconcile-partners";
 
 interface Packed { v: number; y0: number; p: string[]; k: string[]; r: number[][] }
 
@@ -88,6 +89,18 @@ rows.sort((a, b) => a[2] - b[2] || a[0] - b[0] || a[1] - b[1]);
 const out: Packed = { v: 1, y0, p: detail.p, k: detail.k, r: rows };
 const dest = path.join(ROOT, "src", "data", "annualized-hs6.json");
 fs.writeFileSync(dest, JSON.stringify(out));
+// build-from-excel.ts rewrites meta.json from the annual workbook and drops the
+// partners only the monthly books name; this step runs after it in data:excel
+const rawMonthly = path.join(ROOT, "data", "raw", "monthly-cells.json");
+const partnerNames: Record<string, string> = fs.existsSync(rawMonthly)
+  ? JSON.parse(fs.readFileSync(rawMonthly, "utf8")).partnerNames ?? {}
+  : {};
+const added = appendMonthlyPartners(meta, [...detail.p, ...chapterBook.p], partnerNames);
+if (added.length) {
+  fs.writeFileSync(path.join(ROOT, "src", "data", "meta.json"), JSON.stringify(meta));
+  console.log(`meta.json: +${added.length} monthly-only partners (${added.join(", ")})`);
+}
+
 const years = [...new Set(rows.map((r) => y0 + r[2]))].sort();
 console.log(
   `wrote ${path.relative(ROOT, dest)}: ${rows.length.toLocaleString()} HS6 cell-years ` +

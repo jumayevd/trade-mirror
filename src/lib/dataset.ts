@@ -29,11 +29,19 @@ export type Robustness = "robust" | "freight-sensitive" | "coverage-sensitive" |
 /**
  * pe/ui are as reported. pc/uc, set on cells folded from months, are the same
  * two values over only the months both books reported for that partner (see
- * monthMatched); every comparison between the books reads those. Absent, the
+ * monthMatched) — on the monthly basis's HS6 cells, over the months both books
+ * recorded that line (see THE MONTH GRAIN); every comparison between the books
+ * reads those. Absent, the
  * whole value is comparable — the annual workbook covers full years on both
  * sides.
  */
-interface Cell { p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number; pc?: number; uc?: number; uw?: number; pw?: number }
+interface Cell {
+  p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number;
+  pc?: number; uc?: number; uw?: number; pw?: number;
+  /** Monthly basis, HS6: the months both books recorded the line, as flat
+   *  [pe, ui, pe, ui, …] pairs — the grain the gap is measured at there. */
+  mo?: number[];
+}
 /** A cell's values on the months both books reported. */
 const cmpPe = (r: Cell): number => r.pc ?? r.pe;
 const cmpUi = (r: Cell): number => r.uc ?? r.ui;
@@ -519,15 +527,9 @@ function monthlySource(f: Filter): Cell[] {
     // fold straight off the packed rows on numeric keys — string keys on 1.9M
     // iterations would dominate the cost
     const nK = det.k.length;
-    // the month rule on numeric keys: per partner index, the matched offsets
-    const matched = det.p.map((iso) => {
-      const set = new Set<number>();
-      for (const ym of partnerExportMonths.get(iso) ?? []) {
-        if (uzbImportMonths.has(ym)) set.add((Math.floor(ym / 100) - det.y0) * 12 + (ym % 100) - 1);
-      }
-      return set;
-    });
     const acc6 = new Map<number, Cell>();
+    // per cell, its months as they arrive: [offset, pe, ui, offset, pe, ui, …]
+    const monthsOf = new Map<number, number[]>();
     for (const row of det.r) {
       const y = det.y0 + ((row[2] / 12) | 0);
       if (wantY && !wantY.has(y)) continue;
@@ -542,7 +544,35 @@ function monthlySource(f: Filter): Cell[] {
       }
       cell.pe += row[3];
       cell.ui += row[4];
-      if (matched[row[0]].has(row[2])) { cell.pc! += row[3]; cell.uc! += row[4]; }
+      // one month can span two rows (the API extension appends import-only rows
+      // beside the workbook's partner rows), so months are summed before testing
+      let mm = monthsOf.get(id);
+      if (!mm) { mm = []; monthsOf.set(id, mm); }
+      let i = 0;
+      while (i < mm.length && mm[i] !== row[2]) i += 3;
+      if (i === mm.length) mm.push(row[2], 0, 0);
+      mm[i + 1] += row[3];
+      mm[i + 2] += row[4];
+    }
+    /*
+     * THE MONTH GRAIN. On the monthly basis a gap is measured per partner × HS6
+     * × MONTH, and the months are then summed — the same grain the period chart
+     * draws its bars at, so the headline is exactly the sum of the bars. A month
+     * counts for a line when both books recorded the line in it (which also
+     * means both reported the month, so the month rule holds). Netting a
+     * selection's months inside each year first let February's surplus cancel
+     * January's gap, and the bars no longer added up to the total.
+     */
+    for (const [id, cell] of acc6) {
+      const mm = monthsOf.get(id)!;
+      const mo: number[] = [];
+      let pc = 0, uc = 0;
+      for (let i = 0; i < mm.length; i += 3) {
+        if (mm[i + 1] <= NOISE || mm[i + 2] <= NOISE) continue;
+        mo.push(mm[i + 1], mm[i + 2]);
+        pc += mm[i + 1]; uc += mm[i + 2];
+      }
+      cell.mo = mo; cell.pc = pc; cell.uc = uc;
     }
     // derived HS4 layer, same rule as the yearly load: exact truncation of HS6
     const acc4 = new Map<string, Cell>();
@@ -1000,12 +1030,18 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     }
     // Both books on an FOB basis: the partner's export is already FOB, so it is
     // Uzbekistan's CIF import that is divided down by the freight factor.
-    const signed = pe - ui / K;
-    a.pe += pe; a.ui += ui;
-    a.posY += pos(signed); a.revY += pos(-signed);
-    if (signed > 0) { a.pePosY += pe; a.uiPosY += ui; }
-    a.posLoY += pos(pe - ui / Klo);
-    a.posHiY += pos(pe - ui / Khi);
+    const measure = (pe: number, ui: number) => {
+      const signed = pe - ui / K;
+      a!.pe += pe; a!.ui += ui;
+      a!.posY += pos(signed); a!.revY += pos(-signed);
+      if (signed > 0) { a!.pePosY += pe; a!.uiPosY += ui; }
+      a!.posLoY += pos(pe - ui / Klo);
+      a!.posHiY += pos(pe - ui / Khi);
+    };
+    // the monthly basis measures each month the line was compared, then sums
+    // them (see THE MONTH GRAIN); everywhere else the cell is one measurement
+    if (r.mo) for (let i = 0; i < r.mo.length; i += 2) measure(r.mo[i], r.mo[i + 1]);
+    else measure(pe, ui);
     if (r.uw && r.pw) { a.uvOk = true; a.uw += r.uw; a.pw += r.pw; a.uwv += ui; a.pwv += pe; }
   }
 

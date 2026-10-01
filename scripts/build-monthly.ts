@@ -20,7 +20,7 @@
  */
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { NAME_OVERRIDES, REGION_BY_ISO, TRANSIT_HUBS } from "./config";
+import { appendMonthlyPartners } from "./reconcile-partners";
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "data", "raw", "monthly-cells.json");
@@ -80,27 +80,8 @@ async function main() {
 
   // ---- partner metadata reconciliation ----
   const meta = JSON.parse(await fs.readFile(META, "utf8"));
-  const known = new Set(meta.partners.map((p: { iso3: string }) => p.iso3));
-  const missing = [...new Set([...pList, ...pList6])].filter((iso) => !known.has(iso));
-  for (const iso of missing) {
-    meta.partners.push({
-      iso3: iso,
-      name: NAME_OVERRIDES[iso] ?? (payload.partnerNames[iso] ?? iso).trim(),
-      region: REGION_BY_ISO[iso] ?? "Other",
-      code: iso,
-      transit: TRANSIT_HUBS.has(iso),
-      // monthly-only partner: no annual Comtrade reports inside the yearly window
-      coverage: 0,
-      reportedYears: [],
-      lastReportedYear: 0,
-      lapse: false,
-      tier: "Low",
-    });
-  }
-  if (missing.length) {
-    meta.partners.sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name));
-    await fs.writeFile(META, JSON.stringify(meta));
-  }
+  const missing = appendMonthlyPartners(meta, [...pList, ...pList6], payload.partnerNames);
+  if (missing.length) await fs.writeFile(META, JSON.stringify(meta));
 
   const stat = await fs.stat(OUT);
   const stat6 = await fs.stat(OUT_HS6);

@@ -308,8 +308,10 @@ for (const y of [2025, 2026]) {
  * counts for a partner when Uzbekistan's import book has it (HS2 sheet, any
  * import) and the partner reported exports to Uzbekistan in it. The engine's
  * compared exports, imports and positive discrepancy (0% freight) must equal
- * the raw HS6 sheet folded over those months only, per partner x HS6 x year —
- * on the yearly basis (the annualized layer) and the monthly basis alike. */
+ * the raw HS6 sheet folded over those months only, per partner x HS6 x year on
+ * the yearly basis (the annualized layer). The monthly basis measures at the
+ * MONTH grain instead: per partner x HS6 x month, a month counting when both
+ * books recorded the line in it, and the months summed. */
 {
   const uzb = new Set<number>();
   const ptn = new Map<string, Set<number>>();
@@ -336,11 +338,31 @@ for (const y of [2025, 2026]) {
     }
     return { pe, ui, pos, lines: acc.size };
   };
-  for (const y of [2024, 2025, 2026]) {
-    const want = refFor(y);
-    const bases: [string, Filter][] = [["monthly", { ...mbase(), years: [y], cif: 0 }]];
-    if (!meta.years.includes(y)) bases.unshift(["yearly", { ...base(), years: [y], cif: 0 }]);
-    for (const [tag, f] of bases) {
+  // the monthly basis: each (partner, HS6, month) on its own, then summed
+  const refMonthGrain = (y: number, months: number[] = []) => {
+    const want = new Set(months);
+    const acc = new Map<string, [number, number]>();
+    for (const r of monthlyHs6) {
+      if (r[2] !== y || (want.size && !want.has(r[3]))) continue;
+      const k = `${r[0]}|${r[1]}|${r[3]}`;
+      const a = acc.get(k) ?? [0, 0];
+      a[0] += r[4]; a[1] += r[5];
+      acc.set(k, a);
+    }
+    let pe = 0, ui = 0, pos = 0;
+    for (const [x, m] of acc.values()) {
+      if (x <= 0 || m <= 0) continue;
+      pe += x; ui += m; pos += Math.max(x - m, 0);
+    }
+    return { pe, ui, pos, lines: acc.size };
+  };
+  const cases: [number, number[]][] = [[2024, []], [2025, []], [2026, []], [2024, [1, 2]], [2025, [3, 7, 9]]];
+  for (const [y, months] of cases) {
+    const bases: [string, Filter, ReturnType<typeof refFor>][] = [
+      [`monthly${months.length ? ` months ${months.join("+")}` : ""}`, { ...mbase(), years: [y], months, cif: 0 }, refMonthGrain(y, months)],
+    ];
+    if (!meta.years.includes(y) && !months.length) bases.unshift(["yearly", { ...base(), years: [y], cif: 0 }, refFor(y)]);
+    for (const [tag, f, want] of bases) {
       const a = aggregate(f);
       const pe = a.baseChannels6.reduce((t, c) => t + c.peT, 0);
       const ui = a.baseChannels6.reduce((t, c) => t + c.uiT, 0);
