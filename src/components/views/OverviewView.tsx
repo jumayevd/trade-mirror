@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { EChartsOption } from "echarts";
-import { labelsFor } from "@/lib/labels";
 import EChart from "@/components/EChart";
 import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
-import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE, hsFullLabel } from "@/lib/dataset";
+import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
+import { hs6ShortLabel } from "@/lib/short-labels";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
@@ -93,10 +93,10 @@ export default function OverviewView() {
       .sort((a, b) => b[1].value - a[1].value)
       .map(([cmd, e]) => ({
         key: cmd,
-        // the full official name, on the tile and in the list under it, in the
-        // reader's language
-        label: labelsFor(lang, () => hsFullLabel(cmd)),
-        detail: `HS ${cmd}`,
+        // a few recognisable words on the tile; the code and the full official
+        // description move to the tooltip, where there is room for them
+        label: hs6ShortLabel(cmd, lang, e.label),
+        detail: `HS ${cmd} · ${e.label}`,
         value: e.value,
         href: `/products?hs6=${cmd}`,
       }));
@@ -458,7 +458,7 @@ export default function OverviewView() {
               <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
               <Link href="/products" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
-            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} fullNames />
+            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} />
           </div>
         </div>
       </section>
