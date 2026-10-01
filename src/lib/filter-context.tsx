@@ -25,7 +25,9 @@ function fromSearch(sp: URLSearchParams): Filter {
   const num = (k: string) => { const v = sp.get(k); return v == null ? null : Number(v); };
   const str = (k: string) => sp.get(k);
   const yearsRaw = str("years");
-  if (yearsRaw) {
+  // a cleared period travels as "none" — an absent key means the default year
+  if (yearsRaw === "none") f.years = [];
+  else if (yearsRaw) {
     const picked = yearsRaw.split(",").map(Number).filter((y) => ALL_YEARS.includes(y));
     if (picked.length) f.years = [...new Set(picked)].sort((a, b) => a - b);
   }
@@ -59,7 +61,7 @@ const sameYears = (a: number[], b: number[]) =>
 function toSearch(f: Filter): string {
   const sp = new URLSearchParams();
   const set = (k: string, v: string | number, d: string | number) => { if (v !== d) sp.set(k, String(v)); };
-  if (!sameYears(f.years, DEFAULT_FILTER.years)) sp.set("years", f.years.join(","));
+  if (!sameYears(f.years, DEFAULT_FILTER.years)) sp.set("years", f.years.length ? f.years.join(",") : "none");
   set("gran", f.granularity, "year");
   if (f.months.length) sp.set("months", f.months.join(","));
   set("cif", f.cif, DEFAULT_FILTER.cif);

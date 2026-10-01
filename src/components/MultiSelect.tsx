@@ -17,6 +17,7 @@ export default function MultiSelect({
   allLabel,
   searchable = true,
   selectAll = false,
+  noneLabel,
 }: {
   values: string[];
   onChange: (values: string[]) => void;
@@ -32,6 +33,13 @@ export default function MultiSelect({
    * every option is emitted as [] — the one canonical "everything".
    */
   selectAll?: boolean;
+  /**
+   * Makes an empty selection mean NOTHING rather than everything: no box is
+   * ticked, the summary reads this label, "All" ticks and unticks every option,
+   * and "Clear selection" empties the list. The period picker uses it — a
+   * cleared period is a cleared period, not the whole window in disguise.
+   */
+  noneLabel?: string;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -70,18 +78,21 @@ export default function MultiSelect({
   }, [open, searchable]);
 
   const allValues = useMemo(() => options.map((o) => o.value), [options]);
+  // empty means everything, unless the control says it means nothing
+  const emptyIsAll = noneLabel === undefined;
   // with the All row, nothing ticked means everything ticked
-  const shown = selectAll && values.length === 0 ? allValues : values;
-  const everything = selectAll && allValues.every((v) => shown.includes(v));
-  const isOn = (v: string) => (selectAll && values.length === 0) || picked.has(v);
+  const shown = selectAll && emptyIsAll && values.length === 0 ? allValues : values;
+  const everything = selectAll && allValues.length > 0 && allValues.every((v) => shown.includes(v));
+  const isOn = (v: string) => (selectAll && emptyIsAll && values.length === 0) || picked.has(v);
   const emit = (next: string[]) =>
-    onChange(selectAll && allValues.every((v) => next.includes(v)) ? [] : next);
+    onChange(selectAll && emptyIsAll && allValues.every((v) => next.includes(v)) ? [] : next);
 
   const toggle = (v: string) =>
     emit(shown.includes(v) ? shown.filter((x) => x !== v) : [...shown, v]);
 
   const summary = () => {
-    if (values.length === 0 || everything) return allLabel;
+    if (values.length === 0) return noneLabel ?? allLabel;
+    if (everything) return allLabel;
     if (values.length === 1) {
       const o = options.find((x) => x.value === values[0]);
       return o ? (o.code ? `${o.code} · ${o.label}` : o.label) : values[0];
@@ -136,9 +147,9 @@ export default function MultiSelect({
                     <input
                       type="checkbox"
                       checked={everything}
-                      // ticking it selects everything; there is no "nothing" to untick
-                      // to, so on a full selection it stays put
-                      onChange={() => { if (!everything) emit(allValues); }}
+                      // ticking it selects everything; unticking clears the list where
+                      // empty means nothing, and is a no-op where empty means everything
+                      onChange={() => { if (!everything) emit(allValues); else if (!emptyIsAll) emit([]); }}
                       className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
                     />
                     <span className="min-w-0 leading-snug">{allLabel}</span>
@@ -174,7 +185,7 @@ export default function MultiSelect({
                 );
               })}
             </ul>
-            {values.length > 0 && !everything && (
+            {values.length > 0 && (!everything || !emptyIsAll) && (
               <button
                 type="button"
                 onClick={() => onChange([])}

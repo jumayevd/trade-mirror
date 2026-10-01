@@ -312,16 +312,16 @@ export default function MethodologyView() {
                 <thead>
                   <tr className="border-b border-[var(--color-border-soft)]">
                     <th className={TH}>{tr("meth.risk.s4.colBand")}</th>
-                    <th className={TH}>{tr("meth.risk.s4.colPct")}</th>
-                    <th className={TH}>{tr("meth.risk.s4.colShare")}</th>
+                    <th className={TH.replace("text-left", "text-center")}>{tr("meth.risk.s4.colPct")}</th>
+                    <th className={TH.replace("text-left", "text-center")}>{tr("meth.risk.s4.colShare")}</th>
                   </tr>
                 </thead>
                 <tbody className="zebra">
                   {BAND_ROWS.map((b) => (
                     <tr key={b.key} className="border-b border-[var(--color-border-soft)] last:border-0">
                       <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b.key}`)}</td>
-                      <td className={`${TD} tabular whitespace-nowrap`}>{b.pct}</td>
-                      <td className={`${TD} tabular whitespace-nowrap`}>{b.share}</td>
+                      <td className={`${TD} tabular whitespace-nowrap text-center`}>{b.pct}</td>
+                      <td className={`${TD} tabular whitespace-nowrap text-center`}>{b.share}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -363,7 +363,7 @@ export default function MethodologyView() {
               {([["critical", cuts.critical], ["high", cuts.high], ["elevated", cuts.elevated]] as const).map(([b, v]) => (
                 <tr key={b} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b}`)}</td>
-                  <td className={`${TD} tabular whitespace-nowrap text-right`}>≥ {v.toFixed(1)}</td>
+                  <td className={`${TD} tabular whitespace-nowrap text-center`}>≥ {v.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>

@@ -131,12 +131,12 @@ export default function QualityView() {
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] text-left fs-12 text-faint">
-                <th className="px-3 py-2 text-right font-medium">#</th>
+                <th className="px-3 py-2 text-center font-medium">#</th>
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 {years.map((y) => (
                   <th key={y} className="tabular px-1.5 py-2 text-center font-medium">{y}</th>
                 ))}
-                <th className="px-3 py-2 text-right font-medium" title={fill(t("qual.coverage.tip"), { n: years.length, start: years[0], end: years[years.length - 1] })}>
+                <th className="px-3 py-2 text-center font-medium" title={fill(t("qual.coverage.tip"), { n: years.length, start: years[0], end: years[years.length - 1] })}>
                   {t("kpi.coverage")}
                 </th>
                 <th className="px-3 py-2 font-medium">{t("qual.coverage.status")}</th>
@@ -145,7 +145,7 @@ export default function QualityView() {
             <tbody className="zebra">
               {partners.map((p, i) => (
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                  <td className="tabular px-3 py-1.5 text-right text-faint">{i + 1}</td>
+                  <td className="tabular px-3 py-1.5 text-center text-faint">{i + 1}</td>
                   <td className="px-3 py-1.5">
                     <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
                       {p.name}
@@ -157,7 +157,7 @@ export default function QualityView() {
                     </td>
                   ))}
                   <td
-                    className="tabular px-3 py-1.5 text-right text-muted"
+                    className="tabular px-3 py-1.5 text-center text-muted"
                     title={`${p.reportedYears.length} / ${years.length}`}
                   >
                     {fmtPct(p.coverage, 0)}

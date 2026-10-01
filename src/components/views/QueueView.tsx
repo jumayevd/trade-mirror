@@ -6,7 +6,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { InfoTip, SectionTitle, Stat } from "@/components/ui";
+import { EmptyState, InfoTip, SectionTitle, Stat } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -174,8 +174,10 @@ export default function QueueView() {
         </div>
       </section>
 
+      {years.length === 0 && <EmptyState text={t("common.noPeriod")} />}
+
       {/* the frames — the score range, then the pairs in each band */}
-      {stats.top && stats.bottom && (
+      {years.length > 0 && stats.top && stats.bottom && (
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-6 lg:grid-cols-12">
           <div className="col-span-2 sm:col-span-2 lg:col-span-4">
             <Stat label={t("risk.stat.highest")} value={stats.top.mtrs.toFixed(0)} accent={COLORS.positive}
@@ -206,6 +208,7 @@ export default function QueueView() {
       )}
 
       {/* the ranking */}
+      {years.length > 0 && (
       <section className="space-y-3">
         <SectionTitle
           title={t("risk.ranked.title")}
@@ -213,6 +216,7 @@ export default function QueueView() {
         />
         <QueueTable channels={channels} level={level} onLevelChange={setLevel} years={data.years} />
       </section>
+      )}
     </div>
   );
 }

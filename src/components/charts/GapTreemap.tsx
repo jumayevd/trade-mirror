@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
@@ -17,6 +18,10 @@ import { useI18n } from "@/lib/i18n";
  *
  * One component serves both panels (countries and HS6 products); a tile click
  * opens the page for that country or product.
+ *
+ * With `fullNames` (the products panel) a tile prints the whole name, wrapped
+ * to its width, and a ranked list under the chart repeats every name in full:
+ * official HS6 descriptions run long, and the smallest tile has no room for one.
  */
 
 export interface TreemapItem {
@@ -39,11 +44,13 @@ const RAMP = ["#1e40af", "#2563eb", "#0891b2", "#0d9488", "#34d399"];
 const INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#0b3527"];
 
 export default function GapTreemap({
-  items, ariaLabel,
+  items, ariaLabel, fullNames = false,
 }: {
   /** Already ranked descending; only the first five are drawn. */
   items: TreemapItem[];
   ariaLabel: string;
+  /** Wrap full names on the tiles and list them under the chart. */
+  fullNames?: boolean;
 }) {
   const router = useRouter();
   const { t } = useI18n();
@@ -81,7 +88,9 @@ export default function GapTreemap({
         },
         fontSize: CHART_FONT.legend,
         lineHeight: CHART_FONT.legend + 5,
-        overflow: "truncate",
+        // full names wrap to the tile; lines past its height end in an ellipsis
+        overflow: fullNames ? "break" : "truncate",
+        ...(fullNames ? { lineOverflow: "truncate" as const } : {}),
       },
       data: top.map((it, i) => ({
         name: it.label,
@@ -92,7 +101,7 @@ export default function GapTreemap({
         label: { color: INK[i] },
       })),
     }],
-  }), [top, t]);
+  }), [top, t, fullNames]);
 
   // resolved from the tile's own item, for the same reason the tooltip is
   const onEvents = useMemo(() => ({
@@ -102,14 +111,30 @@ export default function GapTreemap({
     },
   }), [router]);
 
-  return (
-    <div
-      className="card overflow-hidden"
-      style={{ height: "clamp(230px, 30vh, 420px)" }}
-      role="img"
-      aria-label={ariaLabel}
-    >
+  const chart = (
+    <div style={{ height: "clamp(230px, 30vh, 420px)" }} role="img" aria-label={ariaLabel}>
       <EChart option={option} onEvents={onEvents} />
+    </div>
+  );
+  if (!fullNames) return <div className="card overflow-hidden">{chart}</div>;
+  return (
+    <div className="card overflow-hidden">
+      {chart}
+      <ol className="divide-y divide-[var(--color-border-soft)] border-t border-[var(--color-border-soft)]">
+        {top.map((it, i) => (
+          <li key={it.key}>
+            <Link href={it.href} className="flex items-start gap-2.5 px-3 py-2 hover:bg-[var(--color-panel-2)]">
+              <span aria-hidden className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: RAMP[i] }} />
+              <span className="tabular w-4 shrink-0 fs-12.5 text-faint">{i + 1}</span>
+              <span className="min-w-0 flex-1 fs-13 leading-snug">
+                {it.label}
+                {it.detail && <span className="block fs-12 text-faint">{it.detail}</span>}
+              </span>
+              <span className="tabular shrink-0 fs-13 font-medium" title={fmtUSDFull(it.value)}>{fmtUSD(it.value)}</span>
+            </Link>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

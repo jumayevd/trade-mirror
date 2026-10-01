@@ -40,24 +40,20 @@ export default function YearSelect({
   const options = available && available.length > 0 ? available : meta.years;
 
   /*
-   * Every selected year is ticked, including when all of them are.
-   *
-   * This used to pass [] once the whole window was selected, borrowing the
-   * "empty means everything" convention the other filters use. The convention is
-   * right for a filter you clear; it is wrong for a picker whose boxes the
-   * reader is looking at. Ticking the last year emptied the list in front of
-   * them — every box cleared at the moment the set became complete — so the
-   * default, which is the whole window, opened with nothing ticked and the
-   * newest year looked excluded. Clearing the last box still means the whole
-   * window, which is handled below where it belongs.
+   * The selection is exactly what is ticked. Every selected year is ticked,
+   * including when all of them are, and clearing the list — "Clear selection",
+   * unticking "All years" or the last box — leaves it empty: no year selected,
+   * which the pages show as a prompt to pick one rather than as figures for a
+   * window nobody chose.
    */
   return (
     <MultiSelect
       values={years.map(String)}
-      onChange={(v) => onChange(v.length === 0 ? [...options] : v.map(Number).sort((a, b) => a - b))}
+      onChange={(v) => onChange(v.map(Number).sort((a, b) => a - b))}
       options={options.map((y) => ({ value: String(y), label: yearLabel(y, t) }))}
       label={label ?? t("filter.period")}
       allLabel={t("filter.allYears")}
+      noneLabel={t("filter.noYears")}
       selectAll
       searchable={false}
     />

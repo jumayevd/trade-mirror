@@ -38,9 +38,9 @@ const TIER_STYLE: Record<Tier, string> = {
 };
 
 const TH = "px-3 py-2 text-left fs-13 font-medium text-faint whitespace-nowrap";
-const THN = `${TH} text-right`;
+const THN = TH.replace("text-left", "text-center");
 const TD = "px-3 py-2 align-middle fs-14";
-const TDN = `${TD} tabular text-right whitespace-nowrap`;
+const TDN = `${TD} tabular text-center whitespace-nowrap`;
 
 /** û as printed: log points, the unit the model estimates in. */
 const score = (u: number): string => u.toFixed(3);

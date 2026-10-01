@@ -22,9 +22,9 @@ import { useI18n } from "@/lib/i18n";
  */
 
 const TH = "px-3 py-2 text-left fs-12.5 font-medium text-faint whitespace-nowrap";
-const TH_NUM = `${TH} text-right`;
+const TH_NUM = TH.replace("text-left", "text-center");
 const TD = "px-3 py-2 align-middle fs-13.5";
-const TD_NUM = `${TD} tabular whitespace-nowrap text-right`;
+const TD_NUM = `${TD} tabular whitespace-nowrap text-center`;
 const PAGE = 10;
 
 export interface ChannelRow {

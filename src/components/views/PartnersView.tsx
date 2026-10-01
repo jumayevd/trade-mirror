@@ -152,9 +152,9 @@ export default function PartnersView() {
     downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
   const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
-  const thNum = `${th} text-right`;
+  const thNum = th.replace("text-left", "text-center");
   const td = "px-3 py-1.5 align-middle fs-13";
-  const tdNum = `${td} tabular text-right whitespace-nowrap`;
+  const tdNum = `${td} tabular text-center whitespace-nowrap`;
 
   const sortBtn = (k: SortKey, label: string) => (
     <button
@@ -275,6 +275,10 @@ export default function PartnersView() {
 
       {/* 2. filters + context */}
       <FilterBar />
+      {filter.years.length === 0 ? (
+        <EmptyState text={t("common.noPeriod")} />
+      ) : (
+      <>
 
       {/* 3. map hero */}
       <section className="space-y-3">
@@ -360,6 +364,8 @@ export default function PartnersView() {
         {rankingTable}
       </section>
 
+      </>
+      )}
     </div>
   );
 }

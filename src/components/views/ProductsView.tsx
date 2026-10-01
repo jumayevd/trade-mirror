@@ -27,7 +27,7 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
  * Positive discrepancy.
  */
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -109,7 +109,7 @@ function SortableTh({
   const { t } = useI18n();
   const active = sort.key === k;
   return (
-    <th className={`px-3 py-1.5 font-medium whitespace-nowrap ${align === "right" ? "text-right" : "text-left"}`}>
+    <th className={`px-3 py-1.5 font-medium whitespace-nowrap ${align === "right" ? "text-center" : "text-left"}`}>
       <button
         onClick={() => onSort(k)}
         className={`inline-flex items-center gap-1 ${active ? "" : "hover:text-foreground"}`}
@@ -275,7 +275,7 @@ export default function ProductsView() {
     downloadCsv(`products_hs${level}_${period.replace(/[^0-9]+/g, "_")}.csv`, channelsToCsv(activeChannels, filter));
 
   const isEmpty = totalRows === 0;
-  const td = "tabular px-3 py-1.5 text-right whitespace-nowrap";
+  const td = "tabular px-3 py-1.5 text-center whitespace-nowrap";
 
   return (
     <div className="space-y-6">
@@ -293,9 +293,19 @@ export default function ProductsView() {
       </section>
 
       <FilterBar />
+      {filter.years.length === 0 ? (
+        <EmptyState text={t("common.noPeriod")} />
+      ) : (
+      <>
 
-      {/* HS level toggle + breadcrumb */}
-      <section className="flex flex-wrap items-center justify-between gap-3">
+      {/* HS level toggle + breadcrumb — the toggle leads, on the left */}
+      <section className="flex flex-wrap items-center gap-3">
+        <LevelTabs
+          level={level}
+          onChange={setToggle}
+          label={t("prod.aria.hsLevel")}
+          tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
+        />
         <nav className="flex flex-wrap items-center gap-1.5 fs-13" aria-label={t("prod.aria.breadcrumb")}>
           {(effChapter || hs4) && (
             <button
@@ -328,12 +338,6 @@ export default function ProductsView() {
           )}
           {level !== 2 && !effChapter && !hs4 && <Pill>HS{level} · {t("prod.flatView")}</Pill>}
         </nav>
-        <LevelTabs
-          level={level}
-          onChange={setToggle}
-          label={t("prod.aria.hsLevel")}
-          tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
-        />
       </section>
 
       {/* frames: the scope in view */}
@@ -405,6 +409,8 @@ export default function ProductsView() {
           </div>
           <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
         </section>
+      )}
+      </>
       )}
     </div>
   );

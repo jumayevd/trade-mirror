@@ -140,6 +140,15 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   // a narrow enough period can leave this partner with nothing comparable —
   // that is an empty result, not a missing page
+  if (years.length === 0) {
+    return (
+      <div className="space-y-6">
+        {header}
+        {controls}
+        <EmptyState text={t("common.noPeriod")} />
+      </div>
+    );
+  }
   if (!p) {
     return (
       <div className="space-y-6">
