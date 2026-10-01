@@ -173,7 +173,7 @@ export default function ProductsView() {
   const { t } = useI18n();
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
-  const [level, setLevel] = useState<HsLevel>(2);
+  const [level, setLevel] = useState<HsLevel>(6);
   const [chapter, setChapter] = useState<string | null>(null); // drilled HS2 chapter
   const [hs4, setHs4] = useState<string | null>(null); // drilled HS4 code
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>(() => ({ key: "posT", desc: true }));
@@ -217,7 +217,8 @@ export default function ProductsView() {
 
   // ---- navigation handlers ----
   const goRoot = () => {
-    setLevel(2);
+    // back to the default view: every HS6 product
+    setLevel(6);
     setChapter(null);
     setHs4(null);
     if (filter.hs2.length > 0 || filter.hs4.length > 0 || filter.hs6.length > 0) patch({ hs2: [], hs4: [], hs6: [] });

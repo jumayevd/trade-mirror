@@ -127,7 +127,7 @@ const PAGE = 10;
 
 export default function AnomalyView() {
   const { t } = useI18n();
-  const [cluster, setCluster] = useState<ClusterLevel>("hs4");
+  const [cluster, setCluster] = useState<ClusterLevel>("hs6");
   const [page, setPage] = useState(0);
   const [partnerPage, setPartnerPage] = useState(0);
   const [minGap, setMinGap] = useState<number>(0);

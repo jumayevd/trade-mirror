@@ -35,7 +35,7 @@ const fill = (s: string, vals: Record<string, string | number>) =>
 
 export default function QueueView() {
   const { t } = useI18n();
-  const [level, setLevel] = useState<HsLevel>(2);
+  const [level, setLevel] = useState<HsLevel>(6);
   /** The page's controls: the time basis and which periods the screening covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
   const [years, setYears] = useState<number[]>(() => [...yearsFor("year")]);

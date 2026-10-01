@@ -380,6 +380,10 @@ export default function OverviewView() {
           <div className="card p-4">
             {/* read-only: hover shows the values, clicking opens nothing */}
             <EChart option={twoSidedOption} style={{ height: 300 }} />
+            {/* what the bars below the line can mean — a signal, not a finding */}
+            <p className="mt-3 border-t border-[var(--color-border-soft)] pt-3 fs-12.5 leading-relaxed text-muted">
+              {t("ovw.twoSided.reverseNote")}
+            </p>
           </div>
         </section>
         </div>
