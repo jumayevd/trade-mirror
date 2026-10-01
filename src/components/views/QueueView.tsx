@@ -151,6 +151,7 @@ export default function QueueView() {
             options={monthOptions}
             label={t("filter.months")}
             allLabel={t("filter.allMonths")}
+            selectAll
             searchable={false}
           />
         )}

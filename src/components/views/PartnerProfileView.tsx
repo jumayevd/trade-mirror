@@ -99,6 +99,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           options={monthOptions}
           label={t("filter.months")}
           allLabel={t("filter.allMonths")}
+          selectAll
           searchable={false}
         />
       )}

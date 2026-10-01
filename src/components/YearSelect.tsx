@@ -58,6 +58,7 @@ export default function YearSelect({
       options={options.map((y) => ({ value: String(y), label: yearLabel(y, t) }))}
       label={label ?? t("filter.period")}
       allLabel={t("filter.allYears")}
+      selectAll
       searchable={false}
     />
   );
