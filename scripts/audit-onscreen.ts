@@ -24,9 +24,10 @@ import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from ".
 /* the monthly grain is gated on the detail layer, so the audit loads it the
  * way the client eventually does — without this, every monthly assertion below
  * would iterate zero rows and pass vacuously */
-loadMonthlyDetail(JSON.parse(
+const DETAIL: { v: number; y0: number; p: string[]; k: string[]; r: number[][] } = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
-));
+);
+loadMonthlyDetail(DETAIL);
 
 /* the identity holds at whatever rate the default filter carries */
 const K = 1 + DEFAULT_FILTER.cif;
@@ -351,22 +352,37 @@ for (const cif of [0, 0.10]) {
 }
 
 /* ---------------------------------------------------------------- */
-/* derived years: the annualized layer IS the monthly fold              */
+/* derived years and the monthly basis                                   */
 /* ---------------------------------------------------------------- */
 /* 2025 and 2026 reach the yearly basis from a build-time annualization of the
- * monthly HS6 book. The client folding those same months live must land on the
- * same figures to the dollar, or the two vintage paths have diverged. */
+ * monthly HS6 book, so as reported the two paths must hold the same trade to
+ * the dollar. They MEASURE it at different grains on purpose — the yearly
+ * basis per year, the monthly basis per month (THE MONTH GRAIN, dataset.ts) —
+ * so their discrepancies differ; what the monthly basis must do is add up:
+ * its headline is exactly the sum of the month bars it draws. */
 {
   check("there are derived years to audit", monthlyOnlyYears.length > 0,
     String(monthlyOnlyYears.length));
   for (const y of monthlyOnlyYears) {
     const yearly = aggregate({ ...DEFAULT_FILTER, years: [y], minGap: 0 });
     const folded = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: [], minGap: 0 });
-    check(`derived ${y}: positive equals the monthly fold`,
-      near(yearly.kpis.positive.central, folded.kpis.positive.central, 1),
-      `${Math.round(yearly.kpis.positive.central)} vs ${Math.round(folded.kpis.positive.central)}`);
-    const v = (a: Aggregate) => a.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
-    check(`derived ${y}: comparable value equals the monthly fold`, near(v(yearly), v(folded), 1));
+    check(`derived ${y}: as-reported totals equal the monthly book`,
+      near(yearly.observed.pe, folded.observed.pe, 1) && near(yearly.observed.ui, folded.observed.ui, 1),
+      `pe ${Math.round(yearly.observed.pe)} vs ${Math.round(folded.observed.pe)}, ui ${Math.round(yearly.observed.ui)} vs ${Math.round(folded.observed.ui)}`);
+  }
+  // the monthly headline is the sum of its bars — whole years, a run of months
+  // across every year, and a scattered pick, at two freight rates
+  const sel: [string, Filter][] = [
+    ["all years, all months", { ...DEFAULT_FILTER, granularity: "month", years: yearsFor("month"), months: [], minGap: 0 }],
+    ["all years, Jan+Feb", { ...DEFAULT_FILTER, granularity: "month", years: yearsFor("month"), months: [1, 2], minGap: 0 }],
+    ["2023-2025, Mar+Jul+Nov at 10%", { ...DEFAULT_FILTER, granularity: "month", years: [2023, 2024, 2025], months: [3, 7, 11], cif: 0.1, minGap: 0 }],
+  ];
+  for (const [name, f] of sel) {
+    const a = aggregate(f);
+    const bars = a.annual.reduce((t, r) => t + r.positive, 0);
+    check(`monthly basis, ${name}: headline = sum of the month bars`,
+      a.annual.length > 0 && near(a.kpis.positive.central, bars, 1),
+      `${Math.round(a.kpis.positive.central)} vs ${Math.round(bars)}`);
   }
   // the month rule: a month one book did not report contributes nothing to
   // any comparison, on its own or folded into a year — while its as-reported
@@ -387,9 +403,22 @@ for (const cif of [0, 0.10]) {
       const a = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: missing, country: [late], minGap: 0 });
       check(`month rule ${y}: ${late}'s unfiled months (${missing.join(",")}) compare nothing`, a.baseChannels6.length === 0);
       const whole = aggregate({ ...DEFAULT_FILTER, years: [y], country: [late], minGap: 0 });
-      const kept = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: matchedMonthsOf(late, y), country: [late], minGap: 0 });
       const v = (x: Aggregate) => x.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
-      check(`month rule ${y}: ${late}'s year compares exactly its matched months`, near(v(whole), v(kept), whole.baseChannels6.length));
+      // rebuilt from the detail layer: that partner's lines over its matched
+      // months only, compared where both books have the line in the year
+      const pi = DETAIL.p.indexOf(late);
+      const keep = new Set(matchedMonthsOf(late, y).map((m) => (y - DETAIL.y0) * 12 + m - 1));
+      const lines = new Map<number, [number, number]>();
+      for (const row of DETAIL.r) {
+        if (row[0] !== pi || !keep.has(row[2])) continue;
+        const e = lines.get(row[1]) ?? [0, 0];
+        e[0] += row[3]; e[1] += row[4];
+        lines.set(row[1], e);
+      }
+      let want = 0;
+      for (const [pe, ui] of lines.values()) if (pe > 0 && ui > 0) want += pe + ui;
+      check(`month rule ${y}: ${late}'s year compares exactly its matched months`, near(v(whole), want, whole.baseChannels6.length),
+        `${Math.round(v(whole))} vs ${Math.round(want)}`);
     }
   }
   // and the monthly series must actually have rows — the vacuous-pass trap
