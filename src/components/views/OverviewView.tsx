@@ -446,15 +446,15 @@ export default function OverviewView() {
       */}
       <section>
         <div className="grid gap-3 lg:grid-cols-2">
-          <div>
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <div className="min-w-0">
+            <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
               <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
               <Link href="/partners" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
             <GapTreemap items={treemap.countries} ariaLabel={t("ovw.treemap.countries")} />
           </div>
-          <div>
-            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+          <div className="min-w-0">
+            <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
               <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
               <Link href="/products" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
