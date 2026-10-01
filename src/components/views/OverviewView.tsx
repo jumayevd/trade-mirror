@@ -438,15 +438,8 @@ export default function OverviewView() {
 
       {tab === "profile" && (
         <div className="space-y-6">
-        {/*
-          The two series sit side by side only on a genuinely large display.
-          "Larger than 15.6 inch" is a physical measurement the browser cannot
-          read, so it is approximated by the 2xl breakpoint at 1536px: a 15.6"
-          1080p laptop at Windows' default 125% scaling reports exactly that,
-          while 13–14" panels report 1280–1440 and stay stacked. Below it they
-          stack, because at half width the axis labels of these two collide.
-        */}
-        <div className="grid gap-6 2xl:grid-cols-2 2xl:items-start">
+        {/* The two series stack, one above the other, on every screen. */}
+        <div className="space-y-6">
         <section>
           <SectionTitle
             title={t("ovw.dynamics.title")}
