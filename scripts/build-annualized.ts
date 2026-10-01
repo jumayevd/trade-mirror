@@ -12,6 +12,12 @@
  * is byte-for-byte the same arithmetic monthlySource() performs on the client,
  * which the audit asserts, so the derived years cannot mean two things.
  *
+ * Each cell also carries its values over the months both books reported for
+ * that partner — Uzbekistan's import book has the month and the partner
+ * reported exports to Uzbekistan in it — which is what every comparison reads
+ * (the month rule, src/lib/dataset.ts). Rows are
+ * [partner, code, year, pe, ui, pe over matched months, ui over matched months].
+ *
  * A derived year is a different vintage: the annual workbook is a single
  * finished extract, while these are months still filling up (Uzbekistan's
  * import book currently ends before the partners' export books do). The
@@ -29,16 +35,39 @@ const detail: Packed = JSON.parse(
 const meta = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "data", "meta.json"), "utf8"));
 const annualYears = new Set<number>(meta.years);
 
-// (partner, code, year) -> [pe, ui]
-const acc = new Map<number, [number, number]>();
+// The month rule reads the chapter-level monthly book, the layer the client
+// always has, so the build and the live fold decide matched months identically.
+const chapterBook: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "data", "monthly.json"), "utf8"));
+const uzbMonths = new Set<number>();
+const partnerMonths = new Map<string, Set<number>>();
+for (const row of chapterBook.r) {
+  const off = row[2];
+  const ym = (chapterBook.y0 + ((off / 12) | 0)) * 100 + (off % 12) + 1;
+  if (row[4] > 0) uzbMonths.add(ym);
+  if (row[3] > 0) {
+    const iso = chapterBook.p[row[0]];
+    (partnerMonths.get(iso) ?? partnerMonths.set(iso, new Set()).get(iso)!).add(ym);
+  }
+}
+const matched = detail.p.map((iso) => {
+  const set = new Set<number>();
+  for (const ym of partnerMonths.get(iso) ?? []) {
+    if (uzbMonths.has(ym)) set.add((Math.floor(ym / 100) - detail.y0) * 12 + (ym % 100) - 1);
+  }
+  return set;
+});
+
+// (partner, code, year) -> [pe, ui, pe matched, ui matched]
+const acc = new Map<number, [number, number, number, number]>();
 const nK = detail.k.length;
 let firstYear = Infinity, lastYear = -Infinity, monthRows = 0;
 for (const row of detail.r) {
   const y = detail.y0 + ((row[2] / 12) | 0);
   if (annualYears.has(y)) continue;
   const id = (row[0] * nK + row[1]) * 32 + (y - detail.y0);
-  const a = acc.get(id) ?? [0, 0];
+  const a = acc.get(id) ?? [0, 0, 0, 0];
   a[0] += row[3]; a[1] += row[4];
+  if (matched[row[0]].has(row[2])) { a[2] += row[3]; a[3] += row[4]; }
   acc.set(id, a);
   if (y < firstYear) firstYear = y;
   if (y > lastYear) lastYear = y;
@@ -47,12 +76,12 @@ for (const row of detail.r) {
 
 const y0 = Number.isFinite(firstYear) ? firstYear : detail.y0;
 const rows: number[][] = [];
-for (const [id, [pe, ui]] of acc) {
+for (const [id, [pe, ui, pc, uc]] of acc) {
   const yOff = id % 32;
   const rest = (id / 32) | 0;
   const kIdx = rest % nK;
   const pIdx = (rest / nK) | 0;
-  rows.push([pIdx, kIdx, detail.y0 + yOff - y0, Math.round(pe), Math.round(ui)]);
+  rows.push([pIdx, kIdx, detail.y0 + yOff - y0, Math.round(pe), Math.round(ui), Math.round(pc), Math.round(uc)]);
 }
 rows.sort((a, b) => a[2] - b[2] || a[0] - b[0] || a[1] - b[1]);
 

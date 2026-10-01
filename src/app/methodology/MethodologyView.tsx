@@ -35,15 +35,15 @@ interface Diagnostics {
 const diag = diagnosticsRaw as unknown as Diagnostics;
 const HS6 = "6";
 
-const H2 = "text-[15px] font-semibold tracking-tight";
-const P = "max-w-3xl text-[13px] leading-relaxed text-muted";
-const TH = "px-4 py-2 text-left text-[11.5px] font-semibold uppercase tracking-[0.1em] text-faint";
-const TD = "px-4 py-2 align-top text-[13px] text-muted";
+const H2 = "fs-15 font-semibold tracking-tight";
+const P = "max-w-3xl fs-13 leading-relaxed text-muted";
+const TH = "px-4 py-2 text-left fs-11.5 font-semibold uppercase tracking-[0.1em] text-faint";
+const TD = "px-4 py-2 align-top fs-13 text-muted";
 
 /** A formula on its own line — monospace, quiet, never inside a sentence. */
 function Formula({ children }: { children: React.ReactNode }) {
   return (
-    <p className="tabular my-2 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-panel)] px-3 py-2 text-[13px] text-foreground">
+    <p className="tabular my-2 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-panel)] px-3 py-2 fs-13 text-foreground">
       {children}
     </p>
   );
@@ -69,11 +69,11 @@ function Section({ n, title, desc, className = "", children }: {
         aria-controls={id}
         className="group flex w-full max-w-5xl items-center gap-2.5 rounded-md py-1 text-left"
       >
-        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] text-[12px] font-semibold text-white">
+        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] fs-12 font-semibold text-white">
           {n}
         </span>
         <h2 className={`${H2} group-hover:underline`}>{title}</h2>
-        <span aria-hidden className={`ml-1 text-[12px] text-faint transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+        <span aria-hidden className={`ml-1 fs-12 text-faint transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
       </button>
       {open && (
         <div id={id} className={`mt-2 ${className}`}>
@@ -88,12 +88,12 @@ function Section({ n, title, desc, className = "", children }: {
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[12px] font-semibold text-muted">
+      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] fs-12 font-semibold text-muted">
         {n}
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="text-[13.5px] font-semibold">{title}</h3>
-        <div className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted">{children}</div>
+        <h3 className="fs-13.5 font-semibold">{title}</h3>
+        <div className="mt-1 max-w-3xl fs-13 leading-relaxed text-muted">{children}</div>
       </div>
     </div>
   );
@@ -149,11 +149,11 @@ export default function MethodologyView() {
     <div className="space-y-4">
       {/* ---------------------------------------------------------------- */}
       <section className="space-y-1.5">
-        <p className="text-[12px] font-medium text-faint">
+        <p className="fs-12 font-medium text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
         </p>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[13.5px] leading-relaxed text-muted">
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 fs-13.5 leading-relaxed text-muted">
           {tr("meth.lede")}
         </p>
       </section>
@@ -163,15 +163,15 @@ export default function MethodologyView() {
         {/* three separate reasons, so they get three cards rather than one column
             of paragraphs a reader has to segment themselves */}
         <div className="grid max-w-5xl gap-3 lg:grid-cols-3">
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p1")}
             <Cite ids={["bhagwati1964", "unsd2019"]} />
           </div>
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p2")}
             <Cite ids={["fisman2004", "javorcik2008", "berger2008", "farhad2019"]} />
           </div>
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p3")}
             <Cite ids={["buehn2011", "carrere2015", "kellenberg2019"]} />
           </div>
@@ -229,11 +229,12 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-        <p className="max-w-3xl text-[12.5px] text-faint">
+        <p className="max-w-3xl fs-12.5 text-faint">
           {tr("meth.measures.note")}
           <Cite ids={["hummels2006", "gaulier2010"]} />
         </p>
-        <p className="tabular max-w-3xl text-[12.5px] text-faint">
+        <p className="max-w-3xl fs-12.5 text-faint">{tr("meth.measures.monthRule")}</p>
+        <p className="tabular max-w-3xl fs-12.5 text-faint">
           {meta.window.start}–{meta.window.end}: {tr("meth.measures.headline")} {fmtUSD(k.positive.central)}{" "}
           ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · {tr("meth.measures.coverage")} {fmtPct(k.coveragePct, 0)}
         </p>
@@ -243,8 +244,8 @@ export default function MethodologyView() {
           import totals and they differ by two orders of magnitude, which reads as
           a contradiction until the populations are named side by side.
         */}
-        <h3 className="pt-2 text-[14px] font-semibold">{tr("meth.pop.title")}</h3>
-        <p className="max-w-3xl text-[13.5px] leading-relaxed text-muted">{tr("meth.pop.desc")}</p>
+        <h3 className="pt-2 fs-14 font-semibold">{tr("meth.pop.title")}</h3>
+        <p className="max-w-3xl fs-13.5 leading-relaxed text-muted">{tr("meth.pop.desc")}</p>
         <div className="card max-w-4xl overflow-x-auto">
           <table className="w-full min-w-[620px]">
             <thead>
@@ -267,7 +268,7 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-        <p className="max-w-3xl text-[12.5px] leading-relaxed text-faint">{tr("meth.pop.note")}</p>
+        <p className="max-w-3xl fs-12.5 leading-relaxed text-faint">{tr("meth.pop.note")}</p>
       </Section>
 
       {/* 4. the risk score ---------------------------------------------- */}
@@ -331,7 +332,7 @@ export default function MethodologyView() {
           </Step>
         </div>
 
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-investigate)] bg-[var(--color-panel)] px-4 py-2.5 text-[13px] leading-relaxed text-muted">
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-investigate)] bg-[var(--color-panel)] px-4 py-2.5 fs-13 leading-relaxed text-muted">
           <strong className="text-foreground">{tr("meth.risk.notEstimateLead")}</strong> {tr("meth.risk.notEstimate")}
         </p>
       </Section>
@@ -355,7 +356,7 @@ export default function MethodologyView() {
             band's threshold is findable instead of parsed out of prose */}
         <div className="max-w-md overflow-hidden rounded-md border border-[var(--color-border-soft)]">
           <table className="w-full">
-            <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left text-[12px] font-medium text-muted">
+            <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left fs-12 font-medium text-muted">
               {tr("meth.diag.bands")} (HS6)
             </caption>
             <tbody className="zebra">
@@ -382,7 +383,7 @@ export default function MethodologyView() {
 
       {/* 8. references ------------------------------------------------------ */}
       <Section n="8" title={tr("meth.refs.title")} className="max-w-4xl space-y-2">
-        <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted lg:columns-2 lg:gap-8">
+        <ol className="list-decimal space-y-1.5 pl-5 fs-13.5 leading-relaxed text-muted lg:columns-2 lg:gap-8">
           {/* the annotated readings live in the Literature findings table — the
               list here is the bare citation, only for sources actually used */}
           {REFERENCES.map((r) => (
@@ -399,7 +400,7 @@ export default function MethodologyView() {
             </li>
           ))}
         </ol>
-        <p className="text-[12.5px] text-faint">{tr("meth.refs.note")}</p>
+        <p className="fs-12.5 text-faint">{tr("meth.refs.note")}</p>
       </Section>
     </div>
   );
@@ -409,11 +410,11 @@ function Diag({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="card p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
+        <span className="fs-12 font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
         <InfoTip text={note} />
       </div>
-      <div className="tabular mt-1.5 text-[22px] font-semibold leading-none">{value}</div>
-      <p className="mt-1.5 text-[12px] leading-snug text-faint">{note}</p>
+      <div className="tabular mt-1.5 fs-22 font-semibold leading-none">{value}</div>
+      <p className="mt-1.5 fs-12 leading-snug text-faint">{note}</p>
     </div>
   );
 }

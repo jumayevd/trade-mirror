@@ -26,7 +26,17 @@ export type Tier = "High" | "Medium" | "Low";
 export type RiskBand = "critical" | "high" | "elevated" | "low";
 export type Robustness = "robust" | "freight-sensitive" | "coverage-sensitive" | "insufficient";
 
-interface Cell { p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number; uw?: number; pw?: number }
+/**
+ * pe/ui are as reported. pc/uc, set on cells folded from months, are the same
+ * two values over only the months both books reported for that partner (see
+ * monthMatched); every comparison between the books reads those. Absent, the
+ * whole value is comparable — the annual workbook covers full years on both
+ * sides.
+ */
+interface Cell { p: string; k: string; c: string; cat: string; l: number; y: number; pe: number; ui: number; pc?: number; uc?: number; uw?: number; pw?: number }
+/** A cell's values on the months both books reported. */
+const cmpPe = (r: Cell): number => r.pc ?? r.pe;
+const cmpUi = (r: Cell): number => r.uc ?? r.ui;
 export interface PartnerMeta {
   iso3: string; name: string; region: string; code: string; transit: boolean;
   coverage: number; reportedYears: number[]; lastReportedYear: number; lapse: boolean; tier: Tier;
@@ -194,6 +204,37 @@ const monthlyCells: MonthCell[] = (() => {
   return out;
 })();
 
+/*
+ * THE MONTH RULE. A year built from months compares the two books only over
+ * the months both reported, per partner: Uzbekistan's import book has that
+ * month, and the partner reported exports to Uzbekistan in it. Folding every
+ * month compared November–December 2025 partner exports (Uzbekistan's book
+ * ends in October) against nothing — +$1.5B of positive discrepancy that was
+ * only a reporting calendar — and set June 2026 imports against partners that
+ * had not filed June yet. Within a matched month a line one book did not
+ * record stays a real zero. As-reported totals keep every month.
+ */
+const uzbImportMonths = new Set<number>();
+const partnerExportMonths = new Map<string, Set<number>>();
+for (const r of monthlyCells) {
+  const ym = r.y * 100 + r.m;
+  if (r.ui > 0) uzbImportMonths.add(ym);
+  if (r.pe > 0) {
+    let set = partnerExportMonths.get(r.p);
+    if (!set) { set = new Set(); partnerExportMonths.set(r.p, set); }
+    set.add(ym);
+  }
+}
+/** True when both books reported month m of year y for this partner. */
+export const monthMatched = (iso: string, y: number, m: number): boolean =>
+  uzbImportMonths.has(y * 100 + m) && (partnerExportMonths.get(iso)?.has(y * 100 + m) ?? false);
+/** The months of year y compared for this partner. */
+export const matchedMonthsOf = (iso: string, y: number): number[] =>
+  Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => monthMatched(iso, y, m));
+/** The months of year y Uzbekistan's import book carries. */
+export const uzbMonthsOf = (y: number): number[] =>
+  Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => uzbImportMonths.has(y * 100 + m));
+
 /** Years the monthly series covers — a longer window than the annual books. */
 export const monthlyYears: number[] = Object.keys(monthlyPacked?.monthsByYear ?? {})
   .map(Number)
@@ -289,6 +330,9 @@ const annualizedCells: Cell[] = (() => {
     out[i] = {
       p: packed.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6,
       y: packed.y0 + row[2], pe: row[3], ui: row[4],
+      // matched-month values (scripts/build-annualized.ts); a stale file without
+      // them is treated as fully comparable rather than silently misread
+      pc: row[5] ?? row[3], uc: row[6] ?? row[4],
     };
   }
   return out;
@@ -451,11 +495,12 @@ function monthlySource(f: Filter): Cell[] {
     const key = `${r.p}|${r.k}|${r.y}`;
     let cell = acc.get(key);
     if (!cell) {
-      cell = { p: r.p, k: r.k, c: r.c, cat: r.cat, l: 2, y: r.y, pe: 0, ui: 0 };
+      cell = { p: r.p, k: r.k, c: r.c, cat: r.cat, l: 2, y: r.y, pe: 0, ui: 0, pc: 0, uc: 0 };
       acc.set(key, cell);
     }
     cell.pe += r.pe;
     cell.ui += r.ui;
+    if (monthMatched(r.p, r.y, r.m)) { cell.pc! += r.pe; cell.uc! += r.ui; }
   }
   const out = [...acc.values()];
 
@@ -464,6 +509,14 @@ function monthlySource(f: Filter): Cell[] {
     // fold straight off the packed rows on numeric keys — string keys on 1.9M
     // iterations would dominate the cost
     const nK = det.k.length;
+    // the month rule on numeric keys: per partner index, the matched offsets
+    const matched = det.p.map((iso) => {
+      const set = new Set<number>();
+      for (const ym of partnerExportMonths.get(iso) ?? []) {
+        if (uzbImportMonths.has(ym)) set.add((Math.floor(ym / 100) - det.y0) * 12 + (ym % 100) - 1);
+      }
+      return set;
+    });
     const acc6 = new Map<number, Cell>();
     for (const row of det.r) {
       const y = det.y0 + ((row[2] / 12) | 0);
@@ -474,11 +527,12 @@ function monthlySource(f: Filter): Cell[] {
       if (!cell) {
         const k = det.k[row[1]];
         const c = k.slice(0, 2);
-        cell = { p: det.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6, y, pe: 0, ui: 0 };
+        cell = { p: det.p[row[0]], k, c, cat: categoryOfChapter(c), l: 6, y, pe: 0, ui: 0, pc: 0, uc: 0 };
         acc6.set(id, cell);
       }
       cell.pe += row[3];
       cell.ui += row[4];
+      if (matched[row[0]].has(row[2])) { cell.pc! += row[3]; cell.uc! += row[4]; }
     }
     // derived HS4 layer, same rule as the yearly load: exact truncation of HS6
     const acc4 = new Map<string, Cell>();
@@ -487,11 +541,13 @@ function monthlySource(f: Filter): Cell[] {
       const key = `${r.p}|${code}|${r.y}`;
       let agg = acc4.get(key);
       if (!agg) {
-        agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0 };
+        agg = { p: r.p, k: code, c: r.c, cat: r.cat, l: 4, y: r.y, pe: 0, ui: 0, pc: 0, uc: 0 };
         acc4.set(key, agg);
       }
       agg.pe += r.pe;
       agg.ui += r.ui;
+      agg.pc! += r.pc!;
+      agg.uc! += r.uc!;
       out.push(r);
     }
     for (const cell of acc4.values()) out.push(cell);
@@ -585,7 +641,7 @@ const histYears = (() => {
   };
   for (const r of [...cells, ...annualizedCells]) {
     if (r.l !== 6) continue;
-    if (r.pe <= NOISE || r.ui <= NOISE) continue;
+    if (cmpPe(r) <= NOISE || cmpUi(r) <= NOISE) continue;
     mark(`6|${r.p}|${r.k}`, r.y);
     mark(`4|${r.p}|${r.k.slice(0, 4)}`, r.y);
     mark(`2|${r.p}|${r.k.slice(0, 2)}`, r.y);
@@ -920,8 +976,10 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
   const groupCell = new Map<string, Cell>();
   for (const r of fc) {
     if (r.l !== 6) continue;
-    // both books at the measurement grain, or the line is one-sided
-    if (r.pe <= NOISE || r.ui <= NOISE) continue;
+    // both books at the measurement grain, over the months both reported,
+    // or the line is one-sided
+    const pe = cmpPe(r), ui = cmpUi(r);
+    if (pe <= NOISE || ui <= NOISE) continue;
     const key = `${r.p}|${level === 6 ? r.k : r.k.slice(0, level)}`;
     let byYear = groups.get(key);
     if (!byYear) { byYear = new Map(); groups.set(key, byYear); groupCell.set(key, r); }
@@ -932,13 +990,13 @@ function buildChannels(fc: Cell[], level: number, f: Filter): Channel[] {
     }
     // Both books on an FOB basis: the partner's export is already FOB, so it is
     // Uzbekistan's CIF import that is divided down by the freight factor.
-    const signed = r.pe - r.ui / K;
-    a.pe += r.pe; a.ui += r.ui;
+    const signed = pe - ui / K;
+    a.pe += pe; a.ui += ui;
     a.posY += pos(signed); a.revY += pos(-signed);
-    if (signed > 0) { a.pePosY += r.pe; a.uiPosY += r.ui; }
-    a.posLoY += pos(r.pe - r.ui / Klo);
-    a.posHiY += pos(r.pe - r.ui / Khi);
-    if (r.uw && r.pw) { a.uvOk = true; a.uw += r.uw; a.pw += r.pw; a.uwv += r.ui; a.pwv += r.pe; }
+    if (signed > 0) { a.pePosY += pe; a.uiPosY += ui; }
+    a.posLoY += pos(pe - ui / Klo);
+    a.posHiY += pos(pe - ui / Khi);
+    if (r.uw && r.pw) { a.uvOk = true; a.uw += r.uw; a.pw += r.pw; a.uwv += ui; a.pwv += pe; }
   }
 
   const out: Channel[] = [];
@@ -1213,11 +1271,13 @@ export function availableOptions(f: Filter): {
 
   // In monthly mode the month filter is deliberately NOT applied to the year
   // facet: unticking months must never hide years, only narrow their totals.
+  // The yearly universe is what the yearly pages read: the workbook plus the
+  // derived years' annualized HS6 lines. It used to fold the derived years from
+  // the monthly detail, which only loads on the monthly basis, so on a yearly
+  // 2025/2026 view the HS4 and HS6 pickers had no lines to offer.
   const universe = f.granularity === "month"
     ? monthlySource({ ...f, months: [], years: [] })
-    : monthlyOnlyYears.length
-      ? [...cells, ...monthlySource({ ...f, months: [], years: monthlyOnlyYears })]
-      : cells;
+    : sourceCells({ ...f, months: [], years: [...yearlyYears] });
   for (const r of universe) {
     const code = matchesCode(r, f);
     // a dimension's own selection is excluded from its own facet

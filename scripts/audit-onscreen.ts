@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  aggregate, DEFAULT_FILTER, loadMonthlyDetail, meta, monthlyOnlyYears, officialImportsOver, yearsFor,
+  aggregate, DEFAULT_FILTER, loadMonthlyDetail, matchedMonthsOf, meta, monthlyOnlyYears, officialImportsOver, uzbMonthsOf, yearsFor,
   type Aggregate, type Channel, type Filter, type RiskBand,
 } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
@@ -367,6 +367,30 @@ for (const cif of [0, 0.10]) {
       `${Math.round(yearly.kpis.positive.central)} vs ${Math.round(folded.kpis.positive.central)}`);
     const v = (a: Aggregate) => a.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
     check(`derived ${y}: comparable value equals the monthly fold`, near(v(yearly), v(folded), 1));
+  }
+  // the month rule: a month one book did not report contributes nothing to
+  // any comparison, on its own or folded into a year — while its as-reported
+  // value still shows
+  for (const y of monthlyOnlyYears) {
+    const book = uzbMonthsOf(y);
+    const absent = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter((m) => !book.includes(m));
+    if (absent.length) {
+      const a = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: absent, minGap: 0 });
+      check(`month rule ${y}: months without Uzbekistan's book compare nothing (${absent.join(",")})`,
+        a.baseChannels6.length === 0 && a.kpis.positive.central === 0, `${a.baseChannels6.length} pairs`);
+    }
+    // a partner that has not filed a month Uzbekistan's book carries
+    const late = meta.partners.map((p) => p.iso3).find((iso) =>
+      book.some((m) => !matchedMonthsOf(iso, y).includes(m)) && matchedMonthsOf(iso, y).length > 0);
+    if (late) {
+      const missing = book.filter((m) => !matchedMonthsOf(late, y).includes(m));
+      const a = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: missing, country: [late], minGap: 0 });
+      check(`month rule ${y}: ${late}'s unfiled months (${missing.join(",")}) compare nothing`, a.baseChannels6.length === 0);
+      const whole = aggregate({ ...DEFAULT_FILTER, years: [y], country: [late], minGap: 0 });
+      const kept = aggregate({ ...DEFAULT_FILTER, granularity: "month", years: [y], months: matchedMonthsOf(late, y), country: [late], minGap: 0 });
+      const v = (x: Aggregate) => x.baseChannels6.reduce((t, c) => t + c.peT + c.uiT, 0);
+      check(`month rule ${y}: ${late}'s year compares exactly its matched months`, near(v(whole), v(kept), whole.baseChannels6.length));
+    }
   }
   // and the monthly series must actually have rows — the vacuous-pass trap
   const m = aggregate({ ...FULL, granularity: "month", months: [] });
