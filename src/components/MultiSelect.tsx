@@ -16,6 +16,7 @@ export default function MultiSelect({
   label,
   allLabel,
   searchable = true,
+  selectAll = false,
 }: {
   values: string[];
   onChange: (values: string[]) => void;
@@ -25,6 +26,12 @@ export default function MultiSelect({
   /** Summary shown when nothing is ticked. */
   allLabel: string;
   searchable?: boolean;
+  /**
+   * Adds an "All" row that ticks every option. With it on, an empty selection
+   * shows every box ticked (it means everything), and a selection that grows to
+   * every option is emitted as [] — the one canonical "everything".
+   */
+  selectAll?: boolean;
 }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
@@ -62,11 +69,19 @@ export default function MultiSelect({
     if (open && searchable) input.current?.focus();
   }, [open, searchable]);
 
+  const allValues = useMemo(() => options.map((o) => o.value), [options]);
+  // with the All row, nothing ticked means everything ticked
+  const shown = selectAll && values.length === 0 ? allValues : values;
+  const everything = selectAll && allValues.every((v) => shown.includes(v));
+  const isOn = (v: string) => (selectAll && values.length === 0) || picked.has(v);
+  const emit = (next: string[]) =>
+    onChange(selectAll && allValues.every((v) => next.includes(v)) ? [] : next);
+
   const toggle = (v: string) =>
-    onChange(picked.has(v) ? values.filter((x) => x !== v) : [...values, v]);
+    emit(shown.includes(v) ? shown.filter((x) => x !== v) : [...shown, v]);
 
   const summary = () => {
-    if (values.length === 0) return allLabel;
+    if (values.length === 0 || everything) return allLabel;
     if (values.length === 1) {
       const o = options.find((x) => x.value === values[0]);
       return o ? (o.code ? `${o.code} · ${o.label}` : o.label) : values[0];
@@ -76,7 +91,7 @@ export default function MultiSelect({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{label}</span>
+      <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{label}</span>
       <div ref={wrap} className="relative">
         <button
           ref={trigger}
@@ -89,12 +104,12 @@ export default function MultiSelect({
           aria-haspopup="true"
           aria-expanded={open}
           aria-label={label}
-          className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left text-[13px] outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
-            values.length ? "border-[var(--color-primary)] font-medium text-foreground" : "border-[var(--color-border)] text-foreground"
+          className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left fs-13 outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
+            values.length && !everything ? "border-[var(--color-primary)] font-medium text-foreground" : "border-[var(--color-border)] text-foreground"
           }`}
         >
           <span className="truncate">{summary()}</span>
-          <span aria-hidden className="shrink-0 text-[11.5px] text-faint">▾</span>
+          <span aria-hidden className="shrink-0 fs-11.5 text-faint">▾</span>
         </button>
 
         {open && (
@@ -107,20 +122,39 @@ export default function MultiSelect({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("filter.search")}
                 aria-label={t("filter.search")}
-                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
+                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 fs-13 outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
               />
             )}
             <ul role="group" aria-label={label} className="max-h-64 overflow-y-auto py-1">
+              {selectAll && !query.trim() && (
+                <li className="border-b border-[var(--color-border-soft)] pb-1 mb-1">
+                  <label
+                    className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 fs-13 hover:bg-[var(--color-panel-2)] ${
+                      everything ? "font-medium text-foreground" : "text-muted"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={everything}
+                      // ticking it selects everything; there is no "nothing" to untick
+                      // to, so on a full selection it stays put
+                      onChange={() => { if (!everything) emit(allValues); }}
+                      className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
+                    />
+                    <span className="min-w-0 leading-snug">{allLabel}</span>
+                  </label>
+                </li>
+              )}
               {matches.length === 0 && (
-                <li className="px-2.5 py-2 text-[13px] text-faint">{t("filter.noMatches")}</li>
+                <li className="px-2.5 py-2 fs-13 text-faint">{t("filter.noMatches")}</li>
               )}
               {matches.map((o) => {
-                const on = picked.has(o.value);
+                const on = isOn(o.value);
                 return (
                   <li key={o.value}>
                     <label
                       title={o.full ?? o.label}
-                      className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 text-[13px] hover:bg-[var(--color-panel-2)] ${
+                      className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 fs-13 hover:bg-[var(--color-panel-2)] ${
                         on ? "font-medium text-foreground" : "text-muted"
                       }`}
                     >
@@ -130,7 +164,7 @@ export default function MultiSelect({
                         onChange={() => toggle(o.value)}
                         className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
                       />
-                      {o.code && <span className="tabular mt-px shrink-0 text-[12px] text-faint">{o.code}</span>}
+                      {o.code && <span className="tabular mt-px shrink-0 fs-12 text-faint">{o.code}</span>}
                       {/* HS descriptions run long: wrap them rather than cutting the
                           distinguishing tail, which is often the whole difference
                           between two neighbouring codes */}
@@ -140,11 +174,11 @@ export default function MultiSelect({
                 );
               })}
             </ul>
-            {values.length > 0 && (
+            {values.length > 0 && !everything && (
               <button
                 type="button"
                 onClick={() => onChange([])}
-                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left text-[12px] font-medium text-muted hover:text-foreground"
+                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left fs-12 font-medium text-muted hover:text-foreground"
               >
                 {t("filter.clearSelection")}
               </button>

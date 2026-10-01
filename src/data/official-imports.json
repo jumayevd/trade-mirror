@@ -1,12 +1,16 @@
 {
-  "source": "National Statistics Committee of the Republic of Uzbekistan (stat.uz), Foreign economic activity — 'Import of goods (in CIF prices)'",
+  "source": "National Statistics Committee of the Republic of Uzbekistan (stat.uz), Foreign economic activity \u2014 import of goods by HS chapter, monthly cumulative",
   "datasets": {
-    "annual": "https://api.siat.stat.uz/media/uploads/sdmx/sdmx_data_1151.csv (published 2026-07-15)",
-    "monthlyCumulative": "https://api.siat.stat.uz/media/uploads/sdmx/sdmx_data_1166.csv (published 2026-09-26)"
+    "monthlyCumulativeByChapter": "data/official/import_data_monthly_cumulative.xlsx (2023-M01 \u2026 2026-M08), 96 HS chapters, thousand USD",
+    "annualPre2023": "https://api.siat.stat.uz/media/uploads/sdmx/sdmx_data_1151.csv (published 2026-07-15)"
   },
-  "retrievedAt": "2026-09-28",
+  "retrievedAt": "2026-09-30",
   "units": "USD",
-  "note": "Annual values are the published totals; the partial year carries the published cumulative year-to-date series (index 0 = through January). The monthly dataset's December value equals the annual publication for every overlapping year, so the two sheets are one series.",
+  "basis": {
+    "2023-onward": "sum of the 96 HS chapters in the monthly cumulative workbook",
+    "pre-2023": "the previously published annual totals, kept because the workbook does not reach back that far"
+  },
+  "note": "The two bases do not agree over their overlap: the chapter workbook runs about 10\u201314% above the annual series previously used, and the gap widens through 2026 (2026-M08: $34.27bn against $29.95bn). Both are published by the statistics office. Figures from 2023 onward therefore step up relative to 2017\u20132022, and a period spanning that boundary mixes the two.",
   "annual": {
     "2017": 12035200000,
     "2018": 17312300000,
@@ -14,11 +18,20 @@
     "2020": 19932400000,
     "2021": 23740400000,
     "2022": 28220300000,
-    "2023": 35574800000,
-    "2024": 35289800000,
-    "2025": 42084000000
+    "2023": 38258620800,
+    "2024": 39623141800,
+    "2025": 48114908800
   },
   "cumulativeByMonth": {
-    "2026": [3694400000, 7214500000, 10991100000, 14727500000, 18074000000, 22190100000, 25987700000, 29952200000]
+    "2026": [
+      4106540100,
+      7993877800,
+      12117323400,
+      16228892400,
+      19970000700,
+      24953253300,
+      29372692200,
+      34267902700
+    ]
   }
 }

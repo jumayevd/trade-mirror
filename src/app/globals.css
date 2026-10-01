@@ -57,6 +57,19 @@
   --color-partner: #b07d1e;
   --color-accent: #d99a2b;
 
+  /* type scale on the fluid pixel (see --fpx below); line heights stay Tailwind's */
+  --text-xs: calc(12 * var(--fpx));
+  --text-sm: calc(14 * var(--fpx));
+  --text-base: calc(16 * var(--fpx));
+  --text-lg: calc(18 * var(--fpx));
+  --text-xl: calc(20 * var(--fpx));
+  --text-2xl: calc(24 * var(--fpx));
+  --text-3xl: calc(30 * var(--fpx));
+}
+
+/* fs-13 = a 13px size on the fluid pixel; half steps like fs-12.5 work too */
+@utility fs-* {
+  font-size: calc(--value(number) * var(--fpx));
 }
 
 @theme inline {
@@ -124,7 +137,7 @@ body {
 body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
+  font-size: calc(14 * var(--fpx));
   /* comfortable reading scale without manual browser zoom */
   zoom: var(--page-zoom);
 }
@@ -166,6 +179,18 @@ body {
    * src/lib/zoom-store.ts or the first paint will jump.
    */
   --page-zoom: 1.25;
+
+  /*
+   * Fluid type pixel. Every text size is declared as N × --fpx rather than N px,
+   * so type follows the screen: one --fpx is one pixel on a 1366×720 viewport —
+   * the laptop the sizes were tuned on — and scales with whichever of width or
+   * height is tighter, so a wide but short window does not blow the type past
+   * what fits vertically. The clamp keeps phones legible and stops large
+   * monitors running away. The reading scale (--page-zoom) still multiplies the
+   * result. Charts draw on a canvas and cannot read this, so FLUID in
+   * src/lib/fluid-type.ts mirrors it; change both together.
+   */
+  --fpx: clamp(0.9px, min(100vw / 1366, 100vh / 720), 1.25px);
 
   --shell-max: 1200px;
   /* header: 0.5rem padding top+bottom around a 2rem control row, plus its border */

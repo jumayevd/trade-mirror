@@ -112,14 +112,14 @@ export default function QueueView() {
       <section className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
-          <p className="text-[13px] text-muted">
+          <p className="fs-13 text-muted">
             <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
           </p>
         </div>
         <button
           onClick={exportCsv}
           disabled={channels.length === 0}
-          className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           title={`${t("risk.export.tip")} (${levelName})`}
         >
           {t("common.exportCsv")} ↓
@@ -129,14 +129,14 @@ export default function QueueView() {
       {/* time basis + period selection — the whole page follows these ticks */}
       <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-2">
         <div className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+          <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
           <div className="flex h-[33px] overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
             {(["year", "month"] as const).map((g) => (
               <button
                 key={g}
                 onClick={() => pickGranularity(g)}
                 aria-pressed={granularity === g}
-                className={`px-2.5 py-1.5 text-[13px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               >
                 {t(g === "year" ? "gran.year" : "gran.month")}
               </button>
@@ -151,15 +151,16 @@ export default function QueueView() {
             options={monthOptions}
             label={t("filter.months")}
             allLabel={t("filter.allMonths")}
+            selectAll
             searchable={false}
           />
         )}
         {/* freight scenario moves the gap values and their share — never the
             score, which stays fitted at the central rate (see Methodology) */}
         <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
-          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+          <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
             aria-label={t("filter.freight")}
             value={cif}
             onChange={(e) => setCif(+e.target.value)}

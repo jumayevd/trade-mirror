@@ -37,9 +37,9 @@ const TIER_STYLE: Record<Tier, string> = {
   3: "bg-[var(--color-panel-2)] text-faint",
 };
 
-const TH = "px-3 py-2 text-left text-[13px] font-medium text-faint whitespace-nowrap";
+const TH = "px-3 py-2 text-left fs-13 font-medium text-faint whitespace-nowrap";
 const THN = `${TH} text-right`;
-const TD = "px-3 py-2 align-middle text-[14px]";
+const TD = "px-3 py-2 align-middle fs-14";
 const TDN = `${TD} tabular text-right whitespace-nowrap`;
 
 /** û as printed: log points, the unit the model estimates in. */
@@ -52,7 +52,7 @@ function TierTag({ tier }: { tier: Tier }) {
   const { t } = useI18n();
   return (
     <span
-      className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-px text-[12.5px] font-medium ${TIER_STYLE[tier]}`}
+      className={`inline-block whitespace-nowrap rounded-sm px-1.5 py-px fs-12.5 font-medium ${TIER_STYLE[tier]}`}
       title={t(`anom.tier.${tier}.desc` as LocaleKey)}
     >
       {t(`anom.tier.${tier}` as LocaleKey)}
@@ -63,7 +63,7 @@ function TierTag({ tier }: { tier: Tier }) {
 /** The disclaimer every ranked view carries. Non-negotiable, so it is one component. */
 function Disclaimer() {
   const { t } = useI18n();
-  return <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.disclaimer")}</p>;
+  return <p className="mt-2 fs-13 leading-relaxed text-faint">{t("anom.disclaimer")}</p>;
 }
 
 /**
@@ -93,7 +93,7 @@ function Pager({ page, count, onPage }: { page: number; count: number; onPage: (
   const pages = Math.ceil(count / PAGE);
   if (pages <= 1) return null;
   return (
-    <div className="flex items-center gap-3 text-[13.5px]">
+    <div className="flex items-center gap-3 fs-13.5">
       <button type="button" disabled={page === 0} onClick={() => onPage(Math.max(0, page - 1))}
         className="rounded-md border border-[var(--color-border)] px-2 py-1 disabled:opacity-40">
         ← {t("risk.prev")}
@@ -167,11 +167,11 @@ export default function AnomalyView() {
       <section className="space-y-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("anom.title")}</h1>
-          <span className="tabular text-[13.5px] text-faint">
+          <span className="tabular fs-13.5 text-faint">
             {t("anom.window")} {ANOMALY_WINDOW[0]}–{ANOMALY_WINDOW[1]}
           </span>
         </div>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[14.5px] leading-relaxed text-muted">
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 fs-14.5 leading-relaxed text-muted">
           {t("anom.lede")}
         </p>
       </section>
@@ -180,11 +180,11 @@ export default function AnomalyView() {
       <section className="space-y-3">
         <SectionTitle title={t("anom.eq.title")} desc={t("anom.eq.desc")} />
         <div className="card max-w-4xl space-y-2 p-4">
-          <p className="text-[15px] font-medium leading-relaxed">{t("anom.eq.formula")}</p>
-          <p className="overflow-x-auto whitespace-nowrap rounded-md bg-[var(--color-panel-2)] px-3 py-2 font-mono text-[13px] leading-relaxed">
+          <p className="fs-15 font-medium leading-relaxed">{t("anom.eq.formula")}</p>
+          <p className="overflow-x-auto whitespace-nowrap rounded-md bg-[var(--color-panel-2)] px-3 py-2 font-mono fs-13 leading-relaxed">
             {t("anom.eq.formulaFull")}
           </p>
-          <p className="text-[13.5px] leading-relaxed text-muted">{t("anom.eq.note")}</p>
+          <p className="fs-13.5 leading-relaxed text-muted">{t("anom.eq.note")}</p>
         </div>
         <div className="card max-w-5xl overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse">
@@ -198,11 +198,11 @@ export default function AnomalyView() {
             <tbody className="zebra">
               {Array.from({ length: TERM_COUNT }, (_, k) => k + 1).map((i) => (
                 <tr key={i} className="border-b border-[var(--color-border-soft)] last:border-0">
-                  <td className={`${TD} whitespace-nowrap font-mono text-[13px] font-medium text-foreground`}>
+                  <td className={`${TD} whitespace-nowrap font-mono fs-13 font-medium text-foreground`}>
                     {t(`anom.eq.v${i}.sym` as LocaleKey)}
                   </td>
                   <td className={`${TD} text-muted`}>{t(`anom.eq.v${i}.mean` as LocaleKey)}</td>
-                  <td className={`${TD} text-[13px] text-faint`}>
+                  <td className={`${TD} fs-13 text-faint`}>
                     {fill(t(`anom.eq.v${i}.src` as LocaleKey), { wedge })}
                   </td>
                 </tr>
@@ -213,13 +213,13 @@ export default function AnomalyView() {
 
         {/* ---- the rules that keep the specification correct ---- */}
         <div className="grid max-w-5xl gap-3 pt-1 sm:grid-cols-2">
-          <h3 className="text-[14px] font-semibold sm:col-span-2">{t("anom.rules.title")}</h3>
+          <h3 className="fs-14 font-semibold sm:col-span-2">{t("anom.rules.title")}</h3>
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="card p-4">
-              <p className="mb-1 font-mono text-[13px] font-semibold text-foreground">
+              <p className="mb-1 font-mono fs-13 font-semibold text-foreground">
                 {t(`anom.rules.r${i}.t` as LocaleKey)}
               </p>
-              <p className="text-[13.5px] leading-relaxed text-muted">
+              <p className="fs-13.5 leading-relaxed text-muted">
                 {t(`anom.rules.r${i}.b` as LocaleKey)}
               </p>
             </div>
@@ -230,7 +230,7 @@ export default function AnomalyView() {
       {/* ---- cluster level ---- */}
       <section>
         <label className="inline-block space-y-1.5">
-          <span className="block text-[13px] font-medium text-faint">{t("anom.cfg.cluster")}</span>
+          <span className="block fs-13 font-medium text-faint">{t("anom.cfg.cluster")}</span>
           <Segmented
             value={cluster}
             ariaLabel={t("anom.cfg.cluster")}
@@ -260,7 +260,7 @@ export default function AnomalyView() {
         {cat.length === 0 ? <EmptyState text={t("anom.empty")} /> : (
           <>
             <Caterpillar clusters={cat} threshold={meta.threshold} />
-            <p className="text-[13px] text-faint">
+            <p className="fs-13 text-faint">
               {fill(t("anom.cat.showing"), { n: fmtNum(cat.length), total: fmtNum(ranked.length) })}
             </p>
           </>
@@ -274,8 +274,8 @@ export default function AnomalyView() {
         <div className="grid gap-3 lg:grid-cols-3">
           {(["a", "b", "d"] as const).map((k) => (
             <div key={k} className="card p-4">
-              <h3 className="mb-1 text-[14px] font-semibold">{t(`anom.iv.${k}.t` as LocaleKey)}</h3>
-              <p className="text-[13.5px] leading-relaxed text-muted">{t(`anom.iv.${k}.b` as LocaleKey)}</p>
+              <h3 className="mb-1 fs-14 font-semibold">{t(`anom.iv.${k}.t` as LocaleKey)}</h3>
+              <p className="fs-13.5 leading-relaxed text-muted">{t(`anom.iv.${k}.b` as LocaleKey)}</p>
             </div>
           ))}
         </div>
@@ -284,7 +284,7 @@ export default function AnomalyView() {
       {/* ---- the ranked table ---- */}
       <section className="space-y-2">
         <SectionTitle title={t("anom.table.title")} desc={t("anom.table.desc")} />
-        <label className="flex flex-wrap items-center gap-2 text-[13px]">
+        <label className="flex flex-wrap items-center gap-2 fs-13">
           <span className="font-medium text-faint">{t("anom.table.minGap")}</span>
           <Segmented
             value={String(minGap)}
@@ -338,7 +338,7 @@ export default function AnomalyView() {
                         title={`${score(c.lo90)} – ${score(hi90(c))}  (${times(c.lo90)} – ${times(hi90(c))})`}>
                         <RangeBar lo={c.lo90} hi={hi90(c)} min={bounds.min} max={bounds.max}
                           threshold={meta.threshold} />
-                        <span className="tabular whitespace-nowrap text-[12.5px] text-faint">
+                        <span className="tabular whitespace-nowrap fs-12.5 text-faint">
                           {score(c.lo90)}–{score(hi90(c))}
                         </span>
                       </span>
@@ -357,7 +357,7 @@ export default function AnomalyView() {
           {([1, 2, 0, 3] as Tier[]).map((tier) => (
             <span key={tier} className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border-soft)] px-2.5 py-1.5">
               <TierTag tier={tier} />
-              <span className="max-w-[24rem] text-[12.5px] leading-snug text-faint">
+              <span className="max-w-[24rem] fs-12.5 leading-snug text-faint">
                 {t(`anom.tier.${tier}.desc` as LocaleKey)}
               </span>
             </span>
@@ -451,7 +451,7 @@ export default function AnomalyView() {
         <SectionTitle title={t("anom.diag.title")} desc={t("anom.diag.desc")} />
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="card p-4">
-            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.diag.coefTitle")}</h3>
+            <h3 className="mb-2 fs-14 font-semibold">{t("anom.diag.coefTitle")}</h3>
             <table className="w-full border-collapse">
               <thead>
                 <tr>
@@ -472,10 +472,10 @@ export default function AnomalyView() {
                 ))}
               </tbody>
             </table>
-            <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.diag.feNote")}</p>
-            <h4 className="mt-3 mb-1 text-[13.5px] font-semibold">{t("anom.fit.title")}</h4>
-            <p className="mb-1 text-[13px] leading-relaxed text-faint">{t("anom.fit.desc")}</p>
-            <ul className="list-disc space-y-1 pl-5 text-[13px] leading-relaxed text-faint">
+            <p className="mt-2 fs-13 leading-relaxed text-faint">{t("anom.diag.feNote")}</p>
+            <h4 className="mt-3 mb-1 fs-13.5 font-semibold">{t("anom.fit.title")}</h4>
+            <p className="mb-1 fs-13 leading-relaxed text-faint">{t("anom.fit.desc")}</p>
+            <ul className="list-disc space-y-1 pl-5 fs-13 leading-relaxed text-faint">
               {(["anom.fit.gdp", "anom.fit.dist", "anom.fit.transit"] as LocaleKey[]).map((k) => (
                 <li key={k}>{t(k)}</li>
               ))}
@@ -483,8 +483,8 @@ export default function AnomalyView() {
           </div>
 
           <div className="card p-4">
-            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.diag.varTitle")}</h3>
-            <dl className="space-y-1 text-[13.5px]">
+            <h3 className="mb-2 fs-14 font-semibold">{t("anom.diag.varTitle")}</h3>
+            <dl className="space-y-1 fs-13.5">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">{t("anom.diag.varU")}</dt>
                 <dd className="tabular">{meta.varU.toFixed(3)}</dd>
@@ -498,12 +498,12 @@ export default function AnomalyView() {
                 <dd className="tabular">{fmtPct(meta.rho, 0)}</dd>
               </div>
             </dl>
-            <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.diag.rhoNote")}</p>
+            <p className="mt-2 fs-13 leading-relaxed text-faint">{t("anom.diag.rhoNote")}</p>
           </div>
 
           <div className="card p-4">
-            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.diag.sizeTitle")}</h3>
-            <dl className="mb-3 grid grid-cols-2 gap-1 text-[13.5px]">
+            <h3 className="mb-2 fs-14 font-semibold">{t("anom.diag.sizeTitle")}</h3>
+            <dl className="mb-3 grid grid-cols-2 gap-1 fs-13.5">
               <dt className="text-muted">{t("anom.diag.singleton")}</dt>
               <dd className="tabular text-right">{fmtPct(meta.singletonShare, 0)}</dd>
               <dt className="text-muted">{t("anom.diag.le3")}</dt>
@@ -517,7 +517,7 @@ export default function AnomalyView() {
               {Object.entries(meta.sizeHist).slice(0, 8).map(([n, count]) => {
                 const total = Math.max(...Object.values(meta.sizeHist));
                 return (
-                  <div key={n} className="flex items-center gap-2 text-[12.5px]">
+                  <div key={n} className="flex items-center gap-2 fs-12.5">
                     <span className="tabular w-14 text-right text-faint">{n} {t("anom.diag.sizeObs")}</span>
                     <span className="h-2.5 rounded-sm bg-[var(--color-primary)]"
                       style={{ width: `${Math.max(2, (100 * count) / total)}%` }} />
@@ -529,8 +529,8 @@ export default function AnomalyView() {
           </div>
 
           <div className="card p-4">
-            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.cov.title")}</h3>
-            <dl className="space-y-1 text-[13.5px]">
+            <h3 className="mb-2 fs-14 font-semibold">{t("anom.cov.title")}</h3>
+            <dl className="space-y-1 fs-13.5">
               {([
                 ["anom.cov.extract", ANOMALY_COVERAGE.inExtract],
                 ["anom.cov.matched", ANOMALY_COVERAGE.matched],
@@ -544,17 +544,17 @@ export default function AnomalyView() {
                 </div>
               ))}
             </dl>
-            <p className="mt-2 text-[13px] leading-relaxed text-faint">{t("anom.cov.note")}</p>
+            <p className="mt-2 fs-13 leading-relaxed text-faint">{t("anom.cov.note")}</p>
           </div>
 
           <div className="card p-4">
-            <h3 className="mb-2 text-[14px] font-semibold">{t("anom.diag.freightTitle")}</h3>
-            <dl className="mb-2 flex justify-between gap-3 text-[13.5px]">
+            <h3 className="mb-2 fs-14 font-semibold">{t("anom.diag.freightTitle")}</h3>
+            <dl className="mb-2 flex justify-between gap-3 fs-13.5">
               <dt className="text-muted">{t("anom.diag.freightWedge")}</dt>
               <dd className="tabular font-semibold">{wedge}</dd>
             </dl>
-            <p className="text-[13px] leading-relaxed text-faint">{t("anom.diag.freightNote")}</p>
-            <dl className="mt-3 space-y-1 border-t border-[var(--color-border-soft)] pt-2 text-[12.5px] text-faint">
+            <p className="fs-13 leading-relaxed text-faint">{t("anom.diag.freightNote")}</p>
+            <dl className="mt-3 space-y-1 border-t border-[var(--color-border-soft)] pt-2 fs-12.5 text-faint">
               <div className="flex gap-2"><dt>Method:</dt><dd>{ANOMALY_SOURCE.method}</dd></div>
               <div className="flex gap-2"><dt>Gravity:</dt><dd>{ANOMALY_SOURCE.gravity}</dd></div>
               <div className="flex gap-2"><dt>Tariff:</dt><dd>{ANOMALY_SOURCE.tariff}</dd></div>

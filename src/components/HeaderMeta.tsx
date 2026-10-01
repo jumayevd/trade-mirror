@@ -23,7 +23,7 @@ function ThemeToggle({ label }: { label: string }) {
       onClick={toggleTheme}
       aria-label={label}
       title={label}
-      className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 text-[13px] leading-none text-muted hover:text-foreground"
+      className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1 fs-13 leading-none text-muted hover:text-foreground"
     >
       {theme === "dark" ? "☀" : "☾"}
     </button>
@@ -44,7 +44,7 @@ export default function HeaderMeta() {
   useEffect(() => { applyZoom(zoom); }, [zoom]);
 
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1.5 text-xs">
       <Link href="/methodology" className="rounded-md border border-[var(--color-primary)] px-2 py-1 font-medium text-[var(--color-primary)] hover:bg-[color-mix(in_srgb,var(--color-primary)_8%,transparent)]">
         {t("header.howto")}
       </Link>
@@ -55,7 +55,7 @@ export default function HeaderMeta() {
           value={zoom}
           onChange={(e) => writeZoom(Number(e.target.value) as ZoomStep)}
           aria-label={t("header.textSize")}
-          className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-1 text-[12px] text-foreground outline-none focus:border-[var(--color-primary)]"
+          className="rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-1 fs-12 text-foreground outline-none focus:border-[var(--color-primary)]"
         >
           {ZOOM_STEPS.map((z, i) => (
             <option key={z} value={z}>{t(ZOOM_LABEL_KEYS[i])}</option>
@@ -68,7 +68,7 @@ export default function HeaderMeta() {
       <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("nav.language")}>
         {LANGS.map((l) => (
           <button key={l} onClick={() => setLang(l)}
-            className={`px-2 py-1 text-[12px] font-semibold uppercase ${lang === l ? "bg-[var(--color-primary)] text-white" : "text-muted hover:bg-[var(--color-panel-2)]"}`}
+            className={`px-2 py-1 fs-12 font-semibold uppercase ${lang === l ? "bg-[var(--color-primary)] text-white" : "text-muted hover:bg-[var(--color-panel-2)]"}`}
             aria-pressed={lang === l}>
             {l}
           </button>

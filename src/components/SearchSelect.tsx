@@ -126,13 +126,13 @@ export default function SearchSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
-        className="flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-left text-[13px] text-foreground outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)]"
+        className="flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 py-1.5 text-left fs-13 text-foreground outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)]"
       >
         <span className="truncate">
           {current?.code && <span className="tabular mr-1 text-faint">{current.code}</span>}
           {current?.label ?? allLabel}
         </span>
-        <span aria-hidden className="shrink-0 text-[11.5px] text-faint">▾</span>
+        <span aria-hidden className="shrink-0 fs-11.5 text-faint">▾</span>
       </button>
 
       {open && (
@@ -145,11 +145,11 @@ export default function SearchSelect({
             onKeyDown={onInputKey}
             placeholder={t("filter.search")}
             aria-label={t("filter.search")}
-            className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
+            className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 fs-13 outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
           />
           <ul ref={listRef} role="listbox" aria-label={ariaLabel} className="max-h-64 overflow-y-auto py-1">
             {matches.length === 0 && (
-              <li className="px-2.5 py-2 text-[13px] text-faint">{t("filter.noMatches")}</li>
+              <li className="px-2.5 py-2 fs-13 text-faint">{t("filter.noMatches")}</li>
             )}
             {matches.map((o, i) => (
               <li key={o.value} role="presentation">
@@ -161,11 +161,11 @@ export default function SearchSelect({
                   onMouseEnter={() => setActive(i)}
                   onClick={() => commit(o.value)}
                   title={o.full ?? o.label}
-                  className={`flex w-full items-start gap-2 px-2.5 py-1 text-left text-[13px] ${
+                  className={`flex w-full items-start gap-2 px-2.5 py-1 text-left fs-13 ${
                     i === active ? "bg-[var(--color-panel-2)]" : ""
                   } ${o.value === value ? "font-semibold text-foreground" : "text-muted hover:text-foreground"}`}
                 >
-                  {o.code && <span className="tabular mt-px shrink-0 text-[12px] text-faint">{o.code}</span>}
+                  {o.code && <span className="tabular mt-px shrink-0 fs-12 text-faint">{o.code}</span>}
                   {/* long HS descriptions wrap instead of losing their tail */}
                   <span className="min-w-0 leading-snug break-words">{o.label}</span>
                 </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { InfoTip } from "@/components/ui";
 import { aggregate, DEFAULT_FILTER, meta, METHODOLOGY_VERSION } from "@/lib/dataset";
 import diagnosticsRaw from "@/data/diagnostics.json";
@@ -7,13 +8,15 @@ import { fmtNum, fmtPct, fmtUSD } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import type { LocaleKey } from "@/lib/locales";
 import { Cite, REFERENCES } from "@/lib/references";
+import { ProductCoverage, TransitPartners } from "./CoverageSections";
 
 /**
  * Methodology — the shortest honest account of what the numbers are.
  *
  * Order: why a positive mirror gap is worth reading at all, the literature the
  * reading rests on, the measures the dashboard shows, how the risk score is
- * built, what the score diagnostics say, and the bibliography.
+ * built, what the score diagnostics say, how much product detail each year
+ * carries, which partners are transit hubs, and the bibliography.
  */
 
 const FULL = aggregate({ ...DEFAULT_FILTER, years: [...meta.years], minGap: 0 });
@@ -32,49 +35,65 @@ interface Diagnostics {
 const diag = diagnosticsRaw as unknown as Diagnostics;
 const HS6 = "6";
 
-const H2 = "text-[15px] font-semibold tracking-tight";
-const P = "max-w-3xl text-[13px] leading-relaxed text-muted";
-const TH = "px-4 py-2 text-left text-[11.5px] font-semibold uppercase tracking-[0.1em] text-faint";
-const TD = "px-4 py-2 align-top text-[13px] text-muted";
+const H2 = "fs-15 font-semibold tracking-tight";
+const P = "max-w-3xl fs-13 leading-relaxed text-muted";
+const TH = "px-4 py-2 text-left fs-11.5 font-semibold uppercase tracking-[0.1em] text-faint";
+const TD = "px-4 py-2 align-top fs-13 text-muted";
 
 /** A formula on its own line — monospace, quiet, never inside a sentence. */
 function Formula({ children }: { children: React.ReactNode }) {
   return (
-    <p className="tabular my-2 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-panel)] px-3 py-2 text-[13px] text-foreground">
+    <p className="tabular my-2 rounded-md border border-[var(--color-border-soft)] bg-[var(--color-panel)] px-3 py-2 fs-13 text-foreground">
       {children}
     </p>
   );
 }
 
 /**
- * Section header: a numbered eyebrow above the heading. The page is an argument
- * in order — why the gap is readable, what the literature says, what is measured,
- * how it is scored, what qualifies it — and numbering makes that sequence visible
- * instead of leaving six equal-weight headings in a column.
+ * A numbered section that opens on click. The page is an argument in order —
+ * why the gap is readable, what the literature says, what is measured, how it
+ * is scored, what qualifies it — and the numbered headings show that sequence
+ * at a glance; the text under each stays folded until the reader asks for it.
  */
-function SectionHead({ n, title, desc }: { n: string; title: string; desc?: string }) {
+function Section({ n, title, desc, className = "", children }: {
+  n: string; title: string; desc?: string; className?: string; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const id = `meth-section-${n}`;
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2.5">
-        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] text-[12px] font-semibold text-white">
+    <section>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="group flex w-full max-w-5xl items-center gap-2.5 rounded-md py-1 text-left"
+      >
+        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] fs-12 font-semibold text-white">
           {n}
         </span>
-        <h2 className={H2}>{title}</h2>
-      </div>
-      {desc ? <p className={P}>{desc}</p> : null}
-    </div>
+        <h2 className={`${H2} group-hover:underline`}>{title}</h2>
+        <span aria-hidden className={`ml-1 fs-12 text-faint transition-transform ${open ? "rotate-90" : ""}`}>▶</span>
+      </button>
+      {open && (
+        <div id={id} className={`mt-2 ${className}`}>
+          {desc ? <p className={P}>{desc}</p> : null}
+          {children}
+        </div>
+      )}
+    </section>
   );
 }
 
 function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] text-[12px] font-semibold text-muted">
+      <span className="tabular mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-panel-2)] fs-12 font-semibold text-muted">
         {n}
       </span>
       <div className="min-w-0 flex-1">
-        <h3 className="text-[13.5px] font-semibold">{title}</h3>
-        <div className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted">{children}</div>
+        <h3 className="fs-13.5 font-semibold">{title}</h3>
+        <div className="mt-1 max-w-3xl fs-13 leading-relaxed text-muted">{children}</div>
       </div>
     </div>
   );
@@ -127,42 +146,40 @@ export default function MethodologyView() {
   ];
 
   return (
-    <div className="space-y-9">
+    <div className="space-y-4">
       {/* ---------------------------------------------------------------- */}
       <section className="space-y-1.5">
-        <p className="text-[12px] font-medium text-faint">
+        <p className="fs-12 font-medium text-faint">
           UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
         </p>
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 text-[13.5px] leading-relaxed text-muted">
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 fs-13.5 leading-relaxed text-muted">
           {tr("meth.lede")}
         </p>
       </section>
 
       {/* 1. why a positive gap is worth reading ------------------------- */}
-      <section className="space-y-3">
-        <SectionHead n="1" title={tr("meth.why.title")} />
+      <Section n="1" title={tr("meth.why.title")} className="space-y-3">
         {/* three separate reasons, so they get three cards rather than one column
             of paragraphs a reader has to segment themselves */}
         <div className="grid max-w-5xl gap-3 lg:grid-cols-3">
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p1")}
             <Cite ids={["bhagwati1964", "unsd2019"]} />
           </div>
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p2")}
             <Cite ids={["fisman2004", "javorcik2008", "berger2008", "farhad2019"]} />
           </div>
-          <div className="card p-4 text-[13px] leading-relaxed text-muted">
+          <div className="card p-4 fs-13 leading-relaxed text-muted">
             {tr("meth.why.p3")}
             <Cite ids={["buehn2011", "carrere2015", "kellenberg2019"]} />
           </div>
         </div>
-      </section>
+      </Section>
 
       {/* 2. literature findings ------------------------------------------ */}
-      <section className="space-y-2">
-        <SectionHead n="2" title={tr("meth.lit.title")} desc={tr("meth.lit.desc")} />
+      <Section n="2" title={tr("meth.lit.title")} desc={tr("meth.lit.desc")} className="space-y-2">
         <div className="card max-w-5xl overflow-x-auto">
           <table className="w-full min-w-[680px]">
             <thead>
@@ -188,11 +205,10 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Section>
 
       {/* 3. the measures on the dashboard ------------------------------- */}
-      <section className="space-y-2">
-        <SectionHead n="3" title={tr("meth.measures.title")} desc={tr("meth.measures.desc")} />
+      <Section n="3" title={tr("meth.measures.title")} desc={tr("meth.measures.desc")} className="space-y-2">
         <div className="card max-w-4xl overflow-x-auto">
           <table className="w-full min-w-[620px]">
             <thead>
@@ -213,19 +229,50 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-        <p className="max-w-3xl text-[12.5px] text-faint">
+        <p className="max-w-3xl fs-12.5 text-faint">
           {tr("meth.measures.note")}
           <Cite ids={["hummels2006", "gaulier2010"]} />
         </p>
-        <p className="tabular max-w-3xl text-[12.5px] text-faint">
+        <p className="max-w-3xl fs-12.5 text-faint">{tr("meth.measures.monthRule")}</p>
+        <p className="tabular max-w-3xl fs-12.5 text-faint">
           {meta.window.start}–{meta.window.end}: {tr("meth.measures.headline")} {fmtUSD(k.positive.central)}{" "}
           ({fmtUSD(k.positive.low)}–{fmtUSD(k.positive.high)}) · {tr("meth.measures.coverage")} {fmtPct(k.coveragePct, 0)}
         </p>
-      </section>
+
+        {/*
+          Which cells each figure counts. Two of the numbers on the dashboard are
+          import totals and they differ by two orders of magnitude, which reads as
+          a contradiction until the populations are named side by side.
+        */}
+        <h3 className="pt-2 fs-14 font-semibold">{tr("meth.pop.title")}</h3>
+        <p className="max-w-3xl fs-13.5 leading-relaxed text-muted">{tr("meth.pop.desc")}</p>
+        <div className="card max-w-4xl overflow-x-auto">
+          <table className="w-full min-w-[620px]">
+            <thead>
+              <tr className="border-b border-[var(--color-border)]">
+                <th className={TH}>{tr("meth.pop.colFigure")}</th>
+                <th className={TH}>{tr("meth.pop.colPopulation")}</th>
+                <th className={TH}>{tr("meth.pop.colWhere")}</th>
+              </tr>
+            </thead>
+            <tbody className="zebra">
+              {["total", "gapYears", "discrepancy"].map((key) => (
+                <tr key={key} className="border-b border-[var(--color-border-soft)] last:border-0">
+                  <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>
+                    {tr(`meth.pop.${key}.name` as never)}
+                  </td>
+                  <td className={TD}>{tr(`meth.pop.${key}.pop` as never)}</td>
+                  <td className={TD}>{tr(`meth.pop.${key}.where` as never)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="max-w-3xl fs-12.5 leading-relaxed text-faint">{tr("meth.pop.note")}</p>
+      </Section>
 
       {/* 4. the risk score ---------------------------------------------- */}
-      <section className="space-y-3">
-        <SectionHead n="4" title={tr("meth.risk.title")} />
+      <Section n="4" title={tr("meth.risk.title")} className="space-y-3">
         <p className={P}>
           {tr("meth.risk.desc")}
           <Cite ids={["gara2018", "choi2019"]} />
@@ -285,14 +332,13 @@ export default function MethodologyView() {
           </Step>
         </div>
 
-        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-investigate)] bg-[var(--color-panel)] px-4 py-2.5 text-[13px] leading-relaxed text-muted">
+        <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-investigate)] bg-[var(--color-panel)] px-4 py-2.5 fs-13 leading-relaxed text-muted">
           <strong className="text-foreground">{tr("meth.risk.notEstimateLead")}</strong> {tr("meth.risk.notEstimate")}
         </p>
-      </section>
+      </Section>
 
       {/* 5. diagnostics -------------------------------------------------- */}
-      <section className="space-y-2">
-        <SectionHead n="5" title={tr("meth.diag.title")} desc={tr("meth.diag.desc")} />
+      <Section n="5" title={tr("meth.diag.title")} desc={tr("meth.diag.desc")} className="space-y-2">
         <div className="grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Diag label="cor(G, P)" value={diag.corGP[HS6].toFixed(2)} note={tr("meth.diag.corGP")} />
           <Diag
@@ -310,7 +356,7 @@ export default function MethodologyView() {
             band's threshold is findable instead of parsed out of prose */}
         <div className="max-w-md overflow-hidden rounded-md border border-[var(--color-border-soft)]">
           <table className="w-full">
-            <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left text-[12px] font-medium text-muted">
+            <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left fs-12 font-medium text-muted">
               {tr("meth.diag.bands")} (HS6)
             </caption>
             <tbody className="zebra">
@@ -323,12 +369,21 @@ export default function MethodologyView() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Section>
 
-      {/* 6. references ------------------------------------------------------ */}
-      <section className="max-w-4xl space-y-2">
-        <SectionHead n="6" title={tr("meth.refs.title")} />
-        <ol className="list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-muted lg:columns-2 lg:gap-8">
+      {/* 6. product-level coverage ------------------------------------------ */}
+      <Section n="6" title={tr("qual.level.title")} desc={tr("qual.level.sectionDesc")} className="space-y-2">
+        <ProductCoverage />
+      </Section>
+
+      {/* 7. transit hubs ---------------------------------------------------- */}
+      <Section n="7" title={tr("qual.transit.title")} desc={tr("qual.transit.desc")} className="space-y-2">
+        <TransitPartners />
+      </Section>
+
+      {/* 8. references ------------------------------------------------------ */}
+      <Section n="8" title={tr("meth.refs.title")} className="max-w-4xl space-y-2">
+        <ol className="list-decimal space-y-1.5 pl-5 fs-13.5 leading-relaxed text-muted lg:columns-2 lg:gap-8">
           {/* the annotated readings live in the Literature findings table — the
               list here is the bare citation, only for sources actually used */}
           {REFERENCES.map((r) => (
@@ -345,8 +400,8 @@ export default function MethodologyView() {
             </li>
           ))}
         </ol>
-        <p className="text-[12.5px] text-faint">{tr("meth.refs.note")}</p>
-      </section>
+        <p className="fs-12.5 text-faint">{tr("meth.refs.note")}</p>
+      </Section>
     </div>
   );
 }
@@ -355,11 +410,11 @@ function Diag({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="card p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
+        <span className="fs-12 font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
         <InfoTip text={note} />
       </div>
-      <div className="tabular mt-1.5 text-[22px] font-semibold leading-none">{value}</div>
-      <p className="mt-1.5 text-[12px] leading-snug text-faint">{note}</p>
+      <div className="tabular mt-1.5 fs-22 font-semibold leading-none">{value}</div>
+      <p className="mt-1.5 fs-12 leading-snug text-faint">{note}</p>
     </div>
   );
 }

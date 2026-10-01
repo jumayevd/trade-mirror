@@ -300,7 +300,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
               {WINDOW.map((y) => {
                 const has = reportedYearsOf(pm.iso3).includes(y);
                 return (
-                  <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border text-[12px]"
+                  <span key={y} className="tabular flex h-10 w-12 flex-col items-center justify-center rounded-lg border fs-12"
                     style={{
                       borderColor: has ? "color-mix(in srgb, var(--color-ok) 45%, transparent)" : "var(--color-border)",
                       background: has ? "color-mix(in srgb, var(--color-ok) 10%, transparent)" : "transparent",
@@ -353,7 +353,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
             const s = ALT_STATUS[a.status];
             return (
               <li key={a.title} className="flex flex-wrap items-start gap-x-3 gap-y-1 text-sm">
-                <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center text-[12px] font-medium"
+                <span className="w-40 shrink-0 rounded-md border px-1.5 py-0.5 text-center fs-12 font-medium"
                   style={{ color: s.color, borderColor: `color-mix(in srgb, ${s.color} 40%, transparent)`, background: `color-mix(in srgb, ${s.color} 8%, transparent)` }}>
                   {t(s.label)}
                 </span>
@@ -368,7 +368,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
       {/* 8. interpretation narrative */}
       <section className="card border-l-2 border-l-[var(--color-accent)] p-5">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">{t("chan.interpretation")}</h2>
-        <p className="text-[15px] leading-relaxed text-muted">{narrative}</p>
+        <p className="fs-15 leading-relaxed text-muted">{narrative}</p>
         <p className="mt-3 text-xs text-faint">{fill(t("chan.interpretation.note"), { period })}</p>
       </section>
     </div>

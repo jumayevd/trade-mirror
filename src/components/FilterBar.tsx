@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
 import { useFilter } from "@/lib/filter-context";
-import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, hs4Label, hs6Label, hsFullLabel, hsFullText, hsLabel, meta, partnerName } from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, availableOptions, monthlyDetailVer, subscribeMonthlyDetail, hs4Label, hs6Label, hsFullLabel, hsFullText, hsLabel, meta, partnerName } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
-const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]";
-const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
+const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]";
+const lbl = "fs-11.5 font-semibold uppercase tracking-wider text-faint";
 
 /**
  * Freight scenarios: every whole percentage from 0 up to the top of the
@@ -46,7 +46,10 @@ export default function FilterBar() {
   // Self-completing options: every list is narrowed to what the other filters
   // still leave reachable, so a picker can never offer a combination that
   // resolves to an empty page.
-  const avail = useMemo(() => availableOptions(filter), [filter]);
+  // the monthly HS6 lines arrive after the first render; re-list when they land
+  const detailVer = useSyncExternalStore(subscribeMonthlyDetail, monthlyDetailVer, () => 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const avail = useMemo(() => availableOptions(filter), [filter, detailVer]);
 
   // Option text is data-derived, so it goes through the label layer like every
   // other partner and HS string on the page — and is sorted in the reader's own
@@ -116,7 +119,7 @@ export default function FilterBar() {
                 key={g}
                 onClick={() => patch(g === "year" ? { granularity: g, months: [] } : { granularity: g })}
                 aria-pressed={filter.granularity === g}
-                className={`px-2.5 py-1.5 text-[13px] whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               >
                 {t(g === "year" ? "gran.year" : "gran.month")}
               </button>
@@ -133,6 +136,7 @@ export default function FilterBar() {
             options={monthOptions}
             label={t("filter.months")}
             allLabel={t("filter.allMonths")}
+            selectAll
             searchable={false}
           />
         )}
@@ -181,7 +185,7 @@ export default function FilterBar() {
         />
 
         {!isDefault && (
-          <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground" title={t("filter.reset.tip")}>
+          <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 fs-13 text-muted hover:text-foreground" title={t("filter.reset.tip")}>
             {t("filter.reset")} ✕
           </button>
         )}

@@ -32,20 +32,20 @@ export function Stat({
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[12px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="fs-12 font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-[24px] font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
+        <span className="fs-24 font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
           {value}
         </span>
         {delta && (
-          <span className="text-[12px] font-medium" style={{ color: deltaGood ? "var(--color-ok)" : "var(--color-serious)" }}>
+          <span className="fs-12 font-medium" style={{ color: deltaGood ? "var(--color-ok)" : "var(--color-serious)" }}>
             {delta}
           </span>
         )}
       </div>
-      {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 fs-12.5 leading-snug text-faint">{sub}</div>}
     </div>
   );
 }
@@ -129,7 +129,7 @@ export function InfoTip({ text }: { text: string }) {
         onPointerLeave={() => { if (!pinned) setOpen(false); }}
         onFocus={show}
         onBlur={() => { if (!pinned) setOpen(false); }}
-        className={`inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border text-[11px] leading-none transition-colors ${
+        className={`inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border fs-11 leading-none transition-colors ${
           open
             ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
             : "border-[var(--color-border)] text-faint hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
@@ -141,7 +141,7 @@ export function InfoTip({ text }: { text: string }) {
         <span
           role="tooltip"
           style={{ top: pos.top, left: pos.left, width: PANEL }}
-          className="fixed z-50 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] p-2.5 text-[12.5px] font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-lg"
+          className="fixed z-50 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] p-2.5 fs-12.5 font-normal normal-case leading-relaxed tracking-normal text-foreground shadow-lg"
         >
           {text}
         </span>
@@ -154,8 +154,8 @@ export function SectionTitle({ title, desc, right }: { title: string; desc?: str
   return (
     <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
-        <h2 className="text-[15px] font-semibold tracking-tight">{title}</h2>
-        {desc && <p className="mt-0.5 max-w-2xl text-[13.5px] leading-relaxed text-muted">{desc}</p>}
+        <h2 className="fs-15 font-semibold tracking-tight">{title}</h2>
+        {desc && <p className="mt-0.5 max-w-2xl fs-13.5 leading-relaxed text-muted">{desc}</p>}
       </div>
       {right}
     </div>
@@ -178,7 +178,7 @@ export function ContextLine({ filter }: { filter: Filter }) {
   else if (filter.hs2.length > 0) parts.push(codes(filter.hs2));
   parts.push(`${t("filter.freight").toLowerCase()} ${Math.round(filter.cif * 100)}%`);
   return (
-    <p className="mb-3 truncate font-mono text-[12px] text-faint" title={t("qual.ui.contextTip")}>
+    <p className="mb-3 truncate font-mono fs-12 text-faint" title={t("qual.ui.contextTip")}>
       {parts.join(" · ")}
     </p>
   );
@@ -188,7 +188,7 @@ export function ContextLine({ filter }: { filter: Filter }) {
 
 function DotChip({ dot, children, title, className = "" }: { dot?: string; children: React.ReactNode; title?: string; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[12px] font-medium leading-4 text-muted ${className}`} title={title}>
+    <span className={`inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px fs-12 font-medium leading-4 text-muted ${className}`} title={title}>
       {dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dot }} />}
       {children}
     </span>
@@ -219,7 +219,7 @@ export function RiskScore({ score, band, scored = true }: { score: number; band:
       className="inline-flex flex-col gap-[3px]"
       title={fill(t("qual.ui.riskTip"), { score: score.toFixed(0) })}
     >
-      <span className="tabular text-[13px] font-semibold leading-none">{score.toFixed(0)}</span>
+      <span className="tabular fs-13 font-semibold leading-none">{score.toFixed(0)}</span>
       <span className="h-[3px] w-8 overflow-hidden rounded-full bg-[var(--color-panel-2)]">
         <span className="block h-full rounded-full" style={{ width: `${Math.max(2, Math.min(score, 100))}%`, background: BAND_COLORS[band] }} />
       </span>
@@ -265,7 +265,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.key)}
             aria-pressed={on}
             title={o.tip}
-            className={`whitespace-nowrap px-2.5 py-1 text-[13px] ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
+            className={`whitespace-nowrap px-2.5 py-1 fs-13 ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
               on
                 ? "bg-[var(--color-primary)] font-semibold text-white"
                 : "bg-[var(--color-panel)] font-medium text-muted hover:bg-[var(--color-panel-2)] hover:text-foreground"
@@ -329,21 +329,21 @@ export function EvidenceLadder({ compact = false }: { compact?: boolean }) {
       <div className="flex flex-wrap items-center gap-1">
         {steps.map((s, i) => (
           <div key={s.key} className="flex items-center gap-1">
-            <span className={`rounded-md border px-1.5 py-0.5 text-[12px] ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
+            <span className={`rounded-md border px-1.5 py-0.5 fs-12 ${"current" in s && s.current ? "border-[var(--color-primary)] font-semibold text-[var(--color-primary)]" : s.active ? "border-[var(--color-border)] text-muted" : "border-dashed border-[var(--color-border)] text-faint"}`}
               title={s.active ? t("qual.ui.ladder.tipOpen") : s.n === 4 ? t("qual.ui.ladder.tipBehavioural") : t("qual.ui.ladder.tipVerified")}>
               {s.n} · {t(s.key as never)}
             </span>
-            {i < steps.length - 1 && <span className="text-[11.5px] text-faint">›</span>}
+            {i < steps.length - 1 && <span className="fs-11.5 text-faint">›</span>}
           </div>
         ))}
       </div>
-      {!compact && <p className="mt-1.5 max-w-3xl text-[12px] text-faint">{t("ov.ladder.note")}</p>}
+      {!compact && <p className="mt-1.5 max-w-3xl fs-12 text-faint">{t("ov.ladder.note")}</p>}
     </div>
   );
 }
 
 export function Pill({ children }: { children: React.ReactNode }) {
-  return <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px text-[12px] font-medium text-muted">{children}</span>;
+  return <span className="rounded-md border border-[var(--color-border)] px-1.5 py-px fs-12 font-medium text-muted">{children}</span>;
 }
 
 export function EmptyState({ text }: { text?: string }) {

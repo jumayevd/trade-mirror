@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { DEFAULT_FILTER, loadMonthlyDetail, observedTotals, meta, type Filter } from "../src/lib/dataset";
+import { aggregate, DEFAULT_FILTER, loadMonthlyDetail, observedTotals, meta, type Filter } from "../src/lib/dataset";
 
 interface SrcCell { p: string; l: number; k: string; y: number; pe: number; ui: number }
 const src: SrcCell[] = JSON.parse(
@@ -300,6 +300,65 @@ for (const y of [2025, 2026]) {
   }
 }
 
+
+/* ------------------------------------------------------------------ */
+/* The month rule: comparisons use only months both books reported      */
+/* ------------------------------------------------------------------ */
+/* Rebuilt here from the raw sheets, independently of the engine: a month
+ * counts for a partner when Uzbekistan's import book has it (HS2 sheet, any
+ * import) and the partner reported exports to Uzbekistan in it. The engine's
+ * compared exports, imports and positive discrepancy (0% freight) must equal
+ * the raw HS6 sheet folded over those months only, per partner x HS6 x year —
+ * on the yearly basis (the annualized layer) and the monthly basis alike. */
+{
+  const uzb = new Set<number>();
+  const ptn = new Map<string, Set<number>>();
+  for (const r of monthlySrc) {
+    const ym = r.y * 100 + r.m;
+    if (r.ui > 0) uzb.add(ym);
+    if (r.pe > 0) (ptn.get(r.p) ?? ptn.set(r.p, new Set()).get(r.p)!).add(ym);
+  }
+  const refFor = (y: number) => {
+    const acc = new Map<string, [number, number]>();
+    for (const r of monthlyHs6) {
+      if (r[2] !== y) continue;
+      const ym = r[2] * 100 + r[3];
+      if (!uzb.has(ym) || !ptn.get(r[0])?.has(ym)) continue;
+      const k = `${r[0]}|${r[1]}`;
+      const a = acc.get(k) ?? [0, 0];
+      a[0] += r[4]; a[1] += r[5];
+      acc.set(k, a);
+    }
+    let pe = 0, ui = 0, pos = 0;
+    for (const [x, m] of acc.values()) {
+      if (x <= 0 || m <= 0) continue;
+      pe += x; ui += m; pos += Math.max(x - m, 0);
+    }
+    return { pe, ui, pos, lines: acc.size };
+  };
+  for (const y of [2024, 2025, 2026]) {
+    const want = refFor(y);
+    const bases: [string, Filter][] = [["monthly", { ...mbase(), years: [y], cif: 0 }]];
+    if (!meta.years.includes(y)) bases.unshift(["yearly", { ...base(), years: [y], cif: 0 }]);
+    for (const [tag, f] of bases) {
+      const a = aggregate(f);
+      const pe = a.baseChannels6.reduce((t, c) => t + c.peT, 0);
+      const ui = a.baseChannels6.reduce((t, c) => t + c.uiT, 0);
+      const pos = a.kpis.positive.central;
+      checks++;
+      // the annualized layer rounds each cell to the dollar: allow a dollar a line
+      const tol = tag === "yearly" ? want.lines : 1;
+      if (Math.abs(pe - want.pe) > tol || Math.abs(ui - want.ui) > tol || Math.abs(pos - want.pos) > tol) {
+        fails++;
+        console.log(`  FAIL month rule, ${tag} ${y}`);
+        console.log(`       engine   compared exports ${Math.round(pe).toLocaleString()}  imports ${Math.round(ui).toLocaleString()}  positive ${Math.round(pos).toLocaleString()}`);
+        console.log(`       raw      compared exports ${want.pe.toLocaleString()}  imports ${want.ui.toLocaleString()}  positive ${Math.round(want.pos).toLocaleString()}`);
+      } else {
+        console.log(`note: month rule ${tag} ${y}: compared exports ${(pe / 1e9).toFixed(3)}B, imports ${(ui / 1e9).toFixed(3)}B, positive ${(pos / 1e9).toFixed(3)}B = raw sheets`);
+      }
+    }
+  }
+}
 
 console.log(`\n${checks - fails}/${checks} slices reconcile exactly.`);
 if (fails) {

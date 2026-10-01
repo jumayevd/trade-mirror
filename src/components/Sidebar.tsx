@@ -30,7 +30,7 @@ function Section({ links, path }: { links: { href: string; label: LocaleKey }[];
           const active = isActive(l.href);
           return (
             <Link key={l.href} href={l.href}
-              className={`relative block rounded-md px-3 py-2 text-[13.5px] transition-colors ${active ? "bg-[rgba(255,255,255,0.1)] font-semibold text-white" : "font-medium text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white"}`}
+              className={`relative block rounded-md px-3 py-2 fs-13.5 transition-colors ${active ? "bg-[rgba(255,255,255,0.1)] font-semibold text-white" : "font-medium text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.06)] hover:text-white"}`}
               aria-current={active ? "page" : undefined}>
               {active && <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-[var(--color-gold)]" />}
               {t(l.label)}
@@ -53,7 +53,7 @@ export function MobileNav() {
       {links.map((l) => (
         <Link key={l.href} href={l.href}
           aria-current={isActive(l.href) ? "page" : undefined}
-          className={`shrink-0 rounded-md px-2 py-1 text-[13px] ${isActive(l.href) ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "font-medium text-muted"}`}>
+          className={`shrink-0 rounded-md px-2 py-1 fs-13 ${isActive(l.href) ? "bg-[var(--color-panel-2)] font-semibold text-foreground" : "font-medium text-muted"}`}>
           {t(l.label)}
         </Link>
       ))}
@@ -71,8 +71,8 @@ export default function Sidebar() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/cbu-logo.png" alt="Central Bank of the Republic of Uzbekistan" className="h-10 w-10 shrink-0 object-contain" />
           <span className="leading-tight">
-            <span className="block text-[15px] font-semibold tracking-tight text-white">{t("brand.title")}</span>
-            <span className="block text-[11.5px] text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
+            <span className="block fs-15 font-semibold tracking-tight text-white">{t("brand.title")}</span>
+            <span className="block fs-11.5 text-[rgba(255,255,255,0.55)]">{t("brand.tagline")}</span>
           </span>
         </Link>
         {/* One list, no group heading: with every page in it the heading only

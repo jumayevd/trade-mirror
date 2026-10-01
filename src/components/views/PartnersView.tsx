@@ -65,10 +65,10 @@ function Pager({
   const pages = Math.ceil(total / PAGE_SIZE);
   const from = page * PAGE_SIZE + 1;
   const to = Math.min((page + 1) * PAGE_SIZE, total);
-  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
   return (
     <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border-soft)] px-3 py-2">
-      <span className="tabular text-[13px] text-faint">
+      <span className="tabular fs-13 text-faint">
         {from}–{to} {t("ctry.pager.of")} {total}
       </span>
       <button className={btn} onClick={() => onPage(page - 1)} disabled={page === 0} aria-label={t("ctry.pager.prev")}>‹</button>
@@ -151,9 +151,9 @@ export default function PartnersView() {
   const exportCsv = () =>
     downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
-  const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
-  const td = "px-3 py-1.5 align-middle text-[13px]";
+  const td = "px-3 py-1.5 align-middle fs-13";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
 
   const sortBtn = (k: SortKey, label: string) => (
@@ -224,7 +224,7 @@ export default function PartnersView() {
                     {top ? (
                       <span title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
                         <span className="tabular mr-1.5 text-xs text-faint">{top.cmd}</span>
-                        <span className="text-[13px]">{hs6ShortLabel(top.cmd, lang, top.label)}</span>
+                        <span className="fs-13">{hs6ShortLabel(top.cmd, lang, top.label)}</span>
                       </span>
                     ) : (
                       <span className="text-faint" title={t("ctry.rank.belowNoiseTip")}>{t("ctry.rank.belowNoise")}</span>
@@ -265,7 +265,7 @@ export default function PartnersView() {
           <button
             onClick={exportCsv}
             disabled={data.channels6.length === 0}
-            className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
             title={t("ctry.exportTip")}
           >
             {t("common.exportCsv")} ↓
@@ -283,7 +283,7 @@ export default function PartnersView() {
           desc={t("ctry.geo.desc")}
           right={<InfoTip text={t("ctry.geo.info")} />}
         />
-        <p className="max-w-3xl text-[13px] text-muted">
+        <p className="max-w-3xl fs-13 text-muted">
           <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
           · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
@@ -302,7 +302,7 @@ export default function PartnersView() {
                 <InfoTip text={`${t("ctry.compare.infoPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.compare.infoPost")}`} />
                 <button
                   onClick={() => setSel([])}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground"
+                  className="rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground"
                 >
                   {t("ctry.compare.clear")} ✕
                 </button>
@@ -321,7 +321,7 @@ export default function PartnersView() {
                     <QualityTag tier={p.tier} />
                     {p.transit && <TransitTag />}
                   </div>
-                  <dl className="mt-2 space-y-1 text-[13px]">
+                  <dl className="mt-2 space-y-1 fs-13">
                     <div className="flex justify-between gap-2">
                       <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
                       <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>

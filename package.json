@@ -16,7 +16,7 @@
     "data:monthly": "python scripts/extract-monthly.py && tsx scripts/build-monthly.ts",
     "audit:charts": "tsx scripts/audit-chart-text.ts",
     "data:audit": "tsx scripts/audit-vs-comtrade.ts",
-    "data:audit:ui": "tsx scripts/audit-onscreen.ts"
+    "data:audit:ui": "node --max-old-space-size=8192 --import tsx scripts/audit-onscreen.ts"
   },
   "dependencies": {
     "echarts": "^5.6.0",
