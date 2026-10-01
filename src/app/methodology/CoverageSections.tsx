@@ -122,7 +122,7 @@ export function TransitPartners() {
 
   return (
     <div className="space-y-3">
-      <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-2.5 text-[13px] text-muted">
+      <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-transit)] bg-[var(--color-panel)] px-4 py-2.5 fs-13 text-muted">
         <strong className="text-foreground">{t("qual.transit.calloutTitle")}</strong>{" "}
         {t("qual.transit.callout1")} <em>{t("qual.transit.origin")}</em>
         {t("qual.transit.callout2")} <em>{t("qual.transit.consignment")}</em>
@@ -134,7 +134,7 @@ export function TransitPartners() {
         <div className="card max-w-4xl overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-faint">
+              <tr className="border-b border-[var(--color-border)] text-left fs-12 text-faint">
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 <th className="px-3 py-2 font-medium">{t("qual.transit.region")}</th>
                 <th className="px-3 py-2 font-medium">{t("qual.transit.reporting")}</th>

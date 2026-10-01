@@ -130,11 +130,11 @@ export default function QueueTable({
     setPageRaw(0);
   };
 
-  const th = "px-3 py-1.5 text-left text-[12px] font-medium text-faint whitespace-nowrap";
+  const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
   const thNum = `${th} text-right`;
-  const td = "px-3 py-1.5 align-middle text-[13px]";
+  const td = "px-3 py-1.5 align-middle fs-13";
   const tdNum = `${td} tabular text-right whitespace-nowrap`;
-  const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+  const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div className="space-y-3">
@@ -152,7 +152,7 @@ export default function QueueTable({
           onChange={(e) => controls(() => setQuery(e.target.value))}
           placeholder={t("risk.search.placeholder")}
           aria-label={t("risk.a11y.search")}
-          className="h-[33px] w-60 max-w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 text-[13px] outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
+          className="h-[33px] w-60 max-w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 fs-13 outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
         <MultiSelect
@@ -171,12 +171,12 @@ export default function QueueTable({
           allLabel={t("filter.all")}
         />
 
-        <label className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex min-w-0 flex-wrap items-center gap-1.5 fs-13 text-muted">
           {t("risk.sortLabel")}
           <select
             value={sort}
             onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             {SORTS.map((s) => (
               <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
@@ -187,14 +187,14 @@ export default function QueueTable({
             onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
             aria-label={t("risk.sortDir")}
             title={t("risk.sortDir")}
-            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
           >
             <option value="desc">{t("risk.sortDesc")}</option>
             <option value="asc">{t("risk.sortAsc")}</option>
           </select>
         </label>
 
-        <span className="tabular text-[13px] text-faint">
+        <span className="tabular fs-13 text-faint">
           {rows.length === 0
             ? `0 ${t("risk.combinationsCount")}`
             : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} / ${rows.length.toLocaleString()} ${t("risk.combinationsCount")}`}
@@ -262,12 +262,12 @@ export default function QueueTable({
       {/* pagination */}
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 text-[13px] text-muted">
+          <label className="flex items-center gap-1.5 fs-13 text-muted">
             {t("risk.rowsPerPage")}
             <select
               value={pageSize}
               onChange={(e) => controls(() => setPageSize(+e.target.value))}
-              className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)]"
+              className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
             >
               {PAGE_SIZES.map((n) => (
                 <option key={n} value={n}>{n}</option>
@@ -278,7 +278,7 @@ export default function QueueTable({
             <button onClick={() => setPageRaw(Math.max(0, page - 1))} disabled={page === 0} className={pagerBtn}>
               ← {t("risk.prev")}
             </button>
-            <span className="tabular text-[13px] text-muted">
+            <span className="tabular fs-13 text-muted">
               {t("risk.page")} {page + 1} / {pageCount}
             </span>
             <button onClick={() => setPageRaw(Math.min(pageCount - 1, page + 1))} disabled={page >= pageCount - 1} className={pagerBtn}>

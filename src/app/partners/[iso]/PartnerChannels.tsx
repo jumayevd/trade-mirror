@@ -21,9 +21,9 @@ import { useI18n } from "@/lib/i18n";
  * Export − Import ÷ (1 + freight) = Positive discrepancy.
  */
 
-const TH = "px-3 py-2 text-left text-[12.5px] font-medium text-faint whitespace-nowrap";
+const TH = "px-3 py-2 text-left fs-12.5 font-medium text-faint whitespace-nowrap";
 const TH_NUM = `${TH} text-right`;
-const TD = "px-3 py-2 align-middle text-[13.5px]";
+const TD = "px-3 py-2 align-middle fs-13.5";
 const TD_NUM = `${TD} tabular whitespace-nowrap text-right`;
 const PAGE = 10;
 
@@ -36,8 +36,8 @@ export interface ChannelRow {
 
 const BAND_RANK: Record<RiskBand, number> = { critical: 0, high: 1, elevated: 2, low: 3 };
 
-const sel = "h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 text-[13px] text-foreground outline-none focus:border-[var(--color-primary)] max-w-[18rem]";
-const lbl = "text-[11.5px] font-semibold uppercase tracking-wider text-faint";
+const sel = "h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)] max-w-[18rem]";
+const lbl = "fs-11.5 font-semibold uppercase tracking-wider text-faint";
 
 /** Sorted unique codes with their labels. */
 function options(pairs: [string, string][]): { code: string; label: string }[] {
@@ -107,7 +107,7 @@ export default function PartnerChannels({
     setHs6(v);
   };
 
-  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
+  const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <section className="space-y-3">
@@ -136,7 +136,7 @@ export default function PartnerChannels({
             {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
           </select>
         </div>
-        <span className="tabular text-[13px] text-faint">
+        <span className="tabular fs-13 text-faint">
           {t("filter.channelCount")
             .split("{shown}").join(fmtNum(filtered.length))
             .split("{total}").join(fmtNum(rows.length))}
@@ -144,7 +144,7 @@ export default function PartnerChannels({
         {narrowed && (
           <button
             onClick={() => { setHs2("all"); setHs4("all"); setHs6("all"); setPage(0); }}
-            className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 text-[13px] text-muted hover:text-foreground"
+            className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 fs-13 text-muted hover:text-foreground"
           >
             {t("filter.reset")} ✕
           </button>
@@ -205,7 +205,7 @@ export default function PartnerChannels({
           </table>
           {filtered.length > PAGE && (
             <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border-soft)] px-3 py-2">
-              <span className="tabular text-[13px] text-faint">
+              <span className="tabular fs-13 text-faint">
                 {fmtNum(at * PAGE + 1)}–{fmtNum(Math.min((at + 1) * PAGE, filtered.length))} {t("ctry.pager.of")} {fmtNum(filtered.length)}
               </span>
               <button className={btn} onClick={() => setPage(at - 1)} disabled={at === 0} aria-label={t("ctry.pager.prev")}>‹</button>

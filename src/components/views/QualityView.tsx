@@ -68,7 +68,7 @@ function CoverageCell({ p, y }: { p: PartnerMeta; y: number }) {
 /** Legend chips — DotChip pattern: identity via a small mark beside ink text. */
 function LegendChip({ marker, children }: { marker: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px text-[12px] font-medium leading-4 text-muted">
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-1.5 py-px fs-12 font-medium leading-4 text-muted">
       {marker}
       {children}
     </span>
@@ -130,7 +130,7 @@ export default function QualityView() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead>
-              <tr className="border-b border-[var(--color-border)] text-left text-[12px] text-faint">
+              <tr className="border-b border-[var(--color-border)] text-left fs-12 text-faint">
                 <th className="px-3 py-2 text-right font-medium">#</th>
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 {years.map((y) => (

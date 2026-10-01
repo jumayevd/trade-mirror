@@ -285,7 +285,7 @@ export default function ProductsView() {
         <button
           onClick={exportCsv}
           disabled={activeChannels.length === 0}
-          className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[13px] font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
           title={`HS${level} · ${t("prod.export.tip")}`}
         >
           {t("common.exportCsv")}
@@ -296,7 +296,7 @@ export default function ProductsView() {
 
       {/* HS level toggle + breadcrumb */}
       <section className="flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex flex-wrap items-center gap-1.5 text-[13px]" aria-label={t("prod.aria.breadcrumb")}>
+        <nav className="flex flex-wrap items-center gap-1.5 fs-13" aria-label={t("prod.aria.breadcrumb")}>
           {(effChapter || hs4) && (
             <button
               onClick={goRoot}
@@ -359,9 +359,9 @@ export default function ProductsView() {
             title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
           />
           <div className="card overflow-x-auto">
-            <table className="w-full min-w-[1040px] text-[13px]">
+            <table className="w-full min-w-[1040px] fs-13">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left text-[12px] font-medium text-faint">
+                <tr className="border-b border-[var(--color-border)] text-left fs-12 font-medium text-faint">
                   <th className="px-3 py-1.5 font-medium">{t("prod.col.code")}</th>
                   <th className="px-3 py-1.5 font-medium">{t("common.product")}</th>
                   <SortableTh label={t("prof.th.export")} k="pePosT" sort={sort} onSort={onSort} title={t("prod.tip.export")} />

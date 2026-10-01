@@ -385,10 +385,10 @@ export default function OverviewView() {
           move when the reader filters.
         */}
         <div className="flex items-baseline gap-2">
-          <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">
+          <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">
             {t("ovw.stat.yearsCovered")}
           </span>
-          <span className="tabular text-[15px] font-semibold">
+          <span className="tabular fs-15 font-semibold">
             {DATA_WINDOW.start}–{DATA_WINDOW.end}
           </span>
           <InfoTip text={t("ovw.stat.yearsCovered.info")} />
@@ -399,14 +399,14 @@ export default function OverviewView() {
       <section className="no-print flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           <div className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+            <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
             <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
               {(["year", "month"] as const).map((g) => (
                 <button
                   key={g}
                   onClick={() => pickGranularity(g)}
                   aria-pressed={granularity === g}
-                  className={`px-2.5 py-1.5 text-[13px] whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                  className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
                 >
                   {t(g === "year" ? "gran.year" : "gran.month")}
                 </button>
@@ -482,13 +482,13 @@ export default function OverviewView() {
                 drill-down is offered as buttons: keyboard-reachable, and it names the
                 periods rather than asking the reader to guess that bars are clickable. */}
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="text-[12px] text-faint">{t("ovw.twoSided.clickHint")}</span>
+              <span className="fs-12 text-faint">{t("ovw.twoSided.clickHint")}</span>
               {drillPeriods.map((y) => (
                 <button
                   key={y}
                   onClick={() => setDrillYear((cur) => (cur === y ? null : y))}
                   aria-pressed={drillYear === y}
-                  className={`tabular rounded-md border px-1.5 py-0.5 text-[12px] font-medium ${
+                  className={`tabular rounded-md border px-1.5 py-0.5 fs-12 font-medium ${
                     drillYear === y
                       ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
                       : "border-[var(--color-border)] text-muted hover:text-foreground"
@@ -504,12 +504,12 @@ export default function OverviewView() {
             {drillYear != null && (
               <div className="mt-3 border-t border-[var(--color-border-soft)] pt-3">
                 <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="text-[13px] font-semibold">
+                  <h3 className="fs-13 font-semibold">
                     {t("ovw.twoSided.byCountry")} · <span className="tabular">{drillYear}</span>
                   </h3>
                   <button
                     onClick={() => setDrillYear(null)}
-                    className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-[12px] font-medium text-muted hover:text-foreground"
+                    className="rounded-md border border-[var(--color-border)] px-2 py-0.5 fs-12 font-medium text-muted hover:text-foreground"
                   >
                     {t("ovw.twoSided.close")} ✕
                   </button>
@@ -588,15 +588,15 @@ export default function OverviewView() {
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
-              <Link href="/partners" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
+              <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
+              <Link href="/partners" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
             <GapTreemap items={treemap.countries} ariaLabel={t("ovw.treemap.countries")} />
           </div>
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-2">
-              <h2 className="text-[15px] font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
-              <Link href="/products" className="text-[13px] font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
+              <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
+              <Link href="/products" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
             <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} />
           </div>
@@ -617,15 +617,15 @@ function HeroStat({ label, value, sub, info }: { label: string; value: string; s
   return (
     <div className="stat-card stat-card-hero" style={{ ["--stat-rail" as string]: COLORS.positive }}>
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[12px] font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="fs-12 font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-[30px] font-semibold leading-none tracking-tight" style={{ color: COLORS.positive }}>
+        <span className="fs-30 font-semibold leading-none tracking-tight" style={{ color: COLORS.positive }}>
           {value}
         </span>
       </div>
-      {sub && <div className="mt-1.5 text-[12.5px] leading-snug text-faint">{sub}</div>}
+      {sub && <div className="mt-1.5 fs-12.5 leading-snug text-faint">{sub}</div>}
     </div>
   );
 }

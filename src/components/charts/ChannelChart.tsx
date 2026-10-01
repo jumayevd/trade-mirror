@@ -157,8 +157,8 @@ export default function ChannelChart({ years, windowYears, partner }: Props) {
       <div className="mt-1" style={{ height: 110 }}>
         <EChart option={gapOption} />
       </div>
-      <p className="px-1 text-[12px] text-faint">{t("chart.signedCaption")}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border-soft)] px-1 pt-2 text-[12px]">
+      <p className="px-1 fs-12 text-faint">{t("chart.signedCaption")}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border-soft)] px-1 pt-2 fs-12">
         {windowYears.map((y) => {
           const has = byYear.has(y);
           return (

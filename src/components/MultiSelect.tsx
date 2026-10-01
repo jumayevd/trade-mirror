@@ -76,7 +76,7 @@ export default function MultiSelect({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11.5px] font-semibold uppercase tracking-wider text-faint">{label}</span>
+      <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{label}</span>
       <div ref={wrap} className="relative">
         <button
           ref={trigger}
@@ -89,12 +89,12 @@ export default function MultiSelect({
           aria-haspopup="true"
           aria-expanded={open}
           aria-label={label}
-          className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left text-[13px] outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
+          className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left fs-13 outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
             values.length ? "border-[var(--color-primary)] font-medium text-foreground" : "border-[var(--color-border)] text-foreground"
           }`}
         >
           <span className="truncate">{summary()}</span>
-          <span aria-hidden className="shrink-0 text-[11.5px] text-faint">▾</span>
+          <span aria-hidden className="shrink-0 fs-11.5 text-faint">▾</span>
         </button>
 
         {open && (
@@ -107,12 +107,12 @@ export default function MultiSelect({
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("filter.search")}
                 aria-label={t("filter.search")}
-                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 text-[13px] outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
+                className="w-full border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-2.5 py-1.5 fs-13 outline-none placeholder:text-faint focus-visible:border-[var(--color-primary)] focus-visible:ring-1 focus-visible:ring-[var(--color-primary)]"
               />
             )}
             <ul role="group" aria-label={label} className="max-h-64 overflow-y-auto py-1">
               {matches.length === 0 && (
-                <li className="px-2.5 py-2 text-[13px] text-faint">{t("filter.noMatches")}</li>
+                <li className="px-2.5 py-2 fs-13 text-faint">{t("filter.noMatches")}</li>
               )}
               {matches.map((o) => {
                 const on = picked.has(o.value);
@@ -120,7 +120,7 @@ export default function MultiSelect({
                   <li key={o.value}>
                     <label
                       title={o.full ?? o.label}
-                      className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 text-[13px] hover:bg-[var(--color-panel-2)] ${
+                      className={`flex cursor-pointer items-start gap-2 px-2.5 py-1 fs-13 hover:bg-[var(--color-panel-2)] ${
                         on ? "font-medium text-foreground" : "text-muted"
                       }`}
                     >
@@ -130,7 +130,7 @@ export default function MultiSelect({
                         onChange={() => toggle(o.value)}
                         className="mt-1 h-3 w-3 shrink-0 accent-[var(--color-primary)]"
                       />
-                      {o.code && <span className="tabular mt-px shrink-0 text-[12px] text-faint">{o.code}</span>}
+                      {o.code && <span className="tabular mt-px shrink-0 fs-12 text-faint">{o.code}</span>}
                       {/* HS descriptions run long: wrap them rather than cutting the
                           distinguishing tail, which is often the whole difference
                           between two neighbouring codes */}
@@ -144,7 +144,7 @@ export default function MultiSelect({
               <button
                 type="button"
                 onClick={() => onChange([])}
-                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left text-[12px] font-medium text-muted hover:text-foreground"
+                className="w-full border-t border-[var(--color-border-soft)] px-2.5 py-1.5 text-left fs-12 font-medium text-muted hover:text-foreground"
               >
                 {t("filter.clearSelection")}
               </button>

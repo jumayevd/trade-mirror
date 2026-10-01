@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as echarts from "echarts";
 import { readZoom, serverZoom, subscribeZoom } from "@/lib/zoom-store";
 import { baseTextStyle } from "@/lib/echartBase";
+import { readFpx, scaleFonts, serverFpx, subscribeFpx } from "@/lib/fluid-type";
 
 type EChartsOption = echarts.EChartsOption;
 
@@ -75,10 +76,16 @@ export default function EChart({ option, className, style, registerMaps, onEvent
    * the declared size is the size, and canvas text and the DOM tooltip can no
    * longer drift apart.
    */
-  const resolved = useMemo(() => ({
+  /*
+   * Declared sizes are then put on the fluid pixel, the same viewport factor
+   * `--fpx` gives DOM text, so axis labels grow and shrink with the tables beside
+   * them.
+   */
+  const fpx = useSyncExternalStore(subscribeFpx, readFpx, serverFpx);
+  const resolved = useMemo(() => scaleFonts({
     ...option,
     textStyle: { ...baseTextStyle, ...(option.textStyle as object | undefined) },
-  }), [option]);
+  }, fpx), [option, fpx]);
   const ref = useRef<HTMLDivElement>(null);
   const outer = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);

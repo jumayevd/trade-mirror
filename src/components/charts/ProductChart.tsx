@@ -147,7 +147,7 @@ export default function ProductChart({ product }: { product: Product }) {
       <div className="mt-1" style={{ height: 110 }}>
         <EChart option={gapOption} />
       </div>
-      <p className="px-1 text-[12px] text-faint">
+      <p className="px-1 fs-12 text-faint">
         {t("pchart.caption")}
       </p>
     </div>
