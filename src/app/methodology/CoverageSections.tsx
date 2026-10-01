@@ -138,7 +138,7 @@ export function TransitPartners() {
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
                 <th className="px-3 py-2 font-medium">{t("qual.transit.region")}</th>
                 <th className="px-3 py-2 font-medium">{t("qual.transit.reporting")}</th>
-                <th className="tabular px-3 py-2 text-right font-medium">{t("kpi.coverage")}</th>
+                <th className="tabular px-3 py-2 text-center font-medium">{t("kpi.coverage")}</th>
                 <th className="px-3 py-2 font-medium">{t("qual.transit.basis")}</th>
               </tr>
             </thead>
@@ -160,7 +160,7 @@ export function TransitPartners() {
                       {p.lapse && <Pill>{fill(t("qual.coverage.stoppedAfter"), { year: p.lastReportedYear })}</Pill>}
                     </span>
                   </td>
-                  <td className="tabular px-3 py-2 text-right text-muted" title={`${p.reportedYears.length} / ${yearsFor("year").length}`}>
+                  <td className="tabular px-3 py-2 text-center text-muted" title={`${p.reportedYears.length} / ${yearsFor("year").length}`}>
                     {fmtPct(p.coverage, 0)}
                   </td>
                   <td className="px-3 py-2 text-muted">{t("qual.transit.basisValue")}</td>

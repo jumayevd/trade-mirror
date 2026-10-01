@@ -35,7 +35,7 @@ const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
   { key: "importReported", labelKey: "prof.th.import" },
 ];
 
-const PAGE_SIZES = [10, 25, 50, 100];
+const PAGE_SIZES = [20, 50, 100];
 
 /** Share of positive discrepancy = posT ÷ pePosT; null when there is no export. */
 const gapPct = (c: Channel): number | null =>
@@ -131,9 +131,9 @@ export default function QueueTable({
   };
 
   const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
-  const thNum = `${th} text-right`;
+  const thNum = th.replace("text-left", "text-center");
   const td = "px-3 py-1.5 align-middle fs-13";
-  const tdNum = `${td} tabular text-right whitespace-nowrap`;
+  const tdNum = `${td} tabular text-center whitespace-nowrap`;
   const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
@@ -216,7 +216,7 @@ export default function QueueTable({
                 <th className={thNum} title={t("risk.tip.import")}>{t("prof.th.import")}</th>
                 <th className={thNum} title={t("risk.tip.gap")}>{t("prof.th.gap")}</th>
                 <th className={thNum} title={t("prof.th.share.tip")}>{t("prof.th.share")}</th>
-                <th className={th} title={`${t("risk.tip.persistenceYears")}${windowTip}`}>{t("common.persistence")}</th>
+                <th className={thNum} title={`${t("risk.tip.persistenceYears")}${windowTip}`}>{t("common.persistence")}</th>
                 <th className={thNum} title={`${t("risk.tip.riskValue")}${windowTip}`}>{t("prof.th.score")}</th>
                 <th className={th} title={`${t("risk.tip.band")}${windowTip}`}>{t("prof.th.band")}</th>
               </tr>
@@ -244,7 +244,7 @@ export default function QueueTable({
                     <td className={`${tdNum} font-semibold`} style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
                     <td className={tdNum}>{pct == null ? "—" : fmtPct(pct, 1)}</td>
                     <td
-                      className={`${td} tabular whitespace-nowrap`}
+                      className={tdNum}
                       title={`${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`}
                     >
                       {c.posYears}/{c.comparableYears} {t("risk.unit.yr")}
