@@ -634,6 +634,10 @@ for (const cif of [0, 0.10]) {
   check(`quality table: coverage, last year, lapse and tier follow the marks (${listed.length} partners)`, bad === 0, `${bad} partners off`);
   check("quality table: every partner with a mark is listed, none without",
     listed.length + meta.partners.filter((p) => p.reportedYears.length === 0).length === meta.partners.length && listed.length > 0);
+  // the Overview's partner count is the table's marks for the same years
+  const offYears = W.filter((y) => aggregate({ ...DEFAULT_FILTER, years: [y] }).kpis.partnerCount
+    !== meta.partners.filter((p) => p.reportedYears.includes(y)).length);
+  check("overview partners covered = quality-table marks, every year", offYears.length === 0, `off in ${offYears.join(", ")}`);
 
   const whole = aggregate({ ...DEFAULT_FILTER, years: [...W], minGap: 0 });
   const perYear = (chs: Channel[]) => {

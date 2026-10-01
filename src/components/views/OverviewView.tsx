@@ -572,7 +572,7 @@ export default function OverviewView() {
             value={fmtNum(k.partnerCount)}
             info={`${t("ovw.stat.partnersOfTotal")
               .split("{n}").join(fmtNum(k.partnerCount))
-              .split("{total}").join(fmtNum(meta.partners.length))} ${t("ovw.stat.partnersCovered.info")}`}
+              .split("{total}").join(fmtNum(meta.partners.filter((p) => p.reportedYears.length > 0).length))} ${t("ovw.stat.partnersCovered.info")}`}
             accent={COLORS.navy2}
           />
         </div>

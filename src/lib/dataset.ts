@@ -342,24 +342,34 @@ const annualizedYears = new Set(annualizedCells.map((r) => r.y));
  *  — only when the annualized layer is stale relative to the monthly book. */
 export const needsMonthlyDetail = (y: number): boolean => !annualYearSet.has(y) && !annualizedYears.has(y);
 
-/** Years a partner shows up in, extended past the annual workbook: the derived
- *  years count when the partner's export book has anything in them. */
-const derivedReportedYears = (() => {
+/*
+ * A partner's REPORTED YEARS: the years it has at least one HS6 line that both
+ * books recorded — on the derived years, over the months both reported (the
+ * month rule). This is exactly the test buildChannels applies before it
+ * measures anything, so a partner the Data Quality table marks for a year is a
+ * partner the Overview counts for that year, and the reverse.
+ *
+ * It used to be two tests. The table read the workbook's own HS2 sheet (which
+ * the engine no longer reads; its chapters re-allocate confidential trade) and,
+ * on the derived years, any partner export at all, ignoring the month rule —
+ * while the Overview counted comparable partners. The two disagreed in every
+ * year, by up to twelve partners in 2025.
+ */
+const comparableYears = (() => {
   const m = new Map<string, Set<number>>();
-  for (const r of annualizedCells) {
-    if (r.pe <= 0) continue;
+  const add = (r: Cell) => {
+    if (r.l !== 6 || cmpPe(r) <= NOISE || cmpUi(r) <= NOISE) return;
     let set = m.get(r.p);
     if (!set) { set = new Set(); m.set(r.p, set); }
     set.add(r.y);
-  }
+  };
+  for (const r of cells) add(r);
+  for (const r of annualizedCells) add(r);
   return m;
 })();
-export const reportedYearsOf = (iso: string): number[] => {
+export const reportedYearsOf = (iso: string): number[] =>
   // pMeta is declared below; this is only ever called after module init
-  const base = pMeta.get(iso)?.reportedYears ?? [];
-  const extra = derivedReportedYears.get(iso);
-  return extra ? [...new Set([...base, ...extra])].sort((a, b) => a - b) : base;
-};
+  pMeta.get(iso)?.reportedYears ?? [];
 
 /*
  * Partner reliability, measured over the window the dashboard shows. The
@@ -371,7 +381,7 @@ export const reportedYearsOf = (iso: string): number[] => {
  * has lapsed when it last reported before the workbook's final year.
  */
 for (const p of meta.partners) {
-  const years = [...new Set([...p.reportedYears, ...(derivedReportedYears.get(p.iso3) ?? [])])]
+  const years = [...(comparableYears.get(p.iso3) ?? [])]
     .filter((y) => yearlyYears.includes(y))
     .sort((a, b) => a - b);
   const coverage = years.length / yearlyYears.length;
@@ -1566,7 +1576,9 @@ export function aggregate(f: Filter): Aggregate {
     comparableTrade: rollupBase.reduce((s, c) => s + c.peT, 0),
     positive: { low: posAt("lo"), central: rollupBase.reduce((s, c) => s + c.posT, 0), high: posAt("hi") },
     coveragePct: comparablePY / possiblePY,
-    channelCount: channels.length, partnerCount: partners.length,
+    // partners with a line both books recorded in the period — pre-screen, so
+    // the count is the Data Quality marks for the same years, not the ranking
+    channelCount: channels.length, partnerCount: new Set(rollupBase.map((c) => c.partnerIso)).size,
     top5Share: sorted.slice(0, 5).reduce((s, c) => s + dirVal(c), 0) / dirTotal,
     hhi: Math.round(sorted.reduce((s, c) => s + (dirVal(c) / dirTotal) ** 2, 0) * 10000),
   };
