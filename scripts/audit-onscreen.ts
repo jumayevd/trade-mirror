@@ -14,10 +14,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  aggregate, DEFAULT_FILTER, loadMonthlyDetail, matchedMonthsOf, meta, monthlyOnlyYears, officialImportsOver, uzbMonthsOf, yearsFor,
+  aggregate, DEFAULT_FILTER, hsLabel, loadMonthlyDetail, matchedMonthsOf, meta, monthlyOnlyYears, officialImportsOver, uzbMonthsOf, yearsFor,
   type Aggregate, type Channel, type Filter, type RiskBand,
 } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
+import hs6ShortRaw from "../src/data/hs6-short.json";
 import diagRaw from "../src/data/diagnostics.json";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
@@ -690,6 +691,27 @@ for (const cif of [0, 0.10]) {
 }
 
 /* ---------------------------------------------------------------- */
+/* ---------------------------------------------------------------- */
+/* treemap tiles: every top-five product has a curated short name        */
+/* ---------------------------------------------------------------- */
+/* The Overview's product tiles print src/data/hs6-short.json; a code
+ * without an entry falls back to the English heading, which the tile wraps
+ * but cannot translate. New periods bring new codes to the top, so this
+ * lists exactly which codes need a name — fail here, add them there. */
+{
+  const curated = new Set(Object.keys(hs6ShortRaw).filter((k) => k !== "_note"));
+  const missing = new Map<string, string>();
+  const windows: number[][] = [...yearsFor("year").map((y) => [y]), [...yearsFor("year")]];
+  for (const years of windows) for (const cif of [0, 0.1, 0.15]) {
+    const a = aggregate({ ...DEFAULT_FILTER, years, cif, minGap: 0 });
+    const by = new Map<string, number>();
+    for (const c of a.channels6) if (c.posT > 0) by.set(c.cmd, (by.get(c.cmd) ?? 0) + c.posT);
+    for (const [cmd] of [...by].sort((p, q) => q[1] - p[1]).slice(0, 5)) if (!curated.has(cmd)) missing.set(cmd, hsLabel(cmd));
+  }
+  check("every top-five treemap product has a curated short name (hs6-short.json)", missing.size === 0,
+    [...missing].map(([c, l]) => `${c} ${l.slice(0, 50)}`).join("; "));
+}
+
 console.log(`on-screen consistency: ${pass} assertions passed, ${fails.length} failed`);
 if (fails.length) {
   console.log("\nfailures:");
