@@ -10,10 +10,12 @@ import { useI18n } from "@/lib/i18n";
 
 /**
  * Top-five treemap for the Overview: who and what carry the positive
- * discrepancy. Tile area is the cumulative positive gap over the selected
- * period, shaded blue → teal → green by rank. Each tile carries a name and an
- * amount and nothing else — the area already says how the five compare, so a
- * printed share only added a number to read.
+ * discrepancy. Tile area follows the cumulative positive gap over the selected
+ * period — compressed a little (area ∝ gap^0.8), so the smallest of the five
+ * keeps enough width for its name instead of a strip that breaks words — and
+ * is shaded blue → teal → green by rank. Each tile carries a name and its real
+ * amount and nothing else; the area says how the five compare, a printed
+ * share only added a number to read.
  *
  * One component serves both panels (countries and HS6 products); a tile click
  * opens the page for that country or product.
@@ -35,6 +37,8 @@ export interface TreemapItem {
  * colour without leaning on the amber the map reserves for its own ramp.
  */
 const RAMP = ["#1e40af", "#2563eb", "#0891b2", "#0d9488", "#34d399"];
+/** Area scale: 1 is strictly proportional; below it the largest tiles give up a little room. */
+const SIZE_POWER = 0.8;
 /** Ink that stays legible on each step. */
 const INK = ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#0b3527"];
 
@@ -76,8 +80,9 @@ export default function GapTreemap({
       label: {
         show: true,
         formatter: (p: unknown) => {
-          const it = p as { name: string; value: number };
-          return `${it.name}\n${fmtUSD(it.value)}`;
+          // the real amount sits on the item; the node's value is the layout size
+          const it = p as { name: string; data?: { item?: TreemapItem } };
+          return `${it.name}\n${fmtUSD(it.data?.item?.value ?? 0)}`;
         },
         fontSize: CHART_FONT.legend,
         lineHeight: CHART_FONT.legend + 4,
@@ -89,7 +94,7 @@ export default function GapTreemap({
       },
       data: top.map((it, i) => ({
         name: it.label,
-        value: it.value,
+        value: Math.pow(it.value, SIZE_POWER),
         // the tile carries its own item, so hit-testing never depends on an index
         item: it,
         itemStyle: { color: RAMP[i] },
