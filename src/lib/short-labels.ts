@@ -9,24 +9,32 @@ import type { Lang } from "@/lib/locales";
  * reaches a top five in any window and freight scenario, in all three
  * languages; the official HS text is untranslated, so for these lines this is
  * also the only Russian and Uzbek the reader gets. Anything else falls back to
- * a rule-based shortening of the official text, which is always kept in the
- * tooltip beside it — nothing here replaces the description, it only fronts it.
+ * the official heading, which the tile wraps and the tooltip repeats in full —
+ * nothing here replaces the description, it only fronts it.
  */
 const SHORT = shortRaw as unknown as Record<string, Record<Lang, string> | string>;
 
-const MAX = 30;
+/** Past this the heading is cut back to its last clause or word — never with an ellipsis. */
+const MAX = 60;
 
-/** Rule-based fallback: the heading before the first ";", asides dropped, cut at a word. */
+/**
+ * Rule-based fallback: the heading before the first ";", asides dropped. It is
+ * not clipped to a tile's width — the tile wraps it (GapTreemap sets the label
+ * to break lines) and the full text sits in the tooltip. An ellipsis baked into
+ * the label here would survive any amount of wrapping, which is how
+ * "Units of automatic data…" sat on a 350px tile.
+ */
 export function shortenHsText(text: string): string {
   const noAsides = text.replace(/\s*\([^)]*\)/g, "").replace(/…$/, "").trim();
   const head = noAsides.split(";")[0].trim();
   // a one-word heading ("Vehicles", "Machinery") says too little on its own;
-  // then the start of the qualifier is kept and the whole cut to length
-  const base = head.split(/\s+/).length >= 2 || head === noAsides ? head : noAsides.replace(";", ":");
+  // then the first qualifier is kept as well
+  const base = head.split(/\s+/).length >= 2 || head === noAsides ? head : noAsides.split(";").slice(0, 2).join(":").trim();
   if (base.length <= MAX) return base;
   const cut = base.slice(0, MAX + 1);
-  const atWord = cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:\s]+$/, "");
-  return `${atWord || base.slice(0, MAX)}…`;
+  const clause = Math.max(cut.lastIndexOf(", "), cut.lastIndexOf(": "));
+  const at = clause > MAX / 2 ? clause : cut.lastIndexOf(" ");
+  return (at > 0 ? cut.slice(0, at) : cut.slice(0, MAX)).replace(/[,;:\s]+$/, "");
 }
 
 export function hs6ShortLabel(cmd: string, lang: Lang, officialText: string): string {

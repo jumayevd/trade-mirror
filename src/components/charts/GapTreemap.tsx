@@ -80,8 +80,12 @@ export default function GapTreemap({
           return `${it.name}\n${fmtUSD(it.value)}`;
         },
         fontSize: CHART_FONT.legend,
-        lineHeight: CHART_FONT.legend + 5,
-        overflow: "truncate",
+        lineHeight: CHART_FONT.legend + 4,
+        // a name longer than its tile wraps onto further lines rather than
+        // being cut mid-word; only a tile too short for all the lines ends in …
+        overflow: "break",
+        lineOverflow: "truncate",
+        padding: [4, 6],
       },
       data: top.map((it, i) => ({
         name: it.label,
