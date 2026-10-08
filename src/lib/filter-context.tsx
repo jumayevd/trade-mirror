@@ -11,10 +11,11 @@ interface Ctx {
   filter: Filter;
   patch: (p: Partial<Filter>) => void;
   reset: () => void;
-  /** Aggregate for the selected period (snapshot or range). */
-  data: Aggregate;
-  /** Same filters over the FULL window — for time-series/trend components. */
-  series: Aggregate;
+  /**
+   * Bumps when the monthly HS6 detail lands. A page that aggregates the filter
+   * itself puts this in its memo key, so it recomputes once the detail arrives.
+   */
+  detailVer: number;
 }
 
 const FilterCtx = createContext<Ctx | null>(null);
@@ -75,10 +76,6 @@ function toSearch(f: Filter): string {
 }
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  // Names inside the aggregate are localised as it is built, so the language is
-  // part of the memo key: switching it has to rebuild the rollups, not just the
-  // chrome around them. FilterProvider sits inside I18nProvider (see layout).
-  const { lang } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -95,19 +92,39 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
+  /*
+   * The provider sits in the root layout, so anything computed here runs on
+   * every page. It used to build two full aggregates eagerly — the filter, and
+   * the same filter over every year — on Overview, Methodology and Data Quality
+   * alike, which read neither; the all-years one alone froze the page for
+   * seconds. Pages now aggregate what they show, themselves (useFilteredData).
+   */
   const value = useMemo<Ctx>(
     () => ({
       filter,
       patch: (p) => setFilter((f) => ({ ...f, ...p })),
       reset: () => setFilter(DEFAULT_FILTER),
-      data: labelsFor(lang, () => aggregate(filter)),
-      // full window on the same time basis, for trend components
-      series: labelsFor(lang, () => aggregate({ ...filter, years: [] })),
+      detailVer,
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filter, detailVer, lang],
+    [filter, detailVer],
   );
   return <FilterCtx.Provider value={value}>{children}</FilterCtx.Provider>;
+}
+
+/**
+ * The aggregate for the current filter, built only by the page that asks for
+ * it. `over` adjusts the filter first (e.g. a rollup level); pass a stable value.
+ */
+export function useFilteredData(over?: Partial<Filter>): Aggregate {
+  const { filter, detailVer } = useFilter();
+  const { lang } = useI18n();
+  const key = over ? JSON.stringify(over) : "";
+  return useMemo(
+    () => labelsFor(lang, () => aggregate(over ? { ...filter, ...over } : filter)),
+    // `over` is keyed by value; detailVer re-runs it when the monthly detail lands
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, lang, detailVer, key],
+  );
 }
 
 export function useFilter(): Ctx {

@@ -6,7 +6,7 @@ import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
   Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill,
 } from "@/components/ui";
-import { useFilter } from "@/lib/filter-context";
+import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
   hsLabel, isResidualChapter, yearsLabel, soleValue,
   type Channel, type RiskBand,
@@ -169,7 +169,8 @@ function Pager({
 /* ------------------------------------------------------------------ */
 
 export default function ProductsView() {
-  const { filter, patch, data } = useFilter();
+  const { filter, patch } = useFilter();
+  const data = useFilteredData();
   const { t } = useI18n();
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
