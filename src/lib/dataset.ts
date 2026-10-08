@@ -9,14 +9,22 @@
  * aggregate() — one version of the numbers everywhere. Missing partner-years are
  * never treated as zero flows.
  */
-import cellsRaw from "@/data/cells.json";
+/*
+ * The row tables arrive in their compact column form (src/data/wire/, written
+ * by scripts/build-wire.ts before every build) and are decoded here back to
+ * the canonical tables, row for row — the code below reads exactly what the
+ * canonical src/data files hold. risk.json's wire copy carries everything this
+ * file reads; the fitted per-cell scores it omits are read by the audit only.
+ */
+import cellsWire from "@/data/wire/cells.json";
 import metaRaw from "@/data/meta.json";
-import monthlyRaw from "@/data/monthly.json";
-import annualizedRaw from "@/data/annualized-hs6.json";
+import monthlyWire from "@/data/wire/monthly.json";
+import annualizedWire from "@/data/wire/annualized-hs6.json";
 import officialImportsRaw from "@/data/official-imports.json";
 import productsRaw from "@/data/products.json";
-import riskRaw from "@/data/risk.json";
+import riskRaw from "@/data/wire/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
+import { decodePacked, type WireTable } from "@/lib/wire";
 import { labelLang, tCategory, tCountry, tRegion, tText } from "@/lib/labels";
 
 export const METHODOLOGY_VERSION = "3.1";
@@ -109,7 +117,7 @@ const categoryOfChapter = (c: string) => meta.catByChapter[c] ?? "instruments";
 interface PackedCells { v: number; y0: number; p: string[]; k: string[]; r: number[][] }
 
 const cells: Cell[] = (() => {
-  const packed = cellsRaw as unknown as PackedCells;
+  const packed = decodePacked<PackedCells>(cellsWire as unknown as WireTable);
   const out: Cell[] = new Array(packed.r.length);
   for (let i = 0; i < packed.r.length; i++) {
     const row = packed.r[i];
@@ -178,7 +186,8 @@ const cells: Cell[] = (() => {
  * monthly.json ships columnar like cells.json, with the time axis in months:
  * [pIdx, kIdx, monthOffset, pe, ui] where monthOffset = (year − y0) × 12 + (month − 1).
  * This bundled file carries the chapter (HS2) series; the far larger HS6 detail
- * lives in public/data/monthly-hs6.json and is fetched on demand (see below).
+ * lives in public/data/monthly-hs6.json and is fetched on demand, in its compact
+ * copy public/data/monthly-hs6.wire.json (see below).
  */
 interface PackedMonthly {
   v: number;
@@ -190,7 +199,7 @@ interface PackedMonthly {
 }
 interface MonthCell { p: string; k: string; c: string; cat: string; y: number; m: number; pe: number; ui: number }
 
-const monthlyPacked = monthlyRaw as unknown as PackedMonthly;
+const monthlyPacked = decodePacked<PackedMonthly>(monthlyWire as unknown as WireTable);
 
 const monthlyCells: MonthCell[] = (() => {
   if (!monthlyPacked || !Array.isArray(monthlyPacked.r)) return [];
@@ -329,7 +338,7 @@ export const DATA_WINDOW = { start: yearlyYears[0], end: yearlyYears[yearlyYears
  * page, including the statically generated profiles, with no runtime fetch.
  */
 const annualizedCells: Cell[] = (() => {
-  const packed = annualizedRaw as unknown as PackedCells;
+  const packed = decodePacked<PackedCells>(annualizedWire as unknown as WireTable);
   const out: Cell[] = new Array(packed.r.length);
   for (let i = 0; i < packed.r.length; i++) {
     const row = packed.r[i];
@@ -484,9 +493,10 @@ export function loadMonthlyDetail(payload: PackedMonthlyDetail): void {
 export function ensureMonthlyDetail(): void {
   if (monthlyDetail || monthlyDetailLoading || typeof window === "undefined") return;
   monthlyDetailLoading = true;
-  fetch("/data/monthly-hs6.json")
+  // the compact copy (scripts/build-wire.ts) — a third smaller over the wire
+  fetch("/data/monthly-hs6.wire.json")
     .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-    .then((j: PackedMonthlyDetail) => { monthlyDetailLoading = false; loadMonthlyDetail(j); })
+    .then((w: WireTable) => { monthlyDetailLoading = false; loadMonthlyDetail(decodePacked<PackedMonthlyDetail>(w)); })
     .catch(() => { monthlyDetailLoading = false; });
 }
 
