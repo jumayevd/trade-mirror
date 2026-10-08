@@ -5,12 +5,11 @@ import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
 import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip } from "@/components/ui";
-import { useFilter } from "@/lib/filter-context";
-import { aggregate, type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
+import { useFilter, useFilteredData } from "@/lib/filter-context";
+import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { labelsFor } from "@/lib/labels";
 import { hs6ShortLabel } from "@/lib/short-labels";
 
 /**
@@ -77,10 +76,13 @@ function Pager({
   );
 }
 
+/** The partner rollup reads the HS6 grain; a constant, so the memo key is stable. */
+const ROLLUP_HS6 = { rollupLevel: 6 } as const;
+
 export default function PartnersView() {
   const { filter } = useFilter();
   const { lang, t } = useI18n();
-  const data = useMemo(() => labelsFor(lang, () => aggregate({ ...filter, rollupLevel: 6 })), [filter, lang]);
+  const data = useFilteredData(ROLLUP_HS6);
   const [sort, setSort] = useState<SortKey>("positive");
   const [sel, setSel] = useState<string[]>([]);
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
