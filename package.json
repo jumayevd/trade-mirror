@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx scripts/build-wire.ts",
     "dev": "next dev",
+    "prebuild": "tsx scripts/build-wire.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,11 +13,14 @@
     "data:risk": "tsx scripts/build-risk-index.ts",
     "data:extend": "tsx scripts/fetch-monthly-extension.ts",
     "data:annualize": "tsx scripts/build-annualized.ts",
+    "data:wire": "tsx scripts/build-wire.ts",
     "data:labels": "tsx scripts/build-labels.ts && python scripts/check-labels.py",
+    "predata:verify": "tsx scripts/build-wire.ts",
     "data:verify": "tsx scripts/verify-against-source.ts",
     "data:monthly": "python scripts/extract-monthly.py && tsx scripts/build-monthly.ts",
     "audit:charts": "tsx scripts/audit-chart-text.ts",
     "data:audit": "tsx scripts/audit-vs-comtrade.ts",
+    "predata:audit:ui": "tsx scripts/build-wire.ts",
     "data:audit:ui": "node --max-old-space-size=8192 --import tsx scripts/audit-onscreen.ts"
   },
   "dependencies": {
