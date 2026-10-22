@@ -4,14 +4,14 @@
   "buildCommand": "npm run build",
   "redirects": [
     { "source": "/", "destination": "/savdo/", "permanent": false },
-    { "source": "/savdo/unexplained/:path*", "destination": "/savdo/", "permanent": false },
-    { "source": "/partners/:path*", "destination": "/savdo/partners/:path*", "permanent": false },
-    { "source": "/products/:path*", "destination": "/savdo/products/", "permanent": false },
-    { "source": "/risk/:path*", "destination": "/savdo/risk/", "permanent": false },
-    { "source": "/methodology/:path*", "destination": "/savdo/methodology/", "permanent": false },
-    { "source": "/quality/:path*", "destination": "/savdo/quality/", "permanent": false },
-    { "source": "/channels/:iso/:cmd", "destination": "/savdo/channels/?iso=:iso&cmd=:cmd", "permanent": false },
-    { "source": "/(unexplained|map|trends|commodities|reverse|statistics)/:path*", "destination": "/savdo/", "permanent": false },
-    { "source": "/trade/:path*", "destination": "/savdo/:path*", "permanent": false }
+    { "source": "/savdo/unexplained/:rest(.*)", "destination": "/savdo/", "permanent": false },
+    { "source": "/partners/:rest(.*)", "destination": "/savdo/partners/:rest", "permanent": false },
+    { "source": "/products/:rest(.*)", "destination": "/savdo/products/", "permanent": false },
+    { "source": "/risk/:rest(.*)", "destination": "/savdo/risk/", "permanent": false },
+    { "source": "/methodology/:rest(.*)", "destination": "/savdo/methodology/", "permanent": false },
+    { "source": "/quality/:rest(.*)", "destination": "/savdo/quality/", "permanent": false },
+    { "source": "/channels/:iso/:cmd/", "destination": "/savdo/channels/?iso=:iso&cmd=:cmd", "permanent": false },
+    { "source": "/(unexplained|map|trends|commodities|reverse|statistics)/:rest(.*)", "destination": "/savdo/", "permanent": false },
+    { "source": "/trade/:rest(.*)", "destination": "/savdo/:rest", "permanent": false }
   ]
 }
