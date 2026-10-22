@@ -79,18 +79,45 @@ export function PosDefLine({ link }: { link?: { href: string; label: string } })
 }
 
 /**
- * The head of a trade page: the title with the definition beneath it on the
- * left, the page's own control (export, data window) on the right. Stacks on
- * narrow screens in the same order.
+ * The same definition set beside a page's filters, where the reader meets it
+ * with the controls that shape the figure: read at body size, the term in
+ * bold, a CBU-gold rail tying it to the brand. It sits on the controls' baseline
+ * and wraps within its own width rather than pushing the controls apart.
+ */
+export function PosDefNote() {
+  const { t } = useI18n();
+  const def = t("ovw.posDef");
+  const body = def.charAt(0).toLowerCase() + def.slice(1);
+  return (
+    <p className="max-w-[34rem] self-end border-l-[3px] border-l-[var(--color-gold)] py-0.5 pl-3 fs-15 leading-snug text-foreground">
+      <span className="font-semibold">{t("kpi.positive")}</span> — {body}
+    </p>
+  );
+}
+
+/**
+ * The head of a trade page: the title on the left, the page's own control
+ * (export, data window) on the right. The definition sits under the title,
+ * unless the page sets it beside its filters instead (`definition={false}`,
+ * with PosDefNote in the filter row). Stacks on narrow screens in the same order.
  */
 export function PageHead({
-  title, right, link,
-}: { title: React.ReactNode; right?: React.ReactNode; link?: { href: string; label: string } }) {
+  title, right, link, definition = true,
+}: {
+  title: React.ReactNode; right?: React.ReactNode;
+  link?: { href: string; label: string }; definition?: boolean;
+}) {
   return (
     <section className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
       <div className="min-w-0 space-y-1">
         {title}
-        <PosDefLine link={link} />
+        {definition ? (
+          <PosDefLine link={link} />
+        ) : link ? (
+          <p className="fs-13">
+            <Link href={link.href} className="font-medium text-[var(--color-primary)] hover:underline">{link.label} →</Link>
+          </p>
+        ) : null}
       </div>
       {right && <div className="flex shrink-0 sm:justify-end sm:pt-1">{right}</div>}
     </section>

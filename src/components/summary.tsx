@@ -22,27 +22,79 @@ export const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
 /* ------------------------------------------------------------------ */
-/* Hero stat: the ONE lead number on a page (30px; other tiles 24px)   */
+/* KPI tile: figure on top, its picture at the foot                    */
 /* ------------------------------------------------------------------ */
 
-export function HeroStat({
-  label, value, sub, info, accent = COLORS.positive, trend,
-}: { label: string; value: string; sub?: string; info?: string; accent?: string; trend?: ReactNode }) {
+/**
+ * One headline figure. Label, figure and its context read together from the
+ * top; the tile's picture of that figure — its trend, or the share it is of a
+ * whole — is pinned to the foot. A row of tiles shares one height, so whatever
+ * the row grows to is taken up between the two, and the figure never sinks to
+ * the bottom of an emptied box. `hero` is the page's one lead figure (30px;
+ * the rest 24px).
+ */
+export function KpiTile({
+  label, value, sub, info, accent = COLORS.positive, hero = false, footer,
+}: {
+  label: string; value: string; sub?: string; info?: string;
+  accent?: string; hero?: boolean; footer?: ReactNode;
+}) {
   return (
-    <div className="stat-card" style={{ ["--stat-rail" as string]: accent }}>
+    <div className="stat-card flex min-w-0 flex-col" style={{ ["--stat-rail" as string]: accent }}>
       <div className="flex items-start justify-between gap-2">
         <div className="fs-12.5 font-medium leading-snug text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      {/* the trend sits beside the figure where the tile is wide enough, and
-          wraps beneath it where it is not — it never pushes past the edge */}
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
-        <span className="whitespace-nowrap fs-30 font-semibold leading-none tracking-tight" style={{ color: accent }}>
-          {value}
-        </span>
-        {trend}
+      <div
+        className={`mt-2 whitespace-nowrap font-semibold leading-none tracking-tight ${hero ? "fs-30" : "fs-24"}`}
+        style={{ color: accent }}
+      >
+        {value}
       </div>
       {sub && <div className="mt-1.5 fs-12.5 leading-snug text-faint">{sub}</div>}
+      {footer && <div className="mt-auto pt-4">{footer}</div>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Meter: the share a figure is of its whole                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A 10px track, the figure's parts filled along it in order against `of` — the
+ * whole the tile's percentage is taken from. Each part names itself on hover;
+ * the caption beneath says in words what the bar shows.
+ */
+export function Meter({
+  segments, of, ariaLabel, caption,
+}: {
+  segments: { key: string; value: number; color: string; label: string; valueText: string }[];
+  of: number; ariaLabel: string; caption?: ReactNode;
+}) {
+  const { tip, show, hide } = useTip();
+  const parts = segments.filter((s) => s.value > 0);
+  const lines = (s: (typeof parts)[number]) => [{ color: s.color, label: s.label, value: `${s.valueText} · ${fmtPct(of > 0 ? s.value / of : 0, 1)}` }];
+  return (
+    <div>
+      <div
+        role="img"
+        aria-label={`${ariaLabel}: ${parts.map((s) => `${s.label} ${fmtPct(of > 0 ? s.value / of : 0, 1)}`).join(", ")}`}
+        className="flex h-2.5 w-full gap-[2px] rounded-full bg-[var(--color-panel-2)]"
+        onPointerLeave={hide}
+      >
+        {parts.map((s, i) => (
+          <span
+            key={s.key}
+            onPointerEnter={(e) => show(e, ariaLabel, lines(s))}
+            onPointerMove={(e) => show(e, ariaLabel, lines(s))}
+            className={`${HIT} h-full ${i === 0 ? "rounded-l-full" : ""} ${i === parts.length - 1 ? "rounded-r-full" : ""}`}
+            style={{ width: `${Math.min(100, (100 * s.value) / (of || 1))}%`, background: s.color }}
+          />
+        ))}
+      </div>
+      {caption && <div className="mt-1.5 fs-12 leading-snug text-faint">{caption}</div>}
+      <FloatingTip tip={tip} />
     </div>
   );
 }
@@ -92,11 +144,14 @@ export function buildTrend(
  * hover; the summary sits in the label for screen readers.
  */
 export function Sparkline({
-  points, ariaLabel, format, partialWord,
-}: { points: TrendPoint[]; ariaLabel: string; format: (v: number) => string; partialWord: string }) {
+  points, ariaLabel, format, partialWord, height = 44,
+}: { points: TrendPoint[]; ariaLabel: string; format: (v: number) => string; partialWord: string; height?: number }) {
   const { tip, show, hide } = useTip();
+  // the line spans its tile: drawn in real pixels at the measured width, so
+  // the points stay round and the strokes crisp at any tile size
+  const [box, measured] = useWidth<HTMLDivElement>();
   if (points.length < 2) return null;
-  const W = 96, H = 32, P = 4;
+  const W = Math.max(80, measured), H = height, P = 5;
   const max = Math.max(...points.map((p) => p.value)) || 1;
   const step = (W - 2 * P) / (points.length - 1);
   const x = (i: number) => P + i * step;
@@ -108,8 +163,8 @@ export function Sparkline({
   const tail = points.findIndex((p) => p.partial);
   const solidEnd = tail > 0 ? tail - 1 : points.length - 1;
   return (
-    <span className="flex shrink-0 flex-col items-end">
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} onPointerLeave={hide} className="overflow-visible">
+    <div ref={box} className="w-full">
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} onPointerLeave={hide} className="block overflow-visible">
         <path d={line(0, solidEnd)} fill="none" stroke={COLORS.calm} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         {tail > 0 && (
           <path d={line(tail - 1, points.length - 1)} fill="none" stroke={COLORS.calm} strokeWidth={2} strokeDasharray="3 3" strokeLinecap="round" />
@@ -139,11 +194,13 @@ export function Sparkline({
           />
         ))}
       </svg>
-      <span className="tabular mt-0.5 fs-11 leading-none text-faint">
-        {points[0].label}–{points[points.length - 1].label}
-      </span>
+      {/* the window's two ends, under the line's two ends */}
+      <div className="tabular mt-1 flex justify-between fs-11.5 leading-none text-faint">
+        <span>{points[0].label}</span>
+        <span>{points[points.length - 1].label}</span>
+      </div>
       <FloatingTip tip={tip} />
-    </span>
+    </div>
   );
 }
 

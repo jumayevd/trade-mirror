@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, TableReveal, PageHead } from "@/components/ui";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, TableReveal, PageHead, PosDefNote } from "@/components/ui";
 import { useFilter } from "@/lib/filter-context";
 import { aggregate, type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -261,6 +261,7 @@ export default function PartnersView() {
       {/* 1. header */}
       <PageHead
         title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>}
+        definition={false}
         right={
           <button
             onClick={exportCsv}
@@ -273,8 +274,8 @@ export default function PartnersView() {
         }
       />
 
-      {/* 2. filters + context */}
-      <FilterBar />
+      {/* 2. filters + context, the definition beside the freight scenario */}
+      <FilterBar note={<PosDefNote />} />
       {filter.years.length === 0 ? (
         <EmptyState text={t("common.noPeriod")} />
       ) : (

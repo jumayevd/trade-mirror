@@ -5,9 +5,9 @@ import ValueMatrix, { type MatrixColumn, type MatrixRow } from "@/components/cha
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
+  SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead, PosDefNote,
 } from "@/components/ui";
-import { BarList, HeroStat, Panel, Takeaways, TrendFor, buildTrend, type BarItem, type Takeaway } from "@/components/summary";
+import { BarList, KpiTile, Meter, Panel, Takeaways, TrendFor, buildTrend, type BarItem, type Takeaway } from "@/components/summary";
 import { useFilter } from "@/lib/filter-context";
 import {
   aggregate, categoryLabel, comparableMonthsOfYear, hsLabel, isDerivedYear, isResidualChapter, yearsFor, yearsLabel, soleValue,
@@ -476,6 +476,7 @@ export default function ProductsView() {
       {/* header + export */}
       <PageHead
         title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>}
+        definition={false}
         right={
         <button
           onClick={exportCsv}
@@ -488,7 +489,7 @@ export default function ProductsView() {
         }
       />
 
-      <FilterBar />
+      <FilterBar note={<PosDefNote />} />
       {filter.years.length === 0 ? (
         <EmptyState text={t("common.noPeriod")} />
       ) : (
@@ -499,36 +500,61 @@ export default function ProductsView() {
         <EmptyState />
       ) : (
         <>
-          {/* a row of tiles shares one height; each value sits above its context
-              line at the same depth, whether a label takes one line or two */}
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>.stat-card]:flex [&>.stat-card]:flex-col [&>.stat-card>:nth-child(2)]:mt-auto [&>.stat-card>:nth-child(2)]:pt-2">
-            <HeroStat
+          {/* each tile: its figure and context on top, its picture at the foot —
+              the trend, or the share the figure is of its whole */}
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiTile
+              hero
               label={t("kpi.positive")}
               value={fmtUSD(summary.tot.pos)}
               sub={fill(t("prod.kpi.posSub"), { pe: fmtUSD(summary.tot.pe), ui: fmtUSD(summary.tot.ui) })}
               info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(summary.tot.pos)}. ${t("prod.stat.exports")}: ${fmtUSDFull(summary.tot.pe)}. ${t("prod.stat.imports")}: ${fmtUSDFull(summary.tot.ui)}. ${period}.`}
-              trend={<TrendFor points={trend} />}
+              footer={<TrendFor points={trend} />}
             />
-            <Stat
+            <KpiTile
               label={t("prof.stat.share")}
               value={fmtPct(sumShare, 1)}
               sub={t("prod.kpi.shareSub")}
               accent={COLORS.positive}
               info={`${t("prof.stat.share.info")} ${fmtUSDFull(summary.tot.pos)} ÷ ${fmtUSDFull(summary.tot.pe)}.`}
+              footer={
+                <Meter
+                  of={summary.tot.pe}
+                  ariaLabel={t("prof.stat.share")}
+                  segments={[{ key: "gap", value: summary.tot.pos, color: COLORS.positive, label: t("kpi.positive"), valueText: fmtUSD(summary.tot.pos) }]}
+                  caption={fill(t("prod.kpi.top10Sub"), { value: fmtUSD(summary.tot.pos), total: fmtUSD(summary.tot.pe) })}
+                />
+              }
             />
-            <Stat
+            <KpiTile
               label={t("prod.kpi.products")}
               value={fmtNum(summary.codes.length)}
               sub={fill(t("prod.kpi.productsSub"), { n: fmtNum(summary.partners) })}
               accent={COLORS.navy2}
               info={t("prod.kpi.products.info")}
+              footer={
+                // how many of them are in the top risk band — the bridge to Discrepancy & Risk
+                <Meter
+                  of={summary.codes.length}
+                  ariaLabel={t("prod.kpi.products")}
+                  segments={[{ key: "critical", value: summary.critical.n, color: BAND_COLORS.critical, label: t("band.critical"), valueText: fmtNum(summary.critical.n) }]}
+                  caption={`${fill(t("risk.band.title"), { band: t("band.critical") })}: ${fmtNum(summary.critical.n)} (${fmtPct(summary.critical.n / summary.codes.length, 1)})`}
+                />
+              }
             />
-            <Stat
+            <KpiTile
               label={t("prod.kpi.top10")}
               value={fmtPct(summary.top10 / summary.tot.pos, 1)}
               sub={fill(t("prod.kpi.top10Sub"), { value: fmtUSD(summary.top10), total: fmtUSD(summary.tot.pos) })}
               accent={COLORS.navy3}
               info={t("prod.kpi.top10.info")}
+              footer={
+                <Meter
+                  of={summary.tot.pos}
+                  ariaLabel={t("prod.kpi.top10")}
+                  segments={[{ key: "top10", value: summary.top10, color: COLORS.navy3, label: t("prod.kpi.top10"), valueText: fmtUSD(summary.top10) }]}
+                />
+              }
             />
           </section>
 

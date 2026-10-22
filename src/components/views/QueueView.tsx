@@ -6,8 +6,8 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { EmptyState, InfoTip, PageHead, SectionTitle, Segmented, Stat, TableReveal, TransitTag } from "@/components/ui";
-import { BarList, HeroStat, Panel, ShareStrip, Takeaways, TrendFor, buildTrend, type BarItem, type Takeaway } from "@/components/summary";
+import { EmptyState, InfoTip, PageHead, PosDefNote, SectionTitle, Segmented, TableReveal, TransitTag } from "@/components/ui";
+import { BarList, KpiTile, Meter, Panel, ShareStrip, Takeaways, TrendFor, buildTrend, type BarItem, type Takeaway } from "@/components/summary";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
 import { productShortLabel } from "@/lib/short-labels";
@@ -304,6 +304,7 @@ export default function QueueView() {
       <PageHead
         title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>}
         link={{ href: "/savdo/methodology", label: t("nav.methodology") }}
+        definition={false}
         right={
         <button
           onClick={exportCsv}
@@ -362,6 +363,8 @@ export default function QueueView() {
             ))}
           </select>
         </div>
+        {/* what the figure below is, beside the control that moves it most */}
+        <PosDefNote />
       </section>
 
       {years.length === 0 && <EmptyState text={t("common.noPeriod")} />}
@@ -370,20 +373,41 @@ export default function QueueView() {
       {/* 1. one row: the gap, how much of it is high-risk, and how the bands split it */}
       {ready && (
         // one row from 1280px; below it the band card takes the full width under the two tiles
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>.stat-card]:flex [&>.stat-card]:flex-col [&>.stat-card>:nth-child(2)]:mt-auto [&>.stat-card>:nth-child(2)]:pt-2">
-          <HeroStat
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiTile
+            hero
             label={t("kpi.positive")}
             value={fmtUSD(stats.totalVolume)}
             sub={fill(t("risk.kpi.pairsSub"), { n: fmtNum(stats.total), level: levelName })}
             info={`${fill(t("prof.stat.positive.info"), { cif: Math.round(cif * 100) })} ${fmtUSDFull(stats.totalVolume)}.`}
-            trend={<TrendFor points={trend} />}
+            footer={<TrendFor points={trend} />}
           />
-          <Stat
+          {/* the high-risk figure, and how its two bands make it up against the whole gap */}
+          <KpiTile
             label={fill(t("risk.kpi.highRisk"), topBands)}
             value={fmtUSD(highVol)}
             sub={fill(t("risk.kpi.highRiskSub"), { pct: fmtPct(share(highVol), 1), n: fmtNum(highCount) })}
             accent={BAND_COLORS.critical}
             info={t("risk.kpi.highRisk.info")}
+            footer={
+              <Meter
+                of={stats.totalVolume}
+                ariaLabel={t("kpi.positive")}
+                segments={(["critical", "high"] as RiskBand[]).map((b) => ({
+                  key: b, value: stats.volume[b], color: BAND_COLORS[b], label: bandName(b), valueText: fmtUSD(stats.volume[b]),
+                }))}
+                caption={
+                  <span className="flex flex-wrap gap-x-3 gap-y-0.5">
+                    {(["critical", "high"] as RiskBand[]).map((b) => (
+                      <span key={b} className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-sm" style={{ background: BAND_COLORS[b] }} />
+                        {bandName(b)} <span className="tabular">{fmtPct(share(stats.volume[b]), 1)}</span>
+                      </span>
+                    ))}
+                  </span>
+                }
+              />
+            }
           />
 
           {/* one strip, the four bands' figures beneath it; pair counts and

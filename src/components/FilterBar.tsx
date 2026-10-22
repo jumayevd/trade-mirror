@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import YearSelect from "@/components/YearSelect";
@@ -38,8 +38,57 @@ const optionText = (code: string, label: string, lang: string) => {
   return localised === label ? { label } : { label, full: localised };
 };
 
-export default function FilterBar() {
+/**
+ * `note` sits right after the freight scenario — the control that most moves
+ * the figure it explains (the trade pages pass the positive-discrepancy
+ * definition, PosDefNote).
+ */
+export default function FilterBar({ note }: { note?: ReactNode } = {}) {
   const { filter, patch, reset } = useFilter();
+
+  /*
+   * The note is read once, at the top. Beside the freight control it pushes
+   * the rest of the filters onto a second line, and a two-line bar pinned over
+   * the page would take a sixth of a laptop screen while scrolling. So once
+   * the bar is stuck the note steps aside and the bar is one line again; the
+   * height it gave up is held as margin beneath it, so nothing on the page
+   * moves when it goes or comes back.
+   */
+  const bar = useRef<HTMLDivElement>(null);
+  const fullHeight = useRef(0);
+  const stuckRef = useRef(false);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = bar.current;
+    if (!note || !el) return;
+    const check = () => {
+      const pinnedAt = parseFloat(getComputedStyle(el).top) || 0;
+      const isStuck = window.scrollY > 0 && el.getBoundingClientRect().top <= pinnedAt + 0.5;
+      if (!isStuck && !stuckRef.current) fullHeight.current = el.getBoundingClientRect().height;
+      setStuck(isStuck);
+    };
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    check();
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [note]);
+  // the held height is a measurement of the laid-out bar, written straight to
+  // its style before the frame paints — so the page never shows the gap close
+  useLayoutEffect(() => {
+    stuckRef.current = stuck;
+    const el = bar.current;
+    if (!note || !el) return;
+    // fractional heights: whole pixels would leave the page a pixel off each time
+    if (!stuck) {
+      el.style.marginBottom = "";
+      fullHeight.current = el.getBoundingClientRect().height;
+    } else {
+      el.style.marginBottom = `calc(0.75rem + ${Math.max(0, fullHeight.current - el.getBoundingClientRect().height)}px)`;
+    }
+  }, [stuck, note]);
   const { t, lang } = useI18n();
   const isDefault = JSON.stringify(filter) === JSON.stringify(DEFAULT_FILTER);
 
@@ -108,7 +157,10 @@ export default function FilterBar() {
   );
 
   return (
-    <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
+    <div
+      ref={bar}
+      className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur"
+    >
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         {/* time basis: yearly reads the annual books, monthly the monthly ones */}
         <div className="flex flex-col gap-1">
@@ -151,6 +203,8 @@ export default function FilterBar() {
             ))}
           </select>
         </div>
+
+        {!stuck && note}
 
         <MultiSelect
           values={filter.country}
