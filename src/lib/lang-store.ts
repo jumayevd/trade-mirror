@@ -8,6 +8,9 @@
  */
 import { LANGS, type Lang } from "@/lib/locales";
 
+/** The portal is read in Uzbek first; English and Russian are one click away. */
+const DEFAULT_LANG: Lang = "uz";
+
 let override: Lang | null = null;
 let listeners: Array<() => void> = [];
 
@@ -15,7 +18,7 @@ export const readLang = (): Lang => {
   if (override) return override;
   let saved: string | null = null;
   try { saved = localStorage.getItem("tm-lang"); } catch { /* server, or storage denied */ }
-  return (LANGS as readonly string[]).includes(saved ?? "") ? (saved as Lang) : "en";
+  return (LANGS as readonly string[]).includes(saved ?? "") ? (saved as Lang) : DEFAULT_LANG;
 };
 
 export const writeLang = (l: Lang) => {
@@ -29,5 +32,5 @@ export const subscribeLang = (fn: () => void) => {
   return () => { listeners = listeners.filter((x) => x !== fn); };
 };
 
-/** Server render is always English; the client corrects after hydration. */
-export const serverLang = (): Lang => "en";
+/** Server render is in the default language; the client corrects after hydration. */
+export const serverLang = (): Lang => DEFAULT_LANG;

@@ -4,8 +4,9 @@ import { useMemo } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import ChannelChart from "@/components/charts/ChannelChart";
+import { ContextLine } from "@/components/ContextLine";
 import {
-  Stat, SectionTitle, ContextLine, BandBadge,
+  Stat, SectionTitle, BandBadge,
   RobustnessBadge, QualityTag, TransitTag, MissingValue, InfoTip,
 } from "@/components/ui";
 import {
@@ -168,10 +169,10 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
     <div className="space-y-8">
       {/* 1. header */}
       <div>
-        <Link href="/risk" className="text-sm text-muted hover:text-foreground">← {t("nav.queue")}</Link>
+        <Link href="/savdo/risk" className="text-sm text-muted hover:text-foreground">← {t("nav.queue")}</Link>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">
-            <Link href={`/partners/${channel.partnerIso.toLowerCase()}`} className="hover:underline">{partner}</Link>
+            <Link href={`/savdo/partners/${channel.partnerIso.toLowerCase()}`} className="hover:underline">{partner}</Link>
             <span className="text-faint"> × </span>
             <span>{channel.cmdLabel}</span>
           </h1>
@@ -288,10 +289,10 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
         />
         <div className="space-y-4">
           <div>
-            <div className="mb-2 text-xs font-medium uppercase tracking-wider text-faint">
+            <div className="mb-2 fs-12.5 font-medium text-faint">
               {t("chan.quality.coverageLead")} · {fill(t("chan.quality.coverageYears"), { k: reportedYearsOf(pm.iso3).length, n: WINDOW.length })} · {fmtPct(reportedYearsOf(pm.iso3).length / WINDOW.length, 0)}
               {pm.lapse && (
-                <span className="ml-2 normal-case" style={{ color: "#b45309" }}>
+                <span className="ml-2 normal-case" style={{ color: "var(--color-warn)" }}>
                   {fill(t("prof.stat.stoppedAfter"), { year: pm.lastReportedYear })}
                 </span>
               )}
@@ -367,7 +368,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
 
       {/* 8. interpretation narrative */}
       <section className="card border-l-2 border-l-[var(--color-accent)] p-5">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-faint">{t("chan.interpretation")}</h2>
+        <h2 className="mb-2 fs-15 font-semibold">{t("chan.interpretation")}</h2>
         <p className="fs-15 leading-relaxed text-muted">{narrative}</p>
         <p className="mt-3 text-xs text-faint">{fill(t("chan.interpretation.note"), { period })}</p>
       </section>

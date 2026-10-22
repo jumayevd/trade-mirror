@@ -18,9 +18,11 @@ import { COLORS, fmtUSD } from "./format";
 /**
  * The chart type scale, named rather than sprinkled as literals.
  *
- * Charts inherit the page's reading scale, so these are declared sizes and the
- * reader's setting multiplies them: at the default 1.25 an axis label lands near
- * 21 screen pixels.
+ * Charts inherit the page's reading scale and the fluid pixel, so these are
+ * declared sizes the two multiply. They sit level with the table text beside
+ * the charts (13–14px at the 1:1 default): the old 17/15 was tuned while every
+ * canvas label was silently drawn at 10px (see CHART_FAMILY), and once that was
+ * fixed it put axis labels a third larger than the figures in the tables.
  *
  * The ordering is deliberate and is the reverse of the usual instinct. Axis
  * labels and legends are the text a reader scans, and they sit on a busy field of
@@ -29,11 +31,26 @@ import { COLORS, fmtUSD } from "./format";
  * as shouting once the scale is turned up.
  */
 export const CHART_FONT = {
-  axisLabel: 17,
-  axisName: 15,
-  legend: 15,
+  axisLabel: 13,
+  axisName: 12,
+  legend: 13,
   tooltip: 12,
 } as const;
+
+const FALLBACK_FAMILY = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+/**
+ * The font family for canvas text, resolved to real names. A canvas cannot read
+ * CSS variables: given "16px var(--font-geist-sans)" it rejects the whole font
+ * string and draws in its default 10px sans-serif — which is how every chart
+ * label used to render, whatever size it declared. The variable is read once
+ * from the document (next/font sets it on <html>) and inlined.
+ */
+export const CHART_FAMILY = (() => {
+  if (typeof document === "undefined") return FALLBACK_FAMILY;
+  const v = getComputedStyle(document.documentElement).getPropertyValue("--font-geist-sans").trim();
+  return v ? `${v}, ${FALLBACK_FAMILY}` : FALLBACK_FAMILY;
+})();
 
 export const moneyAxisFormatter = (v: number) => fmtUSD(v);
 
@@ -44,7 +61,7 @@ export const moneyAxisFormatter = (v: number) => fmtUSD(v);
  * ECharts' own built-in 12 rather than the dashboard's scale. EChart merges this
  * in as the default, so a chart gets it whether or not it spreads it itself.
  */
-export const baseTextStyle = { color: COLORS.text, fontFamily: "var(--font-geist-sans)", fontSize: CHART_FONT.legend };
+export const baseTextStyle = { color: COLORS.text, fontFamily: CHART_FAMILY, fontSize: CHART_FONT.legend };
 
 export function baseTooltip(): TooltipComponentOption {
   return {

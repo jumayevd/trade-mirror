@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import PartnerChannels, { type ChannelRow } from "@/app/partners/[iso]/PartnerChannels";
+import PartnerChannels, { type ChannelRow } from "@/app/savdo/partners/[iso]/PartnerChannels";
 import { Stat, TransitTag, EmptyState, Segmented } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
@@ -16,7 +16,7 @@ import {
 import { channelsToCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, BAND_COLORS, COLORS } from "@/lib/format";
 
 /**
  * Partner profile — one country in depth, reduced to its figures.
@@ -83,7 +83,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const controls = (
     <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-3">
       <div className="flex flex-col gap-1">
-        <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+        <span className="fs-12.5 font-medium text-faint">{t("filter.granularity")}</span>
         <Segmented<Granularity>
           ariaLabel={t("filter.granularity")}
           value={granularity}
@@ -104,7 +104,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         />
       )}
       <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
-        <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+        <span className="fs-12.5 font-medium text-faint">{t("filter.freight")}</span>
         <select
           aria-label={t("filter.freight")}
           value={cif}
@@ -129,7 +129,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
   const header = (
     <div>
-      <Link href="/partners" className="text-sm text-muted hover:text-foreground">← {t("prof.back")}</Link>
+      <Link href="/savdo/partners" className="text-sm text-muted hover:text-foreground">← {t("prof.back")}</Link>
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
         <span className="text-sm text-faint">{pm0.region}</span>
@@ -182,9 +182,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
       {/* the six frames — two rows of three: the trade, then its risk */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.navy2}
+        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.partner}
           info={`${t("prof.stat.exports.info")} ${period}: ${fmtUSDFull(p.pePosT)}.`} />
-        <Stat label={t("prof.stat.imports")} value={fmtUSD(p.uiPosT)} accent={COLORS.navy2}
+        <Stat label={t("prof.stat.imports")} value={fmtUSD(p.uiPosT)} accent={COLORS.uzb}
           info={`${t("prof.stat.imports.info")} ${period}: ${fmtUSDFull(p.uiPosT)}.`} />
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
           info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(p.posT)}.`} />
@@ -192,7 +192,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           info={`${t("prof.stat.share.info")} ${fmtUSDFull(p.posT)} ÷ ${fmtUSDFull(p.pePosT)}.`} />
         <Stat label={t("prof.stat.hs6Channels")} value={fmtNum(hs6.length)} accent={COLORS.navy3}
           info={t("prof.stat.hs6Channels.info")} />
-        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent={COLORS.investigate}
+        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent={BAND_COLORS.critical}
           info={`${fill(t("prof.stat.criticalOfAll"), {
             n: fmtNum(criticalHs6), total: fmtNum(hs6.length),
             pct: hs6.length > 0 ? fmtPct(criticalHs6 / hs6.length, 1) : "—",
@@ -204,7 +204,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       {/* transit & attribution note */}
       {pm0.transit && (
         <section className="card p-5" style={{ borderLeft: `2px solid ${COLORS.transit}` }}>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider" style={{ color: COLORS.transit }}>
+          <h2 className="mb-2 fs-15 font-semibold" style={{ color: COLORS.transit }}>
             {t("prof.transit.title")}
           </h2>
           <p className="max-w-3xl text-sm leading-relaxed text-muted">

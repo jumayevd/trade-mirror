@@ -34,3 +34,21 @@
  * working, not yet presentable, so it is not deployed.
  */
 export const SHOW_UNEXPLAINED = process.env.NEXT_PUBLIC_SHOW_UNEXPLAINED === "1";
+
+/**
+ * Shadow economy estimates (`/iqtisodiyot/baholar/`): the official figure by
+ * year, sector and region, with the Central Bank's and independent estimates
+ * beside it. Retired — the front page carries its headline figures itself —
+ * and kept here, complete and running, in case it is wanted back.
+ */
+export const SHOW_ESTIMATES = process.env.NEXT_PUBLIC_SHOW_ESTIMATES === "1";
+
+/**
+ * Company search (`/iqtisodiyot/tashkilotlar/`): every company by name or INN,
+ * with region, sector and range filters. Hidden from every reader — the
+ * server also refuses its data (`/api/tashkilotlar`) and redirects the address
+ * (app/web.py) — and kept here, complete and running, in case it is wanted back.
+ * Before switching it on, move its search and its sort-by-name to the company
+ * ID: companies are shown by pseudonym only (`_anon` in app/main.py).
+ */
+export const SHOW_ORGS = process.env.NEXT_PUBLIC_SHOW_ORGS === "1";

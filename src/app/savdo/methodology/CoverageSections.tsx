@@ -147,7 +147,7 @@ export function TransitPartners() {
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
                   <td className="px-3 py-2">
                     <span className="flex flex-wrap items-center gap-1.5">
-                      <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                      <Link href={`/savdo/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
                         {p.name}
                       </Link>
                       <TransitTag />

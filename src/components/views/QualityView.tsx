@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { SectionTitle, QualityTag, TransitTag, Pill } from "@/components/ui";
+import { SectionTitle, QualityTag, TransitTag, Pill, PageHead } from "@/components/ui";
 import { meta, partnerName, yearsFor, type PartnerMeta } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
@@ -122,7 +122,7 @@ export default function QualityView() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("nav.quality")}</h1>
+      <PageHead title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.quality")}</h1>} />
 
       <section>
         <SectionTitle title={t("qual.coverage.title")} />
@@ -147,7 +147,7 @@ export default function QualityView() {
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
                   <td className="tabular px-3 py-1.5 text-center text-faint">{i + 1}</td>
                   <td className="px-3 py-1.5">
-                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                    <Link href={`/savdo/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
                       {p.name}
                     </Link>
                   </td>

@@ -6,10 +6,11 @@ import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import GapTreemap, { type TreemapItem } from "@/components/charts/GapTreemap";
 import { DATA_WINDOW, officialImportsOver, OFFICIAL_IMPORTS_SOURCE } from "@/lib/dataset";
+import { gapLeaders } from "@/lib/gap-leaders";
 import { hs6ShortLabel } from "@/lib/short-labels";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
-import { Stat, SectionTitle, InfoTip, EmptyState, Segmented } from "@/components/ui";
+import { Stat, SectionTitle, InfoTip, EmptyState, Segmented, PageHead } from "@/components/ui";
 import YearSelect from "@/components/YearSelect";
 import {
   aggregate, DEFAULT_FILTER, meta, needsMonthlyDetail, yearsFor, yearsLabel,
@@ -79,26 +80,19 @@ export default function OverviewView() {
     : "";
 
   const treemap = useMemo(() => {
-    const countries: TreemapItem[] = [...data.partners]
-      .sort((a, b) => b.posT - a.posT)
-      .map((p) => ({ key: p.iso3, label: p.name, value: p.posT, href: `/partners/${p.iso3.toLowerCase()}` }));
-    const byCmd = new Map<string, { label: string; value: number }>();
-    for (const c of data.baseChannels6) {
-      if (c.posT <= 0) continue;
-      const e = byCmd.get(c.cmd) ?? { label: c.cmdLabel, value: 0 };
-      e.value += c.posT;
-      byCmd.set(c.cmd, e);
-    }
-    const products: TreemapItem[] = [...byCmd.entries()]
-      .sort((a, b) => b[1].value - a[1].value)
-      .map(([cmd, e]) => ({
-        key: cmd,
+    // the front page's trade card lists the top of these same two rankings
+    const leaders = gapLeaders(data);
+    const countries: TreemapItem[] = leaders.countries
+      .map((p) => ({ key: p.iso3, label: p.name, value: p.posT, href: `/savdo/partners/${p.iso3.toLowerCase()}` }));
+    const products: TreemapItem[] = leaders.products
+      .map((e) => ({
+        key: e.cmd,
         // a few recognisable words on the tile; the code and the full official
         // description move to the tooltip, where there is room for them
-        label: hs6ShortLabel(cmd, lang, e.label),
-        detail: `HS ${cmd} · ${e.label}`,
+        label: hs6ShortLabel(e.cmd, lang, e.label),
+        detail: `HS ${e.cmd} · ${e.label}`,
         value: e.value,
-        href: `/products?hs6=${cmd}`,
+        href: `/savdo/products?hs6=${e.cmd}`,
       }));
     return { countries, products };
   }, [data, lang]);
@@ -291,38 +285,37 @@ export default function OverviewView() {
 
 
   return (
-    <div className="space-y-6">
+    // fills the window: the treemaps, or the profile's two charts, take the height left over
+    <div className="page-fill gap-6">
       {/* 1. heading, and the window the data covers — stated once, above the controls */}
-      <section className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.overview")}</h1>
-        {/*
-          The window is a property of the dataset, not of the period picked below
-          it, so it reads the data window rather than the selection and does not
-          move when the reader filters.
-        */}
-        <div className="flex items-baseline gap-2">
-          <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">
-            {t("ovw.stat.yearsCovered")}
-          </span>
-          <span className="tabular fs-15 font-semibold">
-            {DATA_WINDOW.start}–{DATA_WINDOW.end}
-          </span>
-          <InfoTip text={t("ovw.stat.yearsCovered.info")} />
-        </div>
-      </section>
+      {/*
+        The window is a property of the dataset, not of the period picked below
+        it, so it reads the data window rather than the selection and does not
+        move when the reader filters.
+      */}
+      <PageHead
+        title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.overview")}</h1>}
+        right={
+          <div className="flex items-baseline gap-2 whitespace-nowrap">
+            <span className="fs-12.5 font-medium text-faint">{t("ovw.stat.yearsCovered")}</span>
+            <span className="tabular fs-15 font-semibold">{DATA_WINDOW.start}–{DATA_WINDOW.end}</span>
+            <InfoTip text={t("ovw.stat.yearsCovered.info")} />
+          </div>
+        }
+      />
 
       {/* 2. time basis + period — dropdowns of ticks — and the view switch beside them */}
       <section className="no-print flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
           <div className="flex flex-col gap-1">
-            <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+            <span className="fs-12.5 font-medium text-faint">{t("filter.granularity")}</span>
             <div className="flex overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
               {(["year", "month"] as const).map((g) => (
                 <button
                   key={g}
                   onClick={() => pickGranularity(g)}
                   aria-pressed={granularity === g}
-                  className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                  className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${granularity === g ? "bg-[var(--color-primary-fill)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
                 >
                   {t(g === "year" ? "gran.year" : "gran.month")}
                 </button>
@@ -356,30 +349,30 @@ export default function OverviewView() {
       {years.length === 0 && <EmptyState text={t("common.noPeriod")} />}
 
       {years.length > 0 && tab === "profile" && (
-        <div className="space-y-6">
-        {/* The two series stack, one above the other, on every screen. */}
-        <div className="space-y-6">
-        <section>
+        // The two series stack, one above the other, on every screen, and share
+        // the height the window has spare; neither drops below its old 300px.
+        <div className="flex flex-1 flex-col gap-6">
+        <section className="flex flex-auto flex-col">
           <SectionTitle
             title={t("ovw.dynamics.title")}
             desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
             right={<InfoTip text={t("ovw.dynamics.info")} />}
           />
-          <div className="card p-4">
-            <EChart option={annualOption} style={{ height: 300 }} />
+          <div className="card flex flex-1 flex-col p-4">
+            <div className="relative min-h-[300px] flex-1"><EChart option={annualOption} className="absolute inset-0" /></div>
           </div>
         </section>
   
         {/* 3b. the same window, both directions — the one place the reverse side is shown */}
-        <section>
+        <section className="flex flex-auto flex-col">
           <SectionTitle
             title={t("ovw.twoSided.title")}
             desc={t("ovw.twoSided.desc")}
             right={<InfoTip text={t("ovw.twoSided.info")} />}
           />
-          <div className="card p-4">
+          <div className="card flex flex-1 flex-col p-4">
             {/* read-only: hover shows the values, clicking opens nothing */}
-            <EChart option={twoSidedOption} style={{ height: 300 }} />
+            <div className="relative min-h-[300px] flex-1"><EChart option={twoSidedOption} className="absolute inset-0" /></div>
             {/* what the bars below the line can mean — a signal, not a finding */}
             <p className="mt-3 border-t border-[var(--color-border-soft)] pt-3 fs-12.5 leading-relaxed text-muted">
               {t("ovw.twoSided.reverseNote")}
@@ -387,15 +380,16 @@ export default function OverviewView() {
           </div>
         </section>
         </div>
-        </div>
       )}
 
       {years.length > 0 && tab === "summary" && (
-        <div className="space-y-6">
+        <div className="flex flex-1 flex-col gap-6">
       {/* 3. headline tiles — two rows of three: what the import bill is and how
           much of it this dataset sees; then what the discrepancy is on it */}
       <section>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {/* a row of tiles shares one height; each value sits at its tile's foot,
+            so the values line up whether a label takes one line or two */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>.stat-card]:flex [&>.stat-card]:flex-col [&>.stat-card>:nth-child(2)]:mt-auto [&>.stat-card>:nth-child(2)]:pt-2">
           {official && (
             <>
               <Stat
@@ -419,14 +413,16 @@ export default function OverviewView() {
             </>
           )}
           <HeroStat
-            label={t("kpi.positive")}
+            // the card spells out what the term means; kpi.positive stays the term elsewhere
+            label={t("ovw.stat.positive.title")}
             value={fmtUSD(k.positive.central)}
             info={`${t("ovw.stat.positive.info").split("{cif}").join(String(Math.round(FULL_WINDOW.cif * 100)))} ${t("ovw.stat.positiveBand")}: ${fmtUSD(k.positive.low)}–${fmtUSD(k.positive.high)} ${t("ovw.stat.positiveSub")}.`}
           />
           {/* the same figure Product Analysis prints for all products: the gap as a
               share of the partner-reported exports on the same rows */}
           <Stat
-            label={t("prof.stat.share")}
+            // spelled out beside the gap card; prof.stat.share stays the term on the other pages
+            label={t("ovw.stat.positiveShare.title")}
             value={gapShare.pe > 0 ? fmtPct(gapShare.pos / gapShare.pe, 1) : "—"}
             info={`${t("prof.stat.share.info")} ${fmtUSDFull(gapShare.pos)} ÷ ${fmtUSDFull(gapShare.pe)}.`}
             accent={COLORS.positive}
@@ -448,21 +444,21 @@ export default function OverviewView() {
         The titles therefore have to do that work on their own, so they are set
         as headings rather than as faint captions.
       */}
-      <section>
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div className="min-w-0">
+      <section className="flex flex-1 flex-col">
+        <div className="grid flex-1 gap-3 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col">
             <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
               <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.countries")}</h2>
-              <Link href="/partners" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
+              <Link href="/savdo/partners" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.partners")} →</Link>
             </div>
             <GapTreemap items={treemap.countries} ariaLabel={t("ovw.treemap.countries")} />
           </div>
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col">
             <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
               <h2 className="fs-15 font-bold tracking-tight">{t("ovw.treemap.products")}</h2>
-              <Link href="/products" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
+              <Link href="/savdo/products" className="fs-13 font-medium text-[var(--color-primary)] hover:underline">{t("nav.products")} →</Link>
             </div>
-            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} />
+            <GapTreemap items={treemap.products} ariaLabel={t("ovw.treemap.products")} tone="sea" />
           </div>
         </div>
       </section>
@@ -479,13 +475,13 @@ export default function OverviewView() {
 
 function HeroStat({ label, value, sub, info }: { label: string; value: string; sub?: string; info?: string }) {
   return (
-    <div className="stat-card stat-card-hero" style={{ ["--stat-rail" as string]: COLORS.positive }}>
+    <div className="stat-card" style={{ ["--stat-rail" as string]: COLORS.positive }}>
       <div className="flex items-start justify-between gap-2">
-        <div className="fs-12 font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="fs-12.5 font-medium leading-snug text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="fs-30 font-semibold leading-none tracking-tight" style={{ color: COLORS.positive }}>
+        <span className="tabular fs-30 font-semibold leading-none tracking-tight" style={{ color: COLORS.positive }}>
           {value}
         </span>
       </div>

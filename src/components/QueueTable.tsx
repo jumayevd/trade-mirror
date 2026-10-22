@@ -235,7 +235,7 @@ export default function QueueTable({
                       </span>
                     </td>
                     <td className={`${td} whitespace-nowrap`}>
-                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">
+                      <Link href={`/savdo/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">
                         {c.partner}
                       </Link>
                     </td>

@@ -10,7 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { aggregate, DEFAULT_FILTER, loadMonthlyDetail, observedTotals, meta, type Filter } from "../src/lib/dataset";
+import { aggregate, DEFAULT_FILTER, loadMonthlyChapters, loadMonthlyDetail, observedTotals, meta, type Filter } from "../src/lib/dataset";
 
 interface SrcCell { p: string; l: number; k: string; y: number; pe: number; ui: number }
 const src: SrcCell[] = JSON.parse(
@@ -162,6 +162,8 @@ type Hs6Row = [string, string, number, number, number, number];
 const monthlyHs6: Hs6Row[] = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "data", "raw", "monthly-cells-hs6.json"), "utf8"),
 ).cells;
+// the client loads both monthly layers on demand; load them here the same way
+loadMonthlyChapters(JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly.json"), "utf8")));
 loadMonthlyDetail(JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
 ));

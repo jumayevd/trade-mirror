@@ -1,23 +1,34 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import ValueMatrix, { type MatrixColumn, type MatrixRow } from "@/components/charts/ValueMatrix";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill,
+  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
 } from "@/components/ui";
-import { useFilter, useFilteredData } from "@/lib/filter-context";
+import { BarList, HeroStat, Panel, Takeaways, TrendFor, buildTrend, type BarItem, type Takeaway } from "@/components/summary";
+import { useFilter } from "@/lib/filter-context";
 import {
-  hsLabel, isResidualChapter, yearsLabel, soleValue,
+  aggregate, categoryLabel, comparableMonthsOfYear, hsLabel, isDerivedYear, isResidualChapter, yearsFor, yearsLabel, soleValue,
   type Channel, type RiskBand,
 } from "@/lib/dataset";
+import { labelsFor } from "@/lib/labels";
+import { productShortLabel } from "@/lib/short-labels";
 import { useI18n } from "@/lib/i18n";
+import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, BAND_COLORS, COLORS } from "@/lib/format";
 
 /**
  * Product Analysis — the trade in view, one row per HS code, at HS2, HS4 or
  * HS6 with the same columns at every level.
+ *
+ * The page leads with an executive summary in the Overview's reading order:
+ * headline tiles, three takeaways, then where the gap sits by sector and the
+ * ten products that carry most of it. The summary follows the filter bar only;
+ * the sector × year matrix and the drillable table follow beneath it, each
+ * behind a reveal, and the table keeps its own drill.
  *
  * Every figure is measured on the partner × HS6 lines and summed upward: a
  * chapter or heading's export, import and positive discrepancy are the sums of
@@ -28,10 +39,21 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
  */
 
 const PAGE_SIZE = 20;
+/** Sectors listed in the sector × year matrix — few enough that each cell can print its figures. */
+const HEAT_TOP = 10;
+/**
+ * Sectors named in the summary panel; the rest fold into one "Other sectors"
+ * row. Ten plus that row ends the panel level with the top ten products beside it.
+ */
+const SECTOR_TOP = 10;
+/** Products in the summary's ranked panel. */
+const PRODUCT_TOP = 10;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
+
+const capFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /* ------------------------------------------------------------------ */
 /* Aggregation: partner × code pairs grouped by code                  */
@@ -169,9 +191,186 @@ function Pager({
 /* ------------------------------------------------------------------ */
 
 export default function ProductsView() {
-  const { filter, patch } = useFilter();
-  const data = useFilteredData();
-  const { t } = useI18n();
+  const { filter, patch, data } = useFilter();
+  const { t, lang } = useI18n();
+
+  // ---- sector × year matrix: the selected period, under every filter on the page ----
+  // Read straight off the page's aggregate, so it follows the years, months,
+  // partner, HS and freight selections. Each year's figure is that sector's
+  // positive channel-years; the bottom row is every sector, so the top ten
+  // read against the whole.
+  const heatPartial = useCallback((y: number) => isDerivedYear(y) && comparableMonthsOfYear(y).length < 12, []);
+  const heat = useMemo(() => labelsFor(lang, () => {
+    const years = [...data.years].sort((x, y) => x - y);
+    const col = new Map(years.map((y, i) => [y, i]));
+    const byCat = new Map<string, number[]>();
+    for (const c of data.baseChannels) {
+      let row = byCat.get(c.category);
+      if (!row) { row = years.map(() => 0); byCat.set(c.category, row); }
+      for (const r of c.years) {
+        const i = col.get(r.y);
+        if (i !== undefined && r.posY > 0) row[i] += r.posY;
+      }
+    }
+    const all = [...byCat.entries()]
+      .map(([key, values]) => ({ key, values, total: values.reduce((x, y) => x + y, 0) }))
+      .filter((r) => r.total > 0);
+    const totals = years.map((_, j) => all.reduce((sum, r) => sum + r.values[j], 0));
+    const rows: MatrixRow[] = all
+      .filter((r) => r.key !== "residual")
+      .sort((x, y) => y.total - x.total)
+      .slice(0, HEAT_TOP)
+      .map((r) => ({
+        key: r.key,
+        label: categoryLabel(r.key),
+        values: r.values,
+        notes: r.values.map((v, j) => (totals[j] > 0 && v > 0 ? fmtPct(v / totals[j], 1) : null)),
+      }));
+    return { years, totals, rows };
+  }), [data, lang]);
+  const heatColumns = useMemo<MatrixColumn[]>(() => heat.years.map((y) => {
+    const months = isDerivedYear(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : "";
+    return { label: heatPartial(y) ? `${y}*` : String(y), sub: heatPartial(y) ? months : undefined, color: COLORS.positive };
+  }), [heat, heatPartial, t]);
+
+  // ---- the executive summary: the filter bar's scope at HS6, never the table's drill ----
+  // Read at the measurement grain, so the tiles, the sector panel and the top
+  // ten all sum against one total — the same one the HS6 table prints at the root.
+  const summary = useMemo(() => labelsFor(lang, () => {
+    const codes = aggregateByCode(data.channels6, "")
+      .filter((r) => r.posT > 0)
+      .sort((a, b) => b.posT - a.posT);
+    const tot = codes.reduce(
+      (s, r) => ({ pe: s.pe + r.pePosT, ui: s.ui + r.uiPosT, pos: s.pos + r.posT }),
+      { pe: 0, ui: 0, pos: 0 },
+    );
+    const partners = new Set<string>();
+    const bySector = new Map<string, { value: number; byCmd: Map<string, number> }>();
+    for (const c of data.channels6) {
+      if (c.posT <= 0) continue;
+      partners.add(c.partnerIso);
+      const e = bySector.get(c.category) ?? { value: 0, byCmd: new Map<string, number>() };
+      e.value += c.posT;
+      e.byCmd.set(c.cmd, (e.byCmd.get(c.cmd) ?? 0) + c.posT);
+      bySector.set(c.category, e);
+    }
+    // the residual chapters (98–99) are not comparable at product level: they
+    // count toward "Other sectors" but are never named as a leading sector
+    const sectors = [...bySector.entries()]
+      .filter(([key]) => key !== "residual")
+      .map(([key, e]) => {
+        let lead = "";
+        let best = -1;
+        for (const [cmd, v] of e.byCmd) if (v > best) { best = v; lead = cmd; }
+        return { key, label: categoryLabel(key), value: e.value, lead };
+      })
+      .sort((a, b) => b.value - a.value);
+    const top10 = codes.slice(0, PRODUCT_TOP).reduce((s, r) => s + r.posT, 0);
+    const critical = codes.filter((r) => r.band === "critical");
+    return {
+      codes, tot, partners: partners.size, sectors, top10,
+      critical: { n: critical.length, value: critical.reduce((s, r) => s + r.posT, 0) },
+    };
+  }), [data, lang]);
+  const sumShare = summary.tot.pe > 0 ? summary.tot.pos / summary.tot.pe : 0;
+
+  /*
+   * The headline's trend: the whole window under the same filters, this period
+   * marked. Every year is named explicitly — an empty year list reads the
+   * annual book only, which would end the line before the derived years and
+   * leave a 2026 selection off its own trend.
+   */
+  const detailVer = useMonthlyDetail(false);
+  const trend = useMemo(() => {
+    const window = yearsFor(filter.granularity);
+    const whole = filter.years.length === window.length && filter.months.length === 0
+      ? data
+      : aggregate({ ...filter, years: [...window], months: [] });
+    return buildTrend(
+      whole.annual,
+      { years: filter.years, months: filter.months },
+      (y) => (heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined),
+    );
+    // detailVer: the derived years' rows arrive with the monthly detail
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, filter, heatPartial, t, detailVer]);
+
+  const takeaways = useMemo<Takeaway[]>(() => {
+    const out: Takeaway[] = [];
+    const { tot, sectors, codes, critical } = summary;
+    if (tot.pos <= 0) return out;
+    const lead = sectors[0];
+    if (lead) {
+      out.push({
+        key: "sector",
+        figure: fmtPct(lead.value / tot.pos, 1),
+        text: fill(t("prod.tk.sector"), { sector: lead.label, value: fmtUSD(lead.value) }),
+      });
+    }
+    const top = codes[0];
+    if (top) {
+      out.push({
+        key: "product",
+        figure: fmtUSD(top.posT),
+        text: fill(t("prod.tk.product"), { product: productShortLabel(top.cmd, lang), code: top.cmd }),
+        meta: `${t("prod.col.partners")}: ${fmtNum(top.partners)}`,
+      });
+    }
+    if (critical.n > 0) {
+      out.push({
+        key: "critical",
+        figure: fmtUSD(critical.value),
+        text: fill(t("prod.tk.critical"), { band: t("band.critical"), pct: fmtPct(critical.value / tot.pos, 1) }),
+        // the unit is written to sit mid-sentence; here it opens the line
+        meta: `${capFirst(t("prod.unit.hs6products"))}: ${fmtNum(critical.n)}`,
+        accent: BAND_COLORS.critical,
+        href: "/savdo/risk",
+        cta: t("nav.queue"),
+      });
+    }
+    return out;
+  }, [summary, t, lang]);
+
+  const sectorItems = useMemo<BarItem[]>(() => {
+    const { tot, sectors } = summary;
+    const shown = sectors.slice(0, SECTOR_TOP);
+    const items: BarItem[] = shown.map((s) => ({
+      key: s.key,
+      label: s.label,
+      meta: s.lead ? fill(t("prod.sector.lead"), { product: productShortLabel(s.lead, lang) }) : undefined,
+      value: s.value,
+      valueText: fmtUSD(s.value),
+      note: fmtPct(s.value / tot.pos, 1),
+    }));
+    const rest = tot.pos - shown.reduce((x, s) => x + s.value, 0);
+    if (rest > tot.pos * 0.0005) {
+      items.push({
+        key: "other",
+        label: t("prod.sector.other"),
+        value: rest,
+        valueText: fmtUSD(rest),
+        note: fmtPct(rest / tot.pos, 1),
+        color: COLORS.axis,
+      });
+    }
+    return items;
+  }, [summary, t, lang]);
+
+  // a product row narrows the page to that product through the filter bar,
+  // where the selection shows and clears like any other — the Overview's
+  // product tiles land on the same state
+  const productItems = useMemo<BarItem[]>(() => summary.codes.slice(0, PRODUCT_TOP).map((r) => ({
+    key: r.cmd,
+    label: productShortLabel(r.cmd, lang),
+    title: `HS ${r.cmd} · ${r.label}`,
+    meta: `HS ${r.cmd} · ${t("prod.col.partners")}: ${fmtNum(r.partners)}`,
+    badge: <BandBadge band={r.band} />,
+    value: r.posT,
+    valueText: fmtUSD(r.posT),
+    note: fmtPct(r.posT / summary.tot.pos, 1),
+    onClick: filter.hs6.length === 1 && filter.hs6[0] === r.cmd ? undefined : () => patch({ hs6: [r.cmd] }),
+    actionTip: t("prod.top.focus"),
+  })), [summary, lang, t, filter.hs6, patch]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
   const [level, setLevel] = useState<HsLevel>(6);
@@ -259,13 +458,6 @@ export default function ProductsView() {
   const totalRows = sorted.length;
   const pageRows = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // ---- frames: the scope in view, as the sum of its rows ----
-  const node = useMemo(() => rows.reduce(
-    (s, r) => ({ pe: s.pe + r.pePosT, ui: s.ui + r.uiPosT, pos: s.pos + r.posT }),
-    { pe: 0, ui: 0, pos: 0 },
-  ), [rows]);
-  const nodeShare = node.pe > 0 ? node.pos / node.pe : 0;
-
   const cifPct = Math.round(filter.cif * 100);
   const period = yearsLabel(filter.years);
   const childUnit =
@@ -282,8 +474,9 @@ export default function ProductsView() {
   return (
     <div className="space-y-6">
       {/* header + export */}
-      <section className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>
+      <PageHead
+        title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>}
+        right={
         <button
           onClick={exportCsv}
           disabled={activeChannels.length === 0}
@@ -292,7 +485,8 @@ export default function ProductsView() {
         >
           {t("common.exportCsv")}
         </button>
-      </section>
+        }
+      />
 
       <FilterBar />
       {filter.years.length === 0 ? (
@@ -300,70 +494,133 @@ export default function ProductsView() {
       ) : (
       <>
 
-      {/* HS level toggle + breadcrumb — the toggle leads, on the left */}
-      <section className="flex flex-wrap items-center gap-3">
-        <LevelTabs
-          level={level}
-          onChange={setToggle}
-          label={t("prod.aria.hsLevel")}
-          tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
-        />
-        <nav className="flex flex-wrap items-center gap-1.5 fs-13" aria-label={t("prod.aria.breadcrumb")}>
-          {(effChapter || hs4) && (
-            <button
-              onClick={goRoot}
-              className="text-muted hover:underline"
-              title={filter.hs2.length > 0 ? t("prod.breadcrumb.backAllClear") : t("prod.breadcrumb.backAll")}
-            >
-              ← {t("prod.breadcrumb.backAll")}
-            </button>
-          )}
-          {effChapter && level !== 2 && (
-            <>
-              <span className="text-faint">›</span>
-              <button
-                onClick={() => drillChapter(effChapter)}
-                className={level === 4 && !hs4 ? "font-medium" : "text-muted hover:underline"}
-                title={`${t("prod.chapter")} ${effChapter} — ${t("prod.tip.showHs4")}`}
-              >
-                <span className="tabular">{effChapter}</span> {hsLabel(effChapter)}
-              </button>
-            </>
-          )}
-          {hs4 && level === 6 && (
-            <>
-              <span className="text-faint">›</span>
-              <span className="font-medium">
-                <span className="tabular">{hs4}</span> {hsLabel(hs4)}
-              </span>
-            </>
-          )}
-          {level !== 2 && !effChapter && !hs4 && <Pill>HS{level} · {t("prod.flatView")}</Pill>}
-        </nav>
-      </section>
-
-      {/* frames: the scope in view */}
-      {isEmpty ? (
+      {/* 1. headline tiles — the filter bar's scope, at the HS6 grain */}
+      {summary.codes.length === 0 ? (
         <EmptyState />
       ) : (
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label={t("prof.stat.exports")} value={fmtUSD(node.pe)} accent={COLORS.navy2}
-            info={`${t("prod.stat.exports.info")} ${period}: ${fmtUSDFull(node.pe)}.`} />
-          <Stat label={t("prof.stat.imports")} value={fmtUSD(node.ui)} accent={COLORS.navy2}
-            info={`${t("prod.stat.imports.info")} ${period}: ${fmtUSDFull(node.ui)}.`} />
-          <Stat label={t("kpi.positive")} value={fmtUSD(node.pos)} accent={COLORS.positive}
-            info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(node.pos)}.`} />
-          <Stat label={t("prof.stat.share")} value={fmtPct(nodeShare, 1)} accent={COLORS.positive}
-            info={`${t("prof.stat.share.info")} ${fmtUSDFull(node.pos)} ÷ ${fmtUSDFull(node.pe)}.`} />
+        <>
+          {/* a row of tiles shares one height; each value sits above its context
+              line at the same depth, whether a label takes one line or two */}
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>.stat-card]:flex [&>.stat-card]:flex-col [&>.stat-card>:nth-child(2)]:mt-auto [&>.stat-card>:nth-child(2)]:pt-2">
+            <HeroStat
+              label={t("kpi.positive")}
+              value={fmtUSD(summary.tot.pos)}
+              sub={fill(t("prod.kpi.posSub"), { pe: fmtUSD(summary.tot.pe), ui: fmtUSD(summary.tot.ui) })}
+              info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(summary.tot.pos)}. ${t("prod.stat.exports")}: ${fmtUSDFull(summary.tot.pe)}. ${t("prod.stat.imports")}: ${fmtUSDFull(summary.tot.ui)}. ${period}.`}
+              trend={<TrendFor points={trend} />}
+            />
+            <Stat
+              label={t("prof.stat.share")}
+              value={fmtPct(sumShare, 1)}
+              sub={t("prod.kpi.shareSub")}
+              accent={COLORS.positive}
+              info={`${t("prof.stat.share.info")} ${fmtUSDFull(summary.tot.pos)} ÷ ${fmtUSDFull(summary.tot.pe)}.`}
+            />
+            <Stat
+              label={t("prod.kpi.products")}
+              value={fmtNum(summary.codes.length)}
+              sub={fill(t("prod.kpi.productsSub"), { n: fmtNum(summary.partners) })}
+              accent={COLORS.navy2}
+              info={t("prod.kpi.products.info")}
+            />
+            <Stat
+              label={t("prod.kpi.top10")}
+              value={fmtPct(summary.top10 / summary.tot.pos, 1)}
+              sub={fill(t("prod.kpi.top10Sub"), { value: fmtUSD(summary.top10), total: fmtUSD(summary.tot.pos) })}
+              accent={COLORS.navy3}
+              info={t("prod.kpi.top10.info")}
+            />
+          </section>
+
+          {/* 2. what the numbers say */}
+          <Takeaways title={t("sum.takeaways")} items={takeaways} />
+
+          {/* 3. where the gap sits, and what carries it */}
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Panel title={t("prod.sector.title")} desc={t("prod.sector.desc")}>
+              <BarList items={sectorItems} ariaLabel={t("prod.sector.title")} />
+            </Panel>
+            <Panel title={t("prod.top.title")} desc={t("prod.top.desc")}>
+              <BarList items={productItems} ranked ariaLabel={t("prod.top.title")} />
+            </Panel>
+          </div>
+        </>
+      )}
+
+      {/* 4. sectors × years: how the gap moved — only when there is more than one year to read across */}
+      {summary.codes.length > 0 && heat.years.length > 1 && heat.rows.length > 0 && (
+        <section>
+          <SectionTitle title={t("prod.heat.title")} desc={t("prod.heat.sub")} />
+          <TableReveal showLabel={t("common.showBreakdown")} hideLabel={t("common.hideBreakdown")}>
+            <div className="card p-4">
+              <ValueMatrix
+                rows={heat.rows}
+                columns={heatColumns}
+                totals={heat.totals}
+                totalWord={t("heat.total")}
+                totalRowLabel={t("heat.allSectors")}
+                shareWord={t("heat.share")}
+                rowTitle={t("heat.sector")}
+                ariaLabel={t("prod.heat.title")}
+              />
+              {heat.years.some(heatPartial) && (
+                <p className="mt-2 fs-12 text-faint">* {t("prod.heat.partial")}</p>
+              )}
+            </div>
+          </TableReveal>
         </section>
       )}
 
-      {/* ranked table — one layout for every level */}
-      {!isEmpty && (
+      {/* 5. the full ranking — one layout for every level, with its own drill */}
+      {summary.codes.length > 0 && (
         <section>
-          <SectionTitle
-            title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
-          />
+          <SectionTitle title={t("prod.detail.title")} desc={t("prod.detail.desc")} />
+          <TableReveal>
+          {/* HS level toggle + breadcrumb, driving the table */}
+          <div className="flex flex-wrap items-center gap-3">
+            <LevelTabs
+              level={level}
+              onChange={setToggle}
+              label={t("prod.aria.hsLevel")}
+              tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
+            />
+            <nav className="flex flex-wrap items-center gap-1.5 fs-13" aria-label={t("prod.aria.breadcrumb")}>
+              {(effChapter || hs4) && (
+                <button
+                  onClick={goRoot}
+                  className="text-muted hover:underline"
+                  title={filter.hs2.length > 0 ? t("prod.breadcrumb.backAllClear") : t("prod.breadcrumb.backAll")}
+                >
+                  ← {t("prod.breadcrumb.backAll")}
+                </button>
+              )}
+              {effChapter && level !== 2 && (
+                <>
+                  <span className="text-faint">›</span>
+                  <button
+                    onClick={() => drillChapter(effChapter)}
+                    className={level === 4 && !hs4 ? "font-medium" : "text-muted hover:underline"}
+                    title={`${t("prod.chapter")} ${effChapter} — ${t("prod.tip.showHs4")}`}
+                  >
+                    <span className="tabular">{effChapter}</span> {hsLabel(effChapter)}
+                  </button>
+                </>
+              )}
+              {hs4 && level === 6 && (
+                <>
+                  <span className="text-faint">›</span>
+                  <span className="font-medium">
+                    <span className="tabular">{hs4}</span> {hsLabel(hs4)}
+                  </span>
+                </>
+              )}
+              {level !== 2 && !effChapter && !hs4 && <Pill>HS{level} · {t("prod.flatView")}</Pill>}
+            </nav>
+          </div>
+          {isEmpty ? (
+            <EmptyState />
+          ) : (
+          <>
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[1040px] fs-13">
               <thead>
@@ -410,6 +667,9 @@ export default function ProductsView() {
             </table>
           </div>
           <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
+          </>
+          )}
+          </TableReveal>
         </section>
       )}
       </>

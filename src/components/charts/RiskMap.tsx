@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import type { EChartsOption } from "echarts";
 import EChart from "@/components/EChart";
 import { partnerMetaOf, type PartnerAgg } from "@/lib/dataset";
-import { COLORS, IS_DARK, fmtNum, fmtUSD } from "@/lib/format";
+import { COLORS, fmtNum, fmtUSD } from "@/lib/format";
+import { rampPieces } from "@/lib/seq-ramp";
 import { CHART_FONT, baseTooltip } from "@/lib/echartBase";
 import { useI18n } from "@/lib/i18n";
 
@@ -69,56 +70,6 @@ const GEO_NAME: Record<string, string> = {
 };
 const ISO_BY_GEO: Record<string, string> = Object.fromEntries(Object.entries(GEO_NAME).map(([iso, n]) => [n, iso]));
 
-/*
- * Six classes on a single-hue sequential ramp, low → high: the house navy,
- * stepped by lightness alone.
- *
- * Magnitude is a sequential job, and one hue says "more of the same thing"
- * where a multi-hue ramp invites the reader to look for a boundary at each
- * hue change. It also leaves gold to the accents the interface reserves it for.
- *
- * Dark mode gets its own steps rather than an inverted copy: the ramp must
- * separate from the chart surface AND from the inert fill used for countries
- * outside the partner set, and on a dark ground a deep-navy low end vanishes
- * into both, so there it runs light-ward instead.
- *
- * Checked for what a sequential ramp needs — strictly monotonic lightness,
- * evenly spaced steps (max/min 1.43 and 1.48), a total OKLab-L range of 0.51
- * and 0.44, and a low end clear of the no-data fill (ΔE 12.8 and 11.6). The
- * categorical validator does not apply: its adjacent-pair separation check
- * asks for the opposite of what one hue stepped by lightness wants, and its
- * own output says as much.
- */
-const RAMP = IS_DARK
-  ? ["#344c79", "#41608f", "#5179ac", "#6b95c8", "#8db3de", "#b7d2f2"]
-  : ["#b7cbe8", "#95b3da", "#6e92c5", "#4a72ab", "#2d5286", "#19335e"];
-
-/** Two significant figures, so class edges read as $1.2M rather than $1,187,433. */
-function niceRound(x: number): number {
-  if (!(x > 0)) return 0;
-  const p = Math.pow(10, Math.floor(Math.log10(x)) - 1);
-  return Math.round(x / p) * p;
-}
-
-/**
- * Class edges at the quantiles of the values actually on the map. The old
- * edges were fixed fractions of the largest value (50/20/5/1%), and with one
- * partner far above the rest nearly every country fell below 1% of it —
- * the palest bin — so the map read as a single colour. Quantile edges put
- * roughly the same number of countries in each class.
- */
-function quantileEdges(values: number[], classes: number): number[] {
-  const v = [...values].sort((a, b) => a - b);
-  if (v.length === 0) return [];
-  const edges: number[] = [];
-  for (let i = 1; i < classes; i++) {
-    const q = v[Math.min(v.length - 1, Math.floor((i * v.length) / classes))];
-    const e = niceRound(q);
-    if (e > 0 && (edges.length === 0 || e > edges[edges.length - 1])) edges.push(e);
-  }
-  return edges;
-}
-
 /** One map region. `silent` regions are outside the partner set: inert and never a pointer. */
 interface Region { name: string; value: number; cursor?: string; silent?: boolean }
 
@@ -164,22 +115,10 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
   }, [geoNames, byIso, metricOf]);
 
   const fmtMetric = metric === "channels" ? fmtNum : fmtUSD;
-  const pieces = useMemo(() => {
-    const values = data.map((d) => d.value).filter((v) => Number.isFinite(v) && v > 0);
-    const e = quantileEdges(values, RAMP.length);
-    if (e.length === 0) return [{ min: 0, label: t("ctry.map.under"), color: RAMP[0] }];
-    // highest class first, as the legend reads top-down; the ramp is indexed
-    // from the top so a short edge list (few countries) still ends on the
-    // deepest colour for the largest gaps
-    const top = RAMP.length - 1;
-    const out: { min?: number; max?: number; label: string; color: string }[] = [];
-    out.push({ min: e[e.length - 1], label: `${t("ctry.map.over")} ${fmtMetric(e[e.length - 1])}`, color: RAMP[top] });
-    for (let i = e.length - 1; i >= 1; i--) {
-      out.push({ min: e[i - 1], max: e[i], label: `${fmtMetric(e[i - 1])} – ${fmtMetric(e[i])}`, color: RAMP[top - (e.length - i)] });
-    }
-    out.push({ max: e[0], label: `${t("ctry.map.under")} ${fmtMetric(e[0])}`, color: RAMP[top - e.length] });
-    return out;
-  }, [data, fmtMetric, t]);
+  const pieces = useMemo(
+    () => rampPieces(data.map((d) => d.value), fmtMetric, t("ctry.map.over"), t("ctry.map.under")),
+    [data, fmtMetric, t],
+  );
 
   const option = useMemo<EChartsOption>(
     () => ({
@@ -255,7 +194,7 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
       click: (params: unknown) => {
         const it = params as { name: string };
         const iso = ISO_BY_GEO[it.name];
-        if (iso && byIso.has(iso)) router.push(`/partners/${iso.toLowerCase()}`);
+        if (iso && byIso.has(iso)) router.push(`/savdo/partners/${iso.toLowerCase()}`);
       },
     }),
     [router, byIso],

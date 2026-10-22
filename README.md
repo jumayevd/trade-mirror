@@ -71,9 +71,26 @@ npm run data:build
 ### 3. Run the site
 
 ```bash
-npm run dev           # http://localhost:3000
-npm run build && npm run start
+npm run build         # static export → out/, served by the portal (see below)
 ```
+
+### The CBU Analytics portal
+
+This app is now the whole CBU Analytics portal, not only Mirror Trade: `npm run build`
+exports one static site (`out/`, with precompressed `.gz` copies) that the portal's FastAPI
+server serves at `/`, behind its login.
+
+| Path | Section | Data |
+|---|---|---|
+| `/` | Home — both dashboards' headline figures | trade: computed at build; shadow: `/api` |
+| `/iqtisodiyot/…` | Shadow Economy monitor (overview, analysis, companies, methodology, region/sector drill-downs) | FastAPI `/api/gw/*`, `/api/tashkilotlar` |
+| `/savdo/…` | Mirror Trade Analytics (every page described above) | bundled `src/data/*.json` |
+
+The trade datasets load only under `/savdo` (`src/app/savdo/layout.tsx` holds the filter
+provider), so the home and Shadow Economy pages stay light. Redirects cannot live in a static
+export; the server answers retired and hidden addresses (`app/web.py`). Channel profiles are
+addressed by query (`/savdo/channels?iso=chn&cmd=870323`) — there are far more country × HS6
+channels than can be prerendered.
 
 ## The site
 

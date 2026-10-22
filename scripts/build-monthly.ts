@@ -2,7 +2,7 @@
  * Packs the monthly dataset for the client and reconciles partner metadata.
  *
  * Reads data/raw/monthly-cells.json (written by scripts/extract-monthly.py) and
- * emits src/data/monthly.json in the same columnar layout as cells.json, with
+ * emits public/data/monthly.json in the same columnar layout as cells.json, with
  * the time axis in months: [pIdx, kIdx, monthOffset, pe, ui] where
  * monthOffset = (year − y0) × 12 + (month − 1).
  *
@@ -25,7 +25,8 @@ import { appendMonthlyPartners } from "./reconcile-partners";
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "data", "raw", "monthly-cells.json");
 const SRC_HS6 = path.join(ROOT, "data", "raw", "monthly-cells-hs6.json");
-const OUT = path.join(ROOT, "src", "data", "monthly.json");
+// fetched by the browser on demand (src/lib/monthly-summary.ts), so it lives in public/
+const OUT = path.join(ROOT, "public", "data", "monthly.json");
 const OUT_HS6 = path.join(ROOT, "public", "data", "monthly-hs6.json");
 const META = path.join(ROOT, "src", "data", "meta.json");
 

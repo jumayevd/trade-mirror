@@ -78,7 +78,7 @@ function RangeBar({ lo, hi, min, max, threshold }: { lo: number; hi: number; min
     <div className="relative h-3.5 w-24 rounded-sm bg-[var(--color-panel-2)]">
       <span className="absolute top-0 h-3.5 w-px bg-[var(--color-investigate)] opacity-70"
         style={{ left: pct(threshold) }} />
-      <span className="absolute top-[6px] h-[3px] rounded-sm bg-[var(--color-primary)]"
+      <span className="absolute top-[6px] h-[3px] rounded-sm bg-[var(--color-primary-fill)]"
         style={{ left: pct(lo), width: `${(100 * (hi - lo)) / span}%` }} />
     </div>
   );
@@ -321,7 +321,7 @@ export default function AnomalyView() {
                 {shown.map((c) => (
                   <tr key={`${c.iso}|${c.code}`} className="border-b border-[var(--color-border-soft)] last:border-0">
                     <td className={TD}>
-                      <Link href={`/partners/${c.iso.toLowerCase()}`} className="font-medium hover:underline">
+                      <Link href={`/savdo/partners/${c.iso.toLowerCase()}`} className="font-medium hover:underline">
                         {c.partner}
                       </Link>
                     </td>
@@ -387,7 +387,7 @@ export default function AnomalyView() {
               {partners.slice(partnerPage * PAGE, partnerPage * PAGE + PAGE).map((r) => (
                 <tr key={r.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={TD}>
-                    <Link href={`/partners/${r.iso.toLowerCase()}`} className="font-medium hover:underline">
+                    <Link href={`/savdo/partners/${r.iso.toLowerCase()}`} className="font-medium hover:underline">
                       {r.partner}
                     </Link>
                   </td>
@@ -519,7 +519,7 @@ export default function AnomalyView() {
                 return (
                   <div key={n} className="flex items-center gap-2 fs-12.5">
                     <span className="tabular w-14 text-right text-faint">{n} {t("anom.diag.sizeObs")}</span>
-                    <span className="h-2.5 rounded-sm bg-[var(--color-primary)]"
+                    <span className="h-2.5 rounded-sm bg-[var(--color-primary-fill)]"
                       style={{ width: `${Math.max(2, (100 * count) / total)}%` }} />
                     <span className="tabular text-faint">{fmtNum(count)}</span>
                   </div>

@@ -1,5 +1,6 @@
 import shortRaw from "@/data/hs6-short.json";
 import type { Lang } from "@/lib/locales";
+import { hsLabel } from "@/lib/dataset";
 
 /**
  * A few words a reader recognises, for places that cannot fit the
@@ -41,4 +42,17 @@ export function hs6ShortLabel(cmd: string, lang: Lang, officialText: string): st
   const entry = SHORT[cmd];
   if (entry && typeof entry === "object") return entry[lang] ?? entry.en;
   return shortenHsText(officialText);
+}
+
+/**
+ * A product's name for a ranked summary row, from its code alone. A code the
+ * shipped labels never reached (the HS 2022 lines, 851713 among them) would
+ * otherwise read as its own number — "HS 851713" beside "HS 851713" — so it
+ * borrows its HS4 heading, the nearest description the data has.
+ */
+export function productShortLabel(cmd: string, lang: Lang): string {
+  const own = hsLabel(cmd);
+  if (own !== `HS ${cmd}` || cmd.length <= 4) return hs6ShortLabel(cmd, lang, own);
+  const heading = hsLabel(cmd.slice(0, 4));
+  return hs6ShortLabel(cmd, lang, heading.startsWith("HS ") ? own : heading);
 }

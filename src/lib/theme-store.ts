@@ -15,7 +15,8 @@
  */
 export type Theme = "light" | "dark";
 
-const KEY = "tm-theme";
+/** Shared with the portal's login and admin pages, which read the same key. */
+const KEY = "theme";
 
 export const readTheme = (): Theme => {
   if (typeof document === "undefined") return "light";

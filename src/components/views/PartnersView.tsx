@@ -4,12 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip } from "@/components/ui";
-import { useFilter, useFilteredData } from "@/lib/filter-context";
-import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, TableReveal, PageHead } from "@/components/ui";
+import { useFilter } from "@/lib/filter-context";
+import { aggregate, type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { labelsFor } from "@/lib/labels";
 import { hs6ShortLabel } from "@/lib/short-labels";
 
 /**
@@ -76,13 +77,10 @@ function Pager({
   );
 }
 
-/** The partner rollup reads the HS6 grain; a constant, so the memo key is stable. */
-const ROLLUP_HS6 = { rollupLevel: 6 } as const;
-
 export default function PartnersView() {
   const { filter } = useFilter();
   const { lang, t } = useI18n();
-  const data = useFilteredData(ROLLUP_HS6);
+  const data = useMemo(() => labelsFor(lang, () => aggregate({ ...filter, rollupLevel: 6 })), [filter, lang]);
   const [sort, setSort] = useState<SortKey>("positive");
   const [sel, setSel] = useState<string[]>([]);
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
@@ -154,7 +152,9 @@ export default function PartnersView() {
     downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
   const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
-  const thNum = th.replace("text-left", "text-center");
+  // long localised headings ("Hamkor maʼlum qilgan eksport") wrap rather than
+  // widen their columns past the card
+  const thNum = th.replace("text-left", "text-center").replace("whitespace-nowrap", "leading-tight");
   const td = "px-3 py-1.5 align-middle fs-13";
   const tdNum = `${td} tabular text-center whitespace-nowrap`;
 
@@ -209,7 +209,7 @@ export default function PartnersView() {
                     />
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
-                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                    <Link href={`/savdo/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
                       {p.name}
                     </Link>
                     <span className="ml-2 text-xs text-faint">{p.region}</span>
@@ -224,7 +224,7 @@ export default function PartnersView() {
                   <td className={tdNum} title={t("ctry.channelsTip")}>{fmtNum(hs6Facts.get(p.iso3)?.all ?? 0)}</td>
                   <td className={`${td} max-w-[220px]`}>
                     {top ? (
-                      <span title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
+                      <span className="block truncate" title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
                         <span className="tabular mr-1.5 text-xs text-faint">{top.cmd}</span>
                         <span className="fs-13">{hs6ShortLabel(top.cmd, lang, top.label)}</span>
                       </span>
@@ -259,11 +259,9 @@ export default function PartnersView() {
   return (
     <div className="space-y-6">
       {/* 1. header */}
-      <section className="space-y-1.5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-          </div>
+      <PageHead
+        title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>}
+        right={
           <button
             onClick={exportCsv}
             disabled={data.channels6.length === 0}
@@ -272,8 +270,8 @@ export default function PartnersView() {
           >
             {t("common.exportCsv")} ↓
           </button>
-        </div>
-      </section>
+        }
+      />
 
       {/* 2. filters + context */}
       <FilterBar />
@@ -321,7 +319,7 @@ export default function PartnersView() {
               return (
                 <div key={p.iso3} className="rounded-lg border border-[var(--color-border-soft)] p-3">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-sm font-semibold hover:underline">
+                    <Link href={`/savdo/partners/${p.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-sm font-semibold hover:underline">
                       {p.name}
                     </Link>
                     <QualityTag tier={p.tier} />
@@ -363,7 +361,7 @@ export default function PartnersView() {
           desc={t("ctry.rank.desc")}
           right={<InfoTip text={t("ctry.rank.info")} />}
         />
-        {rankingTable}
+        <TableReveal>{rankingTable}</TableReveal>
       </section>
 
       </>

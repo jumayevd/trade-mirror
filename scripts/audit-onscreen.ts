@@ -14,7 +14,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  aggregate, DEFAULT_FILTER, hsLabel, loadMonthlyDetail, matchedMonthsOf, meta, monthlyOnlyYears, officialImportsOver, uzbMonthsOf, yearsFor,
+  aggregate, DEFAULT_FILTER, hsLabel, loadMonthlyChapters, loadMonthlyDetail, matchedMonthsOf, meta, monthlyOnlyYears, officialImportsOver, uzbMonthsOf, yearsFor,
   type Aggregate, type Channel, type Filter, type RiskBand,
 } from "../src/lib/dataset";
 import riskRaw from "../src/data/risk.json";
@@ -22,9 +22,10 @@ import hs6ShortRaw from "../src/data/hs6-short.json";
 import diagRaw from "../src/data/diagnostics.json";
 import { CONFIG_KEYS, chapterRollup, clustersOf, metaOf, partnerRollup } from "../src/lib/anomaly";
 
-/* the monthly grain is gated on the detail layer, so the audit loads it the
- * way the client eventually does — without this, every monthly assertion below
- * would iterate zero rows and pass vacuously */
+/* the monthly grain is gated on the chapter rows and the detail layer, so the
+ * audit loads both the way the client eventually does — without this, every
+ * monthly assertion below would iterate zero rows and pass vacuously */
+loadMonthlyChapters(JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly.json"), "utf8")));
 const DETAIL: { v: number; y0: number; p: string[]; k: string[]; r: number[][] } = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "public", "data", "monthly-hs6.json"), "utf8"),
 );

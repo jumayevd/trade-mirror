@@ -4,8 +4,11 @@
  *   npx tsx scripts/build-risk-index.ts
  *
  * Reads the mirror cells produced by build-from-excel.ts and writes
- * src/data/risk.json (per-cell scores, consumed by the dashboard) and
- * src/data/diagnostics.json (score diagnostics, shown on /methodology).
+ * src/data/risk.json (per-cell scores, for the audit scripts),
+ * src/data/risk-config.json (the fitted configuration, partner indicator and
+ * band cut-offs — the only part the dashboard reads, so its bundle does not
+ * carry the per-cell scores) and src/data/diagnostics.json (score
+ * diagnostics, shown on /methodology).
  * Nothing here runs in the browser: the dashboard reads finished numbers.
  *
  * Construction:
@@ -304,6 +307,8 @@ const diagnosticsJson = {
 };
 
 fs.writeFileSync(path.join(ROOT, "risk.json"), JSON.stringify(riskJson));
+const { version, generatedAt, config, partnerEffects, bandCuts } = riskJson;
+fs.writeFileSync(path.join(ROOT, "risk-config.json"), JSON.stringify({ version, generatedAt, config, partnerEffects, bandCuts }));
 fs.writeFileSync(path.join(ROOT, "diagnostics.json"), JSON.stringify(diagnosticsJson, null, 2));
 
 /* ------------------------------------------------------------------ */
