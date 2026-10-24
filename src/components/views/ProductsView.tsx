@@ -380,7 +380,7 @@ export default function ProductsView() {
               totals={heat.totals}
               words={{
                 sector: t("heat.sector"), total: t("heat.total"), share: t("heat.share"), trend: t("heat.trend"),
-                all: t("heat.allSectors"), ofYear: t("prod.heat.share"), partial: t("heat.partialTip"), aria: t("prod.heat.title"),
+                all: t("heat.allSectors"), ofYear: t("prod.heat.share"), partial: t("heat.partialTip"), peak: t("heat.peak"), aria: t("prod.heat.title"),
               }}
             />
           )}

@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { BAND_COLORS, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
+import { BAND_COLORS, BAND_INK, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, categoryLabel, needsMonthlyDetail, yearsFor, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
 
 /**
@@ -217,6 +217,7 @@ export default function QueueView() {
             const vol = stats.volume[b];
             const share = stats.totalVolume > 0 ? vol / stats.totalVolume : 0;
             const color = BAND_COLORS[b];
+            const ink = BAND_INK[b];
             return (
               <div key={b} className="stat-card" style={{ ["--stat-rail" as string]: color }}>
                 <div className="flex items-start justify-between gap-2">
@@ -226,7 +227,7 @@ export default function QueueView() {
                   <span className="ml-auto flex items-center gap-1.5">
                   <span
                     className="tabular whitespace-nowrap rounded px-1.5 py-0.5 fs-12.5 font-semibold"
-                    style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}
+                    style={{ color: ink, background: `color-mix(in srgb, ${color} 16%, transparent)` }}
                     title={t("risk.band.range")}
                   >
                     {bandRange[b]}
@@ -238,7 +239,7 @@ export default function QueueView() {
                   </span>
                 </div>
                 <div className="mt-2 fs-12 text-faint">{t("kpi.positive")}</div>
-                <div className="mt-1 tabular whitespace-nowrap fs-24 font-semibold leading-none tracking-tight" style={{ color }} title={fmtUSDFull(vol)}>
+                <div className="mt-1 tabular whitespace-nowrap fs-24 font-semibold leading-none tracking-tight" style={{ color: ink }} title={fmtUSDFull(vol)}>
                   {vol > 0 ? fmtUSD(vol) : "—"}
                 </div>
                 <dl className="mt-3 space-y-1 border-t border-[var(--color-border-soft)] pt-2 fs-13">

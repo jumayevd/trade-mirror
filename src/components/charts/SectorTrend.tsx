@@ -16,6 +16,10 @@ import { useHoverTip } from "@/components/charts/HoverTip";
  * years, built from the months both sides reported — is hatched and paler: its
  * lower column is fewer months, not a smaller gap.
  *
+ * CBU colours: the bars in navy, the year columns a lighter navy, and each
+ * row's peak full year in the logo's gold — the one accent, so "when was this
+ * sector's gap largest" reads at a glance down the whole list.
+ *
  * The rows add up: the top sectors, then every other sector together, then the
  * total. Exact figures are in the tooltip.
  */
@@ -43,7 +47,7 @@ export default function SectorTrend({
   years: TrendYear[];
   /** Every sector, per year: the bottom row. */
   totals: number[];
-  words: { sector: string; total: string; share: string; trend: string; all: string; ofYear: string; partial: string; aria: string };
+  words: { sector: string; total: string; share: string; trend: string; all: string; ofYear: string; partial: string; peak: string; aria: string };
 }) {
   const tip = useHoverTip();
   const sum = (v: number[]) => v.reduce((a, b) => a + b, 0);
@@ -57,13 +61,16 @@ export default function SectorTrend({
 
   const strip = (label: string, values: number[], strong: boolean) => {
     const peak = Math.max(0, ...values);
+    // the peak among complete years: a partial year's total is fewer months
+    let peakAt = -1;
+    values.forEach((v, i) => { if (!years[i].partial && v > 0 && (peakAt < 0 || v > values[peakAt])) peakAt = i; });
     return (
       <div className="flex h-9 items-end gap-[2px]" role="group"
         aria-label={`${label}: ${years.map((y, i) => `${y.label} ${fmtUSD(values[i])}`).join(", ")}`}>
         {years.map((y, i) => {
           const v = values[i];
           const h = peak > 0 && v > 0 ? Math.max(6, (v / peak) * 100) : 0;
-          const fill = strong ? "var(--color-foreground)" : "var(--color-positive)";
+          const fill = i === peakAt ? "var(--color-gold)" : strong ? "var(--color-primary)" : "var(--color-primary-light)";
           return (
             <div key={y.year} tabIndex={0}
               aria-label={`${y.label}${y.months ? ` (${y.months})` : ""}: ${v > 0 ? fmtUSDFull(v) : "—"}`}
@@ -111,7 +118,7 @@ export default function SectorTrend({
               <div className="h-full rounded-r-[4px]"
                 style={{
                   width: `${maxRow > 0 ? Math.max(0.5, (total / maxRow) * 100) : 0}%`,
-                  background: kind === "other" ? "color-mix(in srgb, var(--color-positive) 45%, var(--color-panel))" : "var(--color-positive)",
+                  background: kind === "other" ? "color-mix(in srgb, var(--color-primary) 35%, var(--color-panel))" : "var(--color-primary)",
                 }} />
             </div>
           )}
@@ -146,6 +153,12 @@ export default function SectorTrend({
       {named.map((r) => row(r.key, r.label, r.values, "sector"))}
       {other && row(other.key, other.label, other.values, "other")}
       {row("__all", words.all, totals, "all")}
+      {showTrend && (
+        <p className="mt-2 flex items-center justify-end gap-1.5 fs-12 text-faint">
+          <span aria-hidden className="h-2.5 w-2.5 rounded-[2px] bg-[var(--color-gold)]" />
+          {words.peak}
+        </p>
+      )}
       {tip.node}
     </div>
   );

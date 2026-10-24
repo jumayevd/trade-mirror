@@ -96,19 +96,40 @@ const TEAL = IS_DARK ? "#0f9a85" : "#0b9180";
 // status, never a series: attention (suspicious, critical) and its step down,
 // then calm (normal)
 const ALERT_RED = IS_DARK ? "#f07167" : "#c0392b";
-const AMBER_HOT = IS_DARK ? "#f4a261" : "#d9731f";
 const GREEN = IS_DARK ? "#6cc79a" : "#3a9a6a";
 const GREEN_INK = IS_DARK ? "#7fd1a6" : "#2f7d55";
 const SLATE = IS_DARK ? "#9aa2b1" : "#5b6578";
 const GREY = IS_DARK ? "#8d96a8" : "#8a93a3";
 
-/** MTRS band palette (fixed): never reused as series colors. */
+/**
+ * Risk bands in the CBU palette: Critical takes the logo's gold — the one
+ * accent, so the band that matters most is the one the eye finds — and High,
+ * Medium and Low step down a navy ramp, dark to pale. The bands are ordered,
+ * and every adjacent pair is validated for colour-blind readers (dataviz
+ * palette script, adjacent pairs: light ΔE 22.2 CVD / 23.4 normal vision, dark
+ * 18.7 / 19.1). Fills only — gold and the pale step are too light for text on
+ * white; figures printed in a band's colour use BAND_INK.
+ */
+// CSS variables (globals.css, per theme), not hex: the prerendered HTML and the
+// browser's render then emit the same style text, and the theme swaps the
+// colours in CSS. Every consumer is DOM; a canvas could not read these.
+// Written out literally: Tailwind drops custom properties nothing references,
+// and globals.css's .band-palette rule is what keeps these ones.
 export const BAND_COLORS: Record<string, string> = {
-  critical: ALERT_RED,
-  high: AMBER_HOT,
-  // ochre: a step below the orange, dark enough to stand as a stat figure (3.8:1)
-  elevated: IS_DARK ? "#d6a73c" : "#a67c00",
-  low: GREY,
+  critical: "var(--band-critical)", high: "var(--band-high)",
+  elevated: "var(--band-elevated)", low: "var(--band-low)",
+};
+
+/** The same bands as text, legible at stat-figure size on the card surface. */
+export const BAND_INK: Record<string, string> = {
+  critical: "var(--band-ink-critical)", high: "var(--band-ink-high)",
+  elevated: "var(--band-ink-elevated)", low: "var(--band-ink-low)",
+};
+
+/** Ink for a label printed inside a band's fill. */
+export const BAND_ON: Record<string, string> = {
+  critical: "var(--band-on-critical)", high: "var(--band-on-high)",
+  elevated: "var(--band-on-elevated)", low: "var(--band-on-low)",
 };
 
 /**
