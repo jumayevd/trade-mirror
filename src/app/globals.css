@@ -18,6 +18,22 @@
 :root {
   --background: #f4f7fc;
   --foreground: #0f1d33;
+
+  /* risk bands, CBU: Critical in the logo's gold, High to Low down a navy ramp
+     (fills; -ink- as text on the card; -on- as a label inside a fill). Read
+     through BAND_COLORS / BAND_INK / BAND_ON in src/lib/format.ts. */
+  --band-critical: #c99a2e;
+  --band-high: #1e3a6e;
+  --band-elevated: #5f84bd;
+  --band-low: #bccadf;
+  --band-ink-critical: #8a5300;
+  --band-ink-high: #1e3a6e;
+  --band-ink-elevated: #3d5f94;
+  --band-ink-low: #5b6578;
+  --band-on-critical: #2a1d00;
+  --band-on-high: #ffffff;
+  --band-on-elevated: #ffffff;
+  --band-on-low: #0f1d33;
 }
 
 @theme {
@@ -96,6 +112,19 @@ html[data-theme="dark"] {
   color-scheme: dark;
   --background: #0d1524;
   --foreground: #e8edf6;
+
+  --band-critical: #e3b84f;
+  --band-high: #9cbcf0;
+  --band-elevated: #5677aa;
+  --band-low: #36425b;
+  --band-ink-critical: #f0bd63;
+  --band-ink-high: #9cbcf0;
+  --band-ink-elevated: #8aa7d6;
+  --band-ink-low: #9aa2b1;
+  --band-on-critical: #2a1d00;
+  --band-on-high: #0b1322;
+  --band-on-elevated: #ffffff;
+  --band-on-low: #e6ecf5;
 
   --color-bg: #0d1524;
   --color-panel: #141d2e;
@@ -293,6 +322,18 @@ main:has(> .page-fill) {
 
 @media print {
   html[data-theme="dark"] {
+    --band-critical: #c99a2e;
+    --band-high: #1e3a6e;
+    --band-elevated: #5f84bd;
+    --band-low: #bccadf;
+    --band-ink-critical: #8a5300;
+    --band-ink-high: #1e3a6e;
+    --band-ink-elevated: #3d5f94;
+    --band-ink-low: #5b6578;
+    --band-on-critical: #2a1d00;
+    --band-on-high: #ffffff;
+    --band-on-elevated: #ffffff;
+    --band-on-low: #0f1d33;
     --color-bg: #ffffff;
     --color-panel: #ffffff;
     --color-panel-2: #eef3fa;
@@ -314,3 +355,13 @@ html[data-prelang] main { visibility: hidden; }
 /* a dark reader's main area waits for ThemeRemount to rebuild it in the dark
    palette, instead of showing the light-coloured prerender (src/lib/theme-store.ts) */
 html[data-pretheme] main { visibility: hidden; }
+
+/* The band palette is read from JavaScript (BAND_COLORS / BAND_INK / BAND_ON
+   in src/lib/format.ts) as var()s, and Tailwind drops custom properties that
+   nothing in the stylesheet references. This rule references every one, so
+   they survive; the class itself is never applied. */
+.band-palette {
+  --band-keep: var(--band-critical) var(--band-high) var(--band-elevated) var(--band-low)
+    var(--band-ink-critical) var(--band-ink-high) var(--band-ink-elevated) var(--band-ink-low)
+    var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low);
+}

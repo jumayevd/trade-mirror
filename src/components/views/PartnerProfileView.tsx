@@ -16,7 +16,7 @@ import {
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS, BAND_COLORS } from "@/lib/format";
 
 /**
  * Partner profile — one country in depth, reduced to its figures.
@@ -193,7 +193,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
           info={`${t("prof.stat.share.info")} ${fmtUSDFull(p.posT)} ÷ ${fmtUSDFull(p.pePosT)}.`} />
         <Stat label={t("prof.stat.hs6Channels")} value={fmtNum(hs6.length)} accent={COLORS.navy3}
           info={t("prof.stat.hs6Channels.info")} />
-        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent={COLORS.investigate}
+        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent={BAND_COLORS.critical}
           info={`${fill(t("prof.stat.criticalOfAll"), {
             n: fmtNum(criticalHs6), total: fmtNum(hs6.length),
             pct: hs6.length > 0 ? fmtPct(criticalHs6 / hs6.length, 1) : "—",

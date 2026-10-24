@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Segmented } from "@/components/ui";
-import { IS_DARK, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
+import { BAND_COLORS, BAND_ON, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { labelRoom, useHoverTip, useWidth } from "@/components/charts/HoverTip";
 import type { RiskBand } from "@/lib/dataset";
 
@@ -17,24 +17,18 @@ import type { RiskBand } from "@/lib/dataset";
  * clearly as a large one's. Exact figures, shares and product counts are in the
  * tooltip; the bar ends carry the total and its share of all sectors.
  *
- * The bands are ORDERED, so their fills step by lightness — more severe reads
- * as more contrast against the card, in both themes — inside the hue family of
- * each band's card above (red, orange, ochre, grey). Validated with the dataviz
- * palette script for adjacent pairs: light ΔE 14.7 colour-blind / 16.5 normal
- * vision, dark 12.3 / 15.5. (The cards' own status colours sit apart, one per
- * card; side by side in one bar the ochre and the orange were ΔE 1.2 apart for
- * a protan reader.) A 2px gap separates segments as well.
+ * Colours are the page's one band palette, in CBU colours (BAND_COLORS in
+ * src/lib/format.ts): Critical in the logo's gold, High to Low down a navy
+ * ramp — the cards above and the badges in the table read the same four. A 2px
+ * gap separates segments as well.
  */
 
 export const BAND_ORDER: RiskBand[] = ["critical", "high", "elevated", "low"];
 
-const FILL: Record<RiskBand, string> = IS_DARK
-  ? { critical: "#ffbcae", high: "#ee8838", elevated: "#946f22", low: "#4a5366" }
-  : { critical: "#9e2a20", high: "#d96f24", elevated: "#e6b84a", low: "#d2d7df" };
-/** Ink on each fill, for a label printed inside a wide segment. */
-const INK: Record<RiskBand, string> = IS_DARK
-  ? { critical: "#3a0d07", high: "#2a1300", elevated: "#fff", low: "#fff" }
-  : { critical: "#fff", high: "#fff", elevated: "#3a2a00", low: "#2b3443" };
+// the page's one band palette (src/lib/format.ts): the cards, the badges and
+// these bars all read the same four colours
+const FILL = BAND_COLORS as Record<RiskBand, string>;
+const INK = BAND_ON as Record<RiskBand, string>;
 
 export interface CompositionRow {
   key: string;
