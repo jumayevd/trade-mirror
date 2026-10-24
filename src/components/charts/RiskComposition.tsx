@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Segmented } from "@/components/ui";
 import { IS_DARK, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
-import { useHoverTip } from "@/components/charts/HoverTip";
+import { labelRoom, useHoverTip, useWidth } from "@/components/charts/HoverTip";
 import type { RiskBand } from "@/lib/dataset";
 
 /**
@@ -58,6 +58,10 @@ export default function RiskComposition({
 }) {
   const [mode, setMode] = useState<"amount" | "share">("amount");
   const tip = useHoverTip();
+  // every bar shares one column, so one measurement sizes them all
+  const [sizer, barPx] = useWidth<HTMLDivElement>();
+  // one column template for every row, so labels, bars and totals line up
+  const grid = "grid grid-cols-[clamp(108px,24%,220px)_1fr_7.75rem] items-center gap-x-3";
 
   const sum = (v: number[]) => v.reduce((a, b) => a + b, 0);
   const allValues = BAND_ORDER.map((_, j) => sum(rows.map((r) => r.values[j])));
@@ -91,12 +95,15 @@ export default function RiskComposition({
                 </>,
               )}
             >
-              {/* a figure only where it fits with room to spare; the tooltip has every one.
-                  The mix strip always reads in shares. */}
-              <span className={`tabular whitespace-nowrap px-1 ${strong ? "fs-11 font-semibold" : "fs-11.5 font-medium"}`}
-                style={{ visibility: w >= (mode === "share" || strong ? 7 : 9) ? "visible" : "hidden" }}>
-                {strong ? fmtPct(ofRow, 0) : text}
-              </span>
+              {/* a figure only where its segment is wide enough to hold it, measured in
+                  pixels; the tooltip has every one. The mix strip always reads in shares. */}
+              {(() => {
+                const shown = strong ? fmtPct(ofRow, 0) : text;
+                const fits = barPx > 0 && (w / 100) * barPx >= labelRoom(shown, strong ? 11 : 11.5);
+                return fits ? (
+                  <span className={`tabular whitespace-nowrap px-1 ${strong ? "fs-11 font-semibold" : "fs-11.5 font-medium"}`}>{shown}</span>
+                ) : null;
+              })()}
             </div>
           );
         })}
@@ -108,12 +115,12 @@ export default function RiskComposition({
     const total = sum(values);
     const scale = mode === "share" ? total : maxRow;
     return (
-      <div key={key} className={`grid grid-cols-[minmax(120px,210px)_1fr_auto] items-center gap-x-3 py-1.5 ${strong ? "border-b border-[var(--color-border)] pb-3 mb-1.5" : ""}`}>
+      <div key={key} className={`${grid} py-1.5 ${strong ? "mb-1.5 border-b border-[var(--color-border)] pb-3" : ""}`}>
         <div className={`truncate fs-13 ${strong ? "font-semibold" : "font-medium"} text-foreground`} title={label}>{label}</div>
         {/* the all-sectors strip is always its own 100%: a mix, never a length to
             set against the sector bars, which share one scale below it */}
         {bar(label, values, counts, strong ? total : scale, strong)}
-        <div className="w-[118px] text-right" title={fmtUSDFull(total)}>
+        <div className="text-right" title={fmtUSDFull(total)}>
           <span className={`tabular whitespace-nowrap ${strong ? "fs-14 font-bold" : "fs-13.5 font-semibold"}`}>{fmtUSD(total)}</span>
           <span className="tabular ml-2 inline-block w-[44px] whitespace-nowrap fs-12 text-faint">
             {grand > 0 ? fmtPct(total / grand, 1) : "—"}
@@ -146,10 +153,11 @@ export default function RiskComposition({
 
       {/* the share of all sectors in the right column (the second figure) is constant
           across views; in Share view the bar's own split is what changes */}
-      <div className="grid grid-cols-[minmax(120px,210px)_1fr_auto] gap-x-3 pb-1 fs-12 text-faint">
+      <div className={`${grid} pb-1 fs-12 text-faint`}>
         <span />
-        <span />
-        <span className="w-[118px] text-right">{words.total} · {words.ofAll}</span>
+        {/* the measuring stick for the bar column */}
+        <div ref={sizer} className="h-0" />
+        <span className="text-right">{words.total} · {words.ofAll}</span>
       </div>
       {row("__all", words.all, allValues, allCounts, true)}
       {rows.map((r) => row(r.key, r.label, r.values, r.counts))}

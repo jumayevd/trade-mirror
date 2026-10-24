@@ -507,8 +507,11 @@ export function ensureMonthlyChapters(): void {
     .catch(() => { monthlyChaptersLoading = false; });
 }
 /**
- * A view on the monthly basis is on screen: until the chapter rows arrive its
- * figures would read as zeros, so the trade layout veils it (MonthlyVeil).
+ * A view on the monthly basis is on screen: until the monthly rows arrive its
+ * figures would read as zeros, so the layout veils it (MonthlyVeil). Both
+ * books count — the chapter rows and the HS6 detail, since the monthly basis
+ * measures at HS6: with the chapters in and the detail still loading, the
+ * figures read $0 for as long as the 26 MB detail takes to arrive.
  * Returns the release, for an effect's cleanup.
  */
 export function wantMonthly(): () => void {
@@ -516,7 +519,8 @@ export function wantMonthly(): () => void {
   notifyMonthly();
   return () => { monthlyWanted--; notifyMonthly(); };
 }
-export const monthlyPending = (): boolean => monthlyWanted > 0 && !monthlyChaptersLoaded;
+export const monthlyPending = (): boolean =>
+  monthlyWanted > 0 && (!monthlyChaptersLoaded || monthlyDetail === null);
 
 /** The chapter rows first (the monthly basis cannot show anything without them), then the HS6 detail. */
 export function ensureMonthlyDetail(): void {

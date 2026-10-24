@@ -1,6 +1,23 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+
+/** An element's rendered width in px, kept current as it resizes (0 before mount). */
+export function useWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
+
+/** Room a short tabular figure needs inside a mark, in px, padding included. */
+export const labelRoom = (text: string, px = 11.5) => text.length * px * 0.62 + 10;
 
 /**
  * A tooltip for HTML charts: the exact figures behind a mark, shown on hover

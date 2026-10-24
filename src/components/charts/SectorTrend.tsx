@@ -50,9 +50,10 @@ export default function SectorTrend({
   const grand = sum(totals);
   const maxRow = Math.max(0, ...rows.map((r) => sum(r.values)));
   const showTrend = years.length > 1;
+  // one column template for every row (header included), so they line up
   const cols = showTrend
-    ? "grid-cols-[minmax(130px,220px)_minmax(140px,1fr)_auto_minmax(170px,1.15fr)]"
-    : "grid-cols-[minmax(130px,220px)_minmax(160px,1fr)_auto]";
+    ? "grid-cols-[clamp(108px,22%,220px)_minmax(120px,1fr)_3.25rem_minmax(150px,1.15fr)]"
+    : "grid-cols-[clamp(108px,24%,220px)_minmax(160px,1fr)_3.25rem]";
 
   const strip = (label: string, values: number[], strong: boolean) => {
     const peak = Math.max(0, ...values);
@@ -116,7 +117,7 @@ export default function SectorTrend({
           )}
           <span className={`tabular whitespace-nowrap ${strong ? "fs-14 font-bold" : "fs-13 font-semibold"}`}>{fmtUSD(total)}</span>
         </div>
-        <span className="tabular w-[50px] text-right fs-12.5 text-muted">{grand > 0 ? fmtPct(total / grand, 1) : "—"}</span>
+        <span className="tabular text-right fs-12.5 text-muted">{grand > 0 ? fmtPct(total / grand, 1) : "—"}</span>
         {showTrend && strip(label, values, strong)}
       </div>
     );
@@ -130,7 +131,7 @@ export default function SectorTrend({
       <div className={`grid ${cols} items-end gap-x-4 pb-1.5 fs-12 font-medium text-faint`}>
         <span>{words.sector}</span>
         <span>{words.total}</span>
-        <span className="w-[50px] text-right">{words.share}</span>
+        <span className="text-right">{words.share}</span>
         {showTrend && (
           <div className="flex gap-[2px]">
             {years.map((y) => (
