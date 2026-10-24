@@ -310,3 +310,7 @@ main:has(> .page-fill) {
 /* a reader whose saved language is not the prerendered one waits for it
    (LANG_BOOTSTRAP in src/lib/lang-store.ts) instead of a flash of another language */
 html[data-prelang] main { visibility: hidden; }
+
+/* a dark reader's main area waits for ThemeRemount to rebuild it in the dark
+   palette, instead of showing the light-coloured prerender (src/lib/theme-store.ts) */
+html[data-pretheme] main { visibility: hidden; }

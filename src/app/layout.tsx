@@ -5,6 +5,8 @@ import Sidebar, { MobileNav } from "@/components/Sidebar";
 import HeaderMeta from "@/components/HeaderMeta";
 import { HeaderStrapline, SiteFooter } from "@/components/Chrome";
 import { FilterProvider } from "@/lib/filter-context";
+import MonthlyVeil from "@/components/MonthlyVeil";
+import ThemeRemount from "@/components/ThemeRemount";
 import { I18nProvider } from "@/lib/i18n";
 import { THEME_BOOTSTRAP } from "@/lib/theme-store";
 import { LANG_BOOTSTRAP } from "@/lib/lang-store";
@@ -20,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="uz" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* set data-theme before any paint or bundle: no white flash for dark
             readers, and the canvas palettes read the attribute at module init */}
@@ -44,7 +46,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {/* no Suspense boundary: nothing here reads the URL during render
                     (FilterProvider adopts it after hydration), so the build prerenders
                     every page's default view straight into <main> */}
-                <FilterProvider>{children}</FilterProvider>
+                {/* the monthly rows load on demand; the veil covers a page waiting for them */}
+                <ThemeRemount>
+                  <FilterProvider>
+                    <div className="relative">
+                      {children}
+                      <MonthlyVeil />
+                    </div>
+                  </FilterProvider>
+                </ThemeRemount>
               </main>
 
               <SiteFooter />

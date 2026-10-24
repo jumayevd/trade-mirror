@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import ValueMatrix, { type MatrixColumn, type MatrixRow } from "@/components/charts/ValueMatrix";
+import SectorTrend, { type TrendRow, type TrendYear } from "@/components/charts/SectorTrend";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
@@ -177,11 +177,11 @@ export default function ProductsView() {
   const data = useFilteredData();
   const { t, lang } = useI18n();
 
-  // ---- sector × year matrix: the selected period, under every filter on the page ----
+  // ---- sectors by year: the selected period, under every filter on the page ----
   // Read straight off the page's aggregate, so it follows the years, months,
   // partner, HS and freight selections. Each year's figure is that sector's
-  // positive channel-years; the bottom row is every sector, so the top ten
-  // read against the whole.
+  // positive channel-years. The top ten, then every other sector together
+  // (the unclassified residual included), then the total: the rows add up.
   const heatPartial = useCallback((y: number) => isDerivedYear(y) && comparableMonthsOfYear(y).length < 12, []);
   const heat = useMemo(() => labelsFor(lang, () => {
     const years = [...data.years].sort((x, y) => x - y);
@@ -199,22 +199,28 @@ export default function ProductsView() {
       .map(([key, values]) => ({ key, values, total: values.reduce((x, y) => x + y, 0) }))
       .filter((r) => r.total > 0);
     const totals = years.map((_, j) => all.reduce((sum, r) => sum + r.values[j], 0));
-    const rows: MatrixRow[] = all
+    const top = all
       .filter((r) => r.key !== "residual")
       .sort((x, y) => y.total - x.total)
-      .slice(0, HEAT_TOP)
-      .map((r) => ({
-        key: r.key,
-        label: categoryLabel(r.key),
-        values: r.values,
-        notes: r.values.map((v, j) => (totals[j] > 0 && v > 0 ? fmtPct(v / totals[j], 1) : null)),
-      }));
+      .slice(0, HEAT_TOP);
+    const shown = new Set(top.map((r) => r.key));
+    const rows: TrendRow[] = top.map((r) => ({ key: r.key, label: categoryLabel(r.key), values: r.values }));
+    const rest = all.filter((r) => !shown.has(r.key));
+    if (rest.length) {
+      rows.push({
+        key: "__other",
+        label: t("heat.other"),
+        values: years.map((_, j) => rest.reduce((sum, r) => sum + r.values[j], 0)),
+      });
+    }
     return { years, totals, rows };
-  }), [data, lang]);
-  const heatColumns = useMemo<MatrixColumn[]>(() => heat.years.map((y) => {
-    const months = isDerivedYear(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : "";
-    return { label: heatPartial(y) ? `${y}*` : String(y), sub: heatPartial(y) ? months : undefined, color: COLORS.positive };
-  }), [heat, heatPartial, t]);
+  }), [data, lang, t]);
+  const heatYears = useMemo<TrendYear[]>(() => heat.years.map((y) => ({
+    year: y,
+    label: heatPartial(y) ? `${y}*` : String(y),
+    partial: heatPartial(y),
+    months: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
+  })), [heat, heatPartial, t]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
   const [level, setLevel] = useState<HsLevel>(6);
@@ -368,15 +374,14 @@ export default function ProductsView() {
           {heat.rows.length === 0 ? (
             <EmptyState />
           ) : (
-            <ValueMatrix
+            <SectorTrend
               rows={heat.rows}
-              columns={heatColumns}
+              years={heatYears}
               totals={heat.totals}
-              totalWord={t("heat.total")}
-              totalRowLabel={t("heat.allSectors")}
-              shareWord={t("heat.share")}
-              rowTitle={t("heat.sector")}
-              ariaLabel={t("prod.heat.title")}
+              words={{
+                sector: t("heat.sector"), total: t("heat.total"), share: t("heat.share"), trend: t("heat.trend"),
+                all: t("heat.allSectors"), ofYear: t("prod.heat.share"), partial: t("heat.partialTip"), aria: t("prod.heat.title"),
+              }}
             />
           )}
           {heat.years.some(heatPartial) && (

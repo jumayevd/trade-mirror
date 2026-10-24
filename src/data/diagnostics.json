@@ -3,74 +3,74 @@
   "generatedAt": "2026-08-21T09:27:09.296Z",
   "headlineLevel": 6,
   "corGP": {
-    "2": 0.276,
-    "4": 0.289,
+    "2": 0.285,
+    "4": 0.288,
     "6": 0.356
   },
   "gapRateQuantiles": {
     "2": {
-      "p50": 0.345,
+      "p50": 0.34,
       "p90": 0.867,
-      "p99": 0.993
+      "p99": 0.994
     },
     "4": {
-      "p50": 0.365,
-      "p90": 0.916,
+      "p50": 0.36,
+      "p90": 0.918,
       "p99": 0.997
     },
     "6": {
-      "p50": 0.395,
-      "p90": 0.942,
+      "p50": 0.393,
+      "p90": 0.943,
       "p99": 0.998
     }
   },
   "coverage": {
     "2": {
-      "matchedCellYears": 18056,
-      "matchedCells": 3612,
-      "orphanImportCellYears": 119942,
-      "lostExportCellYears": 77685,
-      "inScopeCells": 3271,
-      "inScopeCellYears": 15115,
-      "valueRetainedShare": 0.848868085524911,
-      "belowFloor": 1799
+      "matchedCellYears": 16153,
+      "matchedCells": 3580,
+      "orphanImportCellYears": 107561,
+      "lostExportCellYears": 69125,
+      "inScopeCells": 3228,
+      "inScopeCellYears": 13494,
+      "valueRetainedShare": 0.8459990407620205,
+      "belowFloor": 1761
     },
     "4": {
-      "matchedCellYears": 82064,
-      "matchedCells": 20092,
-      "orphanImportCellYears": 119942,
-      "lostExportCellYears": 77685,
-      "inScopeCells": 17460,
-      "inScopeCellYears": 61135,
-      "valueRetainedShare": 0.848868085524911,
-      "belowFloor": 13299
+      "matchedCellYears": 73703,
+      "matchedCells": 19727,
+      "orphanImportCellYears": 107561,
+      "lostExportCellYears": 69125,
+      "inScopeCells": 17022,
+      "inScopeCellYears": 54636,
+      "valueRetainedShare": 0.8459990407620205,
+      "belowFloor": 12946
     },
     "6": {
-      "matchedCellYears": 176750,
-      "matchedCells": 48920,
-      "orphanImportCellYears": 119942,
-      "lostExportCellYears": 77685,
-      "inScopeCells": 40475,
-      "inScopeCellYears": 110295,
-      "valueRetainedShare": 0.848868085524911,
-      "belowFloor": 35952
+      "matchedCellYears": 158896,
+      "matchedCells": 47743,
+      "orphanImportCellYears": 107561,
+      "lostExportCellYears": 69125,
+      "inScopeCells": 39021,
+      "inScopeCellYears": 98470,
+      "valueRetainedShare": 0.8459990407620205,
+      "belowFloor": 34860
     }
   },
   "bandCuts": {
     "2": {
-      "critical": 90.3,
+      "critical": 89.6,
       "high": 73.7,
-      "elevated": 56.3
+      "elevated": 56.1
     },
     "4": {
-      "critical": 88.4,
-      "high": 69.9,
-      "elevated": 51.9
+      "critical": 88,
+      "high": 69.8,
+      "elevated": 51.4
     },
     "6": {
-      "critical": 86.7,
-      "high": 66.7,
-      "elevated": 46.4
+      "critical": 86.5,
+      "high": 66.6,
+      "elevated": 45.8
     }
   },
   "partnerEffects": [
@@ -81,18 +81,23 @@
     },
     {
       "iso": "ARE",
-      "u": 1.9475,
-      "cells": 1325
+      "u": 1.8167,
+      "cells": 1279
     },
     {
       "iso": "HKG",
-      "u": 1.7901,
-      "cells": 293
+      "u": 1.8087,
+      "cells": 287
     },
     {
       "iso": "MLT",
-      "u": 1.2272,
+      "u": 1.3802,
       "cells": 5
+    },
+    {
+      "iso": "ECU",
+      "u": 1.2275,
+      "cells": 3
     },
     {
       "iso": "MAR",
@@ -105,14 +110,9 @@
       "cells": 1
     },
     {
-      "iso": "ECU",
-      "u": 0.9778,
-      "cells": 3
-    },
-    {
       "iso": "EST",
-      "u": 0.9019,
-      "cells": 631
+      "u": 0.9191,
+      "cells": 606
     },
     {
       "iso": "PSE",
@@ -126,8 +126,8 @@
     },
     {
       "iso": "IRN",
-      "u": 0.8293,
-      "cells": 641
+      "u": 0.8006,
+      "cells": 620
     },
     {
       "iso": "MKD",
@@ -140,29 +140,24 @@
       "cells": 6
     },
     {
-      "iso": "ITA",
-      "u": 0.7174,
-      "cells": 1832
-    },
-    {
       "iso": "POL",
-      "u": 0.6963,
-      "cells": 1644
+      "u": 0.7162,
+      "cells": 1623
     },
     {
-      "iso": "LTU",
-      "u": 0.6072,
-      "cells": 1992
-    },
-    {
-      "iso": "DZA",
-      "u": 0.6054,
-      "cells": 1
+      "iso": "ITA",
+      "u": 0.681,
+      "cells": 1794
     },
     {
       "iso": "THA",
-      "u": 0.5544,
-      "cells": 317
+      "u": 0.5979,
+      "cells": 309
+    },
+    {
+      "iso": "LTU",
+      "u": 0.5661,
+      "cells": 1935
     },
     {
       "iso": "ZWE",
@@ -171,13 +166,8 @@
     },
     {
       "iso": "DEU",
-      "u": 0.5265,
-      "cells": 2413
-    },
-    {
-      "iso": "KGZ",
-      "u": 0.5216,
-      "cells": 1212
+      "u": 0.5263,
+      "cells": 2370
     },
     {
       "iso": "LUX",
@@ -185,19 +175,19 @@
       "cells": 149
     },
     {
+      "iso": "KGZ",
+      "u": 0.4706,
+      "cells": 1167
+    },
+    {
       "iso": "DNK",
-      "u": 0.4862,
-      "cells": 378
+      "u": 0.4653,
+      "cells": 363
     },
     {
       "iso": "NLD",
-      "u": 0.4418,
-      "cells": 1189
-    },
-    {
-      "iso": "TUR",
-      "u": 0.4378,
-      "cells": 3401
+      "u": 0.4386,
+      "cells": 1169
     },
     {
       "iso": "CIV",
@@ -205,39 +195,34 @@
       "cells": 1
     },
     {
-      "iso": "KAZ",
-      "u": 0.3719,
-      "cells": 2302
+      "iso": "TUR",
+      "u": 0.4193,
+      "cells": 3373
     },
     {
-      "iso": "PHL",
-      "u": 0.3585,
-      "cells": 32
+      "iso": "KAZ",
+      "u": 0.3644,
+      "cells": 2263
+    },
+    {
+      "iso": "KEN",
+      "u": 0.3552,
+      "cells": 9
+    },
+    {
+      "iso": "ISR",
+      "u": 0.3531,
+      "cells": 154
+    },
+    {
+      "iso": "FRA",
+      "u": 0.3515,
+      "cells": 1339
     },
     {
       "iso": "AUS",
       "u": 0.3484,
-      "cells": 49
-    },
-    {
-      "iso": "FRA",
-      "u": 0.3482,
-      "cells": 1358
-    },
-    {
-      "iso": "ISR",
-      "u": 0.3421,
-      "cells": 157
-    },
-    {
-      "iso": "KEN",
-      "u": 0.3315,
-      "cells": 9
-    },
-    {
-      "iso": "GBR",
-      "u": 0.3299,
-      "cells": 763
+      "cells": 46
     },
     {
       "iso": "TUN",
@@ -245,104 +230,104 @@
       "cells": 2
     },
     {
-      "iso": "IRL",
-      "u": 0.3059,
-      "cells": 143
-    },
-    {
-      "iso": "NZL",
-      "u": 0.2778,
-      "cells": 13
-    },
-    {
-      "iso": "SRB",
-      "u": 0.2628,
-      "cells": 253
-    },
-    {
-      "iso": "SVK",
-      "u": 0.2592,
-      "cells": 220
-    },
-    {
-      "iso": "HUN",
-      "u": 0.257,
-      "cells": 412
-    },
-    {
-      "iso": "BGR",
-      "u": 0.2537,
-      "cells": 408
-    },
-    {
-      "iso": "ESP",
-      "u": 0.2424,
-      "cells": 1036
-    },
-    {
-      "iso": "COL",
-      "u": 0.2194,
-      "cells": 7
-    },
-    {
-      "iso": "CHN",
-      "u": 0.2043,
-      "cells": 3541
-    },
-    {
-      "iso": "MNG",
-      "u": 0.1946,
-      "cells": 20
-    },
-    {
-      "iso": "EGY",
-      "u": 0.1799,
-      "cells": 55
-    },
-    {
-      "iso": "NOR",
-      "u": 0.1795,
-      "cells": 31
-    },
-    {
-      "iso": "RUS",
-      "u": 0.175,
-      "cells": 3352
-    },
-    {
-      "iso": "AUT",
-      "u": 0.1742,
-      "cells": 973
-    },
-    {
-      "iso": "CZE",
-      "u": 0.1491,
-      "cells": 1344
-    },
-    {
-      "iso": "USA",
-      "u": 0.1478,
-      "cells": 806
-    },
-    {
-      "iso": "SVN",
-      "u": 0.1398,
-      "cells": 317
+      "iso": "GBR",
+      "u": 0.3119,
+      "cells": 741
     },
     {
       "iso": "CYP",
-      "u": 0.132,
-      "cells": 19
+      "u": 0.2832,
+      "cells": 12
+    },
+    {
+      "iso": "IRL",
+      "u": 0.2746,
+      "cells": 143
+    },
+    {
+      "iso": "SRB",
+      "u": 0.2716,
+      "cells": 249
+    },
+    {
+      "iso": "PHL",
+      "u": 0.268,
+      "cells": 31
+    },
+    {
+      "iso": "BGR",
+      "u": 0.2561,
+      "cells": 395
+    },
+    {
+      "iso": "NZL",
+      "u": 0.2539,
+      "cells": 13
+    },
+    {
+      "iso": "SVK",
+      "u": 0.2364,
+      "cells": 210
+    },
+    {
+      "iso": "COL",
+      "u": 0.2331,
+      "cells": 6
+    },
+    {
+      "iso": "HUN",
+      "u": 0.2232,
+      "cells": 404
+    },
+    {
+      "iso": "ESP",
+      "u": 0.2181,
+      "cells": 1010
+    },
+    {
+      "iso": "MNG",
+      "u": 0.1988,
+      "cells": 20
+    },
+    {
+      "iso": "CZE",
+      "u": 0.1984,
+      "cells": 1321
+    },
+    {
+      "iso": "CHN",
+      "u": 0.1967,
+      "cells": 3505
+    },
+    {
+      "iso": "EGY",
+      "u": 0.1885,
+      "cells": 55
+    },
+    {
+      "iso": "USA",
+      "u": 0.1688,
+      "cells": 791
+    },
+    {
+      "iso": "RUS",
+      "u": 0.164,
+      "cells": 3304
+    },
+    {
+      "iso": "SVN",
+      "u": 0.1476,
+      "cells": 310
     },
     {
       "iso": "HRV",
-      "u": 0.1287,
-      "cells": 43
+      "u": 0.1461,
+      "cells": 41
     },
     {
-      "iso": "LKA",
-      "u": 0.1191,
-      "cells": 26
+      "iso": "AUT",
+      "u": 0.135,
+      "cells": 935
     },
     {
       "iso": "HND",
@@ -351,23 +336,28 @@
     },
     {
       "iso": "TJK",
-      "u": 0.1046,
-      "cells": 424
-    },
-    {
-      "iso": "GEO",
-      "u": 0.0952,
-      "cells": 397
+      "u": 0.1066,
+      "cells": 418
     },
     {
       "iso": "GRC",
-      "u": 0.0925,
-      "cells": 137
+      "u": 0.0986,
+      "cells": 132
+    },
+    {
+      "iso": "GEO",
+      "u": 0.0941,
+      "cells": 361
+    },
+    {
+      "iso": "NOR",
+      "u": 0.0918,
+      "cells": 31
     },
     {
       "iso": "ROU",
-      "u": 0.0828,
-      "cells": 302
+      "u": 0.0814,
+      "cells": 296
     },
     {
       "iso": "KHM",
@@ -375,14 +365,14 @@
       "cells": 2
     },
     {
-      "iso": "VNM",
-      "u": 0.0611,
-      "cells": 184
+      "iso": "PAK",
+      "u": 0.0542,
+      "cells": 185
     },
     {
       "iso": "SWE",
-      "u": 0.0579,
-      "cells": 427
+      "u": 0.0542,
+      "cells": 412
     },
     {
       "iso": "LBN",
@@ -390,24 +380,24 @@
       "cells": 13
     },
     {
-      "iso": "PAK",
-      "u": 0.0402,
-      "cells": 192
-    },
-    {
       "iso": "AFG",
       "u": 0.0344,
       "cells": 8
     },
     {
-      "iso": "JOR",
-      "u": 0.0074,
-      "cells": 13
+      "iso": "FIN",
+      "u": 0.0198,
+      "cells": 460
     },
     {
-      "iso": "FIN",
-      "u": 0.0066,
-      "cells": 483
+      "iso": "LKA",
+      "u": 0.0115,
+      "cells": 26
+    },
+    {
+      "iso": "LVA",
+      "u": 0.0017,
+      "cells": 911
     },
     {
       "iso": "OMN",
@@ -415,79 +405,69 @@
       "cells": 1
     },
     {
-      "iso": "AZE",
-      "u": -0.0058,
-      "cells": 292
-    },
-    {
-      "iso": "MDA",
-      "u": -0.0064,
-      "cells": 167
-    },
-    {
       "iso": "SUR",
       "u": -0.0064,
       "cells": 1
     },
     {
+      "iso": "AZE",
+      "u": -0.0072,
+      "cells": 292
+    },
+    {
+      "iso": "VNM",
+      "u": -0.0112,
+      "cells": 171
+    },
+    {
       "iso": "JPN",
-      "u": -0.0068,
-      "cells": 596
-    },
-    {
-      "iso": "LVA",
-      "u": -0.0097,
-      "cells": 965
-    },
-    {
-      "iso": "CAN",
-      "u": -0.0522,
-      "cells": 196
+      "u": -0.0405,
+      "cells": 562
     },
     {
       "iso": "BLR",
-      "u": -0.0556,
-      "cells": 1141
+      "u": -0.0597,
+      "cells": 1123
+    },
+    {
+      "iso": "JOR",
+      "u": -0.0625,
+      "cells": 13
+    },
+    {
+      "iso": "MDA",
+      "u": -0.068,
+      "cells": 155
     },
     {
       "iso": "ARM",
-      "u": -0.0623,
-      "cells": 235
-    },
-    {
-      "iso": "CHL",
-      "u": -0.0781,
-      "cells": 6
-    },
-    {
-      "iso": "UKR",
-      "u": -0.1163,
-      "cells": 1417
+      "u": -0.0856,
+      "cells": 231
     },
     {
       "iso": "BEL",
-      "u": -0.1221,
-      "cells": 851
+      "u": -0.1164,
+      "cells": 828
     },
     {
-      "iso": "CHE",
-      "u": -0.134,
-      "cells": 771
+      "iso": "CAN",
+      "u": -0.1192,
+      "cells": 194
+    },
+    {
+      "iso": "UKR",
+      "u": -0.1324,
+      "cells": 1343
     },
     {
       "iso": "SGP",
-      "u": -0.1865,
-      "cells": 180
+      "u": -0.1745,
+      "cells": 169
     },
     {
-      "iso": "MYS",
-      "u": -0.1873,
-      "cells": 200
-    },
-    {
-      "iso": "ARG",
-      "u": -0.211,
-      "cells": 8
+      "iso": "CHE",
+      "u": -0.1764,
+      "cells": 725
     },
     {
       "iso": "CRI",
@@ -495,14 +475,14 @@
       "cells": 2
     },
     {
-      "iso": "KOR",
-      "u": -0.2502,
-      "cells": 1963
+      "iso": "MYS",
+      "u": -0.2333,
+      "cells": 195
     },
     {
-      "iso": "SAU",
-      "u": -0.301,
-      "cells": 31
+      "iso": "KOR",
+      "u": -0.2883,
+      "cells": 1912
     },
     {
       "iso": "MEX",
@@ -510,9 +490,14 @@
       "cells": 6
     },
     {
-      "iso": "BRA",
-      "u": -0.3748,
-      "cells": 169
+      "iso": "SAU",
+      "u": -0.305,
+      "cells": 29
+    },
+    {
+      "iso": "CHL",
+      "u": -0.3532,
+      "cells": 6
     },
     {
       "iso": "AND",
@@ -520,24 +505,29 @@
       "cells": 1
     },
     {
-      "iso": "IDN",
-      "u": -0.4135,
-      "cells": 133
+      "iso": "COD",
+      "u": -0.398,
+      "cells": 1
+    },
+    {
+      "iso": "BRA",
+      "u": -0.4559,
+      "cells": 168
     },
     {
       "iso": "IND",
-      "u": -0.4503,
-      "cells": 1599
+      "u": -0.4616,
+      "cells": 1587
     },
     {
-      "iso": "BGD",
-      "u": -0.4525,
-      "cells": 6
+      "iso": "IDN",
+      "u": -0.4661,
+      "cells": 132
     },
     {
-      "iso": "ZAF",
-      "u": -0.5627,
-      "cells": 35
+      "iso": "ARG",
+      "u": -0.5473,
+      "cells": 1
     },
     {
       "iso": "PER",
@@ -551,13 +541,18 @@
     },
     {
       "iso": "PRT",
-      "u": -0.6494,
-      "cells": 209
+      "u": -0.7587,
+      "cells": 203
     },
     {
       "iso": "GTM",
       "u": -0.7713,
       "cells": 2
+    },
+    {
+      "iso": "ZAF",
+      "u": -0.8139,
+      "cells": 33
     },
     {
       "iso": "PRY",
@@ -570,9 +565,9 @@
       "cells": 4
     },
     {
-      "iso": "COD",
-      "u": -1.4099,
-      "cells": 2
+      "iso": "BGD",
+      "u": -1.2908,
+      "cells": 5
     },
     {
       "iso": "MOZ",

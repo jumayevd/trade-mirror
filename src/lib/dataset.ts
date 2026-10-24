@@ -29,6 +29,7 @@ import productsRaw from "@/data/products.json";
 import riskRaw from "@/data/wire/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
 import { decodePacked, type WireTable } from "@/lib/wire";
+import { shown } from "@/lib/left-out-years";
 import { labelLang, tCategory, tCountry, tRegion, tText } from "@/lib/labels";
 import { NOISE, type MonthlySummary, type PackedMonthly } from "@/lib/monthly-summary";
 
@@ -106,14 +107,7 @@ export interface Product {
  */
 // NOISE (0) is defined in src/lib/monthly-summary.ts, shared with the build-time summary
 
-/**
- * Years the data files carry but the dashboard leaves out: every page reads as
- * though the series began after them. They stay in src/data and public/data —
- * and in the scripts that rebuild those — untouched, so emptying this list
- * brings a year back.
- */
-const LEFT_OUT_YEARS = new Set<number>([2017]);
-const shown = (y: number): boolean => !LEFT_OUT_YEARS.has(y);
+// years the data carries but the dashboard leaves out (shared with the risk fit)
 
 const metaFile = metaRaw as unknown as Meta;
 export const meta: Meta = {

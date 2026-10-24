@@ -32,6 +32,8 @@ export const toggleTheme = (): void => {
  * The inline bootstrap for the document head, kept here so the layout and the
  * store cannot disagree about the storage key. Default is light; dark is only
  * ever an explicit choice, so the deployed pages match their static render.
+ * `pretheme` holds the prerendered main area back for a dark reader until
+ * ThemeRemount has rebuilt it in the dark palette.
  */
 export const THEME_BOOTSTRAP =
-  `(function(){try{if(localStorage.getItem(${JSON.stringify(KEY)})==="dark")document.documentElement.dataset.theme="dark";}catch(e){}})();`;
+  `(function(){try{if(localStorage.getItem(${JSON.stringify(KEY)})==="dark"){var d=document.documentElement.dataset;d.theme="dark";d.pretheme="dark";}}catch(e){}})();`;
