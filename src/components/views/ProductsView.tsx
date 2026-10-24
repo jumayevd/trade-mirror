@@ -221,7 +221,6 @@ export default function ProductsView() {
     label: String(y),
     sub: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
     partial: heatPartial(y),
-    bar: "var(--color-primary)",
     note: heatPartial(y) ? t("heat.partialTip") : undefined,
   })), [heat, heatPartial, t]);
 

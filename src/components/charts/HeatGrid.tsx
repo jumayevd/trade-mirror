@@ -7,23 +7,20 @@ import { quantileEdges } from "@/lib/seq-ramp";
 import { useHoverTip } from "@/components/charts/HoverTip";
 
 /**
- * A heatmap of positive-discrepancy amounts, rows × columns, with each
- * column's total drawn above it as a vertical bar — shared by Product Analysis
- * (sectors × years) and Discrepancy & Risk (sectors × risk bands).
+ * A heatmap of positive-discrepancy amounts, rows × columns — shared by
+ * Product Analysis (sectors × years) and Discrepancy & Risk (sectors × risk
+ * bands). Column totals are the bottom row.
  *
  * Built to read, not just to hold figures:
  *  - every cell's darkness is one scale (classes cut at the quantiles of the
  *    values on screen, so shades spread across the grid instead of one large
  *    row taking the dark end and the rest washing out); one figure per cell,
  *    the rest in the tooltip
- *  - a column can carry its own hue (the risk page's Critical column is gold)
- *    on a ramp whose lightness matches the navy one step for step, so a shade
- *    means the same amount in every column and the hue only says which column
  *  - "Share" re-shades by each cell's share of its row or of its column
  *  - a partial column (a year the books cover only in part) is marked:
- *    hatched total bar, dashed cells, a star on its head
+ *    dashed cells and a star on its head
  *
- * Colours are CSS variables (--seq-*, --seqg-*, per theme in globals.css), so
+ * Colours are CSS variables (--seq-*, per theme in globals.css), so
  * the prerendered HTML and the browser emit the same style text.
  */
 
@@ -36,10 +33,6 @@ export interface HeatColumn {
   label: string;
   /** A second line under the head: a score range, a month range. */
   sub?: string;
-  /** Cell ramp: the navy one, or gold (lightness-matched). */
-  ramp?: "navy" | "gold";
-  /** Fill of the total bar above the column. */
-  bar: string;
   /** A year the books cover only in part. */
   partial?: boolean;
   /** Extra tooltip line for every cell in this column. */
@@ -56,7 +49,7 @@ export interface HeatRow {
   muted?: boolean;
 }
 
-const fill = (ramp: "navy" | "gold", k: number) => (ramp === "gold" ? `var(--seqg-${k})` : `var(--seq-${k})`);
+const fill = (k: number) => `var(--seq-${k})`;
 const ink = (k: number) => `var(--seq-ink-${k})`;
 const classOf = (v: number, edges: number[]) => {
   let k = 1;
@@ -85,7 +78,6 @@ export default function HeatGrid({
   const colTotals = columns.map((_, j) => sum(rows.map((r) => r.values[j] || 0)));
   const rowTotals = rows.map((r) => sum(r.values));
   const grand = sum(colTotals);
-  const maxCol = Math.max(0, ...colTotals);
   const shareOf = (i: number, j: number) => {
     const d = shareBasis === "row" ? rowTotals[i] : colTotals[j];
     return d > 0 ? (rows[i].values[j] || 0) / d : 0;
@@ -101,7 +93,6 @@ export default function HeatGrid({
     k: i + 1,
     label: i === 0 ? `< ${fmtClass(edges[0])}` : i === edges.length ? `≥ ${fmtClass(edges[edges.length - 1])}` : `${fmtClass(edges[i - 1])}–${fmtClass(edges[i])}`,
   }));
-  const hasGold = columns.some((c) => c.ramp === "gold");
 
   // one column template for every row: label · the columns · total · share
   const minCell = n > 8 ? 64 : n > 5 ? 72 : 84;
@@ -114,10 +105,7 @@ export default function HeatGrid({
         <div className="flex flex-wrap items-center gap-1.5 fs-12 text-faint">
           {legend.map((l) => (
             <span key={l.k} className="flex items-center gap-1">
-              <span aria-hidden className="flex h-3 w-5 overflow-hidden rounded-[3px]">
-                <span className="flex-1" style={{ background: fill("navy", l.k) }} />
-                {hasGold && <span className="flex-1" style={{ background: fill("gold", l.k) }} />}
-              </span>
+              <span aria-hidden className="h-3 w-5 rounded-[3px]" style={{ background: fill(l.k) }} />
               <span className="tabular">{l.label}</span>
             </span>
           ))}
@@ -128,45 +116,13 @@ export default function HeatGrid({
 
       <div className="overflow-x-auto">
         <div style={{ minWidth: 230 + n * (minCell + 6) + 140 }}>
-          {/* the column totals, as vertical bars */}
-          <div style={grid} className="items-end">
-            <span />
-            {columns.map((c, j) => {
-              const v = colTotals[j];
-              const h = maxCol > 0 && v > 0 ? Math.max(4, (v / maxCol) * 72) : 0;
-              return (
-                <div key={c.key} tabIndex={0} className="flex flex-col items-center justify-end outline-none" style={{ height: 102 }}
-                  aria-label={`${c.label}: ${fmtUSDFull(v)}, ${fmtPct(grand > 0 ? v / grand : 0, 1)} ${words.ofAll}`}
-                  {...tip.bind(
-                    <>
-                      <div className="font-semibold">{c.label}{c.sub ? ` (${c.sub})` : ""} · {words.all}</div>
-                      <div className="tabular mt-0.5">{fmtUSDFull(v)}</div>
-                      <div className="tabular text-muted">{fmtPct(grand > 0 ? v / grand : 0, 1)} {words.ofAll}</div>
-                      {c.note && <div className="mt-1 text-faint">{c.note}</div>}
-                    </>,
-                  )}>
-                  <span className={`tabular mb-1 whitespace-nowrap font-semibold text-foreground ${dense ? "fs-11.5" : "fs-12.5"}`}>{v > 0 ? fmtUSD(v) : "—"}</span>
-                  <span className="w-[46%] max-w-14 rounded-t-[4px]"
-                    style={{
-                      height: h,
-                      background: c.partial
-                        ? `repeating-linear-gradient(135deg, ${c.bar} 0 3px, color-mix(in srgb, ${c.bar} 35%, transparent) 3px 6px)`
-                        : c.bar,
-                    }} />
-                </div>
-              );
-            })}
-            <span />
-            <span />
-          </div>
-
           {/* column heads */}
-          <div style={grid} className="items-end border-t border-[var(--color-border)] pb-1.5 pt-2 fs-12">
+          <div style={grid} className="items-end pb-2 fs-12">
             <span className="font-medium text-faint">{words.rowHead}</span>
             {columns.map((c) => (
               <span key={c.key} className="text-center" title={c.note}>
-                <span className="block font-semibold text-foreground">{c.label}{c.partial ? "*" : ""}</span>
-                {c.sub && <span className="tabular block truncate text-faint">{c.sub}</span>}
+                <span className="block fs-15 font-bold leading-tight text-foreground">{c.label}{c.partial ? "*" : ""}</span>
+                {c.sub && <span className="tabular mt-0.5 block truncate fs-12 text-faint">{c.sub}</span>}
               </span>
             ))}
             <span className="text-right font-medium text-faint">{words.total}</span>
@@ -189,7 +145,7 @@ export default function HeatGrid({
                   return (
                     <div key={c.key} tabIndex={0}
                       className={`flex h-10 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-[var(--color-gold)] ${dashed}`}
-                      style={{ background: fill(c.ramp ?? "navy", k), color: ink(k) }}
+                      style={{ background: fill(k), color: ink(k) }}
                       aria-label={`${r.label} · ${c.label}: ${fmtUSDFull(v)}, ${fmtPct(share, 1)} ${words.shareOf}${r.counts ? `, ${fmtNum(r.counts[j])} ${words.products ?? ""}` : ""}`}
                       {...tip.bind(
                         <>

@@ -129,14 +129,10 @@ export default function QueueView() {
     () => bandHeat.map((r) => ({ key: r.key, label: r.label, values: r.values, counts: r.counts })),
     [bandHeat],
   );
-  // Critical wears its band's gold, on a ramp lightness-matched to the navy
-  // the other bands use, so a shade means the same amount in every column
   const bandColumns = useMemo<HeatColumn[]>(() => BANDS.map((b) => ({
     key: b,
     label: t(`band.${b}` as never),
     sub: bandRange[b],
-    ramp: b === "critical" ? "gold" : "navy",
-    bar: BAND_COLORS[b],
   })), [t, bandRange]);
 
   const levelName = t(LEVEL_LABEL_KEYS[level]);

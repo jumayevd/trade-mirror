@@ -49,14 +49,6 @@
   --seq-ink-4: #ffffff;
   --seq-ink-5: #ffffff;
   --seq-ink-6: #ffffff;
-  /* the same steps in CBU gold — lightness matched to the navy ones, so a
-     shade means the same amount whichever hue a column wears */
-  --seqg-1: #dec699;
-  --seqg-2: #caac71;
-  --seqg-3: #af8a3d;
-  --seqg-4: #8e6b16;
-  --seqg-5: #694d00;
-  --seqg-6: #453000;
 }
 
 @theme {
@@ -148,12 +140,6 @@ html[data-theme="dark"] {
   --seq-ink-4: #0b1322;
   --seq-ink-5: #0b1322;
   --seq-ink-6: #0b1322;
-  --seqg-1: #5e4a1f;
-  --seqg-2: #765b1e;
-  --seqg-3: #94711f;
-  --seqg-4: #b18c3f;
-  --seqg-5: #cbab6b;
-  --seqg-6: #e5cc9b;
 
   --band-critical: #e3b84f;
   --band-high: #9cbcf0;
@@ -376,12 +362,6 @@ main:has(> .page-fill) {
     --seq-ink-4: #ffffff;
     --seq-ink-5: #ffffff;
     --seq-ink-6: #ffffff;
-    --seqg-1: #dec699;
-    --seqg-2: #caac71;
-    --seqg-3: #af8a3d;
-    --seqg-4: #8e6b16;
-    --seqg-5: #694d00;
-    --seqg-6: #453000;
     --band-critical: #c99a2e;
     --band-high: #1e3a6e;
     --band-elevated: #5f84bd;
@@ -426,5 +406,4 @@ html[data-pretheme] main { visibility: hidden; }
     var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low);
   --seq-keep: var(--seq-1) var(--seq-2) var(--seq-3) var(--seq-4) var(--seq-5) var(--seq-6)
     var(--seq-ink-1) var(--seq-ink-2) var(--seq-ink-3) var(--seq-ink-4) var(--seq-ink-5) var(--seq-ink-6);
-  --seqg-keep: var(--seqg-1) var(--seqg-2) var(--seqg-3) var(--seqg-4) var(--seqg-5) var(--seqg-6);
 }
