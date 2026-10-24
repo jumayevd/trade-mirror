@@ -7,11 +7,9 @@
  * server-side to SVG, where every string carries its resolved font-size, so this
  * renders the real options and reports what the reader will actually see.
  *
- * Charts inherit the page's reading scale, so the screen size of a label is the
- * size ECharts resolves multiplied by that scale. The tooltip is a DOM element
- * and never reaches the SVG, so it is asserted directly against the same scale —
- * the point being that both now live in one coordinate space, which is what
- * stops the tooltip drifting larger than the axis.
+ * The page has no reading scale, so the size ECharts resolves is the size on
+ * screen. The tooltip is a DOM element and never reaches the SVG, so it is
+ * asserted directly: it must stay smaller than the axis labels.
  *
  * Run with: npm run audit:charts
  */
@@ -22,7 +20,6 @@ import {
 import { COLORS } from "@/lib/format";
 import { caterpillarOption } from "@/components/charts/Caterpillar";
 import type { Tier } from "@/lib/anomaly";
-import { ZOOM_STEPS, DEFAULT_ZOOM } from "@/lib/zoom-store";
 
 /** The Executive Overview dynamics chart, built the way the page builds it. */
 function dynamicsOption() {
@@ -91,21 +88,14 @@ if (cat.length === 0) {
 
 const declared = resolvedSizes(dynamicsOption());
 console.log("declared chart scale:", JSON.stringify(CHART_FONT));
-console.log("\nresolved by ECharts (declared, before the reading scale):");
+console.log("\nresolved by ECharts (screen px):");
 console.log("  " + declared.map(([px, n]) => `${px}px x${n}`).join(", "));
-
-console.log("\nscreen size per reading step — canvas text inherits the page zoom:");
-for (const zoom of ZOOM_STEPS) {
-  const tag = zoom === DEFAULT_ZOOM ? " (default)" : "";
-  const shown = declared.map(([px, n]) => `${(px * zoom).toFixed(1)}px x${n}`).join(", ");
-  console.log(`  zoom ${zoom}${tag}  ->  ${shown}`);
-}
 
 // the tooltip is a DOM element, so it never reaches the SVG — assert it directly
 const tip = baseTooltip().textStyle as { fontSize: number };
-const axisScreen = CHART_FONT.axisLabel * DEFAULT_ZOOM;
-const tipScreen = tip.fontSize * DEFAULT_ZOOM;
-console.log(`\nat the default step:`);
+const axisScreen = CHART_FONT.axisLabel;
+const tipScreen = tip.fontSize;
+console.log(`\naxis label vs tooltip:`);
 console.log(`  axis label  ${CHART_FONT.axisLabel} declared -> ${axisScreen.toFixed(1)} screen px`);
 console.log(`  tooltip     ${tip.fontSize} declared -> ${tipScreen.toFixed(1)} screen px`);
 const ok = axisScreen > tipScreen;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { InfoTip } from "@/components/ui";
+import { InfoTip, PageHead } from "@/components/ui";
 import { aggregate, DEFAULT_FILTER, meta, METHODOLOGY_VERSION } from "@/lib/dataset";
 import diagnosticsRaw from "@/data/diagnostics.json";
 import { fmtNum, fmtPct, fmtUSD } from "@/lib/format";
@@ -37,7 +37,7 @@ const HS6 = "6";
 
 const H2 = "fs-15 font-semibold tracking-tight";
 const P = "max-w-3xl fs-13 leading-relaxed text-muted";
-const TH = "px-4 py-2 text-left fs-11.5 font-semibold uppercase tracking-[0.1em] text-faint";
+const TH = "px-4 py-2 text-left fs-12 font-medium text-faint";
 const TD = "px-4 py-2 align-top fs-13 text-muted";
 
 /** A formula on its own line — monospace, quiet, never inside a sentence. */
@@ -69,7 +69,7 @@ function Section({ n, title, desc, className = "", children }: {
         aria-controls={id}
         className="group flex w-full max-w-5xl items-center gap-2.5 rounded-md py-1 text-left"
       >
-        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary)] fs-12 font-semibold text-white">
+        <span className="tabular flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-primary-fill)] fs-12 font-semibold text-white">
           {n}
         </span>
         <h2 className={`${H2} group-hover:underline`}>{title}</h2>
@@ -148,11 +148,17 @@ export default function MethodologyView() {
   return (
     <div className="space-y-4">
       {/* ---------------------------------------------------------------- */}
-      <section className="space-y-1.5">
-        <p className="fs-12 font-medium text-faint">
-          UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
-        </p>
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
+      <section className="space-y-4">
+        <PageHead
+          title={
+            <div className="space-y-1">
+              <p className="fs-12 font-medium text-faint">
+                UN Comtrade · {meta.window.start}–{meta.window.end} · v{METHODOLOGY_VERSION}
+              </p>
+              <h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.methodology")}</h1>
+            </div>
+          }
+        />
         <p className="max-w-3xl rounded-md border-l-2 border-l-[var(--color-primary)] bg-[var(--color-panel)] px-4 py-3 fs-13.5 leading-relaxed text-muted">
           {tr("meth.lede")}
         </p>
@@ -410,7 +416,7 @@ function Diag({ label, value, note }: { label: string; value: string; note: stri
   return (
     <div className="card p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="fs-12 font-semibold uppercase tracking-[0.08em] text-muted">{label}</span>
+        <span className="fs-12.5 font-medium text-muted">{label}</span>
         <InfoTip text={note} />
       </div>
       <div className="tabular mt-1.5 fs-22 font-semibold leading-none">{value}</div>

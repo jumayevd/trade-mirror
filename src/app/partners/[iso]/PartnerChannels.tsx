@@ -38,7 +38,7 @@ export interface ChannelRow {
 const BAND_RANK: Record<RiskBand, number> = { critical: 0, high: 1, elevated: 2, low: 3 };
 
 const sel = "h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)] max-w-[18rem]";
-const lbl = "fs-11.5 font-semibold uppercase tracking-wider text-faint";
+const lbl = "fs-12.5 font-medium text-faint";
 
 /** Sorted unique codes with their labels. */
 function options(pairs: [string, string][]): { code: string; label: string }[] {

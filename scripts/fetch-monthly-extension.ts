@@ -44,7 +44,7 @@ const ROOT = process.cwd();
 const UZB = "860";
 interface Packed { v: number; y0: number; p: string[]; k: string[]; monthsByYear?: Record<string, number[]>; r: number[][] }
 
-const monthly: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "data", "monthly.json"), "utf8"));
+const monthly: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "data", "monthly.json"), "utf8"));
 const detail: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "data", "monthly-hs6.json"), "utf8"));
 
 /* ---- what the book already holds, per month ---- */
@@ -224,7 +224,7 @@ async function main() {
   }
 
   fs.writeFileSync(path.join(ROOT, "public", "data", "monthly-hs6.json"), JSON.stringify(detail));
-  fs.writeFileSync(path.join(ROOT, "src", "data", "monthly.json"), JSON.stringify(monthly));
+  fs.writeFileSync(path.join(ROOT, "public", "data", "monthly.json"), JSON.stringify(monthly));
   fs.writeFileSync(rawPath, JSON.stringify(raw));
   fs.writeFileSync(raw2Path, JSON.stringify(raw2));
   console.log(`appended ${added6} HS6 rows and ${added2} chapter rows; ${newCodes} new HS6 codes` +

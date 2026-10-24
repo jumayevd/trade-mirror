@@ -325,7 +325,8 @@ async function main() {
 
   await write("meta.json", meta);
   await write("cells.json", recs);
-  await write("monthly.json", monthly);
+  // the monthly book is fetched on demand, so it lives in public/data
+  await fs.writeFile(path.join(ROOT, "public", "data", "monthly.json"), JSON.stringify(monthly));
   await write("products.json", topProducts);
 
   const hs2n = recs.filter((r) => r.l === 2).length;

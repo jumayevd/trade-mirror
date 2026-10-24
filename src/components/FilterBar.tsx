@@ -10,7 +10,7 @@ import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 
 const sel = "rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] h-[33px] px-2 py-1.5 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]";
-const lbl = "fs-11.5 font-semibold uppercase tracking-wider text-faint";
+const lbl = "fs-12.5 font-medium text-faint";
 
 /**
  * Freight scenarios: every whole percentage from 0 up to the top of the
@@ -119,7 +119,7 @@ export default function FilterBar() {
                 key={g}
                 onClick={() => patch(g === "year" ? { granularity: g, months: [] } : { granularity: g })}
                 aria-pressed={filter.granularity === g}
-                className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
+                className={`px-2.5 py-1.5 fs-13 whitespace-nowrap ${filter.granularity === g ? "bg-[var(--color-primary-fill)] font-semibold text-white" : "bg-[var(--color-panel)] font-medium text-muted hover:text-foreground"}`}
               >
                 {t(g === "year" ? "gran.year" : "gran.month")}
               </button>

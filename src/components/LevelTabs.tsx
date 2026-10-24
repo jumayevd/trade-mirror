@@ -46,7 +46,7 @@ export default function LevelTabs({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {caption !== null && (
-        <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{caption}</span>
+        <span className="fs-12.5 font-medium text-faint">{caption}</span>
       )}
       <div
         role="group"
@@ -66,7 +66,7 @@ export default function LevelTabs({
                 i > 0 ? "border-l border-[var(--color-border)]" : ""
               } ${
                 on
-                  ? "bg-[var(--color-primary)] font-semibold text-white"
+                  ? "bg-[var(--color-primary-fill)] font-semibold text-white"
                   : "bg-[var(--color-panel)] font-medium text-muted hover:bg-[var(--color-panel-2)] hover:text-foreground"
               }`}
             >

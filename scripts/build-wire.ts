@@ -23,7 +23,7 @@ const MB = (n: number) => `${(n / 1048576).toFixed(2)} MB`;
 
 const tables: [from: string, to: string][] = [
   ["src/data/cells.json", "src/data/wire/cells.json"],
-  ["src/data/monthly.json", "src/data/wire/monthly.json"],
+  ["public/data/monthly.json", "public/data/monthly.wire.json"],
   ["src/data/annualized-hs6.json", "src/data/wire/annualized-hs6.json"],
   ["public/data/monthly-hs6.json", "public/data/monthly-hs6.wire.json"],
 ];

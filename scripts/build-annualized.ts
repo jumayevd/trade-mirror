@@ -38,7 +38,7 @@ const annualYears = new Set<number>(meta.years);
 
 // The month rule reads the chapter-level monthly book, the layer the client
 // always has, so the build and the live fold decide matched months identically.
-const chapterBook: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "src", "data", "monthly.json"), "utf8"));
+const chapterBook: Packed = JSON.parse(fs.readFileSync(path.join(ROOT, "public", "data", "monthly.json"), "utf8"));
 const uzbMonths = new Set<number>();
 const partnerMonths = new Map<string, Set<number>>();
 for (const row of chapterBook.r) {

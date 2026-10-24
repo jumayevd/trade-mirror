@@ -1,19 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import ValueMatrix, { type MatrixColumn, type MatrixRow } from "@/components/charts/ValueMatrix";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill,
+  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
 } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
-  hsLabel, isResidualChapter, yearsLabel, soleValue,
+  categoryLabel, comparableMonthsOfYear, hsLabel, isDerivedYear, isResidualChapter, yearsLabel, soleValue,
   type Channel, type RiskBand,
 } from "@/lib/dataset";
+import { labelsFor } from "@/lib/labels";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, COLORS } from "@/lib/format";
 
 /**
  * Product Analysis — the trade in view, one row per HS code, at HS2, HS4 or
@@ -28,6 +30,8 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
  */
 
 const PAGE_SIZE = 20;
+/** Sectors listed in the sector × year matrix — few enough that each cell can print its figures. */
+const HEAT_TOP = 10;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -171,7 +175,46 @@ function Pager({
 export default function ProductsView() {
   const { filter, patch } = useFilter();
   const data = useFilteredData();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+
+  // ---- sector × year matrix: the selected period, under every filter on the page ----
+  // Read straight off the page's aggregate, so it follows the years, months,
+  // partner, HS and freight selections. Each year's figure is that sector's
+  // positive channel-years; the bottom row is every sector, so the top ten
+  // read against the whole.
+  const heatPartial = useCallback((y: number) => isDerivedYear(y) && comparableMonthsOfYear(y).length < 12, []);
+  const heat = useMemo(() => labelsFor(lang, () => {
+    const years = [...data.years].sort((x, y) => x - y);
+    const col = new Map(years.map((y, i) => [y, i]));
+    const byCat = new Map<string, number[]>();
+    for (const c of data.baseChannels) {
+      let row = byCat.get(c.category);
+      if (!row) { row = years.map(() => 0); byCat.set(c.category, row); }
+      for (const r of c.years) {
+        const i = col.get(r.y);
+        if (i !== undefined && r.posY > 0) row[i] += r.posY;
+      }
+    }
+    const all = [...byCat.entries()]
+      .map(([key, values]) => ({ key, values, total: values.reduce((x, y) => x + y, 0) }))
+      .filter((r) => r.total > 0);
+    const totals = years.map((_, j) => all.reduce((sum, r) => sum + r.values[j], 0));
+    const rows: MatrixRow[] = all
+      .filter((r) => r.key !== "residual")
+      .sort((x, y) => y.total - x.total)
+      .slice(0, HEAT_TOP)
+      .map((r) => ({
+        key: r.key,
+        label: categoryLabel(r.key),
+        values: r.values,
+        notes: r.values.map((v, j) => (totals[j] > 0 && v > 0 ? fmtPct(v / totals[j], 1) : null)),
+      }));
+    return { years, totals, rows };
+  }), [data, lang]);
+  const heatColumns = useMemo<MatrixColumn[]>(() => heat.years.map((y) => {
+    const months = isDerivedYear(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : "";
+    return { label: heatPartial(y) ? `${y}*` : String(y), sub: heatPartial(y) ? months : undefined, color: COLORS.positive };
+  }), [heat, heatPartial, t]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
   const [level, setLevel] = useState<HsLevel>(6);
@@ -282,8 +325,9 @@ export default function ProductsView() {
   return (
     <div className="space-y-6">
       {/* header + export */}
-      <section className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>
+      <PageHead
+        title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>}
+        right={
         <button
           onClick={exportCsv}
           disabled={activeChannels.length === 0}
@@ -292,7 +336,8 @@ export default function ProductsView() {
         >
           {t("common.exportCsv")}
         </button>
-      </section>
+        }
+      />
 
       <FilterBar />
       {filter.years.length === 0 ? (
@@ -300,7 +345,47 @@ export default function ProductsView() {
       ) : (
       <>
 
-      {/* HS level toggle + breadcrumb — the toggle leads, on the left */}
+      {/* frames: the scope in view */}
+      {isEmpty ? (
+        <EmptyState />
+      ) : (
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label={t("prod.stat.exports")} value={fmtUSD(node.pe)} accent={COLORS.partner}
+            info={`${t("prod.stat.exports.info")} ${period}: ${fmtUSDFull(node.pe)}.`} />
+          <Stat label={t("prod.stat.imports")} value={fmtUSD(node.ui)} accent={COLORS.uzb}
+            info={`${t("prod.stat.imports.info")} ${period}: ${fmtUSDFull(node.ui)}.`} />
+          <Stat label={t("kpi.positive")} value={fmtUSD(node.pos)} accent={COLORS.positive}
+            info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(node.pos)}.`} />
+          <Stat label={t("prof.stat.share")} value={fmtPct(nodeShare, 1)} accent={COLORS.positive}
+            info={`${t("prof.stat.share.info")} ${fmtUSDFull(node.pos)} ÷ ${fmtUSDFull(node.pe)}.`} />
+        </section>
+      )}
+
+      {/* sectors × years: where the gap sits and how it moved */}
+      {!isEmpty && (
+        <section className="card p-4">
+          <SectionTitle title={t("prod.heat.title")} desc={t("prod.heat.sub")} />
+          {heat.rows.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ValueMatrix
+              rows={heat.rows}
+              columns={heatColumns}
+              totals={heat.totals}
+              totalWord={t("heat.total")}
+              totalRowLabel={t("heat.allSectors")}
+              shareWord={t("heat.share")}
+              rowTitle={t("heat.sector")}
+              ariaLabel={t("prod.heat.title")}
+            />
+          )}
+          {heat.years.some(heatPartial) && (
+            <p className="mt-2 fs-12 text-faint">* {t("prod.heat.partial")}</p>
+          )}
+        </section>
+      )}
+
+      {/* HS level toggle + breadcrumb — below the sector matrix, driving the table */}
       <section className="flex flex-wrap items-center gap-3">
         <LevelTabs
           level={level}
@@ -342,28 +427,13 @@ export default function ProductsView() {
         </nav>
       </section>
 
-      {/* frames: the scope in view */}
-      {isEmpty ? (
-        <EmptyState />
-      ) : (
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label={t("prof.stat.exports")} value={fmtUSD(node.pe)} accent={COLORS.navy2}
-            info={`${t("prod.stat.exports.info")} ${period}: ${fmtUSDFull(node.pe)}.`} />
-          <Stat label={t("prof.stat.imports")} value={fmtUSD(node.ui)} accent={COLORS.navy2}
-            info={`${t("prod.stat.imports.info")} ${period}: ${fmtUSDFull(node.ui)}.`} />
-          <Stat label={t("kpi.positive")} value={fmtUSD(node.pos)} accent={COLORS.positive}
-            info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(node.pos)}.`} />
-          <Stat label={t("prof.stat.share")} value={fmtPct(nodeShare, 1)} accent={COLORS.positive}
-            info={`${t("prof.stat.share.info")} ${fmtUSDFull(node.pos)} ÷ ${fmtUSDFull(node.pe)}.`} />
-        </section>
-      )}
-
       {/* ranked table — one layout for every level */}
       {!isEmpty && (
         <section>
           <SectionTitle
             title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
           />
+          <TableReveal>
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[1040px] fs-13">
               <thead>
@@ -410,6 +480,7 @@ export default function ProductsView() {
             </table>
           </div>
           <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
+          </TableReveal>
         </section>
       )}
       </>

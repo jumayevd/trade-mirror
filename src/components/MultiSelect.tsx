@@ -102,7 +102,7 @@ export default function MultiSelect({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{label}</span>
+      <span className="fs-12.5 font-medium text-faint">{label}</span>
       <div ref={wrap} className="relative">
         <button
           ref={trigger}

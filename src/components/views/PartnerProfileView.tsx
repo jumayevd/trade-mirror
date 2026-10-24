@@ -83,7 +83,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   const controls = (
     <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-3">
       <div className="flex flex-col gap-1">
-        <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.granularity")}</span>
+        <span className="fs-12.5 font-medium text-faint">{t("filter.granularity")}</span>
         <Segmented<Granularity>
           ariaLabel={t("filter.granularity")}
           value={granularity}
@@ -104,7 +104,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
         />
       )}
       <div className="flex flex-col gap-1" title={t("filter.freight.tip")}>
-        <span className="fs-11.5 font-semibold uppercase tracking-wider text-faint">{t("filter.freight")}</span>
+        <span className="fs-12.5 font-medium text-faint">{t("filter.freight")}</span>
         <select
           aria-label={t("filter.freight")}
           value={cif}
@@ -183,9 +183,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
       {/* the six frames — two rows of three: the trade, then its risk */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.navy2}
+        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.partner}
           info={`${t("prof.stat.exports.info")} ${period}: ${fmtUSDFull(p.pePosT)}.`} />
-        <Stat label={t("prof.stat.imports")} value={fmtUSD(p.uiPosT)} accent={COLORS.navy2}
+        <Stat label={t("prof.stat.imports")} value={fmtUSD(p.uiPosT)} accent={COLORS.uzb}
           info={`${t("prof.stat.imports.info")} ${period}: ${fmtUSDFull(p.uiPosT)}.`} />
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
           info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(p.posT)}.`} />
@@ -205,7 +205,7 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
       {/* transit & attribution note */}
       {pm0.transit && (
         <section className="card p-5" style={{ borderLeft: `2px solid ${COLORS.transit}` }}>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider" style={{ color: COLORS.transit }}>
+          <h2 className="mb-2 fs-15 font-semibold" style={{ color: COLORS.transit }}>
             {t("prof.transit.title")}
           </h2>
           <p className="max-w-3xl text-sm leading-relaxed text-muted">
