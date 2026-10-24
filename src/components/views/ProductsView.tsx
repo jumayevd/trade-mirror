@@ -5,7 +5,7 @@ import HeatGrid, { type HeatColumn, type HeatRow } from "@/components/charts/Hea
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
+  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead, Segmented,
 } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
@@ -13,6 +13,7 @@ import {
   type Channel, type RiskBand,
 } from "@/lib/dataset";
 import { labelsFor } from "@/lib/labels";
+import { hs6ShortLabel } from "@/lib/short-labels";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, COLORS } from "@/lib/format";
@@ -32,6 +33,9 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, COLORS } from "@/lib/for
 const PAGE_SIZE = 20;
 /** Sectors listed in the sector × year matrix — few enough that each cell can print its figures. */
 const HEAT_TOP = 10;
+/** HS6 rows and partner columns in the heatmap; the rest fold into "other". */
+const HEAT_TOP_HS6 = 12;
+const HEAT_PARTNERS = 8;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -177,52 +181,112 @@ export default function ProductsView() {
   const data = useFilteredData();
   const { t, lang } = useI18n();
 
-  // ---- sectors by year: the selected period, under every filter on the page ----
+  // ---- the heatmap: sectors or HS6 products, by year or by partner ----
   // Read straight off the page's aggregate, so it follows the years, months,
-  // partner, HS and freight selections. Each year's figure is that sector's
-  // positive channel-years. The top ten, then every other sector together
-  // (the unclassified residual included), then the total: the rows add up.
+  // partner, HS and freight selections. A cell is the positive discrepancy of
+  // its row in its column (each channel-year's positive gap, summed). The top
+  // rows and columns, then every other one together — the unclassified residual
+  // included — so the grid adds up to the page's total whichever view is on.
+  const [heatRows, setHeatRows] = useState<"hs6" | "sector">("hs6");
+  const [heatCols, setHeatCols] = useState<"partner" | "year">("partner");
   const heatPartial = useCallback((y: number) => isDerivedYear(y) && comparableMonthsOfYear(y).length < 12, []);
   const heat = useMemo(() => labelsFor(lang, () => {
-    const years = [...data.years].sort((x, y) => x - y);
-    const col = new Map(years.map((y, i) => [y, i]));
-    const byCat = new Map<string, number[]>();
-    for (const c of data.baseChannels) {
-      let row = byCat.get(c.category);
-      if (!row) { row = years.map(() => 0); byCat.set(c.category, row); }
-      for (const r of c.years) {
-        const i = col.get(r.y);
-        if (i !== undefined && r.posY > 0) row[i] += r.posY;
+    const byProduct = heatRows === "hs6";
+    const byYear = heatCols === "year";
+    const source = byProduct ? data.baseChannels6 : data.baseChannels;
+    const rowKey = (c: Channel) => (byProduct ? c.cmd : c.category);
+    const residual = (key: string) => (byProduct ? isResidualChapter(key.slice(0, 2)) : key === "residual");
+
+    // (row, column) -> amount; column = a year, or a partner
+    const cell = new Map<string, Map<string, number>>();
+    const rowInfo = new Map<string, { label: string; title?: string }>();
+    const partnerName = new Map<string, string>();
+    const add = (r: string, col: string, v: number) => {
+      let m = cell.get(r);
+      if (!m) { m = new Map(); cell.set(r, m); }
+      m.set(col, (m.get(col) ?? 0) + v);
+    };
+    for (const c of source) {
+      const r = rowKey(c);
+      if (!rowInfo.has(r)) {
+        rowInfo.set(r, byProduct
+          ? { label: hs6ShortLabel(c.cmd, lang, c.cmdLabel), title: `${c.cmd} · ${c.cmdLabel}` }
+          : { label: categoryLabel(c.category) });
+      }
+      partnerName.set(c.partnerIso, c.partner);
+      if (byYear) {
+        for (const yr of c.years) if (yr.posY > 0) add(r, String(yr.y), yr.posY);
+      } else if (c.posT > 0) {
+        add(r, c.partnerIso, c.posT);
       }
     }
-    const all = [...byCat.entries()]
-      .map(([key, values]) => ({ key, values, total: values.reduce((x, y) => x + y, 0) }))
+
+    // columns
+    const years = [...data.years].sort((x, y) => x - y);
+    let colKeys: string[];
+    let otherCols: Set<string> = new Set();
+    if (byYear) {
+      colKeys = years.map(String);
+    } else {
+      const byPartner = new Map<string, number>();
+      for (const m of cell.values()) for (const [p, v] of m) byPartner.set(p, (byPartner.get(p) ?? 0) + v);
+      const ranked = [...byPartner.entries()].filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
+      colKeys = ranked.slice(0, HEAT_PARTNERS).map(([p]) => p);
+      otherCols = new Set(ranked.slice(HEAT_PARTNERS).map(([p]) => p));
+      if (otherCols.size) colKeys.push("__other");
+    }
+    const valueAt = (m: Map<string, number> | undefined, col: string) => {
+      if (!m) return 0;
+      if (col !== "__other") return m.get(col) ?? 0;
+      let s = 0;
+      for (const [p, v] of m) if (otherCols.has(p)) s += v;
+      return s;
+    };
+
+    // rows
+    const all = [...cell.entries()]
+      .map(([key, m]) => ({ key, values: colKeys.map((col) => valueAt(m, col)) }))
+      .map((r) => ({ ...r, total: r.values.reduce((x, y) => x + y, 0) }))
       .filter((r) => r.total > 0);
-    const totals = years.map((_, j) => all.reduce((sum, r) => sum + r.values[j], 0));
     const top = all
-      .filter((r) => r.key !== "residual")
+      .filter((r) => !residual(r.key))
       .sort((x, y) => y.total - x.total)
-      .slice(0, HEAT_TOP);
+      .slice(0, byProduct ? HEAT_TOP_HS6 : HEAT_TOP);
     const shown = new Set(top.map((r) => r.key));
-    const rows: HeatRow[] = top.map((r) => ({ key: r.key, label: categoryLabel(r.key), values: r.values }));
+    const rows: HeatRow[] = top.map((r) => ({
+      key: r.key,
+      label: rowInfo.get(r.key)?.label ?? r.key,
+      title: rowInfo.get(r.key)?.title,
+      code: byProduct ? r.key : undefined,
+      values: r.values,
+    }));
     const rest = all.filter((r) => !shown.has(r.key));
     if (rest.length) {
       rows.push({
         key: "__other",
-        label: t("heat.other"),
+        label: t(byProduct ? "heat.otherProducts" : "heat.other"),
         muted: true,
-        values: years.map((_, j) => rest.reduce((sum, r) => sum + r.values[j], 0)),
+        values: colKeys.map((_, j) => rest.reduce((sum, r) => sum + r.values[j], 0)),
       });
     }
-    return { years, totals, rows };
-  }), [data, lang, t]);
-  const heatYears = useMemo<HeatColumn[]>(() => heat.years.map((y) => ({
-    key: String(y),
-    label: String(y),
-    sub: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
-    partial: heatPartial(y),
-    note: heatPartial(y) ? t("heat.partialTip") : undefined,
-  })), [heat, heatPartial, t]);
+
+    const columns: HeatColumn[] = colKeys.map((col) => {
+      if (byYear) {
+        const y = Number(col);
+        return {
+          key: col,
+          label: col,
+          sub: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
+          partial: heatPartial(y),
+          note: heatPartial(y) ? t("heat.partialTip") : undefined,
+        };
+      }
+      return col === "__other"
+        ? { key: col, label: t("heat.otherPartners") }
+        : { key: col, label: partnerName.get(col) ?? col };
+    });
+    return { rows, columns, partial: byYear && years.some(heatPartial) };
+  }), [data, lang, t, heatRows, heatCols, heatPartial]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
   const [level, setLevel] = useState<HsLevel>(6);
@@ -372,22 +436,43 @@ export default function ProductsView() {
       {/* sectors × years: where the gap sits and how it moved */}
       {!isEmpty && (
         <section className="card p-4">
-          <SectionTitle title={t("prod.heat.title")} desc={t("prod.heat.sub")} />
+          <SectionTitle
+            title={t(`prod.heat.title.${heatRows}.${heatCols}` as never)}
+            desc={t(heatCols === "year" ? "prod.heat.sub" : "prod.heat.subPartner")}
+          />
+          {/* what the grid crosses: rows, then columns */}
+          <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <div className="flex items-center gap-2">
+              <span className="fs-12.5 font-medium text-faint">{t("heat.rows")}</span>
+              <Segmented value={heatRows} onChange={setHeatRows} ariaLabel={t("heat.rows")}
+                options={[{ key: "hs6", label: t("heat.byProduct") }, { key: "sector", label: t("heat.bySector") }]} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="fs-12.5 font-medium text-faint">{t("heat.cols")}</span>
+              <Segmented value={heatCols} onChange={setHeatCols} ariaLabel={t("heat.cols")}
+                options={[{ key: "partner", label: t("heat.byPartner") }, { key: "year", label: t("heat.byYear") }]} />
+            </div>
+          </div>
           {heat.rows.length === 0 ? (
             <EmptyState />
           ) : (
             <HeatGrid
               rows={heat.rows}
-              columns={heatYears}
-              shareBasis="column"
+              columns={heat.columns}
+              shareBasis={heatCols === "year" ? "column" : "row"}
               words={{
-                amount: t("risk.mix.amount"), share: t("heat.shareOfYear"), view: t("risk.mix.view"),
-                rowHead: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
-                ofAll: t("heat.share"), shareOf: t("prod.heat.share"), aria: t("prod.heat.title"),
+                amount: t("risk.mix.amount"),
+                share: t(heatCols === "year" ? "heat.shareOfYear" : heatRows === "hs6" ? "heat.shareOfProduct" : "risk.mix.shareOfSector"),
+                view: t("risk.mix.view"),
+                rowHead: t(heatRows === "hs6" ? "heat.product" : "heat.sector"),
+                all: t(heatRows === "hs6" ? "heat.allProducts" : "heat.allSectors"),
+                total: t("heat.total"), ofAll: t("heat.share"),
+                shareOf: t(heatCols === "year" ? "prod.heat.share" : heatRows === "hs6" ? "heat.ofProduct" : "heat.ofSector"),
+                aria: t(`prod.heat.title.${heatRows}.${heatCols}` as never),
               }}
             />
           )}
-          {heat.years.some(heatPartial) && (
+          {heat.partial && (
             <p className="mt-2 fs-12 text-faint">* {t("prod.heat.partial")}</p>
           )}
         </section>

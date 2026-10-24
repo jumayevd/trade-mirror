@@ -47,6 +47,10 @@ export interface HeatRow {
   counts?: number[];
   /** An "every other …" row: set in italics. */
   muted?: boolean;
+  /** A code printed before the label (an HS6 code). */
+  code?: string;
+  /** The full name, for the hover title when the label is a shortening. */
+  title?: string;
 }
 
 const fill = (k: number) => `var(--seq-${k})`;
@@ -95,9 +99,14 @@ export default function HeatGrid({
   }));
 
   // one column template for every row: label · the columns · total · share
+  // product rows carry a code under the name, and want a wider label column
+  const coded = rows.some((r) => r.code);
   const minCell = n > 8 ? 64 : n > 5 ? 72 : 84;
-  const grid = { display: "grid", gridTemplateColumns: `minmax(130px,1.4fr) repeat(${n}, minmax(${minCell}px,1fr)) minmax(80px,0.8fr) 3.25rem`, columnGap: 6 } as const;
+  const labelCol = coded ? "minmax(180px,1.9fr)" : "minmax(130px,1.4fr)";
+  const grid = { display: "grid", gridTemplateColumns: `${labelCol} repeat(${n}, minmax(${minCell}px,1fr)) minmax(80px,0.8fr) 3.25rem`, columnGap: 6 } as const;
   const dense = n > 7;
+  // many columns named in words (partner countries) are narrow for the large head
+  const wordHeads = n > 6 && columns.some((c) => c.label.length > 7);
 
   return (
     <div role="figure" aria-label={words.aria}>
@@ -115,13 +124,13 @@ export default function HeatGrid({
       </div>
 
       <div className="overflow-x-auto">
-        <div style={{ minWidth: 230 + n * (minCell + 6) + 140 }}>
+        <div style={{ minWidth: (coded ? 280 : 230) + n * (minCell + 6) + 140 }}>
           {/* column heads */}
           <div style={grid} className="items-end pb-2 fs-12">
             <span className="font-medium text-faint">{words.rowHead}</span>
             {columns.map((c) => (
-              <span key={c.key} className="text-center" title={c.note}>
-                <span className="block fs-15 font-bold leading-tight text-foreground">{c.label}{c.partial ? "*" : ""}</span>
+              <span key={c.key} className="min-w-0 text-center" title={c.note ?? c.label}>
+                <span className={`block font-bold leading-tight text-foreground ${wordHeads ? "line-clamp-2 fs-12.5" : "truncate fs-15"}`}>{c.label}{c.partial ? "*" : ""}</span>
                 {c.sub && <span className="tabular mt-0.5 block truncate fs-12 text-faint">{c.sub}</span>}
               </span>
             ))}
@@ -133,7 +142,10 @@ export default function HeatGrid({
           <div className="space-y-1.5">
             {rows.map((r, i) => (
               <div key={r.key} style={grid} className="items-stretch">
-                <div className={`flex items-center truncate fs-13 ${r.muted ? "italic text-muted" : "font-medium text-foreground"}`} title={r.label}>{r.label}</div>
+                <div className={`flex min-w-0 flex-col justify-center fs-13 leading-tight ${r.muted ? "italic text-muted" : "font-medium text-foreground"}`} title={r.title ?? r.label}>
+                  <span className="truncate">{r.label}</span>
+                  {r.code && <span className="tabular fs-11.5 font-normal text-faint">HS {r.code}</span>}
+                </div>
                 {columns.map((c, j) => {
                   const v = r.values[j] || 0;
                   const share = shareOf(i, j);
