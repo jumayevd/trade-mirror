@@ -52,19 +52,20 @@ export function fmtNum(v: number): string {
 }
 
 /**
- * CBU house palette — deep navy + gold.
+ * CBU palette — navy and white, one blue family.
  *
- *  navy     #1e3a6e  primary data series (positive discrepancy)
- *  navy-2   #2b4c8c  secondary series (Uzbekistan-recorded imports)
- *  navy-3   #4a6ea8  tertiary series
- *  gold     #d99a2b  accent / highlight (rails, borders, selection)
- *  gold-2   #b07d1e  gold used as a data FILL (partner-reported series)
- *  gold-ink #8f6212  gold used as TEXT (stays legible at 11px)
- *  red      #b3261e  the single reserved alert — Critical risk band only
+ *  navy      #1e3a6e  primary data series (positive discrepancy, declared side)
+ *  navy-2    #2b4c8c  secondary series (Uzbekistan-recorded imports)
+ *  navy-3    #4a6ea8  tertiary series
+ *  sky       #5b9bf0  accent / highlight (rails, selection) — the old gold slot
+ *  sky-2     #4a86d8  sky as a data FILL (partner-reported, metered series)
+ *  sky-ink   #2c64b8  sky as TEXT (stays legible at 11px)
+ *  royal     #1d5fd6  attention — suspicious, Critical band — the old red slot
+ *  slate     #6b7f9e  calm / normal — the old green slot
  *
  * All fills are solid: no alpha suffixes, so bars and markers stay crisp on
- * the #fcfcfb card surface. Chrome (grid, axis, baseline) stays neutral grey
- * and recessive; ink stays dark.
+ * the white card surface. Chrome (grid, axis, baseline) stays cool grey and
+ * recessive; ink stays dark navy.
  */
 /*
  * The canvas palettes. CSS variables cannot reach a canvas, so the chart
@@ -74,36 +75,49 @@ export function fmtNum(v: number): string {
  * that is the whole synchronisation mechanism, so nothing else may cache a
  * color across a theme change.
  *
- * Dark keeps the CBU identity with the ground inverted: navy cannot carry a
- * series on a navy ground, so the navy slots lighten; gold holds; the alert
- * red and greens lift just enough to read on #18202f.
+ * Dark keeps the identity with the ground inverted: navy cannot carry a series
+ * on a navy ground, so every blue lightens to read on #141d2e.
  */
 export const IS_DARK = typeof document !== "undefined" && document.documentElement.dataset.theme === "dark";
 
-const NAVY_DEEP = IS_DARK ? "#51719f" : "#16233b";
+const NAVY_DEEP = IS_DARK ? "#51719f" : "#0f2547";
 const NAVY = IS_DARK ? "#7da2e0" : "#1e3a6e";
 const NAVY_2 = IS_DARK ? "#6b8fc9" : "#2b4c8c";
 const NAVY_3 = IS_DARK ? "#93b3e8" : "#4a6ea8";
-const GOLD = "#d99a2b";
-const GOLD_2 = IS_DARK ? "#d8b36a" : "#b07d1e";
-const GOLD_INK = IS_DARK ? "#d8b36a" : "#8f6212";
-const AMBER_HOT = IS_DARK ? "#d97f3e" : "#a4560f";
-const ALERT_RED = IS_DARK ? "#e0655c" : "#b3261e";
-const GREEN = IS_DARK ? "#3da875" : "#1a6b45";
-const GREEN_INK = IS_DARK ? "#4dbd8a" : "#155c3b";
-const SLATE = IS_DARK ? "#9aa2b1" : "#575c67";
-const GREY = IS_DARK ? "#8d96a8" : "#898781";
+// CBU gold, the accent the logo carries (rails, selection); amber, the
+// counterpart series as a fill (partner exports, metered electricity) and as
+// text legible at 11px
+const GOLD = IS_DARK ? "#e3b84f" : "#c99a2e";
+const GOLD_2 = IS_DARK ? "#c4862a" : "#c2780f";
+const GOLD_INK = IS_DARK ? "#f0bd63" : "#8a5300";
+// the further categorical slots
+const PLUM = IS_DARK ? "#a07acb" : "#7a5195";
+const TEAL = IS_DARK ? "#0f9a85" : "#0b9180";
+// status, never a series: attention (suspicious, critical) and its step down,
+// then calm (normal)
+const ALERT_RED = IS_DARK ? "#f07167" : "#c0392b";
+const AMBER_HOT = IS_DARK ? "#f4a261" : "#d9731f";
+const GREEN = IS_DARK ? "#6cc79a" : "#3a9a6a";
+const GREEN_INK = IS_DARK ? "#7fd1a6" : "#2f7d55";
+const SLATE = IS_DARK ? "#9aa2b1" : "#5b6578";
+const GREY = IS_DARK ? "#8d96a8" : "#8a93a3";
 
 /** MTRS band palette (fixed): never reused as series colors. */
 export const BAND_COLORS: Record<string, string> = {
-  critical: ALERT_RED, // the only red in the system
+  critical: ALERT_RED,
   high: AMBER_HOT,
-  elevated: GOLD_2,
+  // ochre: a step below the orange, dark enough to stand as a stat figure (3.8:1)
+  elevated: IS_DARK ? "#d6a73c" : "#a67c00",
   low: GREY,
 };
 
-/** Categorical slots, in order, for charts that need more than one series. */
-export const SERIES_COLORS = [NAVY, GOLD_2, NAVY_3, GREEN, NAVY_DEEP, SLATE];
+/**
+ * Categorical slots, in order, for charts that need more than one series:
+ * navy, amber, plum, teal. The order is the colour-blind safety: every adjacent
+ * pair clears the validator (light: ΔE 11.2 CVD, 21.4 normal vision; dark steps
+ * likewise), and a fifth series folds into slate or grey rather than a new hue.
+ */
+export const SERIES_COLORS = [NAVY, GOLD_2, PLUM, TEAL, SLATE, GREY];
 
 export const COLORS = {
   // CBU brand ramps
@@ -114,6 +128,8 @@ export const COLORS = {
   gold: GOLD,
   goldDeep: GOLD_2,
   goldInk: GOLD_INK,
+  plum: PLUM,
+  teal: TEAL,
 
   // series (semantic aliases — solid fills, no alpha)
   positive: NAVY, // positive discrepancy: the primary metric
@@ -131,16 +147,20 @@ export const COLORS = {
   accent: GOLD,
 
   // chrome & ink
-  grid: IS_DARK ? "#2a3447" : "#e5e4de",
-  baseline: IS_DARK ? "#3d4a63" : "#c9c8c0",
+  grid: IS_DARK ? "#263247" : "#e6ebf3",
+  baseline: IS_DARK ? "#3a4862" : "#c5cedd",
   axis: GREY,
-  text: IS_DARK ? "#c7cdd9" : "#3f3e3a",
-  surface: IS_DARK ? "#18202f" : "#fcfcfb",
-  neutralMid: IS_DARK ? "#223048" : "#edece7",
+  text: IS_DARK ? "#c9d3e4" : "#2a3445",
+  surface: IS_DARK ? "#141d2e" : "#ffffff",
+  neutralMid: IS_DARK ? "#1f2a3e" : "#eef2f8",
+  /** quiet bar fill beside the attention red (below a threshold) */
+  calm: IS_DARK ? "#4a5f82" : "#a9bcdb",
+  /** a threshold's attention side as a band behind bars */
+  band: IS_DARK ? "#3a2226" : "#fbeeec",
 
   /* the geographic map's inert ground — themed here because a canvas cannot
      read the CSS tokens the rest of the page uses */
-  mapArea: IS_DARK ? "#223048" : "#eef1ee",
-  mapBorder: IS_DARK ? "#33405a" : "#d8ded9",
-  mapEmphasis: IS_DARK ? "#2f3d58" : "#cfd8d1",
+  mapArea: IS_DARK ? "#1f2a3e" : "#eef2f8",
+  mapBorder: IS_DARK ? "#33405a" : "#d5dde9",
+  mapEmphasis: IS_DARK ? "#2f3d58" : "#cfdcf0",
 };

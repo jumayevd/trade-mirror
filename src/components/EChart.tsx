@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import * as echarts from "echarts";
-import { readZoom, serverZoom, subscribeZoom } from "@/lib/zoom-store";
 import { baseTextStyle } from "@/lib/echartBase";
 import { readFpx, scaleFonts, serverFpx, subscribeFpx } from "@/lib/fluid-type";
 
@@ -19,15 +18,12 @@ interface Props {
 }
 
 /**
- * Charts inherit the page zoom, so a chart's CSS pixel is `zoom` screen pixels.
- * The backing store has to carry that as well as the device ratio or the canvas
- * is drawn at the smaller size and stretched, which softens every label and
- * hairline. ECharts takes this only at init, so the chart is re-initialised when
- * the reading scale changes.
+ * The canvas backing store follows the device ratio, or the chart is drawn at
+ * the smaller size and stretched, which softens every label and hairline.
  */
-function bitmapRatio(zoom: number): number {
-  if (typeof window === "undefined") return zoom;
-  return (window.devicePixelRatio || 1) * zoom;
+function bitmapRatio(): number {
+  if (typeof window === "undefined") return 1;
+  return window.devicePixelRatio || 1;
 }
 
 /**
@@ -65,7 +61,6 @@ const POINTER_EVENTS = [
 ] as const;
 
 export default function EChart({ option, className, style, registerMaps, onEvents }: Props) {
-  const zoom = useSyncExternalStore(subscribeZoom, readZoom, serverZoom);
   /*
    * The root textStyle is merged in rather than assumed: five of the charts never
    * set one, and without it their unsized text falls back to ECharts' own 12
@@ -117,11 +112,10 @@ export default function EChart({ option, className, style, registerMaps, onEvent
    * guaranteed to precede zrender's own listeners on the inner element; when
    * the two spaces already agree it redefines nothing.
    *
-   * This is now the only thing keeping hover on the right mark. The chart frame
-   * used to cancel the page zoom, which left the two spaces already in agreement
-   * and made this a no-op; charts inherit the zoom now, so rect.width /
-   * clientWidth is the zoom factor and dividing it out is what lands the cursor
-   * on the mark beneath it.
+   * The page itself no longer sets a CSS zoom, so normally the two spaces agree
+   * and this returns at once; when an ancestor is scaled, rect.width /
+   * clientWidth is that scale and dividing it out lands the cursor on the mark
+   * beneath it.
    */
   useEffect(() => {
     const host = outer.current;
@@ -155,7 +149,7 @@ export default function EChart({ option, className, style, registerMaps, onEvent
     }
     const chart = echarts.init(ref.current, undefined, {
       renderer: "canvas",
-      devicePixelRatio: bitmapRatio(zoom),
+      devicePixelRatio: bitmapRatio(),
     });
     chartRef.current = chart;
     chart.setOption(resolved);
@@ -171,10 +165,10 @@ export default function EChart({ option, className, style, registerMaps, onEvent
       chart.dispose();
       chartRef.current = null;
     };
-    // re-init on maps, reading scale or which events are bound; option updates
-    // are handled below and handlers are read live through eventsRef
+    // re-init on maps or which events are bound; option updates are handled
+    // below and handlers are read live through eventsRef
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registerMaps, zoom, eventNames]);
+  }, [registerMaps, eventNames]);
 
   useEffect(() => {
     chartRef.current?.setOption(resolved, true);

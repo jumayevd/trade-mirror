@@ -5,7 +5,7 @@
  * Chart text is drawn on a canvas from plain numbers, so it needs the same factor
  * computed here. The constants mirror `--fpx`; change both together.
  */
-export const FLUID = { refW: 1366, refH: 720, min: 0.9, max: 1.25 } as const;
+export const FLUID = { refW: 1366, refH: 720, min: 0.9, max: 1.2 } as const;
 
 /**
  * One declared pixel in CSS pixels at the current viewport, 1 on the server.

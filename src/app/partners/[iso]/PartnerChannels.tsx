@@ -6,6 +6,7 @@ import { SectionTitle, BandBadge, RiskScore } from "@/components/ui";
 import { hsLabel, hs4Label, type RiskBand } from "@/lib/dataset";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { useHydrated } from "@/lib/use-hydrated";
 
 /**
  * HS6 products risk signals for one partner: every HS6 product both books
@@ -37,7 +38,7 @@ export interface ChannelRow {
 const BAND_RANK: Record<RiskBand, number> = { critical: 0, high: 1, elevated: 2, low: 3 };
 
 const sel = "h-[33px] rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)] max-w-[18rem]";
-const lbl = "fs-11.5 font-semibold uppercase tracking-wider text-faint";
+const lbl = "fs-12.5 font-medium text-faint";
 
 /** Sorted unique codes with their labels. */
 function options(pairs: [string, string][]): { code: string; label: string }[] {
@@ -58,6 +59,9 @@ export default function PartnerChannels({
   const [hs4, setHs4] = useState("all");
   const [hs6, setHs6] = useState("all");
   const [page, setPage] = useState(0);
+  // the code lists run to thousands of options on a large partner — 1.5 MB of
+  // HTML per prerendered page; they render once scripts can use them
+  const hydrated = useHydrated();
 
   // strongest signal first: band, then score, then size
   const ranked = useMemo(
@@ -119,21 +123,21 @@ export default function PartnerChannels({
           <span className={lbl}>HS2</span>
           <select className={sel} value={hs2} onChange={(e) => pick("hs2", e.target.value)} aria-label={t("prof.aria.hs2")}>
             <option value="all">{t("filter.all")}</option>
-            {hs2Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
+            {hydrated && hs2Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className={lbl}>HS4</span>
           <select className={sel} value={hs4} onChange={(e) => pick("hs4", e.target.value)} aria-label={t("prof.aria.hs4")}>
             <option value="all">{t("filter.all")}</option>
-            {hs4Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
+            {hydrated && hs4Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-1">
           <span className={lbl}>HS6</span>
           <select className={sel} value={hs6} onChange={(e) => pick("hs6", e.target.value)} aria-label={t("prof.aria.hs6")}>
             <option value="all">{t("filter.all")}</option>
-            {hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
+            {hydrated && hs6Options.map((o) => <option key={o.code} value={o.code}>{o.code} · {o.label}</option>)}
           </select>
         </div>
         <span className="tabular fs-13 text-faint">

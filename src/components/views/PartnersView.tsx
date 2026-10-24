@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip } from "@/components/ui";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, TableReveal, PageHead } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -259,11 +259,9 @@ export default function PartnersView() {
   return (
     <div className="space-y-6">
       {/* 1. header */}
-      <section className="space-y-1.5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>
-          </div>
+      <PageHead
+        title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>}
+        right={
           <button
             onClick={exportCsv}
             disabled={data.channels6.length === 0}
@@ -272,8 +270,8 @@ export default function PartnersView() {
           >
             {t("common.exportCsv")} ↓
           </button>
-        </div>
-      </section>
+        }
+      />
 
       {/* 2. filters + context */}
       <FilterBar />
@@ -363,7 +361,7 @@ export default function PartnersView() {
           desc={t("ctry.rank.desc")}
           right={<InfoTip text={t("ctry.rank.info")} />}
         />
-        {rankingTable}
+        <TableReveal>{rankingTable}</TableReveal>
       </section>
 
       </>

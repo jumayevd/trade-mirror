@@ -4,7 +4,8 @@
  *   npx tsx scripts/build-risk-index.ts
  *
  * Reads the mirror cells produced by build-from-excel.ts and writes
- * src/data/risk.json (per-cell scores, consumed by the dashboard) and
+ * src/data/risk.json (per-cell scores; the dashboard reads a copy without them,
+ * written by scripts/build-wire.ts, and the audit reads them) and
  * src/data/diagnostics.json (score diagnostics, shown on /methodology).
  * Nothing here runs in the browser: the dashboard reads finished numbers.
  *
@@ -29,6 +30,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ALPHA, BETA, CRITICAL_TOP, MATERIALITY_FLOOR, METHODOLOGY_VERSION, NOISE } from "./risk-config";
+import { shown } from "../src/lib/left-out-years";
 
 const ROOT = path.join(process.cwd(), "src", "data");
 
@@ -43,7 +45,9 @@ const cells: Cell[] = (() => {
     const k = packed.k[row[1]];
     return { p: packed.p[row[0]], k, c: k.slice(0, 2), l: k.length, y: packed.y0 + row[2], pe: row[3], ui: row[4] };
   });
-  return flat;
+  // the years the dashboard leaves out are left out of the fit too, or the live
+  // score and this index would count different years (src/lib/left-out-years.ts)
+  return flat.filter((c) => shown(c.y));
 })();
 const meta: MetaFile = JSON.parse(fs.readFileSync(path.join(ROOT, "meta.json"), "utf8"));
 const K = 1 + meta.cif.central; // the central freight scenario, shared with the dashboard

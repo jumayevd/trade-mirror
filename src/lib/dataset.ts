@@ -18,14 +18,20 @@
  */
 import cellsWire from "@/data/wire/cells.json";
 import metaRaw from "@/data/meta.json";
-import monthlyWire from "@/data/wire/monthly.json";
+// the monthly chapter book loads on demand (its compact copy, public/data/
+// monthly.wire.json); this is what every page needs from it up front
+// (see src/lib/monthly-summary.ts)
+import monthlySummaryRaw from "@/data/monthly-summary.json";
 import annualizedWire from "@/data/wire/annualized-hs6.json";
 import officialImportsRaw from "@/data/official-imports.json";
 import productsRaw from "@/data/products.json";
+// the fit's configuration only; the per-cell scores stay out of the bundle
 import riskRaw from "@/data/wire/risk.json";
 import hsFullRaw from "@/data/hs-full.json";
 import { decodePacked, type WireTable } from "@/lib/wire";
+import { shown } from "@/lib/left-out-years";
 import { labelLang, tCategory, tCountry, tRegion, tText } from "@/lib/labels";
+import { NOISE, type MonthlySummary, type PackedMonthly } from "@/lib/monthly-summary";
 
 export const METHODOLOGY_VERSION = "3.1";
 
@@ -99,9 +105,17 @@ export interface Product {
  * control, and small channels rank low on their own merits rather than being
  * removed before they can be ranked.
  */
-const NOISE = 0;
+// NOISE (0) is defined in src/lib/monthly-summary.ts, shared with the build-time summary
 
-export const meta = metaRaw as unknown as Meta;
+// years the data carries but the dashboard leaves out (shared with the risk fit)
+
+const metaFile = metaRaw as unknown as Meta;
+export const meta: Meta = {
+  ...metaFile,
+  years: metaFile.years.filter(shown),
+  uzbReportingYears: metaFile.uzbReportingYears.filter(shown),
+  window: { ...metaFile.window, start: Math.min(...metaFile.years.filter(shown)) },
+};
 export const products = productsRaw as unknown as Product[];
 export const DATA_VERSION = meta.generatedAt.slice(0, 10).replace(/-/g, ".");
 
@@ -118,9 +132,11 @@ interface PackedCells { v: number; y0: number; p: string[]; k: string[]; r: numb
 
 const cells: Cell[] = (() => {
   const packed = decodePacked<PackedCells>(cellsWire as unknown as WireTable);
-  const out: Cell[] = new Array(packed.r.length);
+  const out: Cell[] = [];
   for (let i = 0; i < packed.r.length; i++) {
     const row = packed.r[i];
+    const y = packed.y0 + row[2];
+    if (!shown(y)) continue;
     const k = packed.k[row[1]];
     const c = k.slice(0, 2);
     const cell: Cell = {
@@ -129,12 +145,12 @@ const cells: Cell[] = (() => {
       c,
       cat: categoryOfChapter(c),
       l: k.length,
-      y: packed.y0 + row[2],
+      y,
       pe: row[3],
       ui: row[4],
     };
     if (row.length > 5) { cell.uw = row[5]; cell.pw = row[6]; }
-    out[i] = cell;
+    out.push(cell);
   }
 
   /*
@@ -183,43 +199,45 @@ const cells: Cell[] = (() => {
 /* ------------------------------------------------------------------ */
 
 /**
- * monthly.json ships columnar like cells.json, with the time axis in months:
- * [pIdx, kIdx, monthOffset, pe, ui] where monthOffset = (year − y0) × 12 + (month − 1).
- * This bundled file carries the chapter (HS2) series; the far larger HS6 detail
- * lives in public/data/monthly-hs6.json and is fetched on demand, in its compact
- * copy public/data/monthly-hs6.wire.json (see below).
+ * The monthly chapter (HS2) book: public/data/monthly.json, columnar like
+ * cells.json with the time axis in months — [pIdx, kIdx, monthOffset, pe, ui],
+ * monthOffset = (year − y0) × 12 + (month − 1). It is ~250k rows and only the
+ * monthly basis reads the rows, so it loads on demand (loadMonthlyChapters,
+ * below), in its compact copy public/data/monthly.wire.json, instead of riding
+ * in every page's bundle. The facts every page needs from it ship as a
+ * build-time summary (src/lib/monthly-summary.ts). The far larger HS6 detail
+ * lives in public/data/monthly-hs6.json, also fetched on demand, in its compact
+ * copy public/data/monthly-hs6.wire.json.
  */
-interface PackedMonthly {
-  v: number;
-  y0: number;
-  p: string[];
-  k: string[];
-  monthsByYear: Record<string, number[]>;
-  r: number[][];
-}
 interface MonthCell { p: string; k: string; c: string; cat: string; y: number; m: number; pe: number; ui: number }
 
-const monthlyPacked = decodePacked<PackedMonthly>(monthlyWire as unknown as WireTable);
+const monthlySummary = monthlySummaryRaw as unknown as MonthlySummary;
+/** The monthly book's epoch: month offsets count from January of this year. */
+const MONTHLY_Y0 = monthlySummary.y0;
 
-const monthlyCells: MonthCell[] = (() => {
-  if (!monthlyPacked || !Array.isArray(monthlyPacked.r)) return [];
-  const out: MonthCell[] = new Array(monthlyPacked.r.length);
-  for (let i = 0; i < monthlyPacked.r.length; i++) {
-    const row = monthlyPacked.r[i];
-    const k = monthlyPacked.k[row[1]];
-    out[i] = {
-      p: monthlyPacked.p[row[0]],
+/** The book's rows, once loaded; empty until then. */
+let monthlyCells: MonthCell[] = [];
+
+const unpackMonthly = (book: PackedMonthly): MonthCell[] => {
+  const out: MonthCell[] = [];
+  for (let i = 0; i < book.r.length; i++) {
+    const row = book.r[i];
+    const y = book.y0 + Math.floor(row[2] / 12);
+    if (!shown(y)) continue;
+    const k = book.k[row[1]];
+    out.push({
+      p: book.p[row[0]],
       k,
       c: k.slice(0, 2),
       cat: categoryOfChapter(k.slice(0, 2)),
-      y: monthlyPacked.y0 + Math.floor(row[2] / 12),
+      y,
       m: (row[2] % 12) + 1,
       pe: row[3],
       ui: row[4],
-    };
+    });
   }
   return out;
-})();
+};
 
 /*
  * THE MONTH RULE. A year built from months compares the two books only over
@@ -231,33 +249,24 @@ const monthlyCells: MonthCell[] = (() => {
  * had not filed June yet. Within a matched month a line one book did not
  * record stays a real zero. As-reported totals keep every month.
  */
-const uzbImportMonths = new Set<number>();
-const partnerExportMonths = new Map<string, Set<number>>();
-for (const r of monthlyCells) {
-  const ym = r.y * 100 + r.m;
-  if (r.ui > 0) uzbImportMonths.add(ym);
-  if (r.pe > 0) {
-    let set = partnerExportMonths.get(r.p);
-    if (!set) { set = new Set(); partnerExportMonths.set(r.p, set); }
-    set.add(ym);
-  }
-}
+const hasMonth = (mask: number | undefined, m: number): boolean => (((mask ?? 0) >> (m - 1)) & 1) === 1;
 /** True when both books reported month m of year y for this partner. */
 export const monthMatched = (iso: string, y: number, m: number): boolean =>
-  uzbImportMonths.has(y * 100 + m) && (partnerExportMonths.get(iso)?.has(y * 100 + m) ?? false);
+  hasMonth(monthlySummary.uzbImport[y], m) && hasMonth(monthlySummary.partnerExport[iso]?.[y], m);
 /** The months of year y compared for this partner. */
 export const matchedMonthsOf = (iso: string, y: number): number[] =>
   Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => monthMatched(iso, y, m));
 /** The months of year y Uzbekistan's import book carries. */
 export const uzbMonthsOf = (y: number): number[] =>
-  Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => uzbImportMonths.has(y * 100 + m));
+  Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => hasMonth(monthlySummary.uzbImport[y], m));
 
 /** Years the monthly series covers — a longer window than the annual books. */
-export const monthlyYears: number[] = Object.keys(monthlyPacked?.monthsByYear ?? {})
+export const monthlyYears: number[] = Object.keys(monthlySummary.monthsByYear)
   .map(Number)
+  .filter(shown)
   .sort((a, b) => a - b);
 /** Calendar months actually reported for a year (the current year is partial). */
-export const monthsOfYear = (y: number): number[] => monthlyPacked?.monthsByYear?.[String(y)] ?? [];
+export const monthsOfYear = (y: number): number[] => monthlySummary.monthsByYear[String(y)] ?? [];
 /** Every selectable year on either basis, for URL validation and pickers. */
 export const ALL_YEARS: number[] = [...new Set([...meta.years, ...monthlyYears])].sort((a, b) => a - b);
 
@@ -300,11 +309,9 @@ export const OFFICIAL_IMPORTS_SOURCE = {
 
 /** The last calendar month of a year with any recorded import in the monthly
  *  mirror book — how far Uzbekistan's own side actually reaches. */
-const lastUiMonth = (() => {
-  const m = new Map<number, number>();
-  for (const r of monthlyCells) if (r.ui > 0 && r.m > (m.get(r.y) ?? 0)) m.set(r.y, r.m);
-  return m;
-})();
+const lastUiMonth = new Map<number, number>(
+  Object.entries(monthlySummary.lastUiMonth).map(([y, m]) => [Number(y), m]),
+);
 
 /**
  * Official imports over a set of years, in USD. Returns null when any selected
@@ -419,30 +426,17 @@ for (const p of meta.partners) {
  * into 2026 while Uzbekistan's import book stops after October 2025, and a
  * month only one side filed can never be compared.
  */
-const comparableMonths = (() => {
-  /*
-   * Both books are tested per CELL-month, aggregated first: the extension
-   * fetched from the live API appends import-only rows beside the workbook's
-   * partner rows, so one (partner × code × month) can span two rows and a
-   * per-row test would call a genuinely two-sided month one-sided. Folding
-   * downstream sums the same way, so this stays the grain the channels use.
-   */
-  const cellAcc = new Map<string, { y: number; m: number; pe: number; ui: number }>();
-  for (const r of monthlyCells) {
-    const key = `${r.p}|${r.k}|${r.y * 100 + r.m}`;
-    const e = cellAcc.get(key) ?? { y: r.y, m: r.m, pe: 0, ui: 0 };
-    e.pe += r.pe; e.ui += r.ui;
-    cellAcc.set(key, e);
-  }
-  const acc = new Map<number, Set<number>>();
-  for (const e of cellAcc.values()) {
-    if (e.pe <= NOISE || e.ui <= NOISE) continue;
-    let set = acc.get(e.y);
-    if (!set) { set = new Set<number>(); acc.set(e.y, set); }
-    set.add(e.m);
-  }
-  return new Map<number, number[]>([...acc].map(([y, set]) => [y, [...set].sort((a, b) => a - b)]));
-})();
+/*
+ * Both books are tested per CELL-month, aggregated first: the extension fetched
+ * from the live API appends import-only rows beside the workbook's partner rows,
+ * so one (partner × code × month) can span two rows and a per-row test would
+ * call a genuinely two-sided month one-sided. Folding downstream sums the same
+ * way, so this stays the grain the channels use. Computed at build time over
+ * the whole book (summarizeMonthly).
+ */
+const comparableMonths = new Map<number, number[]>(
+  Object.entries(monthlySummary.comparable).map(([y, ms]) => [Number(y), ms]),
+);
 export const comparableMonthsOfYear = (y: number): number[] => comparableMonths.get(y) ?? [];
 
 /**
@@ -477,7 +471,7 @@ let monthlyDetailLoading = false;
 const monthlyDetailListeners = new Set<() => void>();
 
 export const monthlyDetailReady = (): boolean => monthlyDetail !== null;
-/** Bumps when the detail arrives — a dependency for memoized aggregates. */
+/** Bumps when the chapter rows or the detail arrive — a dependency for memoized aggregates. */
 export const monthlyDetailVer = (): number => monthlyDetailVersion;
 export function subscribeMonthlyDetail(fn: () => void): () => void {
   monthlyDetailListeners.add(fn);
@@ -490,7 +484,47 @@ export function loadMonthlyDetail(payload: PackedMonthlyDetail): void {
   monthlySourceCache.clear();
   for (const fn of monthlyDetailListeners) fn();
 }
+let monthlyChaptersLoaded = false;
+let monthlyChaptersLoading = false;
+/** Views on the monthly basis currently mounted; see monthlyPending. */
+let monthlyWanted = 0;
+const notifyMonthly = () => { for (const fn of monthlyDetailListeners) fn(); };
+
+/** Direct injection of the chapter rows for Node (build, scripts); the client uses ensureMonthlyChapters. */
+export function loadMonthlyChapters(book: PackedMonthly): void {
+  monthlyCells = unpackMonthly(book);
+  monthlyChaptersLoaded = true;
+  monthlyDetailVersion++;
+  monthlySourceCache.clear();
+  notifyMonthly();
+}
+export function ensureMonthlyChapters(): void {
+  if (monthlyChaptersLoaded || monthlyChaptersLoading || typeof window === "undefined") return;
+  monthlyChaptersLoading = true;
+  fetch("/data/monthly.wire.json")
+    .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then((w: WireTable) => { monthlyChaptersLoading = false; loadMonthlyChapters(decodePacked<PackedMonthly>(w)); })
+    .catch(() => { monthlyChaptersLoading = false; });
+}
+/**
+ * A view on the monthly basis is on screen: until the monthly rows arrive its
+ * figures would read as zeros, so the layout veils it (MonthlyVeil). Both
+ * books count — the chapter rows and the HS6 detail, since the monthly basis
+ * measures at HS6: with the chapters in and the detail still loading, the
+ * figures read $0 for as long as the 26 MB detail takes to arrive.
+ * Returns the release, for an effect's cleanup.
+ */
+export function wantMonthly(): () => void {
+  monthlyWanted++;
+  notifyMonthly();
+  return () => { monthlyWanted--; notifyMonthly(); };
+}
+export const monthlyPending = (): boolean =>
+  monthlyWanted > 0 && (!monthlyChaptersLoaded || monthlyDetail === null);
+
+/** The chapter rows first (the monthly basis cannot show anything without them), then the HS6 detail. */
 export function ensureMonthlyDetail(): void {
+  ensureMonthlyChapters();
   if (monthlyDetail || monthlyDetailLoading || typeof window === "undefined") return;
   monthlyDetailLoading = true;
   // the compact copy (scripts/build-wire.ts) — a third smaller over the wire
@@ -542,7 +576,7 @@ function monthlySource(f: Filter): Cell[] {
     const monthsOf = new Map<number, number[]>();
     for (const row of det.r) {
       const y = det.y0 + ((row[2] / 12) | 0);
-      if (wantY && !wantY.has(y)) continue;
+      if (!shown(y) || (wantY && !wantY.has(y))) continue;
       if (wantM && !wantM.has((row[2] % 12) + 1)) continue;
       const id = (row[0] * nK + row[1]) * 16 + (y - det.y0);
       let cell = acc6.get(id);
@@ -1544,12 +1578,12 @@ export function aggregate(f: Filter): Aggregate {
       });
       const groupOf = det.k; // the measurement grain: HS6 itself
       const pOk = det.p.map((iso) => allowPartner(iso));
-      const detY0 = det.y0 - monthlyPacked.y0; // align month offsets to the chapter series' epoch
+      const detY0 = det.y0 - MONTHLY_Y0; // align month offsets to the chapter series' epoch
       const cellAgg = new Map<string, { p: string; off: number; pe: number; ui: number }>();
       for (const row of det.r) {
         if (!pOk[row[0]] || !codeOk[row[1]]) continue;
         const off = row[2] + detY0 * 12;
-        const y = monthlyPacked.y0 + ((off / 12) | 0);
+        const y = MONTHLY_Y0 + ((off / 12) | 0);
         if (!picked.has(y)) continue;
         if (wantM && !wantM.has((off % 12) + 1)) continue;
         const key = `${row[0]}|${groupOf[row[1]]}|${off}`;
@@ -1562,7 +1596,7 @@ export function aggregate(f: Filter): Aggregate {
     annual.length = 0;
     for (const key of [...mAgg.keys()].sort((x, y) => x - y)) {
       const e = mAgg.get(key)!;
-      const year = monthlyPacked.y0 + Math.floor(key / 12);
+      const year = MONTHLY_Y0 + Math.floor(key / 12);
       const month = (key % 12) + 1;
       annual.push({
         year, month,

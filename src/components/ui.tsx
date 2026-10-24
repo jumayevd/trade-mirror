@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BAND_COLORS, COLORS } from "@/lib/format";
-import { yearsFor, yearsLabel, type Filter, type RiskBand, type Robustness, type Tier } from "@/lib/dataset";
+import type { RiskBand, Robustness, Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
-import { readZoom } from "@/lib/zoom-store";
 
 /** Fill {placeholders} in a translated string with runtime values. */
 const fill = (s: string, vals: Record<string, string | number>) =>
@@ -32,11 +31,12 @@ export function Stat({
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="fs-12 font-semibold uppercase leading-snug tracking-[0.08em] text-muted">{label}</div>
+        <div className="fs-12.5 font-medium leading-snug text-muted">{label}</div>
         {info && <InfoTip text={info} />}
       </div>
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="fs-24 font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
+      {/* the figure never breaks; when the tile is narrow the change drops below it */}
+      <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span className="tabular whitespace-nowrap fs-24 font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
           {value}
         </span>
         {delta && (
@@ -46,6 +46,66 @@ export function Stat({
         )}
       </div>
       {sub && <div className="mt-1.5 fs-12.5 leading-snug text-faint">{sub}</div>}
+    </div>
+  );
+}
+
+/**
+ * What "positive discrepancy" means — the one term every trade page reads by —
+ * framed and centred so it is the first thing a reader meets on each page.
+ */
+export function PosDefCard() {
+  const { t } = useI18n();
+  return (
+    <figure
+      className="relative mx-auto w-full max-w-[46rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-panel)] px-6 pb-3.5 pt-4 text-center"
+      style={{ boxShadow: "0 1px 3px rgba(15, 37, 71, 0.06)" }}
+    >
+      <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-14 -translate-x-1/2 rounded-b-full bg-[var(--color-gold)]" />
+      <figcaption className="fs-11.5 font-semibold uppercase tracking-[0.14em] text-[var(--color-gold-ink)]">
+        {t("kpi.positive")}
+      </figcaption>
+      <p className="mx-auto mt-1.5 max-w-[40rem] fs-14 leading-relaxed text-foreground" style={{ textWrap: "balance" }}>
+        {t("ovw.posDef")}
+      </p>
+    </figure>
+  );
+}
+
+/**
+ * The head of a trade page: title on the left, the definition card centred,
+ * the page's own control (export, data window) on the right. Stacks on narrow
+ * screens in the same order.
+ */
+export function PageHead({ title, right }: { title: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(12rem,auto)_minmax(0,1fr)_minmax(12rem,auto)] lg:items-center lg:gap-8">
+      <div className="min-w-0">{title}</div>
+      <PosDefCard />
+      <div className="flex lg:justify-end">{right}</div>
+    </section>
+  );
+}
+
+/**
+ * A table kept out of the way until asked for: the page leads with its chart,
+ * and the detail behind it opens on a click. Collapsed on every visit.
+ */
+export function TableReveal({ children, defaultOpen = false }: { children: React.ReactNode; defaultOpen?: boolean }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="no-print inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-1.5 fs-13 font-medium text-muted hover:text-foreground"
+      >
+        {open ? t("common.hideTable") : t("common.showTable")}
+        <span aria-hidden className={`inline-block transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+      </button>
+      {open && children}
     </div>
   );
 }
@@ -78,21 +138,13 @@ export function InfoTip({ text }: { text: string }) {
   const place = useCallback(() => {
     const r = btn.current?.getBoundingClientRect();
     if (!r) return;
-    /*
-     * globals.css puts `zoom` on body, so the two coordinate systems differ:
-     * getBoundingClientRect reports rendered pixels, while a CSS `left` inside
-     * that subtree is multiplied by the zoom before it lands. Written straight
-     * across, the panel came out one zoom factor to the right — off the screen
-     * entirely at 1.25. EChart corrects the same mismatch the same way.
-     */
-    const z = readZoom();
-    const vw = window.innerWidth / z;
-    const vh = window.innerHeight / z;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
     // keep the panel on screen: flip above when it would run off the bottom,
     // and pull it left when it would run off the right edge
-    const left = Math.max(8, Math.min(r.left / z, vw - PANEL - 8));
-    const below = r.bottom / z + 6;
-    const top = below + HEIGHT > vh && r.top / z > HEIGHT + 10 ? r.top / z - 6 - HEIGHT : below;
+    const left = Math.max(8, Math.min(r.left, vw - PANEL - 8));
+    const below = r.bottom + 6;
+    const top = below + HEIGHT > vh && r.top > HEIGHT + 10 ? r.top - 6 - HEIGHT : below;
     setPos({ top, left });
   }, []);
 
@@ -131,7 +183,7 @@ export function InfoTip({ text }: { text: string }) {
         onBlur={() => { if (!pinned) setOpen(false); }}
         className={`inline-flex h-4 w-4 shrink-0 cursor-help items-center justify-center rounded-full border fs-11 leading-none transition-colors ${
           open
-            ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+            ? "border-[var(--color-primary)] bg-[var(--color-primary-fill)] text-white"
             : "border-[var(--color-border)] text-faint hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
         }`}
       >
@@ -154,33 +206,11 @@ export function SectionTitle({ title, desc, right }: { title: string; desc?: str
   return (
     <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
       <div className="min-w-0">
-        <h2 className="fs-15 font-semibold tracking-tight">{title}</h2>
-        {desc && <p className="mt-0.5 max-w-2xl fs-13.5 leading-relaxed text-muted">{desc}</p>}
+        <h2 className="fs-18 font-semibold tracking-tight">{title}</h2>
+        {desc && <p className="mt-0.5 max-w-3xl fs-13 leading-relaxed text-faint">{desc}</p>}
       </div>
       {right}
     </div>
-  );
-}
-
-/** Context line (spec §5.3) — quiet, single line, above analytical blocks. */
-export function ContextLine({ filter }: { filter: Filter }) {
-  const { t } = useI18n();
-  // localized twin of dataset's contextLine(), which stays English for CSV headers
-  const parts = [yearsLabel(filter.years.length ? filter.years : yearsFor(filter.granularity))];
-  if (filter.granularity === "month") {
-    parts.push(filter.months.length === 0 || filter.months.length === 12
-      ? t("gran.month").toLowerCase()
-      : `${t("gran.month").toLowerCase()}: ${filter.months.join(", ")}`);
-  }
-  const codes = (values: string[]) => (values.length <= 3 ? `HS ${values.join(", ")}` : `${values.length} HS`);
-  if (filter.hs6.length > 0) parts.push(codes(filter.hs6));
-  else if (filter.hs4.length > 0) parts.push(codes(filter.hs4));
-  else if (filter.hs2.length > 0) parts.push(codes(filter.hs2));
-  parts.push(`${t("filter.freight").toLowerCase()} ${Math.round(filter.cif * 100)}%`);
-  return (
-    <p className="mb-3 truncate font-mono fs-12 text-faint" title={t("qual.ui.contextTip")}>
-      {parts.join(" · ")}
-    </p>
   );
 }
 
@@ -267,7 +297,7 @@ export function Segmented<T extends string>({
             title={o.tip}
             className={`whitespace-nowrap px-2.5 py-1 fs-13 ${i > 0 ? "border-l border-[var(--color-border)]" : ""} ${
               on
-                ? "bg-[var(--color-primary)] font-semibold text-white"
+                ? "bg-[var(--color-primary-fill)] font-semibold text-white"
                 : "bg-[var(--color-panel)] font-medium text-muted hover:bg-[var(--color-panel-2)] hover:text-foreground"
             }`}
           >

@@ -1,61 +1,69 @@
 @import "tailwindcss";
 
 /*
- * Design system: CBU house palette — deep navy + gold on a warm paper surface.
- *  - chrome is neutral warm-grey ink; brand color is CBU navy #1e3a6e, used for
- *    links, active states and primary buttons; gold #d99a2b is the accent rail
- *  - data colors: navy #1e3a6e = the screened (positive) discrepancy — the
- *    primary series; #2b4c8c / #4a6ea8 are the secondary navy slots; gold
- *    #b07d1e is the counterpart series (navy vs gold is CVD-safe)
- *  - status set (fixed): critical #b3261e = Investigate ONLY — the single red in
- *    the system; serious = gold; good = deep green; everything else neutral
- *  - fills are solid and saturated (no alpha washes) so marks stay crisp
- *  - hairline borders, solid hairline gridlines, whitespace does the separating
+ * Design system: CBU navy and gold.
+ *  - surfaces are white (#ffffff cards) on a cool white page (#f4f7fc); ink is
+ *    navy-black #0f1d33, greys are cool slate
+ *  - brand: CBU navy #1e3a6e for links, active states and primary buttons; the
+ *    sidebar is deep navy #0f2547 with the logo's gold #c99a2e as its rail
+ *  - data: navy is the primary series and amber #c2780f the counterpart
+ *    (partner exports, metered electricity); further series take plum #7a5195
+ *    and teal #0b9180, in that order (validated for colour-blind readers;
+ *    see SERIES_COLORS in src/lib/format.ts). Magnitude stays one hue: the
+ *    navy sequential ramp of maps and heatmaps (src/lib/seq-ramp.ts)
+ *  - status, never a series: attention (suspicious, critical) red #c0392b, its
+ *    step down orange #d9731f, calm/normal green #2f7d55 — each beside a label
+ *  - fills are solid (no alpha washes); hairline borders, whitespace separates
  */
 :root {
-  --background: #f9f9f7;
-  --foreground: #0b0b0b;
-  --card-highlight: rgba(255, 255, 255, 0.6);
+  --background: #f4f7fc;
+  --foreground: #0f1d33;
 }
 
 @theme {
   /* surfaces */
-  --color-bg: #f9f9f7;          /* page plane */
-  --color-panel: #fcfcfb;       /* card / chart surface */
-  --color-panel-2: #f0efec;     /* recessed wells, neutral midpoint */
-  --color-border: rgba(11, 11, 11, 0.1);
-  --color-border-soft: rgba(11, 11, 11, 0.06);
+  --color-bg: #f4f7fc;          /* page plane */
+  --color-panel: #ffffff;       /* card / chart surface */
+  --color-panel-2: #eef3fa;     /* recessed wells, neutral midpoint */
+  --color-border: rgba(15, 37, 71, 0.12);
+  --color-border-soft: rgba(15, 37, 71, 0.07);
 
   /* ink */
-  --color-foreground: #0b0b0b;
-  --color-muted: #52514e;
-  --color-faint: #898781;
+  --color-foreground: #0f1d33;
+  --color-muted: #475569;
+  --color-faint: #5f6b7e;
 
   /* brand: CBU deep navy chrome + gold highlight (sidebar/emphasis) */
   --color-primary: #1e3a6e;
   --color-primary-soft: #2b4c8c;
   --color-primary-light: #4a6ea8;
-  --color-navy: #16233b;
-  --color-gold: #d99a2b;      /* accent / rails / selection */
-  --color-gold-deep: #b07d1e; /* gold as a data fill */
-  --color-gold-ink: #8f6212;  /* gold as text — legible at 11px */
+  /* a fill behind white text — its own token, since in dark mode the text and
+     the fill shade of primary cannot be one colour and both read */
+  --color-primary-fill: #1e3a6e;
+  --color-primary-fill-hover: #2b4c8c;
+  --color-navy: #0f2547;
+  --color-gold: #c99a2e;      /* CBU gold: accent / rails / selection */
+  --color-gold-deep: #c2780f; /* amber: the counterpart series as a fill */
+  --color-gold-ink: #8a5300;  /* amber as text — legible at 11px */
+  --color-plum: #7a5195;      /* third series; also a gap's breakdown */
+  --color-teal: #0b9180;      /* fourth series */
 
   /* data semantics */
   --color-positive: #1e3a6e;  /* the screened discrepancy — primary series */
-  --color-reverse: #b07d1e;   /* deprecated: reverse is no longer screened */
+  --color-reverse: #4a86d8;   /* deprecated: reverse is no longer screened */
 
   /* status (fixed, never themed) */
-  --color-investigate: #b3261e; /* the only red in the system */
-  --color-serious: #8f6212;
-  --color-transit: #575c67;
-  --color-quality: #1a6b45;
-  --color-warn: #8f6212;
-  --color-ok: #155c3b;
+  --color-investigate: #c0392b; /* attention: suspicious, critical */
+  --color-serious: #b4541a;
+  --color-transit: #5b6578;
+  --color-quality: #2f6db3;
+  --color-warn: #8a5300;
+  --color-ok: #2f7d55;
 
   /* chart mirrors */
   --color-uzb: #2b4c8c;
-  --color-partner: #b07d1e;
-  --color-accent: #d99a2b;
+  --color-partner: #c2780f;
+  --color-accent: #c99a2e;
 
   /* type scale on the fluid pixel (see --fpx below); line heights stay Tailwind's */
   --text-xs: calc(12 * var(--fpx));
@@ -86,46 +94,53 @@
  */
 html[data-theme="dark"] {
   color-scheme: dark;
-  /* the light theme's inner card highlight becomes a glare line on dark */
-  --card-highlight: rgba(255, 255, 255, 0.05);
-  --background: #101623;
-  --foreground: #e8eaf0;
+  --background: #0d1524;
+  --foreground: #e8edf6;
 
-  --color-bg: #101623;
-  --color-panel: #18202f;
-  --color-panel-2: #202a3c;
+  --color-bg: #0d1524;
+  --color-panel: #141d2e;
+  --color-panel-2: #1b2639;
   --color-border: rgba(255, 255, 255, 0.12);
   --color-border-soft: rgba(255, 255, 255, 0.07);
 
-  --color-foreground: #e8eaf0;
-  --color-muted: #aab2c2;
-  --color-faint: #7e8798;
+  --color-foreground: #e8edf6;
+  --color-muted: #aab4c6;
+  --color-faint: #8a95ab;
 
-  --color-primary: #5b82c4;
+  --color-primary: #7aa0dc;
   --color-primary-soft: #6b8fc9;
   --color-primary-light: #93b3e8;
-  --color-navy: #131c2e;
-  --color-gold: #d99a2b;
-  --color-gold-deep: #d8b36a;
-  --color-gold-ink: #d8b36a;
+  --color-primary-fill: #2f5ca8;
+  --color-primary-fill-hover: #3a68b8;
+  --color-navy: #0b1322;
+  --color-gold: #e3b84f;
+  --color-gold-deep: #c4862a;
+  --color-gold-ink: #f0bd63;
+  --color-plum: #a07acb;
+  --color-teal: #0f9a85;
 
   --color-positive: #8fb0e8;
-  --color-reverse: #d8b36a;
+  --color-reverse: #7aaaf0;
 
-  --color-investigate: #e0655c;
-  --color-serious: #d8b36a;
+  --color-investigate: #f07167;
+  --color-serious: #f4a261;
   --color-transit: #9aa2b1;
-  --color-quality: #4dbd8a;
-  --color-warn: #d8b36a;
-  --color-ok: #4dbd8a;
+  --color-quality: #7fb0ee;
+  --color-warn: #f0bd63;
+  --color-ok: #7fd1a6;
 
-  --color-uzb: #6b8fc9;
-  --color-partner: #d8b36a;
-  --color-accent: #d99a2b;
+  --color-uzb: #5577b8;
+  --color-partner: #c4862a;
+  --color-accent: #e3b84f;
 }
 
-* {
-  border-color: var(--color-border);
+/* the default rule colour, in the base layer: unlayered, this one rule
+   outranked every border-* utility, so a selected row's navy outline, a
+   button's primary edge and border-transparent all drew the same grey */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
 }
 
 html,
@@ -138,59 +153,59 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-size: calc(14 * var(--fpx));
-  /* comfortable reading scale without manual browser zoom */
-  zoom: var(--page-zoom);
 }
 
-/*
- * Charts scale with the page like everything else.
- *
- * They used to cancel the page zoom here, because CSS `zoom` scales the rendered
- * box but not the pointer coordinates a canvas library reads back, so hit-testing
- * drifted. EChart now corrects those coordinates itself, mapping clientX through
- * getBoundingClientRect, which is zoom-agnostic and covers hover, click, drag and
- * wheel alike — so the CSS cancellation became redundant.
- *
- * It was also actively harmful. Cancelling the zoom left one CSS pixel inside a
- * chart equal to one screen pixel while the same declaration outside was
- * multiplied by the reading scale, so chart text had to be compensated by hand.
- * Canvas text cannot be measured from the DOM, so whether that compensation
- * landed was invisible, and it drifted out of step with the DOM tooltip beside
- * it — the tooltip growing while the axis labels stayed put. Inheriting the zoom
- * puts every part of a chart, canvas and tooltip, in one coordinate space where
- * that cannot happen.
- */
+/* A chart fills the frame its page gives it. */
 .chart-frame {
   width: 100%;
   height: 100%;
 }
 
+/* Full-viewport boxes: the sticky sidebar, and the shell of a short page. */
+.h-viewport {
+  height: 100vh;
+}
+.min-h-viewport {
+  min-height: 100vh;
+}
+
 /*
- * Content shell width. `zoom` above scales the layout, so these are pre-zoom CSS
- * pixels: the rendered column is ~10% wider than the number. The shell grows with
- * the display instead of stranding a wide gutter on large monitors, and stays
- * capped so table rows never become an uncomfortably long scan line.
+ * A page that fills the window. The shell already stretches <main> to the
+ * height left between header and footer; a page marked .page-fill makes
+ * <main> a column and takes all of it, so a part inside it marked flex-1
+ * absorbs whatever height the screen has spare instead of leaving an empty
+ * band above the footer. On a screen too short for the content the page is
+ * as tall as its content and scrolls, as before. Pages without the class
+ * are untouched.
+ */
+main:has(> .page-fill) {
+  display: flex;
+  flex-direction: column;
+}
+.page-fill {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+/*
+ * Content shell width. The shell grows with the display instead of stranding a
+ * wide gutter on large monitors, and stays capped so table rows never become an
+ * uncomfortably long scan line.
  */
 :root {
-  /*
-   * Reading scale, applied to body and inherited by everything including charts.
-   * This is the default; the header's text-size control overrides it on the
-   * document element, so any change here must also change DEFAULT_ZOOM in
-   * src/lib/zoom-store.ts or the first paint will jump.
-   */
-  --page-zoom: 1.25;
-
   /*
    * Fluid type pixel. Every text size is declared as N × --fpx rather than N px,
    * so type follows the screen: one --fpx is one pixel on a 1366×720 viewport —
    * the laptop the sizes were tuned on — and scales with whichever of width or
    * height is tighter, so a wide but short window does not blow the type past
    * what fits vertically. The clamp keeps phones legible and stops large
-   * monitors running away. The reading scale (--page-zoom) still multiplies the
-   * result. Charts draw on a canvas and cannot read this, so FLUID in
+   * monitors running away. Charts draw on a canvas and cannot read this, so FLUID in
    * src/lib/fluid-type.ts mirrors it; change both together.
    */
-  --fpx: clamp(0.9px, min(100vw / 1366, 100vh / 720), 1.25px);
+  /* capped at 1.2: a 1470×830 laptop reads 1.08 and a 1920×1080 monitor 1.2,
+     so type grows with the screen without the old 1.25 × 1.25 blow-up */
+  --fpx: clamp(0.9px, min(100vw / 1366, 100vh / 720), 1.2px);
 
   --shell-max: 1200px;
   /* header: 0.5rem padding top+bottom around a 2rem control row, plus its border */
@@ -227,65 +242,27 @@ body {
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
 .card-hover:hover {
-  border-color: rgba(30, 58, 110, 0.28);
+  border-color: rgba(30, 58, 110, 0.32);
 }
 
 /*
- * KPI tile. Every tile carries its metric's identity colour twice — a rail on the
- * leading edge and a soft wash of the same hue across the surface — so a row reads
- * as one family rather than a set of loose boxes. `--stat-rail` is set per tile and
- * defaults to CBU navy.
+ * KPI tile, in the front page's card language: a plain panel with a hairline
+ * border, the metric's identity colour (`--stat-rail`, CBU navy by default)
+ * carried by the value alone. A clickable tile takes the tint on hover.
  */
 .stat-card {
   --stat-tint: var(--stat-rail, var(--color-primary));
   position: relative;
   overflow: hidden;
-  padding: 0.875rem 0.875rem 0.875rem 1.125rem;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--stat-tint) 7%, var(--color-panel)) 0%,
-      color-mix(in srgb, var(--stat-tint) 2%, var(--color-panel)) 55%,
-      var(--color-panel) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--stat-tint) 16%, var(--color-border));
+  padding: 1rem 1.125rem;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
 }
-.stat-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--stat-tint);
-}
-.stat-card:hover {
-  border-color: color-mix(in srgb, var(--stat-tint) 38%, transparent);
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--stat-tint) 12%, transparent);
-}
-
-/*
- * The headline metric on a page: same shape, more presence — a deeper wash, a
- * wider rail and a faint inner glow so it leads the row without shouting.
- */
-.stat-card-hero {
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--stat-tint) 15%, var(--color-panel)) 0%,
-      color-mix(in srgb, var(--stat-tint) 6%, var(--color-panel)) 52%,
-      var(--color-panel) 100%
-    );
-  border-color: color-mix(in srgb, var(--stat-tint) 30%, transparent);
-  box-shadow: inset 0 1px 0 var(--card-highlight);
-}
-.stat-card-hero::before {
-  width: 4px;
-}
-.stat-card-hero:hover {
-  box-shadow:
-    inset 0 1px 0 var(--card-highlight),
-    0 2px 10px color-mix(in srgb, var(--stat-tint) 18%, transparent);
+.stat-card.card-hover:hover {
+  border-color: color-mix(in srgb, var(--stat-tint) 40%, var(--color-border));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--stat-tint) 10%, transparent);
 }
 
 /* quiet zebra */
@@ -293,8 +270,13 @@ body {
   background: color-mix(in srgb, var(--color-panel-2) 55%, var(--color-panel));
 }
 
-a {
-  color: inherit;
+/* in the base layer: an unlayered rule outranks every Tailwind utility, so a
+   link's own text-white or text-[…] class lost to it and navy buttons drew
+   navy-black text */
+@layer base {
+  a {
+    color: inherit;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -313,14 +295,22 @@ a {
   html[data-theme="dark"] {
     --color-bg: #ffffff;
     --color-panel: #ffffff;
-    --color-panel-2: #f0efec;
-    --color-foreground: #0b0b0b;
-    --color-muted: #52514e;
-    --color-faint: #898781;
-    --color-border: rgba(11, 11, 11, 0.1);
-    --color-border-soft: rgba(11, 11, 11, 0.06);
+    --color-panel-2: #eef3fa;
+    --color-foreground: #0f1d33;
+    --color-muted: #475569;
+    --color-faint: #7b8798;
+    --color-border: rgba(15, 37, 71, 0.12);
+    --color-border-soft: rgba(15, 37, 71, 0.07);
   }
   header, aside, .no-print { display: none !important; }
   .card { border-color: #bbb; break-inside: avoid; }
   body { background: #fff; }
 }
+
+/* a reader whose saved language is not the prerendered one waits for it
+   (LANG_BOOTSTRAP in src/lib/lang-store.ts) instead of a flash of another language */
+html[data-prelang] main { visibility: hidden; }
+
+/* a dark reader's main area waits for ThemeRemount to rebuild it in the dark
+   palette, instead of showing the light-coloured prerender (src/lib/theme-store.ts) */
+html[data-pretheme] main { visibility: hidden; }
