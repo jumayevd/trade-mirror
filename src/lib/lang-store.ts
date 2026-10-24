@@ -31,3 +31,13 @@ export const subscribeLang = (fn: () => void) => {
 
 /** Server render is always English; the client corrects after hydration. */
 export const serverLang = (): Lang => "en";
+
+/*
+ * Pages are prerendered — figures included — in English, the one language the
+ * build can know. A reader who chose Russian or Uzbek would otherwise watch the
+ * main area read in English until scripts load and switch it. This runs in the
+ * <head> before first paint and, for them, keeps <main> hidden (globals.css,
+ * html[data-prelang]) until I18nProvider has rendered in their language.
+ */
+export const LANG_BOOTSTRAP =
+  `(function(){try{var l=localStorage.getItem("tm-lang");if(${LANGS.filter((l) => l !== "en").map((l) => `l===${JSON.stringify(l)}`).join("||")})document.documentElement.dataset.prelang=l;}catch(e){}})();`;

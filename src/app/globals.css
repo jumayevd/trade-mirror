@@ -324,3 +324,7 @@ a {
   .card { border-color: #bbb; break-inside: avoid; }
   body { background: #fff; }
 }
+
+/* a Russian or Uzbek reader's main area waits for their language
+   (LANG_BOOTSTRAP in src/lib/lang-store.ts) instead of flashing English */
+html[data-prelang] main { visibility: hidden; }

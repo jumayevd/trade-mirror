@@ -13,7 +13,7 @@ import {
   aggregate, DEFAULT_FILTER, FREIGHT_SCENARIOS, needsMonthlyDetail, partnerMetaOf,
   yearsFor, yearsLabel, type Filter, type Granularity,
 } from "@/lib/dataset";
-import { channelsToCsv } from "@/lib/export";
+import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
@@ -172,8 +172,9 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
   }));
   const posShare = p.pePosT > 0 ? p.posT / p.pePosT : 0;
 
-  const csv = channelsToCsv(hs6, viewFilter);
-  const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${csv}`)}`;
+  // built on click, like every other export: as a data: URL it was the whole
+  // CSV rebuilt on each render and written into every partner page's HTML
+  const exportCsv = () => downloadCsv(`partner_${p.iso3}_hs6_channels.csv`, channelsToCsv(hs6, viewFilter));
 
   return (
     <div className="space-y-8">
@@ -221,13 +222,13 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
             {fill(t("prof.dl.desc"), { n: hs6.length, name, period })}
           </p>
         </div>
-        <a
-          href={csvHref}
-          download={`partner_${p.iso3}_hs6_channels.csv`}
+        <button
+          type="button"
+          onClick={exportCsv}
           className="rounded-md border border-[var(--color-border)] px-3 py-2 fs-13 font-medium text-muted hover:text-foreground"
         >
           {t("common.exportCsv")} ↓
-        </a>
+        </button>
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { DICT, type Lang, type LocaleKey } from "@/lib/locales";
 import { readLang, serverLang, subscribeLang, writeLang } from "@/lib/lang-store";
 import { setLabelLang } from "@/lib/labels";
@@ -19,6 +19,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // context, so the language is pushed to that layer here — before any consumer
   // renders, since the provider is their ancestor.
   setLabelLang(lang);
+  // the prerendered main area was held back for a non-English reader
+  // (LANG_BOOTSTRAP); show it once it reads in their language
+  useEffect(() => {
+    const root = document.documentElement;
+    if (root.dataset.prelang === lang) delete root.dataset.prelang;
+  }, [lang]);
   const value = useMemo<I18n>(
     () => ({
       lang,
