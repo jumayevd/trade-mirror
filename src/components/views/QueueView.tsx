@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import RiskComposition, { type CompositionRow } from "@/components/charts/RiskComposition";
+import RiskHeatmap, { type HeatRow } from "@/components/charts/RiskHeatmap";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
@@ -125,7 +125,7 @@ export default function QueueView() {
       .filter((r) => r.total > 0)
       .sort((a, b) => Number(a.key === "residual") - Number(b.key === "residual") || b.total - a.total);
   }), [channels, lang]);
-  const bandRows = useMemo<CompositionRow[]>(
+  const bandRows = useMemo<HeatRow[]>(
     () => bandHeat.map((r) => ({ key: r.key, label: r.label, values: r.values, counts: r.counts })),
     [bandHeat],
   );
@@ -265,14 +265,15 @@ export default function QueueView() {
       {years.length > 0 && bandHeat.length > 0 && (
         <section className="card p-4">
           <SectionTitle title={t("risk.heat.title")} desc={fill(t("risk.heat.sub"), { level: levelName })} />
-          <RiskComposition
+          <RiskHeatmap
             rows={bandRows}
             bandLabels={bandLabels}
             bandRanges={bandRange}
             words={{
-              amount: t("risk.mix.amount"), share: t("risk.mix.share"), view: t("risk.mix.view"),
-              all: t("heat.allSectors"), total: t("heat.total"), ofSector: t("heat.ofSector"),
-              ofAll: t("heat.share"), products: t("risk.heat.products"), aria: t("risk.heat.title"),
+              amount: t("risk.mix.amount"), share: t("risk.mix.shareOfSector"), view: t("risk.mix.view"),
+              sector: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
+              ofSector: t("heat.ofSector"), ofAll: t("heat.share"), products: t("risk.heat.products"),
+              aria: t("risk.heat.title"),
             }}
           />
         </section>
