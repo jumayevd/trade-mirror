@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import RiskHeatmap, { type HeatRow } from "@/components/charts/RiskHeatmap";
+import HeatGrid, { type HeatColumn, type HeatRow } from "@/components/charts/HeatGrid";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
@@ -129,10 +129,15 @@ export default function QueueView() {
     () => bandHeat.map((r) => ({ key: r.key, label: r.label, values: r.values, counts: r.counts })),
     [bandHeat],
   );
-  const bandLabels = useMemo(
-    () => Object.fromEntries(BANDS.map((b) => [b, t(`band.${b}` as never)])) as Record<RiskBand, string>,
-    [t],
-  );
+  // Critical wears its band's gold, on a ramp lightness-matched to the navy
+  // the other bands use, so a shade means the same amount in every column
+  const bandColumns = useMemo<HeatColumn[]>(() => BANDS.map((b) => ({
+    key: b,
+    label: t(`band.${b}` as never),
+    sub: bandRange[b],
+    ramp: b === "critical" ? "gold" : "navy",
+    bar: BAND_COLORS[b],
+  })), [t, bandRange]);
 
   const levelName = t(LEVEL_LABEL_KEYS[level]);
 
@@ -265,14 +270,14 @@ export default function QueueView() {
       {years.length > 0 && bandHeat.length > 0 && (
         <section className="card p-4">
           <SectionTitle title={t("risk.heat.title")} desc={fill(t("risk.heat.sub"), { level: levelName })} />
-          <RiskHeatmap
+          <HeatGrid
             rows={bandRows}
-            bandLabels={bandLabels}
-            bandRanges={bandRange}
+            columns={bandColumns}
+            shareBasis="row"
             words={{
               amount: t("risk.mix.amount"), share: t("risk.mix.shareOfSector"), view: t("risk.mix.view"),
-              sector: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
-              ofSector: t("heat.ofSector"), ofAll: t("heat.share"), products: t("risk.heat.products"),
+              rowHead: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
+              ofAll: t("heat.share"), shareOf: t("heat.ofSector"), products: t("risk.heat.products"),
               aria: t("risk.heat.title"),
             }}
           />

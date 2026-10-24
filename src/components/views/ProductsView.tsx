@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import SectorTrend, { type TrendRow, type TrendYear } from "@/components/charts/SectorTrend";
+import HeatGrid, { type HeatColumn, type HeatRow } from "@/components/charts/HeatGrid";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
@@ -204,22 +204,25 @@ export default function ProductsView() {
       .sort((x, y) => y.total - x.total)
       .slice(0, HEAT_TOP);
     const shown = new Set(top.map((r) => r.key));
-    const rows: TrendRow[] = top.map((r) => ({ key: r.key, label: categoryLabel(r.key), values: r.values }));
+    const rows: HeatRow[] = top.map((r) => ({ key: r.key, label: categoryLabel(r.key), values: r.values }));
     const rest = all.filter((r) => !shown.has(r.key));
     if (rest.length) {
       rows.push({
         key: "__other",
         label: t("heat.other"),
+        muted: true,
         values: years.map((_, j) => rest.reduce((sum, r) => sum + r.values[j], 0)),
       });
     }
     return { years, totals, rows };
   }), [data, lang, t]);
-  const heatYears = useMemo<TrendYear[]>(() => heat.years.map((y) => ({
-    year: y,
-    label: heatPartial(y) ? `${y}*` : String(y),
+  const heatYears = useMemo<HeatColumn[]>(() => heat.years.map((y) => ({
+    key: String(y),
+    label: String(y),
+    sub: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
     partial: heatPartial(y),
-    months: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
+    bar: "var(--color-primary)",
+    note: heatPartial(y) ? t("heat.partialTip") : undefined,
   })), [heat, heatPartial, t]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
@@ -374,13 +377,14 @@ export default function ProductsView() {
           {heat.rows.length === 0 ? (
             <EmptyState />
           ) : (
-            <SectorTrend
+            <HeatGrid
               rows={heat.rows}
-              years={heatYears}
-              totals={heat.totals}
+              columns={heatYears}
+              shareBasis="column"
               words={{
-                sector: t("heat.sector"), total: t("heat.total"), share: t("heat.share"), trend: t("heat.trend"),
-                all: t("heat.allSectors"), ofYear: t("prod.heat.share"), partial: t("heat.partialTip"), peak: t("heat.peak"), aria: t("prod.heat.title"),
+                amount: t("risk.mix.amount"), share: t("heat.shareOfYear"), view: t("risk.mix.view"),
+                rowHead: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
+                ofAll: t("heat.share"), shareOf: t("prod.heat.share"), aria: t("prod.heat.title"),
               }}
             />
           )}
