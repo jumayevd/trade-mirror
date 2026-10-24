@@ -34,6 +34,21 @@
   --band-on-high: #ffffff;
   --band-on-elevated: #ffffff;
   --band-on-low: #0f1d33;
+
+  /* the navy sequential ramp (src/lib/seq-ramp.ts), for heatmap cells, and
+     the ink that reads on each step */
+  --seq-1: #b7cbe8;
+  --seq-2: #95b3da;
+  --seq-3: #6e92c5;
+  --seq-4: #4a72ab;
+  --seq-5: #2d5286;
+  --seq-6: #19335e;
+  --seq-ink-1: #0f1d33;
+  --seq-ink-2: #0f1d33;
+  --seq-ink-3: #ffffff;
+  --seq-ink-4: #ffffff;
+  --seq-ink-5: #ffffff;
+  --seq-ink-6: #ffffff;
 }
 
 @theme {
@@ -112,6 +127,19 @@ html[data-theme="dark"] {
   color-scheme: dark;
   --background: #0d1524;
   --foreground: #e8edf6;
+
+  --seq-1: #344c79;
+  --seq-2: #41608f;
+  --seq-3: #5179ac;
+  --seq-4: #6b95c8;
+  --seq-5: #8db3de;
+  --seq-6: #b7d2f2;
+  --seq-ink-1: #ffffff;
+  --seq-ink-2: #ffffff;
+  --seq-ink-3: #ffffff;
+  --seq-ink-4: #0b1322;
+  --seq-ink-5: #0b1322;
+  --seq-ink-6: #0b1322;
 
   --band-critical: #e3b84f;
   --band-high: #9cbcf0;
@@ -322,6 +350,18 @@ main:has(> .page-fill) {
 
 @media print {
   html[data-theme="dark"] {
+    --seq-1: #b7cbe8;
+    --seq-2: #95b3da;
+    --seq-3: #6e92c5;
+    --seq-4: #4a72ab;
+    --seq-5: #2d5286;
+    --seq-6: #19335e;
+    --seq-ink-1: #0f1d33;
+    --seq-ink-2: #0f1d33;
+    --seq-ink-3: #ffffff;
+    --seq-ink-4: #ffffff;
+    --seq-ink-5: #ffffff;
+    --seq-ink-6: #ffffff;
     --band-critical: #c99a2e;
     --band-high: #1e3a6e;
     --band-elevated: #5f84bd;
@@ -364,4 +404,6 @@ html[data-pretheme] main { visibility: hidden; }
   --band-keep: var(--band-critical) var(--band-high) var(--band-elevated) var(--band-low)
     var(--band-ink-critical) var(--band-ink-high) var(--band-ink-elevated) var(--band-ink-low)
     var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low);
+  --seq-keep: var(--seq-1) var(--seq-2) var(--seq-3) var(--seq-4) var(--seq-5) var(--seq-6)
+    var(--seq-ink-1) var(--seq-ink-2) var(--seq-ink-3) var(--seq-ink-4) var(--seq-ink-5) var(--seq-ink-6);
 }
