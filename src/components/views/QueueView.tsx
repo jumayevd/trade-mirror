@@ -2,18 +2,16 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import HeatGrid, { type HeatColumn, type HeatRow } from "@/components/charts/HeatGrid";
 import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
 import { EmptyState, InfoTip, PageHead, SectionTitle, TableReveal } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
-import { labelsFor } from "@/lib/labels";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { BAND_COLORS, BAND_INK, fmtNum, fmtPct, fmtUSD, fmtUSDFull } from "@/lib/format";
-import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, categoryLabel, needsMonthlyDetail, yearsFor, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
+import { DEFAULT_FILTER, FREIGHT_SCENARIOS, aggregate, needsMonthlyDetail, yearsFor, type Aggregate, type Channel, type Filter, type Granularity, type RiskBand } from "@/lib/dataset";
 
 /**
  * Discrepancy & Risk — the products ranking. Every partner × code pair at the
@@ -36,7 +34,7 @@ const fill = (s: string, vals: Record<string, string | number>) =>
   Object.entries(vals).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(String(v)), s);
 
 export default function QueueView() {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const [level, setLevel] = useState<HsLevel>(6);
   /** The page's controls: the time basis and which periods the screening covers. */
   const [granularity, setGranularity] = useState<Granularity>("year");
@@ -105,35 +103,6 @@ export default function QueueView() {
       low: `< ${n(c.elevated)}`,
     };
   }, [data, level]);
-
-  /**
-   * The summary grid above the ranking: the positive discrepancy of the listed
-   * pairs by sector and risk category, and how many pairs make up each cell.
-   * Sectors run largest first, the unclassified residual last.
-   */
-  const bandHeat = useMemo(() => labelsFor(lang, () => {
-    const byCat = new Map<string, { values: number[]; counts: number[] }>();
-    for (const c of channels) {
-      let e = byCat.get(c.category);
-      if (!e) { e = { values: BANDS.map(() => 0), counts: BANDS.map(() => 0) }; byCat.set(c.category, e); }
-      const j = BANDS.indexOf(c.band);
-      e.values[j] += c.posT;
-      e.counts[j]++;
-    }
-    return [...byCat.entries()]
-      .map(([key, e]) => ({ key, label: categoryLabel(key), values: e.values, counts: e.counts, total: e.values.reduce((a, b) => a + b, 0) }))
-      .filter((r) => r.total > 0)
-      .sort((a, b) => Number(a.key === "residual") - Number(b.key === "residual") || b.total - a.total);
-  }), [channels, lang]);
-  const bandRows = useMemo<HeatRow[]>(
-    () => bandHeat.map((r) => ({ key: r.key, label: r.label, values: r.values, counts: r.counts })),
-    [bandHeat],
-  );
-  const bandColumns = useMemo<HeatColumn[]>(() => BANDS.map((b) => ({
-    key: b,
-    label: t(`band.${b}` as never),
-    sub: bandRange[b],
-  })), [t, bandRange]);
 
   const levelName = t(LEVEL_LABEL_KEYS[level]);
 
@@ -259,24 +228,6 @@ export default function QueueView() {
               </div>
             );
           })}
-        </section>
-      )}
-
-      {/* the summary: where the gap sits, by sector and risk category */}
-      {years.length > 0 && bandHeat.length > 0 && (
-        <section className="card p-4">
-          <SectionTitle title={t("risk.heat.title")} desc={fill(t("risk.heat.sub"), { level: levelName })} />
-          <HeatGrid
-            rows={bandRows}
-            columns={bandColumns}
-            shareBasis="row"
-            words={{
-              amount: t("risk.mix.amount"), share: t("risk.mix.shareOfSector"), view: t("risk.mix.view"),
-              rowHead: t("heat.sector"), all: t("heat.allSectors"), total: t("heat.total"),
-              ofAll: t("heat.share"), shareOf: t("heat.ofSector"), products: t("risk.heat.products"),
-              aria: t("risk.heat.title"),
-            }}
-          />
         </section>
       )}
 
