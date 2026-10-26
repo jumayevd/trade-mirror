@@ -35,7 +35,7 @@ const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
   { key: "importReported", labelKey: "prof.th.import" },
 ];
 
-const PAGE_SIZES = [20, 50, 100];
+const PAGE_SIZES = [10, 20, 50, 100];
 
 /** Share of positive discrepancy = posT ÷ pePosT; null when there is no export. */
 const gapPct = (c: Channel): number | null =>
@@ -130,7 +130,7 @@ export default function QueueTable({
 
   // bars scale to the rows on screen: sorted by score, one large pair would flatten the rest
   const maxGap = pageRows.reduce((m, c) => Math.max(m, c.posT), 0);
-  const tdNum = "tabular text-right whitespace-nowrap fs-13";
+  const tdNum = "tabular text-right whitespace-nowrap";
   const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
@@ -222,13 +222,13 @@ export default function QueueTable({
               {pageRows.map((c, i) => (
                 <tr key={`${c.partnerIso}|${c.cmd}|${c.level}`}>
                   <td className="text-right"><RankCell n={start + i + 1} /></td>
-                  <td className="max-w-[280px] fs-13">
+                  <td className="max-w-[300px]">
                     {/* a few words that name the line; the code and the full nomenclature on hover */}
                     <span className="block truncate font-medium" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
                       {productName(c.cmd, lang, c.cmdLabel)}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap fs-13">
+                  <td className="whitespace-nowrap">
                     <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="text-[var(--color-primary)] hover:underline">
                       {c.partner}
                     </Link>

@@ -4,13 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, TableReveal, PageHead } from "@/components/ui";
+import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, PageHead } from "@/components/ui";
+import { GapCell, ShareCell, productName } from "@/components/TableKit";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { hs6ShortLabel } from "@/lib/short-labels";
 
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
@@ -153,19 +153,21 @@ export default function PartnersView() {
   const exportCsv = () =>
     downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
 
-  const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
-  const thNum = th.replace("text-left", "text-center");
-  const td = "px-3 py-1.5 align-middle fs-13";
-  const tdNum = `${td} tabular text-center whitespace-nowrap`;
+  const th = "text-left";
+  const thNum = "text-right";
+  const td = "";
+  const tdNum = "tabular text-right whitespace-nowrap";
+  // bars scale to the rows on screen
+  const maxGap = pagedRows.reduce((m, p) => Math.max(m, p.posT), 0);
 
   const sortBtn = (k: SortKey, label: string) => (
     <button
       onClick={() => setSort(k)}
       title={t(SORT_TIP_KEYS[k] as never)}
-      className={`inline-flex items-center gap-0.5 hover:text-foreground ${sort === k ? "text-foreground" : ""}`}
+      className={`inline-flex items-center gap-1 ${sort === k ? "" : "opacity-85 hover:opacity-100"}`}
     >
       {label}
-      <span aria-hidden>{sort === k ? "▾" : ""}</span>
+      <span aria-hidden className={sort === k ? "text-[var(--color-gold)]" : "opacity-40"}>↓</span>
     </button>
   );
 
@@ -176,9 +178,10 @@ export default function PartnersView() {
     rows.length === 0 ? (
       <EmptyState />
     ) : (
-      <div className="card overflow-x-auto">
-        <table className="w-full min-w-[860px] border-collapse">
-          <thead className="border-b border-[var(--color-border)]">
+      <div className="card overflow-hidden p-0">
+      <div className="overflow-x-auto">
+        <table className="cbu-table min-w-[900px]">
+          <thead>
             <tr>
               <th className={th} title={`${t("ctry.rank.cmpTipPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpTipPost")}`}>
                 <span className="inline-flex items-center gap-1">{t("ctry.rank.cmp")} <InfoTip text={`${t("ctry.rank.cmpInfoPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpInfoPost")}`} /></span>
@@ -186,18 +189,18 @@ export default function PartnersView() {
               <th className={th}>{t("common.partner")}</th>
               <th className={thNum} title={t("ctry.col.export.tip")}>{sortBtn("export", t("ctry.col.export"))}</th>
               <th className={thNum} title={t("ctry.col.import.tip")}>{sortBtn("import", t("ctry.col.import"))}</th>
-              <th className={thNum}><HeadDot color={COLORS.positive} />{sortBtn("positive", t("ctry.col.positive"))}</th>
+              <th className={thNum}>{sortBtn("positive", t("ctry.col.positive"))}</th>
               <th className={thNum}>{sortBtn("share", t("ctry.col.gapRate"))}</th>
               <th className={thNum}>{sortBtn("channels", t("ctry.col.channels"))}</th>
               <th className={th} title={t("ctry.rank.topHs2Tip")}>{t("ctry.col.topHs2")}</th>
             </tr>
           </thead>
-          <tbody className="zebra">
+          <tbody>
             {pagedRows.map((p) => {
               const top = hs6Facts.get(p.iso3)?.top ?? null;
               const checked = sel.includes(p.iso3);
               return (
-                <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] hover:bg-[color-mix(in_srgb,var(--color-primary)_4%,transparent)]">
+                <tr key={p.iso3}>
                   <td className={td}>
                     <input
                       type="checkbox"
@@ -209,24 +212,21 @@ export default function PartnersView() {
                     />
                   </td>
                   <td className={`${td} whitespace-nowrap`}>
-                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium hover:underline">
+                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium text-[var(--color-primary)] hover:underline">
                       {p.name}
                     </Link>
-                    <span className="ml-2 text-xs text-faint">{p.region}</span>
                     {p.transit && <span className="ml-2 align-middle"><TransitTag /></span>}
+                    <span className="block fs-12 text-faint">{p.region}</span>
                   </td>
-                  <td className={tdNum} title={fmtUSDFull(p.pePosT)}>{fmtUSD(p.pePosT)}</td>
-                  <td className={tdNum} title={fmtUSDFull(p.uiPosT)}>{fmtUSD(p.uiPosT)}</td>
-                  <td className={tdNum} title={`${t("kpi.positive")} (${t("kpi.positive.sub")}): ${fmtUSDFull(p.posT)}`}>
-                    {fmtUSD(p.posT)}
-                  </td>
-                  <td className={tdNum} title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</td>
-                  <td className={tdNum} title={t("ctry.channelsTip")}>{fmtNum(hs6Facts.get(p.iso3)?.all ?? 0)}</td>
-                  <td className={`${td} max-w-[220px]`}>
+                  <td className={`${tdNum} text-[var(--color-gold-ink)]`} title={fmtUSDFull(p.pePosT)}>{fmtUSD(p.pePosT)}</td>
+                  <td className={`${tdNum} text-muted`} title={fmtUSDFull(p.uiPosT)}>{fmtUSD(p.uiPosT)}</td>
+                  <td className="w-[130px]"><GapCell value={p.posT} max={maxGap} /></td>
+                  <td className="text-right" title={t("ctry.gapRateTip")}><ShareCell share={p.pePosT > 0 ? gapRate(p) : null} /></td>
+                  <td className={`${tdNum} text-muted`} title={t("ctry.channelsTip")}>{fmtNum(hs6Facts.get(p.iso3)?.all ?? 0)}</td>
+                  <td className="max-w-[240px]">
                     {top ? (
-                      <span title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
-                        <span className="tabular mr-1.5 text-xs text-faint">{top.cmd}</span>
-                        <span className="fs-13">{hs6ShortLabel(top.cmd, lang, top.label)}</span>
+                      <span className="block max-w-[190px] truncate" title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
+                        {productName(top.cmd, lang, top.label)}
                       </span>
                     ) : (
                       <span className="text-faint" title={t("ctry.rank.belowNoiseTip")}>{t("ctry.rank.belowNoise")}</span>
@@ -237,9 +237,9 @@ export default function PartnersView() {
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold">
+            <tr>
               <td className={td} />
-              <td className={`${td} whitespace-nowrap`} title={t("ctry.rank.totalsTip")}>
+              <td className={td} title={t("ctry.rank.totalsTip")}>
                 {t("ctry.rank.totalsRow")}
               </td>
               <td className={tdNum} title={fmtUSDFull(totals.pe)}>{fmtUSD(totals.pe)}</td>
@@ -252,6 +252,7 @@ export default function PartnersView() {
             </tr>
           </tfoot>
         </table>
+      </div>
         <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>
     );
@@ -361,7 +362,7 @@ export default function PartnersView() {
           desc={t("ctry.rank.desc")}
           right={<InfoTip text={t("ctry.rank.info")} />}
         />
-        <TableReveal>{rankingTable}</TableReveal>
+        {rankingTable}
       </section>
 
       </>
