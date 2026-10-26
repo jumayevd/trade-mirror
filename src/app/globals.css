@@ -338,6 +338,10 @@ main:has(> .page-fill) {
   border-bottom: 2px solid var(--color-gold);
 }
 .cbu-table thead th button { color: inherit; text-transform: inherit; letter-spacing: inherit; text-align: inherit; }
+/* faint and muted words inside a head are on navy too (an info tip's popover keeps its own ink) */
+.cbu-table thead th .text-faint, .cbu-table thead th .text-muted { color: inherit; opacity: 0.8; }
+/* many narrow columns (a year grid): less side padding */
+.cbu-table th.cbu-tight, .cbu-table td.cbu-tight { padding-left: 5px; padding-right: 5px; }
 .cbu-table tbody td { padding: 11px 14px; vertical-align: middle; font-size: 14px; }
 .cbu-table tfoot td {
   padding: 12px 14px;
@@ -349,11 +353,6 @@ main:has(> .page-fill) {
 /* a zebra you only just notice: every other row a breath of navy, no rules between */
 .cbu-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-primary) 4.5%, transparent); }
 .cbu-table tbody tr:hover td { background: color-mix(in srgb, var(--color-gold) 7%, transparent); }
-
-/* quiet zebra */
-.zebra > *:nth-child(even) {
-  background: color-mix(in srgb, var(--color-panel-2) 55%, var(--color-panel));
-}
 
 /* in the base layer: an unlayered rule outranks every Tailwind utility, so a
    link's own text-white or text-[…] class lost to it and navy buttons drew

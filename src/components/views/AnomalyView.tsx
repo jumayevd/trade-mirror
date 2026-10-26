@@ -187,15 +187,15 @@ export default function AnomalyView() {
           <p className="fs-13.5 leading-relaxed text-muted">{t("anom.eq.note")}</p>
         </div>
         <div className="card max-w-5xl overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="border-b border-[var(--color-border)]">
+          <table className="cbu-table min-w-[720px]">
+            <thead>
               <tr>
                 <th className={TH}>{t("anom.eq.th.symbol")}</th>
                 <th className={TH}>{t("anom.eq.th.meaning")}</th>
                 <th className={TH}>{t("anom.eq.th.source")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {Array.from({ length: TERM_COUNT }, (_, k) => k + 1).map((i) => (
                 <tr key={i} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} whitespace-nowrap font-mono fs-13 font-medium text-foreground`}>
@@ -303,8 +303,8 @@ export default function AnomalyView() {
         </label>
         {ranked.length === 0 ? <EmptyState text={t("anom.empty")} /> : (
           <div className="card overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse">
-              <thead className="border-b border-[var(--color-border)]">
+            <table className="cbu-table min-w-[880px]">
+              <thead>
                 <tr>
                   <th className={TH}>{t("anom.th.partner")}</th>
                   <th className={TH}>{t("anom.th.code")}</th>
@@ -317,7 +317,7 @@ export default function AnomalyView() {
                   <th className={TH}>{t("anom.th.tier")}</th>
                 </tr>
               </thead>
-              <tbody className="zebra">
+              <tbody>
                 {shown.map((c) => (
                   <tr key={`${c.iso}|${c.code}`} className="border-b border-[var(--color-border-soft)] last:border-0">
                     <td className={TD}>
@@ -370,8 +370,8 @@ export default function AnomalyView() {
       <section className="space-y-2">
         <SectionTitle title={t("anom.partners.title")} desc={t("anom.partners.desc")} />
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="border-b border-[var(--color-border)]">
+          <table className="cbu-table min-w-[720px]">
+            <thead>
               <tr>
                 <th className={TH}>{t("anom.th.partner")}</th>
                 <th className={THN}>{t("anom.th.clusters")}</th>
@@ -383,7 +383,7 @@ export default function AnomalyView() {
                 <th className={THN} title={t("anom.tip.unexplained")}>{t("anom.th.unexplained")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {partners.slice(partnerPage * PAGE, partnerPage * PAGE + PAGE).map((r) => (
                 <tr key={r.iso} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={TD}>
@@ -413,8 +413,8 @@ export default function AnomalyView() {
       <section className="space-y-2">
         <SectionTitle title={t("anom.sectors.title")} desc={t("anom.sectors.desc")} />
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse">
-            <thead className="border-b border-[var(--color-border)]">
+          <table className="cbu-table min-w-[720px]">
+            <thead>
               <tr>
                 <th className={TH}>{t("anom.th.code")}</th>
                 <th className={TH}>{t("anom.th.product")}</th>
@@ -426,7 +426,7 @@ export default function AnomalyView() {
                 <th className={THN}>{t("anom.th.unexplained")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {chapters.slice(sectorPage * PAGE, sectorPage * PAGE + PAGE).map((r) => (
                 <tr key={r.hs2} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} tabular font-medium text-foreground`}>{r.hs2}</td>
@@ -452,7 +452,8 @@ export default function AnomalyView() {
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="card p-4">
             <h3 className="mb-2 fs-14 font-semibold">{t("anom.diag.coefTitle")}</h3>
-            <table className="w-full border-collapse">
+            <div className="overflow-hidden rounded-md">
+            <table className="cbu-table">
               <thead>
                 <tr>
                   <th className={TH}>{t("anom.diag.term")}</th>
@@ -461,7 +462,7 @@ export default function AnomalyView() {
                   <th className={THN}>{t("anom.diag.pval")}</th>
                 </tr>
               </thead>
-              <tbody className="zebra">
+              <tbody>
                 {meta.coefficients.map((c) => (
                   <tr key={c.term} className="border-b border-[var(--color-border-soft)] last:border-0">
                     <td className={TD}>{t(`anom.diag.term.${c.term}` as LocaleKey)}</td>
@@ -472,6 +473,7 @@ export default function AnomalyView() {
                 ))}
               </tbody>
             </table>
+            </div>
             <p className="mt-2 fs-13 leading-relaxed text-faint">{t("anom.diag.feNote")}</p>
             <h4 className="mt-3 mb-1 fs-13.5 font-semibold">{t("anom.fit.title")}</h4>
             <p className="mb-1 fs-13 leading-relaxed text-faint">{t("anom.fit.desc")}</p>

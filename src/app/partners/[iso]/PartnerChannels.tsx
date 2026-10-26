@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { SectionTitle, BandBadge, RiskScore } from "@/components/ui";
 import { hsLabel, hs4Label, type RiskBand } from "@/lib/dataset";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum } from "@/lib/format";
+import { GapCell, ShareCell, productName } from "@/components/TableKit";
 import { useI18n } from "@/lib/i18n";
 import { useHydrated } from "@/lib/use-hydrated";
 
@@ -22,10 +23,10 @@ import { useHydrated } from "@/lib/use-hydrated";
  * Export − Import ÷ (1 + freight) = Positive discrepancy.
  */
 
-const TH = "px-3 py-2 text-left fs-12.5 font-medium text-faint whitespace-nowrap";
-const TH_NUM = TH.replace("text-left", "text-center");
-const TD = "px-3 py-2 align-middle fs-13.5";
-const TD_NUM = `${TD} tabular whitespace-nowrap text-center`;
+const TH = "text-left";
+const TH_NUM = "text-right";
+const TD = "";
+const TD_NUM = "tabular whitespace-nowrap text-right";
 const PAGE = 10;
 
 export interface ChannelRow {
@@ -54,7 +55,7 @@ export default function PartnerChannels({
 }: {
   iso: string; rows: ChannelRow[];
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [hs2, setHs2] = useState("all");
   const [hs4, setHs4] = useState("all");
   const [hs6, setHs6] = useState("all");
@@ -103,6 +104,8 @@ export default function PartnerChannels({
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE));
   const at = Math.min(page, pages - 1);
   const shown = filtered.slice(at * PAGE, at * PAGE + PAGE);
+  // bars scale to the rows on screen
+  const maxGap = shown.reduce((m, c) => Math.max(m, c.posT), 0);
 
   const pick = (level: "hs2" | "hs4" | "hs6", v: string) => {
     setPage(0);
@@ -159,10 +162,9 @@ export default function PartnerChannels({
         <p className="card p-8 text-center text-sm text-muted">{t("prof.signals.none")}</p>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse">
-            <thead className="border-b border-[var(--color-border)]">
+          <table className="cbu-table min-w-[820px]">
+            <thead>
               <tr>
-                <th className={TH}>{t("prof.th.code")}</th>
                 <th className={TH}>{t("prof.th.product")}</th>
                 <th className={TH_NUM} title={t("ctry.col.export.tip")}>{t("prof.th.export")}</th>
                 <th className={TH_NUM} title={t("ctry.col.import.tip")}>{t("prof.th.import")}</th>
@@ -172,36 +174,36 @@ export default function PartnerChannels({
                 <th className={TH}>{t("prof.th.band")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {shown.map((c) => {
                 const sh = share(c.posT, c.pePosT);
                 return (
-                  <tr key={c.cmd} className="border-b border-[var(--color-border-soft)] last:border-0">
-                    <td className={`${TD} tabular whitespace-nowrap font-medium`}>{c.cmd}</td>
-                    <td className={`${TD} max-w-[20rem]`}>
+                  <tr key={c.cmd}>
+                    <td className="max-w-[20rem]">
+                      {/* a few words that name the line; the code and the full text on hover */}
                       <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`}
-                        className="block truncate font-medium hover:underline" title={c.label}>
-                        {c.label}
+                        className="block truncate font-medium text-[var(--color-primary)] hover:underline" title={`HS ${c.cmd} · ${c.label}`}>
+                        {productName(c.cmd, lang, c.label)}
                       </Link>
                     </td>
-                    <td className={TD_NUM} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
-                    <td className={TD_NUM} title={fmtUSDFull(c.uiPosT)}>{fmtUSD(c.uiPosT)}</td>
-                    <td className={TD_NUM} style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
-                    <td className={TD_NUM}>{sh == null ? "—" : fmtPct(sh, 1)}</td>
-                    <td className={TD_NUM}><RiskScore score={c.mtrs} band={c.band} /></td>
+                    <td className={`${TD_NUM} text-[var(--color-gold-ink)]`} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
+                    <td className={`${TD_NUM} text-muted`} title={fmtUSDFull(c.uiPosT)}>{fmtUSD(c.uiPosT)}</td>
+                    <td className="w-[130px]"><GapCell value={c.posT} max={maxGap} /></td>
+                    <td className="text-right"><ShareCell share={sh} /></td>
+                    <td className="text-right"><RiskScore score={c.mtrs} band={c.band} /></td>
                     <td className={TD}><BandBadge band={c.band} /></td>
                   </tr>
                 );
               })}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-panel-2)] font-semibold">
-                <td className={TD} colSpan={2}>
+              <tr>
+                <td className={TD}>
                   {t("prof.signals.total").split("{n}").join(fmtNum(filtered.length))}
                 </td>
                 <td className={TD_NUM} title={fmtUSDFull(total.pe)}>{fmtUSD(total.pe)}</td>
                 <td className={TD_NUM} title={fmtUSDFull(total.ui)}>{fmtUSD(total.ui)}</td>
-                <td className={TD_NUM} style={{ color: COLORS.positive }} title={fmtUSDFull(total.pos)}>{fmtUSD(total.pos)}</td>
+                <td className={`${TD_NUM} text-[var(--color-positive)]`} title={fmtUSDFull(total.pos)}>{fmtUSD(total.pos)}</td>
                 <td className={TD_NUM}>{total.pe > 0 ? fmtPct(total.pos / total.pe, 1) : "—"}</td>
                 <td className={TD} colSpan={2} />
               </tr>

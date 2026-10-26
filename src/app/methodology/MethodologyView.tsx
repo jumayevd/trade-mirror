@@ -187,14 +187,14 @@ export default function MethodologyView() {
       {/* 2. literature findings ------------------------------------------ */}
       <Section n="2" title={tr("meth.lit.title")} desc={tr("meth.lit.desc")} className="space-y-2">
         <div className="card max-w-5xl overflow-x-auto">
-          <table className="w-full min-w-[680px]">
+          <table className="cbu-table min-w-[680px]">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 <th className={TH}>{tr("meth.lit.colPaper")}</th>
                 <th className={TH}>{tr("meth.lit.colFinding")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {LIT.map((row) => {
                 const r = refById.get(row.refId);
                 if (!r) return null;
@@ -216,7 +216,7 @@ export default function MethodologyView() {
       {/* 3. the measures on the dashboard ------------------------------- */}
       <Section n="3" title={tr("meth.measures.title")} desc={tr("meth.measures.desc")} className="space-y-2">
         <div className="card max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[620px]">
+          <table className="cbu-table min-w-[620px]">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 <th className={TH}>{tr("meth.col.measure")}</th>
@@ -224,7 +224,7 @@ export default function MethodologyView() {
                 <th className={TH}>{tr("meth.col.means")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {MEASURES.map((m) => (
                 <tr key={m.key} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`meth.m.${m.key}.name`)}</td>
@@ -253,7 +253,7 @@ export default function MethodologyView() {
         <h3 className="pt-2 fs-14 font-semibold">{tr("meth.pop.title")}</h3>
         <p className="max-w-3xl fs-13.5 leading-relaxed text-muted">{tr("meth.pop.desc")}</p>
         <div className="card max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[620px]">
+          <table className="cbu-table min-w-[620px]">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
                 <th className={TH}>{tr("meth.pop.colFigure")}</th>
@@ -261,7 +261,7 @@ export default function MethodologyView() {
                 <th className={TH}>{tr("meth.pop.colWhere")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {["total", "gapYears", "discrepancy"].map((key) => (
                 <tr key={key} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>
@@ -314,7 +314,7 @@ export default function MethodologyView() {
           <Step n="4" title={tr("meth.risk.s4.title")}>
             {tr("meth.risk.s4.body")}
             <div className="mt-2 overflow-x-auto rounded-md border border-[var(--color-border-soft)]">
-              <table className="w-full min-w-[420px]">
+              <table className="cbu-table min-w-[420px]">
                 <thead>
                   <tr className="border-b border-[var(--color-border-soft)]">
                     <th className={TH}>{tr("meth.risk.s4.colBand")}</th>
@@ -322,7 +322,7 @@ export default function MethodologyView() {
                     <th className={TH.replace("text-left", "text-center")}>{tr("meth.risk.s4.colShare")}</th>
                   </tr>
                 </thead>
-                <tbody className="zebra">
+                <tbody>
                   {BAND_ROWS.map((b) => (
                     <tr key={b.key} className="border-b border-[var(--color-border-soft)] last:border-0">
                       <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b.key}`)}</td>
@@ -361,11 +361,11 @@ export default function MethodologyView() {
         {/* the fitted cut-offs were a run-on line of numbers; as a table each
             band's threshold is findable instead of parsed out of prose */}
         <div className="max-w-md overflow-hidden rounded-md border border-[var(--color-border-soft)]">
-          <table className="w-full">
+          <table className="cbu-table">
             <caption className="border-b border-[var(--color-border-soft)] bg-[var(--color-panel)] px-4 py-2 text-left fs-12 font-medium text-muted">
               {tr("meth.diag.bands")} (HS6)
             </caption>
-            <tbody className="zebra">
+            <tbody>
               {([["critical", cuts.critical], ["high", cuts.high], ["elevated", cuts.elevated]] as const).map(([b, v]) => (
                 <tr key={b} className="border-b border-[var(--color-border-soft)] last:border-0">
                   <td className={`${TD} whitespace-nowrap font-medium text-foreground`}>{tr(`band.${b}`)}</td>
