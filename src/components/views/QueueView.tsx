@@ -6,7 +6,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { EmptyState, InfoTip, PageHead, SectionTitle } from "@/components/ui";
+import { InfoTip, PageHead } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -106,33 +106,10 @@ export default function QueueView() {
 
   const levelName = t(LEVEL_LABEL_KEYS[level]);
 
-  return (
-    <div className="space-y-6">
-      {/* header */}
-      <PageHead
-        definition
-        title={
-          <div className="space-y-1.5">
-            <h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
-            <p className="fs-13 text-muted">
-              <Link href="/methodology" className="hover:underline">{t("nav.methodology")} →</Link>
-            </p>
-          </div>
-        }
-        right={
-        <button
-          onClick={exportCsv}
-          disabled={channels.length === 0}
-          className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          title={`${t("risk.export.tip")} (${levelName})`}
-        >
-          {t("common.exportCsv")} ↓
-        </button>
-        }
-      />
-
-      {/* time basis + period selection — the whole page follows these ticks */}
-      <section className="no-print flex flex-wrap items-end gap-x-4 gap-y-2">
+  // time basis, period and freight — the whole page follows these; they lead
+  // the table's own controls in a single row
+  const filters = (
+    <>
         <div className="flex flex-col gap-1">
           <span className="fs-12.5 font-medium text-faint">{t("filter.granularity")}</span>
           <div className="flex h-[33px] overflow-hidden rounded-md border border-[var(--color-border)]" role="group" aria-label={t("filter.granularity")}>
@@ -177,72 +154,103 @@ export default function QueueView() {
             ))}
           </select>
         </div>
-      </section>
+    </>
+  );
 
-      {years.length === 0 && <EmptyState text={t("common.noPeriod")} />}
-
-      {/* the frames — one per risk band: its volume, score range, pairs and share */}
-      {years.length > 0 && channels.length > 0 && (
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {BANDS.map((b) => {
-            const vol = stats.volume[b];
-            const share = stats.totalVolume > 0 ? vol / stats.totalVolume : 0;
-            // the frames read as one navy family: Critical the deepest, never gold
-            const color = b === "critical" ? "var(--band-card-critical)" : BAND_COLORS[b];
-            const ink = b === "critical" ? "var(--band-card-critical)" : BAND_INK[b];
-            return (
-              <div key={b} className="stat-card" style={{ ["--stat-rail" as string]: color }}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="fs-12.5 font-medium leading-snug text-muted">
-                    {fill(t("risk.band.title"), { band: t(`band.${b}` as never) })}
-                  </div>
-                  <span className="ml-auto flex items-center gap-1.5">
-                  <span
-                    className="tabular whitespace-nowrap rounded px-1.5 py-0.5 fs-12.5 font-semibold"
-                    style={{ color: ink, background: `color-mix(in srgb, ${color} 16%, transparent)` }}
-                    title={t("risk.band.range")}
-                  >
-                    {bandRange[b]}
-                  </span>
-                  <InfoTip text={fill(t("risk.band.info"), {
-                    n: fmtNum(stats.counts[b]), total: fmtNum(stats.total), level: levelName,
-                    pct: stats.total > 0 ? fmtPct(stats.counts[b] / stats.total, 1) : "—",
-                  })} />
-                  </span>
-                </div>
-                <div className="mt-2 fs-12 text-faint">{t("kpi.positive")}</div>
-                <div className="mt-1 tabular whitespace-nowrap fs-24 font-semibold leading-none tracking-tight" style={{ color: ink }} title={fmtUSDFull(vol)}>
+  /*
+   * The frames — one per risk band: its volume, score range, pairs and share.
+   * Two lines each — the band and its range, then the volume beside its pair
+   * count and share — with the share drawn along the foot, so the four take a
+   * single short row.
+   */
+  const frames = years.length > 0 && channels.length > 0 && (
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {BANDS.map((b) => {
+        const vol = stats.volume[b];
+        const share = stats.totalVolume > 0 ? vol / stats.totalVolume : 0;
+        // the frames read as one navy family: Critical the deepest, never gold
+        const color = b === "critical" ? "var(--band-card-critical)" : BAND_COLORS[b];
+        const ink = b === "critical" ? "var(--band-card-critical)" : BAND_INK[b];
+        return (
+          <div key={b} className="stat-card" style={{ ["--stat-rail" as string]: color }}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="fs-12.5 font-medium leading-snug text-muted">
+                {fill(t("risk.band.title"), { band: t(`band.${b}` as never) })}
+              </div>
+              <span className="ml-auto flex items-center gap-1.5">
+              <span
+                className="tabular whitespace-nowrap rounded px-1.5 py-0.5 fs-12.5 font-semibold"
+                style={{ color: ink, background: `color-mix(in srgb, ${color} 16%, transparent)` }}
+                title={t("risk.band.range")}
+              >
+                {bandRange[b]}
+              </span>
+              <InfoTip text={fill(t("risk.band.info"), {
+                n: fmtNum(stats.counts[b]), total: fmtNum(stats.total), level: levelName,
+                pct: stats.total > 0 ? fmtPct(stats.counts[b] / stats.total, 1) : "—",
+              })} />
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-end justify-between gap-2">
+              <div className="min-w-0">
+                <div className="fs-11.5 text-faint">{t("kpi.positive")}</div>
+                <div className="mt-1 tabular whitespace-nowrap fs-22 font-semibold leading-none tracking-tight" style={{ color: ink }} title={fmtUSDFull(vol)}>
                   {vol > 0 ? fmtUSD(vol) : "—"}
                 </div>
-                <dl className="mt-3 space-y-1 border-t border-[var(--color-border-soft)] pt-2 fs-13">
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-faint">{t("risk.band.pairs")}</dt>
-                    <dd className="tabular font-medium">{fmtNum(stats.counts[b])}</dd>
-                  </div>
-                  <div className="flex justify-between gap-2">
-                    <dt className="text-faint">{t("risk.band.share")}</dt>
-                    <dd className="tabular font-medium">{stats.totalVolume > 0 ? fmtPct(share, 1) : "—"}</dd>
-                  </div>
-                </dl>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-panel-2)]" aria-hidden>
-                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, share * 100)}%`, background: color }} />
-                </div>
               </div>
-            );
-          })}
-        </section>
-      )}
+              <dl className="space-y-0.5 whitespace-nowrap fs-12 leading-snug">
+                <div className="flex justify-end gap-1.5">
+                  <dt className="text-faint">{t("risk.band.pairs")}</dt>
+                  <dd className="tabular font-medium">{fmtNum(stats.counts[b])}</dd>
+                </div>
+                <div className="flex justify-end gap-1.5">
+                  <dt className="text-faint">{t("risk.band.share")}</dt>
+                  <dd className="tabular font-medium">{stats.totalVolume > 0 ? fmtPct(share, 1) : "—"}</dd>
+                </div>
+              </dl>
+            </div>
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-[var(--color-panel-2)]" aria-hidden>
+              <div className="h-full" style={{ width: `${Math.min(100, share * 100)}%`, background: color }} />
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
 
-      {/* the ranking */}
-      {years.length > 0 && (
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("risk.ranked.title")}
-          right={<InfoTip text={t("risk.ranked.info")} />}
-        />
-        <QueueTable channels={channels} level={level} onLevelChange={setLevel} years={data.years} />
-      </section>
-      )}
+  return (
+    // one screen: the ranking takes the height the window has left
+    <div className="page-fill gap-3">
+      {/* header */}
+      <PageHead
+        definition
+        title={
+          <div className="flex items-baseline gap-3">
+            <h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
+            <Link href="/methodology" className="whitespace-nowrap fs-13 text-muted hover:underline">{t("nav.methodology")} →</Link>
+          </div>
+        }
+        right={
+        <button
+          onClick={exportCsv}
+          disabled={channels.length === 0}
+          className="no-print rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 font-medium text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          title={`${t("risk.export.tip")} (${levelName})`}
+        >
+          {t("common.exportCsv")} ↓
+        </button>
+        }
+      />
+
+      <QueueTable
+        channels={channels}
+        level={level}
+        onLevelChange={setLevel}
+        years={data.years}
+        lead={filters}
+        summary={frames}
+        emptyText={years.length === 0 ? t("common.noPeriod") : undefined}
+      />
     </div>
   );
 }

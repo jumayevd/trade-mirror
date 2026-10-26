@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, PageHead,
+  Stat, RiskScore, BandBadge, EmptyState, Pill, PageHead,
 } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/lib/dataset";
 import { GapCell, RankCell, ShareCell, productName } from "@/components/TableKit";
 import { useI18n } from "@/lib/i18n";
+import { useFitRows } from "@/lib/use-fit-rows";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 
@@ -27,8 +28,6 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
  * Uzbekistan's imports, so on every row Export − Import ÷ (1 + freight) =
  * Positive discrepancy.
  */
-
-const PAGE_SIZE = 10;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -111,34 +110,39 @@ function SortableTh({
   const active = sort.key === k;
   return (
     <th className={align === "right" ? "text-right" : "text-left"}>
+      {/* the arrow runs on with the last word, so a two-word head stays two lines */}
       <button
         onClick={() => onSort(k)}
-        className={`inline-flex items-center gap-1 ${active ? "" : "opacity-85 hover:opacity-100"}`}
+        className={active ? "" : "opacity-85 hover:opacity-100"}
         title={title ?? `${t("prod.sortBy")}: ${label}`}
       >
         {label}
-        <span className={active ? "text-[var(--color-gold)]" : "opacity-40"}>{active && !sort.desc ? "↑" : "↓"}</span>
+        <span className={`ml-1 ${active ? "text-[var(--color-gold)]" : "opacity-40"}`}>{active && !sort.desc ? "↑" : "↓"}</span>
       </button>
     </th>
   );
 }
 
 function Pager({
-  page, total, onPage, unit,
+  title, page, size, total, onPage,
 }: {
+  /** What the table ranks — the pager row is its caption. */
+  title: string;
   page: number;
+  /** Rows on a page — as many as the window has room for. */
+  size: number;
   total: number;
   onPage: (p: number) => void;
-  unit: string;
 }) {
   const { t } = useI18n();
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = total === 0 ? 0 : page * PAGE_SIZE + 1;
-  const to = Math.min(total, (page + 1) * PAGE_SIZE);
+  const pages = Math.max(1, Math.ceil(total / size));
+  const from = total === 0 ? 0 : page * size + 1;
+  const to = Math.min(total, (page + 1) * size);
   return (
-    <div className="mt-2 flex items-center justify-between text-xs text-faint">
-      <span className="tabular">
-        {from}–{to} / {fmtNum(total)} · {unit}
+    <div className="no-print flex items-center justify-between text-xs text-faint">
+      <span className="flex items-baseline gap-2">
+        <span className="fs-13 font-semibold text-foreground">{title}</span>
+        <span className="tabular">{from}–{to} / {fmtNum(total)}</span>
       </span>
       {pages > 1 && (
         <span className="flex items-center gap-1">
@@ -179,7 +183,9 @@ export default function ProductsView() {
   const [chapter, setChapter] = useState<string | null>(null); // drilled HS2 chapter
   const [hs4, setHs4] = useState<string | null>(null); // drilled HS4 code
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>(() => ({ key: "posT", desc: true }));
-  const [page, setPage] = useState(0);
+  const [pageRaw, setPage] = useState(0);
+  // a page of the ranking is as many rows as the window has room for
+  const [box, pageSize] = useFitRows(10);
 
   // Respect the global HS2 filter: a single chosen chapter overrides (and disables)
   // the local drill. A multi-chapter selection has no single node to drill into, so
@@ -258,7 +264,9 @@ export default function ProductsView() {
   }, [rows, sort]);
 
   const totalRows = sorted.length;
-  const pageRows = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  // a taller window lists more rows a page, which can leave fewer pages
+  const page = Math.min(pageRaw, Math.max(0, Math.ceil(totalRows / pageSize) - 1));
+  const pageRows = sorted.slice(page * pageSize, (page + 1) * pageSize);
   // bars scale to the rows on screen, whichever column the table is sorted by
   const maxGap = pageRows.reduce((m, r) => Math.max(m, r.posT), 0);
 
@@ -271,8 +279,6 @@ export default function ProductsView() {
 
   const cifPct = Math.round(filter.cif * 100);
   const period = yearsLabel(filter.years);
-  const childUnit =
-    level === 2 ? t("prod.unit.chapters") : level === 4 ? t("prod.unit.hs4groups") : t("prod.unit.hs6products");
 
   // ---- export: the active-level pair set (partner × code, raw + derived fields) ----
   const activeChannels = level === 2 ? data.channels : level === 4 ? data.channels4 : data.channels6;
@@ -283,7 +289,8 @@ export default function ProductsView() {
   const td = "tabular text-right whitespace-nowrap";
 
   return (
-    <div className="space-y-6">
+    // one screen: the ranking takes the height the window has left
+    <div className="page-fill gap-3">
       {/* header + export */}
       <PageHead
         definition
@@ -368,15 +375,12 @@ export default function ProductsView() {
       </section>
       )}
 
-      {/* ranked table — one layout for every level */}
-      {!isEmpty && (
-        <section>
-          <SectionTitle
-            title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
-          />
+      {/* ranked table — one layout for every level; the box takes the height
+          left over, and the pager row under it names what the table ranks */}
+      <div ref={box} className="fill-rest overflow-hidden" hidden={isEmpty}>
           <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
-            <table className="cbu-table min-w-[900px]">
+            <table className="cbu-table cbu-fit min-w-[900px]">
               <thead>
                 <tr>
                   <th className="w-10 text-right">#</th>
@@ -397,15 +401,16 @@ export default function ProductsView() {
                   const full = `HS ${r.cmd} · ${r.label}`;
                   return (
                   <tr key={r.cmd}>
-                    <td className="text-right"><RankCell n={page * PAGE_SIZE + i + 1} /></td>
-                    <td className="min-w-[200px] max-w-[340px]">
-                      <span className="flex min-w-0 items-center">
+                    <td className="text-right"><RankCell n={page * pageSize + i + 1} /></td>
+                    <td>
+                      {/* one line, so every row is the same height and a page is the rows that fit */}
+                      <span className="flex min-w-0 max-w-[340px] items-center">
                         {level === 6 ? (
-                          <span className="line-clamp-2 font-medium leading-snug" title={full}>{name}</span>
+                          <span className="truncate font-medium" title={full}>{name}</span>
                         ) : (
                           <button
                             onClick={() => (level === 2 ? drillChapter(r.cmd) : drillHs4(r.cmd))}
-                            className="line-clamp-2 text-left font-medium leading-snug text-[var(--color-primary)] hover:underline"
+                            className="truncate text-left font-medium text-[var(--color-primary)] hover:underline"
                             title={`${full}\n${fill(t(level === 2 ? "prod.tip.drillChapter" : "prod.tip.drillHs4"), { code: r.cmd })}`}
                           >
                             {name}
@@ -428,8 +433,15 @@ export default function ProductsView() {
             </table>
           </div>
           </div>
-          <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
-        </section>
+      </div>
+      {!isEmpty && (
+        <Pager
+          title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
+          page={page}
+          size={pageSize}
+          total={totalRows}
+          onPage={setPage}
+        />
       )}
       </>
       )}

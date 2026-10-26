@@ -2,15 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { BandBadge, EmptyState, RiskScore } from "@/components/ui";
+import { BandBadge, EmptyState, InfoTip, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
 import LevelTabs, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
-import { fmtUSD, fmtUSDFull } from "@/lib/format";
+import { fmtNum, fmtUSD, fmtUSDFull } from "@/lib/format";
 import { GapCell, RankCell, ShareCell, productName } from "@/components/TableKit";
 import { useI18n } from "@/lib/i18n";
+import { useFitRows } from "@/lib/use-fit-rows";
 import { hsFullLabel, yearsLabel, type Channel } from "@/lib/dataset";
-import type { LocaleKey } from "@/lib/locales";
 
 /**
  * Products ranking (Discrepancy & Risk page) — every partner × code pair at the
@@ -20,22 +20,17 @@ import type { LocaleKey } from "@/lib/locales";
  * row checks by hand: Export − Import ÷ (1 + freight) = Positive discrepancy,
  * and its share = Positive discrepancy ÷ Export. At HS2 and HS4 all three are
  * sums of the HS6 products beneath, never read from a separate layer.
+ *
+ * The page is read on one screen: the controls share a row with the page's own
+ * filters (`lead`), the band frames (`summary`) sit between them and the
+ * table, the columns sort on a click, and a page of the ranking is as many
+ * rows as the window has room for.
  */
 
 export { LEVEL_LABEL_KEYS, type HsLevel };
 
 type SortKey = "risk" | "gap" | "gapPct" | "value" | "importReported";
 type SortDir = "desc" | "asc";
-
-const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
-  { key: "risk", labelKey: "prof.th.score" },
-  { key: "gap", labelKey: "prof.th.gap" },
-  { key: "gapPct", labelKey: "prof.th.share" },
-  { key: "value", labelKey: "prof.th.export" },
-  { key: "importReported", labelKey: "prof.th.import" },
-];
-
-const PAGE_SIZES = [10, 20, 50, 100];
 
 /** Share of positive discrepancy = posT ÷ pePosT; null when there is no export. */
 const gapPct = (c: Channel): number | null =>
@@ -63,12 +58,21 @@ export default function QueueTable({
   level,
   onLevelChange,
   years,
+  lead,
+  summary,
+  emptyText,
 }: {
   /** Pairs at the ACTIVE HS level, already ranked by the engine. */
   channels: Channel[];
   level: HsLevel;
   onLevelChange: (l: HsLevel) => void;
   years: number[];
+  /** The page's own filters, at the start of the controls row. */
+  lead?: React.ReactNode;
+  /** What sits between the controls and the table (the band frames). */
+  summary?: React.ReactNode;
+  /** What an empty table says, when the page knows why it is empty. */
+  emptyText?: string;
 }) {
   const { t, lang } = useI18n();
   // the score is computed on the period in view; the tooltips name that window
@@ -78,8 +82,8 @@ export default function QueueTable({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("risk");
   const [dir, setDir] = useState<SortDir>("desc");
-  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const [pageRaw, setPageRaw] = useState(0);
+  const [box, pageSize] = useFitRows(10);
   /** Cross-cutting selections: many partners and many products at once. */
   const [partnerSel, setPartnerSel] = useState<string[]>([]);
   const [productSel, setProductSel] = useState<string[]>([]);
@@ -127,6 +131,20 @@ export default function QueueTable({
     patch();
     setPageRaw(0);
   };
+  // a column head sorts by its figure; a second click turns the order round
+  const onSort = (k: SortKey) => controls(() => {
+    if (k === sort) setDir((d) => (d === "desc" ? "asc" : "desc"));
+    else { setSort(k); setDir("desc"); }
+  });
+  // the arrow runs on with the last word, so a two-word head stays two lines
+  const sortTh = (k: SortKey, label: string, tip: string, align = "text-right") => (
+    <th className={align} title={tip}>
+      <button onClick={() => onSort(k)} className={sort === k ? "" : "opacity-85 hover:opacity-100"}>
+        {label}
+        <span aria-hidden className={`ml-1 ${sort === k ? "text-[var(--color-gold)]" : "opacity-40"}`}>{sort === k && dir === "asc" ? "↑" : "↓"}</span>
+      </button>
+    </th>
+  );
 
   // bars scale to the rows on screen: sorted by score, one large pair would flatten the rest
   const maxGap = pageRows.reduce((m, c) => Math.max(m, c.posT), 0);
@@ -134,9 +152,11 @@ export default function QueueTable({
   const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
-    <div className="space-y-3">
-      {/* controls */}
-      <div className="flex flex-wrap items-end gap-3">
+    <div className="flex flex-auto flex-col gap-3">
+      {/* controls: the page's filters, then the table's own */}
+      <div className="no-print flex flex-wrap items-end gap-x-3 gap-y-2">
+        {lead}
+
         <LevelTabs
           level={level}
           onChange={(l) => controls(() => onLevelChange(l))}
@@ -149,7 +169,7 @@ export default function QueueTable({
           onChange={(e) => controls(() => setQuery(e.target.value))}
           placeholder={t("risk.search.placeholder")}
           aria-label={t("risk.a11y.search")}
-          className="h-[33px] w-60 max-w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 fs-13 outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
+          className="h-[33px] w-44 max-w-full min-w-0 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2.5 fs-13 outline-none placeholder:text-faint focus:border-[var(--color-primary)]"
         />
 
         <MultiSelect
@@ -167,49 +187,27 @@ export default function QueueTable({
           label={t("filter.products")}
           allLabel={t("filter.all")}
         />
-
-        <label className="flex min-w-0 flex-wrap items-center gap-1.5 fs-13 text-muted">
-          {t("risk.sortLabel")}
-          <select
-            value={sort}
-            onChange={(e) => controls(() => setSort(e.target.value as SortKey))}
-            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
-          >
-            {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>{t(s.labelKey)}</option>
-            ))}
-          </select>
-          <select
-            value={dir}
-            onChange={(e) => controls(() => setDir(e.target.value as SortDir))}
-            aria-label={t("risk.sortDir")}
-            title={t("risk.sortDir")}
-            className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
-          >
-            <option value="desc">{t("risk.sortDesc")}</option>
-            <option value="asc">{t("risk.sortAsc")}</option>
-          </select>
-        </label>
-
       </div>
 
-      {/* table */}
-      {rows.length === 0 ? (
-        <EmptyState />
-      ) : (
+      {summary}
+
+      {rows.length === 0 && <EmptyState text={emptyText} />}
+
+      {/* table: the box takes the height left over; a page is the rows that fit it */}
+      <div ref={box} className="fill-rest overflow-hidden" hidden={rows.length === 0}>
         <div className="card overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="cbu-table min-w-[880px]">
+          <table className="cbu-table cbu-fit min-w-[880px]">
             <thead>
               <tr>
                 <th className="w-10 text-right">#</th>
                 <th className="text-left">{t("common.product")}</th>
                 <th className="text-left">{t("common.partner")}</th>
-                <th className="text-right" title={t("risk.tip.export")}>{t("prof.th.export")}</th>
-                <th className="text-right" title={t("risk.tip.import")}>{t("prof.th.import")}</th>
-                <th className="text-right" title={t("risk.tip.gap")}>{t("prof.th.gap")}</th>
-                <th className="text-right" title={t("prof.th.share.tip")}>{t("prof.th.share")}</th>
-                <th className="text-right" title={`${t("risk.tip.riskValue")}${windowTip}`}>{t("prof.th.score")}</th>
+                {sortTh("value", t("prof.th.export"), t("risk.tip.export"))}
+                {sortTh("importReported", t("prof.th.import"), t("risk.tip.import"))}
+                {sortTh("gap", t("prof.th.gap"), t("risk.tip.gap"))}
+                {sortTh("gapPct", t("prof.th.share"), t("prof.th.share.tip"))}
+                {sortTh("risk", t("prof.th.score"), `${t("risk.tip.riskValue")}${windowTip}`)}
                 <th className="text-left" title={`${t("risk.tip.band")}${windowTip}`}>{t("prof.th.band")}</th>
               </tr>
             </thead>
@@ -217,9 +215,9 @@ export default function QueueTable({
               {pageRows.map((c, i) => (
                 <tr key={`${c.partnerIso}|${c.cmd}|${c.level}`}>
                   <td className="text-right"><RankCell n={start + i + 1} /></td>
-                  <td className="min-w-[200px] max-w-[320px]">
-                    {/* a few words that name the line; the code and the full nomenclature on hover */}
-                    <span className="line-clamp-2 font-medium leading-snug" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
+                  <td>
+                    {/* a few words that name the line, on one line; the code and the full nomenclature on hover */}
+                    <span className="block max-w-[300px] truncate font-medium" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
                       {productName(c.cmd, lang, c.cmdLabel)}
                     </span>
                   </td>
@@ -240,29 +238,24 @@ export default function QueueTable({
           </table>
         </div>
         </div>
-      )}
+      </div>
 
-      {/* pagination */}
+      {/* what the table is, where the page is in it, and the way through it */}
       {rows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-1.5 fs-13 text-muted">
-            {t("risk.rowsPerPage")}
-            <select
-              value={pageSize}
-              onChange={(e) => controls(() => setPageSize(+e.target.value))}
-              className="h-[33px] min-w-0 max-w-full rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-2 fs-13 text-foreground outline-none focus:border-[var(--color-primary)]"
-            >
-              {PAGE_SIZES.map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </label>
+        <div className="no-print flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="flex items-center gap-1.5 fs-13 font-semibold">
+            {t("risk.ranked.title")}
+            <InfoTip text={t("risk.ranked.info")} />
+          </span>
+          <span className="tabular fs-13 text-faint">
+            {fmtNum(start + 1)}–{fmtNum(start + pageRows.length)} / {fmtNum(rows.length)}
+          </span>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={() => setPageRaw(Math.max(0, page - 1))} disabled={page === 0} className={pagerBtn}>
               ← {t("risk.prev")}
             </button>
             <span className="tabular fs-13 text-muted">
-              {t("risk.page")} {page + 1} / {pageCount}
+              {t("risk.page")} {fmtNum(page + 1)} / {fmtNum(pageCount)}
             </span>
             <button onClick={() => setPageRaw(Math.min(pageCount - 1, page + 1))} disabled={page >= pageCount - 1} className={pagerBtn}>
               {t("risk.next")} →

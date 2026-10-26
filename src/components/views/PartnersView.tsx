@@ -4,24 +4,26 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, TransitTag, EmptyState, InfoTip, PageHead, TableReveal } from "@/components/ui";
+import { TransitTag, EmptyState, InfoTip, PageHead, Segmented } from "@/components/ui";
 import { GapCell, ShareCell } from "@/components/TableKit";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import type { PartnerAgg } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { fmtNum, fmtUSD, fmtUSDFull, fmtPct } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
+import { useFitRows } from "@/lib/use-fit-rows";
 
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
- * profile) and the ranked country table, opened on a click. Only the positive
+ * profile) and the ranked country table, one switch apart. Only the positive
  * discrepancy is screened: partner-reported exports uplifted by freight, minus
  * Uzbekistan-recorded imports, accumulated over the years where it is positive.
  */
 
 type SortKey = "export" | "import" | "positive" | "share" | "channels";
 
-const PAGE_SIZE = 10;
+/** The two ways the page shows the countries, sharing the height left over. */
+type CountryView = "map" | "table";
 
 
 /** Same noise floor the engine screens on — quoted in the ranking footnote. */
@@ -46,15 +48,19 @@ const SORT_TIP_KEYS: Record<SortKey, string> = {
 
 /** Compact client pagination footer — "X–Y of N". */
 function Pager({
-  page, total, onPage,
+  page, size, total, onPage,
 }: {
-  page: number; total: number; onPage: (p: number) => void;
+  page: number;
+  /** Rows on a page — as many as the window has room for. */
+  size: number;
+  total: number;
+  onPage: (p: number) => void;
 }) {
   const { t } = useI18n();
-  if (total <= PAGE_SIZE) return null;
-  const pages = Math.ceil(total / PAGE_SIZE);
-  const from = page * PAGE_SIZE + 1;
-  const to = Math.min((page + 1) * PAGE_SIZE, total);
+  if (total <= size) return null;
+  const pages = Math.ceil(total / size);
+  const from = page * size + 1;
+  const to = Math.min((page + 1) * size, total);
   const btn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
   return (
     <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border-soft)] px-3 py-2">
@@ -76,6 +82,9 @@ export default function PartnersView() {
   const data = useFilteredData(ROLLUP_HS6);
   const [sort, setSort] = useState<SortKey>("positive");
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
+  const [view, setView] = useState<CountryView>("map");
+  // a page of the ranking is as many rows as the window has room for
+  const [box, pageSize] = useFitRows(10);
 
   /* Per-partner count of HS6 products: every line both books reported in the period. */
   const hs6Count = useMemo(() => {
@@ -105,8 +114,10 @@ export default function PartnersView() {
 
   // pagination is derived: it falls back to page 0 whenever the list length or
   // sort has changed since the user last paged — no reset effect needed
-  const rankPage = pageSel && pageSel.len === rows.length && pageSel.sort === sort ? pageSel.page : 0;
-  const pagedRows = rows.slice(rankPage * PAGE_SIZE, (rankPage + 1) * PAGE_SIZE);
+  // (and a taller window, listing more rows a page, can leave fewer pages)
+  const rankPage = pageSel && pageSel.len === rows.length && pageSel.sort === sort
+    ? Math.min(pageSel.page, Math.max(0, Math.ceil(rows.length / pageSize) - 1)) : 0;
+  const pagedRows = rows.slice(rankPage * pageSize, (rankPage + 1) * pageSize);
 
   /* ------------------------------------------------------------------ */
   /* Headline counts (one quiet sentence above the map)                  */
@@ -125,13 +136,14 @@ export default function PartnersView() {
   const maxGap = pagedRows.reduce((m, p) => Math.max(m, p.posT), 0);
 
   const sortBtn = (k: SortKey, label: string) => (
+    // the arrow runs on with the last word, so a two-word head stays two lines
     <button
       onClick={() => setSort(k)}
       title={t(SORT_TIP_KEYS[k] as never)}
-      className={`inline-flex items-center gap-1 ${sort === k ? "" : "opacity-85 hover:opacity-100"}`}
+      className={sort === k ? "" : "opacity-85 hover:opacity-100"}
     >
       {label}
-      <span aria-hidden className={sort === k ? "text-[var(--color-gold)]" : "opacity-40"}>↓</span>
+      <span aria-hidden className={`ml-1 ${sort === k ? "text-[var(--color-gold)]" : "opacity-40"}`}>↓</span>
     </button>
   );
 
@@ -144,7 +156,7 @@ export default function PartnersView() {
     ) : (
       <div className="card overflow-hidden p-0">
       <div className="overflow-x-auto">
-        <table className="cbu-table min-w-[760px]">
+        <table className="cbu-table cbu-fit min-w-[760px]">
           <thead>
             <tr>
               <th className={th}>{t("common.partner")}</th>
@@ -163,8 +175,9 @@ export default function PartnersView() {
                     <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium text-[var(--color-primary)] hover:underline">
                       {p.name}
                     </Link>
+                    {/* the region beside the name, not under it: every row one line high */}
+                    <span className="ml-2 fs-12 text-faint">{p.region}</span>
                     {p.transit && <span className="ml-2 align-middle"><TransitTag /></span>}
-                    <span className="block fs-12 text-faint">{p.region}</span>
                   </td>
                   <td className={`${tdNum} text-[var(--color-gold-ink)]`} title={fmtUSDFull(p.pePosT)}>{fmtUSD(p.pePosT)}</td>
                   <td className={`${tdNum} text-muted`} title={fmtUSDFull(p.uiPosT)}>{fmtUSD(p.uiPosT)}</td>
@@ -191,12 +204,13 @@ export default function PartnersView() {
           </tfoot>
         </table>
       </div>
-        <Pager page={rankPage} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
+        <Pager page={rankPage} size={pageSize} total={rows.length} onPage={(p) => setPageSel({ len: rows.length, sort, page: p })} />
       </div>
     );
 
   return (
-    <div className="space-y-6">
+    // one screen: the map, or the ranking, takes the height the window has left
+    <div className="page-fill gap-3">
       {/* 1. header */}
       <PageHead
         title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.partners")}</h1>}
@@ -219,30 +233,41 @@ export default function PartnersView() {
       ) : (
       <>
 
-      {/* 3. map hero */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("ctry.geo.title")}
-          desc={t("ctry.geo.desc")}
-          right={<InfoTip text={t("ctry.geo.info")} />}
-        />
-        <p className="max-w-3xl fs-13 text-muted">
+      {/* 3. the countries, as a map (click one for its profile) or as the
+          ranking — one switch, the same box, so neither costs a scroll */}
+      <section className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 className="flex items-center gap-1.5 fs-15 font-semibold tracking-tight">
+          {view === "map" ? t("ctry.geo.title") : t("ctry.rank.title")}
+          <InfoTip text={view === "map"
+            ? `${t("ctry.geo.desc")} ${t("ctry.geo.info")}`
+            : `${t("ctry.rank.desc")} ${t("ctry.rank.info")}`} />
+        </h2>
+        <p className="fs-13 text-muted">
           <span className="tabular font-medium text-foreground">{data.partners.length}</span> {t("ctry.stats.partners")}
-          · <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
-          · <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
+          {" "}· <span className="tabular font-medium text-foreground" title={t("ctry.stats.highTierTip")}>{highTier}</span> {t("ctry.stats.highTier")}
+          {" "}· <span className="tabular font-medium text-foreground" title={t("ctry.stats.transitTip")}>{transitCount}</span> {t("ctry.stats.transitHubs")}
         </p>
-        {data.partners.length === 0 ? <EmptyState /> : <RiskMap partners={data.partners} metric="total" />}
+        <Segmented<CountryView>
+          className="no-print ml-auto"
+          ariaLabel={t("ctry.view.aria")}
+          value={view}
+          onChange={setView}
+          options={[
+            { key: "map", label: t("ctry.view.map") },
+            { key: "table", label: t("ctry.view.table") },
+          ]}
+        />
       </section>
 
-      {/* 4. country ranking, opened on a click */}
-      <section className="space-y-3">
-        <SectionTitle
-          title={t("ctry.rank.title")}
-          desc={t("ctry.rank.desc")}
-          right={<InfoTip text={t("ctry.rank.info")} />}
-        />
-        <TableReveal>{rankingTable}</TableReveal>
-      </section>
+      {data.partners.length === 0 ? (
+        <EmptyState />
+      ) : view === "map" ? (
+        <div className="fill-rest" style={{ minHeight: 300 }}>
+          <RiskMap partners={data.partners} metric="total" />
+        </div>
+      ) : (
+        <div ref={box} className="fill-rest overflow-hidden">{rankingTable}</div>
+      )}
 
       </>
       )}

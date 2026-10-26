@@ -146,7 +146,9 @@ export default function MethodologyView() {
   ];
 
   return (
-    <div className="space-y-4">
+    // the slim one-screen frame: with every section folded the page is a
+    // single screen, and it grows (and scrolls) only as sections are opened
+    <div className="page-fill space-y-4">
       {/* ---------------------------------------------------------------- */}
       <section className="space-y-4">
         <PageHead

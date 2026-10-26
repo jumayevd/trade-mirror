@@ -286,7 +286,7 @@ export default function OverviewView() {
 
   return (
     // fills the window: the treemaps, or the profile's two charts, take the height left over
-    <div className="page-fill gap-6">
+    <div className="page-fill gap-4">
       {/* 1. heading, and the window the data covers — stated once, above the controls */}
       {/*
         The window is a property of the dataset, not of the period picked below
@@ -349,22 +349,22 @@ export default function OverviewView() {
       {years.length === 0 && <EmptyState text={t("common.noPeriod")} />}
 
       {years.length > 0 && tab === "profile" && (
-        // The two series stack, one above the other, on every screen, and share
-        // the height the window has spare; neither drops below its old 300px.
-        <div className="flex flex-1 flex-col gap-6">
-        <section className="flex flex-auto flex-col">
+        // The two series sit side by side on a wide screen and stack on a
+        // narrow one, and take the height the window has spare between them.
+        <div className="flex flex-1 flex-col gap-4 lg:flex-row">
+        <section className="flex min-w-0 flex-1 flex-col">
           <SectionTitle
             title={t("ovw.dynamics.title")}
             desc={`${t("ovw.dynamics.descA")} ${periodLabel} ${t("ovw.dynamics.descB")}`}
             right={<InfoTip text={t("ovw.dynamics.info")} />}
           />
           <div className="card flex flex-1 flex-col p-4">
-            <div className="relative min-h-[300px] flex-1"><EChart option={annualOption} className="absolute inset-0" /></div>
+            <div className="relative min-h-[220px] flex-1"><EChart option={annualOption} className="absolute inset-0" /></div>
           </div>
         </section>
-  
+
         {/* 3b. the same window, both directions — the one place the reverse side is shown */}
-        <section className="flex flex-auto flex-col">
+        <section className="flex min-w-0 flex-1 flex-col">
           <SectionTitle
             title={t("ovw.twoSided.title")}
             desc={t("ovw.twoSided.desc")}
@@ -372,7 +372,7 @@ export default function OverviewView() {
           />
           <div className="card flex flex-1 flex-col p-4">
             {/* read-only: hover shows the values, clicking opens nothing */}
-            <div className="relative min-h-[300px] flex-1"><EChart option={twoSidedOption} className="absolute inset-0" /></div>
+            <div className="relative min-h-[220px] flex-1"><EChart option={twoSidedOption} className="absolute inset-0" /></div>
             {/* what the bars below the line can mean — a signal, not a finding */}
             <p className="mt-3 border-t border-[var(--color-border-soft)] pt-3 fs-12.5 leading-relaxed text-muted">
               {t("ovw.twoSided.reverseNote")}
@@ -383,7 +383,7 @@ export default function OverviewView() {
       )}
 
       {years.length > 0 && tab === "summary" && (
-        <div className="flex flex-1 flex-col gap-6">
+        <div className="flex flex-1 flex-col gap-4">
       {/* 3. headline tiles — two rows of three: what the import bill is and how
           much of it this dataset sees; then what the discrepancy is on it */}
       <section>

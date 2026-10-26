@@ -35,7 +35,7 @@ export function Stat({
         {info && <InfoTip text={info} />}
       </div>
       {/* the figure never breaks; when the tile is narrow the change drops below it */}
-      <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="tabular whitespace-nowrap fs-24 font-semibold leading-none tracking-tight" style={accent ? { color: accent } : undefined}>
           {value}
         </span>
@@ -53,19 +53,21 @@ export function Stat({
 /**
  * What "positive discrepancy" means — the one term every trade page reads by —
  * framed and centred so it is the first thing a reader meets on each page.
+ * The term and its meaning sit on one line where there is room, so the card
+ * costs the page a single row.
  */
 export function PosDefCard() {
   const { t } = useI18n();
   return (
     <figure
-      className="relative mx-auto w-full max-w-[46rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-panel)] px-6 pb-3.5 pt-4 text-center"
+      className="relative mx-auto flex w-full max-w-[54rem] flex-col items-center gap-x-3 gap-y-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-panel)] px-5 pb-2 pt-2.5 text-center sm:flex-row sm:text-left"
       style={{ boxShadow: "0 1px 3px rgba(15, 37, 71, 0.06)" }}
     >
       <span aria-hidden className="absolute left-1/2 top-0 h-[3px] w-14 -translate-x-1/2 rounded-b-full bg-[var(--color-gold)]" />
-      <figcaption className="fs-11.5 font-semibold uppercase tracking-[0.14em] text-[var(--color-gold-ink)]">
+      <figcaption className="shrink-0 whitespace-nowrap fs-11.5 font-semibold uppercase tracking-[0.14em] text-[var(--color-gold-ink)]">
         {t("kpi.positive")}
       </figcaption>
-      <p className="mx-auto mt-1.5 max-w-[40rem] fs-14 leading-relaxed text-foreground" style={{ textWrap: "balance" }}>
+      <p className="fs-14 leading-snug text-foreground sm:border-l sm:border-[var(--color-border-soft)] sm:pl-3" style={{ textWrap: "balance" }}>
         {t("ovw.posDef")}
       </p>
     </figure>
@@ -80,34 +82,11 @@ export function PosDefCard() {
  */
 export function PageHead({ title, right, definition = false }: { title: React.ReactNode; right?: React.ReactNode; definition?: boolean }) {
   return (
-    <section className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(12rem,auto)_minmax(0,1fr)_minmax(12rem,auto)] lg:items-center lg:gap-8">
+    <section className="flex flex-col gap-3 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-6">
       <div className="min-w-0">{title}</div>
       {definition ? <PosDefCard /> : <div aria-hidden className="hidden lg:block" />}
       <div className="flex lg:justify-end">{right}</div>
     </section>
-  );
-}
-
-/**
- * A table kept out of the way until asked for: the page leads with its chart,
- * and the detail behind it opens on a click. Collapsed on every visit.
- */
-export function TableReveal({ children, defaultOpen = false }: { children: React.ReactNode; defaultOpen?: boolean }) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="no-print inline-flex items-center gap-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-panel)] px-3 py-1.5 fs-13 font-medium text-muted hover:text-foreground"
-      >
-        {open ? t("common.hideTable") : t("common.showTable")}
-        <span aria-hidden className={`inline-block transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
-      </button>
-      {open && children}
-    </div>
   );
 }
 

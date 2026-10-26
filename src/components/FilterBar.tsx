@@ -38,7 +38,11 @@ const optionText = (code: string, label: string, lang: string) => {
   return localised === label ? { label } : { label, full: localised };
 };
 
-/** `extra`: a page's own control that belongs with the filters (Product Analysis: the HS level). */
+/**
+ * `extra`: a page's own control that belongs with the filters (Product Analysis: the HS level).
+ * A plain row, not a sticky bar: the pages that carry it are read on one screen
+ * and do not scroll out from under it.
+ */
 export default function FilterBar({ extra }: { extra?: React.ReactNode } = {}) {
   const { filter, patch, reset } = useFilter();
   const { t, lang } = useI18n();
@@ -109,7 +113,7 @@ export default function FilterBar({ extra }: { extra?: React.ReactNode } = {}) {
   );
 
   return (
-    <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
+    <div className="no-print">
       <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
         {/* time basis: yearly reads the annual books, monthly the monthly ones */}
         <div className="flex flex-col gap-1">

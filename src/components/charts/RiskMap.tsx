@@ -202,8 +202,9 @@ export default function RiskMap({ partners, metric }: { partners: PartnerAgg[]; 
 
   const registerMaps = useMemo(() => (geo ? [{ name: "world", geoJson: geo }] : undefined), [geo]);
 
+  // as tall as the box its page gives it: Country Analysis fills the window with it
   return (
-    <div className="card overflow-hidden" style={{ height: 540 }}>
+    <div className="card h-full overflow-hidden">
       {geo ? <EChart option={option} registerMaps={registerMaps} onEvents={onEvents} /> : (
         <div className="flex h-full items-center justify-center text-sm text-muted">{t("ctry.map.loading")}</div>
       )}

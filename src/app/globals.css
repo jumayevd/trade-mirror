@@ -247,22 +247,42 @@ body {
 }
 
 /*
- * A page that fills the window. The shell already stretches <main> to the
- * height left between header and footer; a page marked .page-fill makes
- * <main> a column and takes all of it, so a part inside it marked flex-1
- * absorbs whatever height the screen has spare instead of leaving an empty
- * band above the footer. On a screen too short for the content the page is
- * as tall as its content and scrolls, as before. Pages without the class
- * are untouched.
+ * A page that fills the window — the trade pages, each read on one screen.
+ * The shell already stretches <main> to the height left between header and
+ * footer; a page marked .page-fill makes <main> a column, the wrappers between
+ * them pass the height down, and the page takes all of it, so a part inside it
+ * marked flex-1 absorbs whatever height the screen has spare: a chart grows,
+ * a ranking table lists as many rows as fit (useFitRows). The frame around such
+ * a page is slimmer than around a reading page, so a 1366×640 laptop window
+ * holds the whole of it. On a screen too short for the content the page is as
+ * tall as its content and scrolls, as before. Pages without the class are
+ * untouched.
  */
-main:has(> .page-fill) {
+main:has(.page-fill) {
   display: flex;
   flex-direction: column;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
 }
+main:has(.page-fill) :has(.page-fill),
 .page-fill {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+}
+body:has(.page-fill) footer {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+/* the part that takes the spare height: it starts from nothing and grows, so
+   its own content never pushes the page past the window */
+.fill-rest {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* tiles on a one-screen page sit closer to their figure */
+.page-fill .stat-card {
+  padding: 0.625rem 0.875rem;
 }
 
 /*
@@ -370,6 +390,14 @@ main:has(> .page-fill) {
   background: var(--color-panel-2);
   border-top: 2px solid var(--color-gold);
 }
+/* a ranking that fits the window: shorter rows, every row one line high, so
+   the count that fits is a plain division (useFitRows) */
+.cbu-table.cbu-fit thead th { padding: 8px 10px; font-size: 11.5px; letter-spacing: 0.02em; }
+.cbu-table.cbu-fit tbody td { padding: 7px 10px; }
+.cbu-table.cbu-fit tfoot td { padding: 9px 10px; }
+/* a cell's bar-under-figure block sits on the middle of the line, not its
+   baseline, which would add a descender's height to every row */
+.cbu-table.cbu-fit tbody td > * { vertical-align: middle; }
 /* a zebra you only just notice: every other row a breath of navy, no rules between */
 .cbu-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-primary) 4.5%, transparent); }
 .cbu-table tbody tr:hover td { background: color-mix(in srgb, var(--color-gold) 7%, transparent); }
