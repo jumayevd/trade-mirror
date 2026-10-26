@@ -320,13 +320,13 @@ export default function ProductsView() {
         <EmptyState />
       ) : (
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label={t("prod.stat.exports")} value={fmtUSD(node.pe)} accent={COLORS.partner}
+          <Stat label={t("prod.stat.exports")} value={fmtUSD(node.pe)} accent={COLORS.navy}
             info={`${t("prod.stat.exports.info")} ${period}: ${fmtUSDFull(node.pe)}.`} />
           <Stat label={t("prod.stat.imports")} value={fmtUSD(node.ui)} accent={COLORS.uzb}
             info={`${t("prod.stat.imports.info")} ${period}: ${fmtUSDFull(node.ui)}.`} />
           <Stat label={t("kpi.positive")} value={fmtUSD(node.pos)} accent={COLORS.positive}
             info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(node.pos)}.`} />
-          <Stat label={t("prof.stat.share")} value={fmtPct(nodeShare, 1)} accent={COLORS.positive}
+          <Stat label={t("prof.stat.share")} value={fmtPct(nodeShare, 1)} accent={COLORS.navy3}
             info={`${t("prof.stat.share.info")} ${fmtUSDFull(node.pos)} ÷ ${fmtUSDFull(node.pe)}.`} />
         </section>
       )}

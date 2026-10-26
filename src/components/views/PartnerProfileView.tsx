@@ -16,7 +16,7 @@ import {
 import { channelsToCsv, downloadCsv } from "@/lib/export";
 import { useI18n } from "@/lib/i18n";
 import { labelsFor } from "@/lib/labels";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS, BAND_COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 
 /**
  * Partner profile — one country in depth, reduced to its figures.
@@ -183,17 +183,17 @@ export default function PartnerProfileView({ iso }: { iso: string }) {
 
       {/* the six frames — two rows of three: the trade, then its risk */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.partner}
+        <Stat label={t("prof.stat.exports")} value={fmtUSD(p.pePosT)} accent={COLORS.navy}
           info={`${t("prof.stat.exports.info")} ${period}: ${fmtUSDFull(p.pePosT)}.`} />
         <Stat label={t("prof.stat.imports")} value={fmtUSD(p.uiPosT)} accent={COLORS.uzb}
           info={`${t("prof.stat.imports.info")} ${period}: ${fmtUSDFull(p.uiPosT)}.`} />
         <Stat label={t("kpi.positive")} value={fmtUSD(p.posT)} accent={COLORS.positive}
           info={`${fill(t("prof.stat.positive.info"), { cif: cifPct })} ${fmtUSDFull(p.posT)}.`} />
-        <Stat label={t("prof.stat.share")} value={fmtPct(posShare, 1)} accent={COLORS.positive}
+        <Stat label={t("prof.stat.share")} value={fmtPct(posShare, 1)} accent={COLORS.navy3}
           info={`${t("prof.stat.share.info")} ${fmtUSDFull(p.posT)} ÷ ${fmtUSDFull(p.pePosT)}.`} />
         <Stat label={t("prof.stat.hs6Channels")} value={fmtNum(hs6.length)} accent={COLORS.navy3}
           info={t("prof.stat.hs6Channels.info")} />
-        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent={BAND_COLORS.critical}
+        <Stat label={t("prof.stat.criticalHs6")} value={fmtNum(criticalHs6)} accent="var(--band-card-critical)"
           info={`${fill(t("prof.stat.criticalOfAll"), {
             n: fmtNum(criticalHs6), total: fmtNum(hs6.length),
             pct: hs6.length > 0 ? fmtPct(criticalHs6 / hs6.length, 1) : "—",
