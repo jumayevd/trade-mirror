@@ -38,7 +38,8 @@ const optionText = (code: string, label: string, lang: string) => {
   return localised === label ? { label } : { label, full: localised };
 };
 
-export default function FilterBar() {
+/** `extra`: a page's own control that belongs with the filters (Product Analysis: the HS level). */
+export default function FilterBar({ extra }: { extra?: React.ReactNode } = {}) {
   const { filter, patch, reset } = useFilter();
   const { t, lang } = useI18n();
   const isDefault = JSON.stringify(filter) === JSON.stringify(DEFAULT_FILTER);
@@ -109,7 +110,7 @@ export default function FilterBar() {
 
   return (
     <div className="no-print sticky top-[var(--header-h)] z-20 -mx-5 mb-3 border-b border-[var(--color-border-soft)] bg-[color-mix(in_srgb,var(--color-bg)_92%,transparent)] px-5 py-2.5 backdrop-blur">
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-end gap-x-3 gap-y-2">
         {/* time basis: yearly reads the annual books, monthly the monthly ones */}
         <div className="flex flex-col gap-1">
           <span className={lbl}>{t("filter.granularity")}</span>
@@ -183,6 +184,8 @@ export default function FilterBar() {
           label={t("filter.hs6")}
           allLabel={t("filter.all")}
         />
+
+        {extra}
 
         {!isDefault && (
           <button onClick={reset} className="ml-auto rounded-md border border-[var(--color-border)] px-2.5 py-1.5 fs-13 text-muted hover:text-foreground" title={t("filter.reset.tip")}>

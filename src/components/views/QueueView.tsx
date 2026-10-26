@@ -110,6 +110,7 @@ export default function QueueView() {
     <div className="space-y-6">
       {/* header */}
       <PageHead
+        definition
         title={
           <div className="space-y-1.5">
             <h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.queue")}</h1>
@@ -186,8 +187,9 @@ export default function QueueView() {
           {BANDS.map((b) => {
             const vol = stats.volume[b];
             const share = stats.totalVolume > 0 ? vol / stats.totalVolume : 0;
-            const color = BAND_COLORS[b];
-            const ink = BAND_INK[b];
+            // the frames read as one navy family: Critical the deepest, never gold
+            const color = b === "critical" ? "var(--band-card-critical)" : BAND_COLORS[b];
+            const ink = b === "critical" ? "var(--band-card-critical)" : BAND_INK[b];
             return (
               <div key={b} className="stat-card" style={{ ["--stat-rail" as string]: color }}>
                 <div className="flex items-start justify-between gap-2">

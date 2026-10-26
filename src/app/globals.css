@@ -30,6 +30,8 @@
   --band-ink-high: #1e3a6e;
   --band-ink-elevated: #3d5f94;
   --band-ink-low: #5b6578;
+  /* the Critical frame on Discrepancy & Risk: the deepest navy, not gold */
+  --band-card-critical: #0c2045;
   --band-on-critical: #2a1d00;
   --band-on-high: #ffffff;
   --band-on-elevated: #ffffff;
@@ -149,6 +151,7 @@ html[data-theme="dark"] {
   --band-ink-high: #9cbcf0;
   --band-ink-elevated: #8aa7d6;
   --band-ink-low: #9aa2b1;
+  --band-card-critical: #c9dbfa;
   --band-on-critical: #2a1d00;
   --band-on-high: #0b1322;
   --band-on-elevated: #ffffff;
@@ -397,6 +400,7 @@ main:has(> .page-fill) {
     --band-ink-high: #1e3a6e;
     --band-ink-elevated: #3d5f94;
     --band-ink-low: #5b6578;
+    --band-card-critical: #0c2045;
     --band-on-critical: #2a1d00;
     --band-on-high: #ffffff;
     --band-on-elevated: #ffffff;
@@ -430,7 +434,8 @@ html[data-pretheme] main { visibility: hidden; }
 .band-palette {
   --band-keep: var(--band-critical) var(--band-high) var(--band-elevated) var(--band-low)
     var(--band-ink-critical) var(--band-ink-high) var(--band-ink-elevated) var(--band-ink-low)
-    var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low);
+    var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low)
+    var(--band-card-critical);
   --seq-keep: var(--seq-1) var(--seq-2) var(--seq-3) var(--seq-4) var(--seq-5) var(--seq-6)
     var(--seq-ink-1) var(--seq-ink-2) var(--seq-ink-3) var(--seq-ink-4) var(--seq-ink-5) var(--seq-ink-6);
 }

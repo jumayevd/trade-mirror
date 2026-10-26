@@ -115,7 +115,7 @@ export default function MultiSelect({
           aria-haspopup="true"
           aria-expanded={open}
           aria-label={label}
-          className={`flex w-full min-w-[9rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left fs-13 outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
+          className={`flex w-full min-w-[8.5rem] max-w-[16rem] items-center justify-between gap-2 rounded-md border bg-[var(--color-panel)] px-2 py-1.5 text-left fs-13 outline-none hover:border-[var(--color-primary)] focus:border-[var(--color-primary)] ${
             values.length && !everything ? "border-[var(--color-primary)] font-medium text-foreground" : "border-[var(--color-border)] text-foreground"
           }`}
         >
