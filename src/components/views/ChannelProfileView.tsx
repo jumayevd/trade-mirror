@@ -192,7 +192,7 @@ export default function ChannelProfileView({ iso, cmd }: { iso: string; cmd: str
           desc={t("chan.compare.desc")}
         />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <Stat label={t("chan.stat.partnerExports")} value={fmtUSD(channel.peT)} accent={COLORS.partner}
+          <Stat label={t("chan.stat.partnerExports")} value={fmtUSD(channel.peT)} accent={COLORS.navy}
             sub={fill(t("chan.sub.partnerReported"), { name: partner })}
             info={`${fill(t("chan.info.peCumulative"), { cmd: channel.cmd, name: partner })} ${fmtUSDFull(channel.peT)}.`} />
           <Stat label={`${t("chan.stat.importFob")} (${cifPct}%)`} value={fmtUSD(channel.adjUiT)}

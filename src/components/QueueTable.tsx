@@ -191,11 +191,6 @@ export default function QueueTable({
           </select>
         </label>
 
-        <span className="tabular fs-13 text-faint">
-          {rows.length === 0
-            ? `0 ${t("risk.combinationsCount")}`
-            : `${(start + 1).toLocaleString()}–${Math.min(start + pageSize, rows.length).toLocaleString()} / ${rows.length.toLocaleString()} ${t("risk.combinationsCount")}`}
-        </span>
       </div>
 
       {/* table */}
