@@ -1,0 +1,2157 @@
+{
+  "100199": {
+    "en": "Wheat (not durum), not for sowing",
+    "ru": "Пшеница (не твёрдая), не семенная",
+    "uz": "Bugʻdoy (qattiq emas), urugʻlik emas"
+  },
+  "100630": {
+    "en": "Milled rice",
+    "ru": "Рис шлифованный",
+    "uz": "Oqlangan guruch"
+  },
+  "120600": {
+    "en": "Sunflower seeds",
+    "ru": "Семена подсолнечника",
+    "uz": "Kungaboqar urugʻi"
+  },
+  "120991": {
+    "en": "Vegetable seeds for sowing",
+    "ru": "Семена овощей для посева",
+    "uz": "Ekish uchun sabzavot urugʻlari"
+  },
+  "130219": {
+    "en": "Plant extracts (herbal, n.e.c.)",
+    "ru": "Растительные экстракты (прочие)",
+    "uz": "Oʻsimlik ekstraktlari (boshqa)"
+  },
+  "151190": {
+    "en": "Refined palm oil",
+    "ru": "Пальмовое масло рафинированное",
+    "uz": "Tozalangan palma yogʻi"
+  },
+  "170199": {
+    "en": "Refined white sugar",
+    "ru": "Сахар белый рафинированный",
+    "uz": "Oq tozalangan shakar"
+  },
+  "180500": {
+    "en": "Cocoa powder, unsweetened",
+    "ru": "Какао-порошок без сахара",
+    "uz": "Kakao kukuni, shakarsiz"
+  },
+  "180632": {
+    "en": "Chocolate bars and blocks (unfilled)",
+    "ru": "Шоколад в плитках (без начинки)",
+    "uz": "Shokolad plitkalari (nachinkasiz)"
+  },
+  "180690": {
+    "en": "Chocolate and cocoa confectionery",
+    "ru": "Шоколадные и какао-изделия",
+    "uz": "Shokolad va kakao qandolatlari"
+  },
+  "190410": {
+    "en": "Breakfast cereals, corn flakes",
+    "ru": "Сухие завтраки, хлопья",
+    "uz": "Nonushta yormalari, bodroq"
+  },
+  "210112": {
+    "en": "Instant coffee products and mixes",
+    "ru": "Растворимый кофе и кофейные смеси",
+    "uz": "Eriydigan qahva va qahva aralashmalari"
+  },
+  "210690": {
+    "en": "Food preparations: supplements, mixes, syrups",
+    "ru": "Пищевые смеси: добавки, концентраты, сиропы",
+    "uz": "Oziq-ovqat aralashmalari: qoʻshimchalar, siroplar"
+  },
+  "240311": {
+    "en": "Hookah (water-pipe) tobacco",
+    "ru": "Табак для кальяна",
+    "uz": "Qalyon tamakisi"
+  },
+  "240411": {
+    "en": "Heated tobacco sticks",
+    "ru": "Табачные стики для нагревания",
+    "uz": "Qizdiriladigan tamaki stiklari"
+  },
+  "251690": {
+    "en": "Building stone blocks and slabs",
+    "ru": "Строительный камень в блоках и плитах",
+    "uz": "Qurilish toshi, blok va plitalar"
+  },
+  "260300": {
+    "en": "Copper ores and concentrates",
+    "ru": "Медные руды и концентраты",
+    "uz": "Mis rudalari va konsentratlari"
+  },
+  "270750": {
+    "en": "Aromatic hydrocarbon mixtures (coal tar)",
+    "ru": "Смеси ароматических углеводородов",
+    "uz": "Aromatik uglevodorod aralashmalari"
+  },
+  "270900": {
+    "en": "Crude petroleum oil",
+    "ru": "Сырая нефть",
+    "uz": "Xom neft"
+  },
+  "271019": {
+    "en": "Diesel, fuel oil and lubricants",
+    "ru": "Дизтопливо, мазут и смазочные масла",
+    "uz": "Dizel, mazut va moylash moylari"
+  },
+  "284390": {
+    "en": "Precious-metal compounds and amalgams",
+    "ru": "Соединения драгметаллов, амальгамы",
+    "uz": "Qimmatbaho metall birikmalari"
+  },
+  "292119": {
+    "en": "Acyclic monoamines and salts",
+    "ru": "Ациклические моноамины и их соли",
+    "uz": "Atsiklik monoaminlar va tuzlari"
+  },
+  "292429": {
+    "en": "Cyclic amides (incl. paracetamol)",
+    "ru": "Циклические амиды (вкл. парацетамол)",
+    "uz": "Siklik amidlar (paratsetamol bilan)"
+  },
+  "293040": {
+    "en": "Methionine (feed additive)",
+    "ru": "Метионин (кормовая добавка)",
+    "uz": "Metionin (yem qoʻshimchasi)"
+  },
+  "293629": {
+    "en": "Vitamins, unmixed (B, E, etc.)",
+    "ru": "Витамины несмешанные (B, E и др.)",
+    "uz": "Vitaminlar, aralashtirilmagan (B, E va b.)"
+  },
+  "294000": {
+    "en": "Pure sugars and sugar esters (non-food)",
+    "ru": "Химически чистые сахара и их эфиры",
+    "uz": "Kimyoviy toza shakarlar va efirlari"
+  },
+  "294190": {
+    "en": "Antibiotics (bulk substances)",
+    "ru": "Антибиотики (субстанции)",
+    "uz": "Antibiotiklar (substansiya)"
+  },
+  "300215": {
+    "en": "Immunological products, dosed",
+    "ru": "Иммунологические препараты в дозах",
+    "uz": "Immunologik preparatlar, dozalangan"
+  },
+  "300249": {
+    "en": "Microbial cultures and toxins",
+    "ru": "Культуры микроорганизмов и токсины",
+    "uz": "Mikroorganizm kulturalari va toksinlar"
+  },
+  "300410": {
+    "en": "Medicines with penicillin or streptomycin",
+    "ru": "Лекарства с пенициллином, стрептомицином",
+    "uz": "Penitsillin, streptomitsinli dorilar"
+  },
+  "300420": {
+    "en": "Antibiotic medicines, packaged",
+    "ru": "Антибиотики в упаковке для розницы",
+    "uz": "Antibiotikli dorilar, qadoqlangan"
+  },
+  "300450": {
+    "en": "Vitamin medicines, packaged",
+    "ru": "Витаминные препараты в упаковке",
+    "uz": "Vitaminli dorilar, qadoqlangan"
+  },
+  "300490": {
+    "en": "Medicines, packaged for retail",
+    "ru": "Лекарства в розничной упаковке",
+    "uz": "Dori vositalari, chakana qadoqda"
+  },
+  "310559": {
+    "en": "NP fertilizers (nitrogen-phosphorus)",
+    "ru": "Азотно-фосфорные удобрения",
+    "uz": "Azot-fosforli oʻgʻitlar"
+  },
+  "320890": {
+    "en": "Solvent-based paints and varnishes",
+    "ru": "Краски и лаки на растворителе",
+    "uz": "Erituvchili boʻyoq va laklar"
+  },
+  "320990": {
+    "en": "Water-based paints (non-acrylic)",
+    "ru": "Водные краски (не акриловые)",
+    "uz": "Suvli boʻyoqlar (akrilsiz)"
+  },
+  "321000": {
+    "en": "Other paints, enamels and distempers",
+    "ru": "Прочие краски, эмали, клеевые краски",
+    "uz": "Boshqa boʻyoqlar va emallar"
+  },
+  "321410": {
+    "en": "Mastics and painters' fillers",
+    "ru": "Мастики и малярные шпатлёвки",
+    "uz": "Mastika va boʻyoqchi shpaklyovkalari"
+  },
+  "330210": {
+    "en": "Food and drink flavourings",
+    "ru": "Ароматизаторы для пищи и напитков",
+    "uz": "Oziq-ovqat va ichimlik aromatizatorlari"
+  },
+  "330300": {
+    "en": "Perfumes and eau de toilette",
+    "ru": "Духи и туалетная вода",
+    "uz": "Atirlar va tualet suvlari"
+  },
+  "330491": {
+    "en": "Face powders (compact or loose)",
+    "ru": "Пудра для лица",
+    "uz": "Yuz upasi"
+  },
+  "330499": {
+    "en": "Skin-care creams and make-up",
+    "ru": "Кремы для кожи и декоративная косметика",
+    "uz": "Teri parvarishi kremlari va kosmetika"
+  },
+  "330510": {
+    "en": "Shampoos",
+    "ru": "Шампуни",
+    "uz": "Shampunlar"
+  },
+  "330610": {
+    "en": "Toothpaste",
+    "ru": "Зубная паста",
+    "uz": "Tish pastasi"
+  },
+  "330720": {
+    "en": "Deodorants and antiperspirants",
+    "ru": "Дезодоранты и антиперспиранты",
+    "uz": "Dezodorant va antiperspirantlar"
+  },
+  "340120": {
+    "en": "Soap: liquid, flakes, powder",
+    "ru": "Мыло жидкое, в хлопьях, порошке",
+    "uz": "Sovun: suyuq, parcha, kukun"
+  },
+  "340290": {
+    "en": "Industrial detergents (bulk)",
+    "ru": "Моющие средства промышленные (не розница)",
+    "uz": "Sanoat yuvish vositalari (ulgurji)"
+  },
+  "340391": {
+    "en": "Textile and leather lubricants",
+    "ru": "Смазки для текстиля и кожи",
+    "uz": "Toʻqimachilik va teri moylari"
+  },
+  "340530": {
+    "en": "Car polishes and body creams",
+    "ru": "Полироли для автокузова",
+    "uz": "Avtomobil kuzovi uchun jilolar"
+  },
+  "340590": {
+    "en": "Polishes and scouring creams (other)",
+    "ru": "Полироли и чистящие пасты (прочие)",
+    "uz": "Jilo va tozalash pastalari (boshqa)"
+  },
+  "370320": {
+    "en": "Colour photographic paper",
+    "ru": "Цветная фотобумага",
+    "uz": "Rangli fotoqogʻoz"
+  },
+  "380991": {
+    "en": "Textile finishing and dyeing agents",
+    "ru": "Аппреты и вспомогательные для текстиля",
+    "uz": "Toʻqimachilik pardozlash vositalari"
+  },
+  "381190": {
+    "en": "Fuel and oil additives (anti-corrosion)",
+    "ru": "Присадки к топливу и маслам",
+    "uz": "Yoqilgʻi va moy qoʻshimchalari"
+  },
+  "381900": {
+    "en": "Brake and hydraulic fluids",
+    "ru": "Тормозные и гидравлические жидкости",
+    "uz": "Tormoz va gidravlik suyuqliklar"
+  },
+  "382000": {
+    "en": "Antifreeze and de-icing fluids",
+    "ru": "Антифриз и антиобледенители",
+    "uz": "Antifriz va muzga qarshi suyuqliklar"
+  },
+  "382319": {
+    "en": "Industrial fatty acids (not stearic/oleic)",
+    "ru": "Технические жирные кислоты",
+    "uz": "Texnik yogʻ kislotalari"
+  },
+  "390410": {
+    "en": "PVC resin, pure, primary form",
+    "ru": "ПВХ чистый, в первичных формах",
+    "uz": "PVX, toza, birlamchi shaklda"
+  },
+  "390761": {
+    "en": "PET resin, high viscosity (bottle grade)",
+    "ru": "ПЭТ высоковязкий (бутылочный)",
+    "uz": "PET, yuqori qovushqoq (shisha uchun)"
+  },
+  "390931": {
+    "en": "Polymeric MDI (polyurethane base)",
+    "ru": "Полимерный МДИ (основа полиуретана)",
+    "uz": "Polimer MDI (poliuretan asosi)"
+  },
+  "391000": {
+    "en": "Silicones, primary forms",
+    "ru": "Силиконы в первичных формах",
+    "uz": "Silikonlar, birlamchi shaklda"
+  },
+  "391190": {
+    "en": "Polysulphones and other synthetic resins",
+    "ru": "Полисульфоны и прочие смолы",
+    "uz": "Polisulfonlar va boshqa smolalar"
+  },
+  "391721": {
+    "en": "Rigid polyethylene pipes",
+    "ru": "Жёсткие полиэтиленовые трубы",
+    "uz": "Qattiq polietilen quvurlar"
+  },
+  "391733": {
+    "en": "Flexible plastic hoses with fittings",
+    "ru": "Гибкие пластиковые шланги с фитингами",
+    "uz": "Fitingli egiluvchan plastik shlanglar"
+  },
+  "391740": {
+    "en": "Plastic pipe fittings",
+    "ru": "Пластиковые фитинги для труб",
+    "uz": "Plastik quvur fitinglari"
+  },
+  "391810": {
+    "en": "PVC floor and wall coverings (linoleum)",
+    "ru": "Покрытия из ПВХ (линолеум)",
+    "uz": "PVX pol va devor qoplamalari (linoleum)"
+  },
+  "391910": {
+    "en": "Self-adhesive plastic tape (≤20 cm)",
+    "ru": "Самоклеящаяся лента (до 20 см)",
+    "uz": "Oʻzi yopishuvchi plastik lenta (20 sm gacha)"
+  },
+  "392010": {
+    "en": "Polyethylene film and sheets",
+    "ru": "Полиэтиленовая плёнка и листы",
+    "uz": "Polietilen plyonka va varaqlar"
+  },
+  "392020": {
+    "en": "Polypropylene film and sheets",
+    "ru": "Полипропиленовая плёнка и листы",
+    "uz": "Polipropilen plyonka va varaqlar"
+  },
+  "392043": {
+    "en": "Soft PVC film (plasticised)",
+    "ru": "Мягкая ПВХ-плёнка (пластифицированная)",
+    "uz": "Yumshoq PVX plyonka"
+  },
+  "392062": {
+    "en": "PET film and sheets",
+    "ru": "ПЭТ-плёнка и листы",
+    "uz": "PET plyonka va varaqlar"
+  },
+  "392094": {
+    "en": "Phenolic resin sheets and laminates",
+    "ru": "Листы из фенольных смол",
+    "uz": "Fenol smolali varaqlar"
+  },
+  "392190": {
+    "en": "Plastic sheets and film, non-cellular (other)",
+    "ru": "Листы и плёнка, непористые (прочие)",
+    "uz": "Plastik varaq va plyonka (boshqa)"
+  },
+  "392290": {
+    "en": "Plastic toilets, cisterns and sanitary ware",
+    "ru": "Пластиковые унитазы, бачки, сантехника",
+    "uz": "Plastik unitaz, bachok va santexnika"
+  },
+  "392321": {
+    "en": "Polyethylene sacks and bags",
+    "ru": "Полиэтиленовые мешки и пакеты",
+    "uz": "Polietilen qop va paketlar"
+  },
+  "392329": {
+    "en": "Plastic sacks and bags (not PE)",
+    "ru": "Пластиковые мешки и пакеты (не ПЭ)",
+    "uz": "Plastik qop va paketlar (PE emas)"
+  },
+  "392350": {
+    "en": "Plastic caps, lids and closures",
+    "ru": "Пластиковые крышки и пробки",
+    "uz": "Plastik qopqoq va tiqinlar"
+  },
+  "392390": {
+    "en": "Plastic packaging articles (other)",
+    "ru": "Пластиковая тара (прочая)",
+    "uz": "Plastik qadoqlash buyumlari (boshqa)"
+  },
+  "400599": {
+    "en": "Compounded rubber, unvulcanised",
+    "ru": "Резиновые смеси, невулканизованные",
+    "uz": "Kauchuk aralashmalari, vulkanlanmagan"
+  },
+  "400931": {
+    "en": "Rubber hoses, textile-reinforced",
+    "ru": "Резиновые шланги с текстильным армированием",
+    "uz": "Toʻqima bilan mustahkamlangan rezina shlanglar"
+  },
+  "401035": {
+    "en": "Synchronous (timing) belts, 60–150 cm",
+    "ru": "Зубчатые ремни ГРМ, 60–150 см",
+    "uz": "Tishli tasmalar (GRM), 60–150 sm"
+  },
+  "401110": {
+    "en": "New car tyres",
+    "ru": "Новые шины для легковых авто",
+    "uz": "Yengil avto uchun yangi shinalar"
+  },
+  "401120": {
+    "en": "New bus and truck tyres",
+    "ru": "Новые шины для автобусов и грузовиков",
+    "uz": "Avtobus va yuk mashinasi shinalari"
+  },
+  "401180": {
+    "en": "Tyres for construction and mining machines",
+    "ru": "Шины для строительной и горной техники",
+    "uz": "Qurilish va kon texnikasi shinalari"
+  },
+  "401220": {
+    "en": "Used pneumatic tyres",
+    "ru": "Шины бывшие в употреблении",
+    "uz": "Ishlatilgan shinalar"
+  },
+  "401519": {
+    "en": "Rubber gloves (non-surgical)",
+    "ru": "Резиновые перчатки (не хирургические)",
+    "uz": "Rezina qoʻlqoplar (jarrohlik emas)"
+  },
+  "401691": {
+    "en": "Rubber floor mats",
+    "ru": "Резиновые коврики и покрытия",
+    "uz": "Rezina gilamchalar va qoplamalar"
+  },
+  "401699": {
+    "en": "Rubber articles: seals, buffers, parts",
+    "ru": "Резиновые изделия: уплотнители, детали",
+    "uz": "Rezina buyumlar: zichlagich, detallar"
+  },
+  "420222": {
+    "en": "Handbags of plastic or textile",
+    "ru": "Сумки из пластика или текстиля",
+    "uz": "Plastik yoki matodan sumkalar"
+  },
+  "441113": {
+    "en": "MDF board, 5–9 mm",
+    "ru": "МДФ толщиной 5–9 мм",
+    "uz": "MDF plita, 5–9 mm"
+  },
+  "441192": {
+    "en": "Hardboard (fibreboard >0.8 g/cm³)",
+    "ru": "ДВП высокой плотности (>0,8 г/см³)",
+    "uz": "Yuqori zichlikdagi DVP (>0,8 g/sm³)"
+  },
+  "441193": {
+    "en": "Fibreboard, 0.5–0.8 g/cm³",
+    "ru": "ДВП плотностью 0,5–0,8 г/см³",
+    "uz": "DVP, zichligi 0,5–0,8 g/sm³"
+  },
+  "441292": {
+    "en": "Hardwood-faced plywood",
+    "ru": "Фанера с наружным слоем из лиственных",
+    "uz": "Bargli yogʻoch qoplamali fanera"
+  },
+  "441879": {
+    "en": "Assembled wooden flooring panels",
+    "ru": "Паркетные щиты в сборе",
+    "uz": "Yigʻilgan yogʻoch pol panellari"
+  },
+  "442199": {
+    "en": "Wooden articles (other)",
+    "ru": "Изделия из дерева (прочие)",
+    "uz": "Yogʻoch buyumlar (boshqa)"
+  },
+  "480262": {
+    "en": "Office paper, A4 size (mechanical pulp)",
+    "ru": "Офисная бумага формата A4",
+    "uz": "Ofis qogʻozi, A4 format"
+  },
+  "480592": {
+    "en": "Uncoated paperboard, 150–225 g/m²",
+    "ru": "Картон немелованный 150–225 г/м²",
+    "uz": "Bormatilmagan karton, 150–225 g/m²"
+  },
+  "481159": {
+    "en": "Plastic-coated paper and board",
+    "ru": "Бумага и картон с полимерным покрытием",
+    "uz": "Plastik qoplamali qogʻoz va karton"
+  },
+  "481190": {
+    "en": "Coated or decorated paper (other)",
+    "ru": "Бумага с покрытием или декором (прочая)",
+    "uz": "Qoplamali yoki bezakli qogʻoz (boshqa)"
+  },
+  "481920": {
+    "en": "Folding cartons (non-corrugated)",
+    "ru": "Складные коробки (негофрированные)",
+    "uz": "Buklanadigan qutilar (gofrasiz)"
+  },
+  "481950": {
+    "en": "Paper packaging containers (other)",
+    "ru": "Бумажная тара (прочая)",
+    "uz": "Qogʻoz qadoqlash idishlari (boshqa)"
+  },
+  "482390": {
+    "en": "Paper and pulp articles (other)",
+    "ru": "Изделия из бумаги и целлюлозы (прочие)",
+    "uz": "Qogʻoz va sellyuloza buyumlari (boshqa)"
+  },
+  "490600": {
+    "en": "Hand-drawn plans and drawings, originals",
+    "ru": "Чертежи и планы, оригиналы от руки",
+    "uz": "Qoʻlda chizilgan chizmalar, asl nusxa"
+  },
+  "491110": {
+    "en": "Advertising material and catalogues",
+    "ru": "Рекламные материалы и каталоги",
+    "uz": "Reklama materiallari va kataloglar"
+  },
+  "491191": {
+    "en": "Printed pictures and photographs",
+    "ru": "Печатные картинки и фотографии",
+    "uz": "Bosma rasmlar va fotosuratlar"
+  },
+  "491199": {
+    "en": "Printed matter (other)",
+    "ru": "Печатная продукция (прочая)",
+    "uz": "Bosma mahsulotlar (boshqa)"
+  },
+  "520100": {
+    "en": "Raw cotton (not carded or combed)",
+    "ru": "Хлопок-волокно, нечёсаный",
+    "uz": "Paxta tolasi, taralmagan"
+  },
+  "520832": {
+    "en": "Cotton fabric, dyed, plain, 100–200 g/m²",
+    "ru": "Хлопковая ткань крашеная, 100–200 г/м²",
+    "uz": "Paxta mato, boʻyalgan, 100–200 g/m²"
+  },
+  "520931": {
+    "en": "Cotton fabric, dyed, plain, >200 g/m²",
+    "ru": "Хлопковая ткань крашеная, >200 г/м²",
+    "uz": "Paxta mato, boʻyalgan, >200 g/m²"
+  },
+  "521213": {
+    "en": "Cotton blend fabric, dyed, ≤200 g/m²",
+    "ru": "Смесовая хлопковая ткань, крашеная",
+    "uz": "Aralash paxta mato, boʻyalgan"
+  },
+  "530710": {
+    "en": "Jute yarn, single",
+    "ru": "Джутовая пряжа, однониточная",
+    "uz": "Jut ipi, bir qavat"
+  },
+  "540752": {
+    "en": "Polyester fabric (textured), dyed",
+    "ru": "Полиэфирная ткань (текстур.), крашеная",
+    "uz": "Poliefir mato (teksturali), boʻyalgan"
+  },
+  "540753": {
+    "en": "Polyester fabric, yarn-dyed",
+    "ru": "Полиэфирная ткань из цветных нитей",
+    "uz": "Poliefir mato, rangli iplardan"
+  },
+  "540754": {
+    "en": "Polyester fabric (textured), printed",
+    "ru": "Полиэфирная ткань (текстур.), набивная",
+    "uz": "Poliefir mato (teksturali), gulli"
+  },
+  "540769": {
+    "en": "Polyester blend fabric (<85% polyester)",
+    "ru": "Ткань с полиэфиром менее 85%",
+    "uz": "Poliefir aralash mato (85% dan kam)"
+  },
+  "540771": {
+    "en": "Synthetic filament fabric, unbleached",
+    "ru": "Ткань из синтетических нитей, суровая",
+    "uz": "Sintetik ipli mato, oqartirilmagan"
+  },
+  "550969": {
+    "en": "Acrylic blend yarn",
+    "ru": "Акриловая смесовая пряжа",
+    "uz": "Akril aralash ip"
+  },
+  "551614": {
+    "en": "Viscose staple fabric, printed",
+    "ru": "Вискозная штапельная ткань, набивная",
+    "uz": "Viskoza shtapel mato, gulli"
+  },
+  "551624": {
+    "en": "Viscose/synthetic blend fabric, printed",
+    "ru": "Вискозно-синтетическая ткань, набивная",
+    "uz": "Viskoza-sintetik mato, gulli"
+  },
+  "551694": {
+    "en": "Viscose blend fabric, printed (other)",
+    "ru": "Вискозная смесовая ткань, набивная (прочая)",
+    "uz": "Viskoza aralash mato, gulli (boshqa)"
+  },
+  "560313": {
+    "en": "Synthetic nonwovens, 70–150 g/m²",
+    "ru": "Нетканые материалы из синт. нитей, 70–150 г/м²",
+    "uz": "Sintetik notoʻqima material, 70–150 g/m²"
+  },
+  "560394": {
+    "en": "Nonwovens, heavy (>150 g/m²)",
+    "ru": "Нетканые материалы плотные (>150 г/м²)",
+    "uz": "Zich notoʻqima material (>150 g/m²)"
+  },
+  "560819": {
+    "en": "Synthetic netting (not fishing)",
+    "ru": "Синтетические сети (не рыболовные)",
+    "uz": "Sintetik toʻrlar (baliq ovi uchun emas)"
+  },
+  "570310": {
+    "en": "Tufted wool carpets",
+    "ru": "Тафтинговые шерстяные ковры",
+    "uz": "Taftingli jun gilamlar"
+  },
+  "570500": {
+    "en": "Carpets and rugs (other)",
+    "ru": "Ковры и покрытия (прочие)",
+    "uz": "Gilam va poyandozlar (boshqa)"
+  },
+  "580133": {
+    "en": "Synthetic weft-pile fabrics (velour)",
+    "ru": "Синтетические ворсовые ткани (велюр)",
+    "uz": "Sintetik tukli matolar (velyur)"
+  },
+  "580220": {
+    "en": "Terry towelling (not cotton)",
+    "ru": "Махровые ткани (не хлопок)",
+    "uz": "Maxrali matolar (paxtasiz)"
+  },
+  "590390": {
+    "en": "Plastic-coated textile fabrics",
+    "ru": "Ткани с полимерным покрытием",
+    "uz": "Plastik qoplamali matolar"
+  },
+  "591131": {
+    "en": "Paper-machine felts and fabrics",
+    "ru": "Сукна и сетки для бумагоделательных машин",
+    "uz": "Qogʻoz mashinalari uchun movut va toʻrlar"
+  },
+  "600192": {
+    "en": "Synthetic knitted pile fabric (velour)",
+    "ru": "Трикотажное ворсовое полотно (синт.)",
+    "uz": "Sintetik trikotaj tukli polotno"
+  },
+  "600410": {
+    "en": "Knitted stretch fabric (with elastane)",
+    "ru": "Трикотаж с эластаном",
+    "uz": "Elastanli trikotaj polotno"
+  },
+  "600539": {
+    "en": "Synthetic warp-knit fabric, printed",
+    "ru": "Основовязаное синт. полотно, набивное",
+    "uz": "Sintetik tanda-trikotaj, gulli"
+  },
+  "600632": {
+    "en": "Synthetic knitted fabric, dyed",
+    "ru": "Синтетическое трикотажное полотно, крашеное",
+    "uz": "Sintetik trikotaj polotno, boʻyalgan"
+  },
+  "600634": {
+    "en": "Synthetic knitted fabric, printed",
+    "ru": "Синтетическое трикотажное полотно, набивное",
+    "uz": "Sintetik trikotaj polotno, gulli"
+  },
+  "610190": {
+    "en": "Men's knitted coats and anoraks",
+    "ru": "Мужские трикотажные пальто и куртки",
+    "uz": "Erkaklar trikotaj palto va kurtkalari"
+  },
+  "610990": {
+    "en": "T-shirts and vests, non-cotton",
+    "ru": "Футболки и майки (не хлопок)",
+    "uz": "Futbolka va maykalar (paxtasiz)"
+  },
+  "611019": {
+    "en": "Fine-wool jumpers (not cashmere)",
+    "ru": "Свитеры из тонкой шерсти (не кашемир)",
+    "uz": "Mayin jun sviterlar (kashmir emas)"
+  },
+  "611030": {
+    "en": "Synthetic jumpers and cardigans",
+    "ru": "Синтетические свитеры и кардиганы",
+    "uz": "Sintetik sviter va kardiganlar"
+  },
+  "611120": {
+    "en": "Baby clothes, cotton knit",
+    "ru": "Детская одежда, хлопковый трикотаж",
+    "uz": "Chaqaloq kiyimlari, paxta trikotaj"
+  },
+  "611710": {
+    "en": "Knitted shawls and scarves",
+    "ru": "Трикотажные шали и шарфы",
+    "uz": "Trikotaj roʻmol va sharflar"
+  },
+  "620322": {
+    "en": "Men's cotton suits/ensembles",
+    "ru": "Мужские хлопковые комплекты",
+    "uz": "Erkaklar paxta toʻplamlari"
+  },
+  "620323": {
+    "en": "Men's synthetic suits/ensembles",
+    "ru": "Мужские синтетические комплекты",
+    "uz": "Erkaklar sintetik toʻplamlari"
+  },
+  "620342": {
+    "en": "Men's cotton trousers and jeans",
+    "ru": "Мужские хлопковые брюки и джинсы",
+    "uz": "Erkaklar paxta shim va jinsilari"
+  },
+  "620429": {
+    "en": "Women's ensembles (other fabrics)",
+    "ru": "Женские комплекты (прочие ткани)",
+    "uz": "Ayollar toʻplamlari (boshqa matolar)"
+  },
+  "620432": {
+    "en": "Women's cotton jackets and blazers",
+    "ru": "Женские хлопковые жакеты",
+    "uz": "Ayollar paxta jaketlari"
+  },
+  "620462": {
+    "en": "Women's cotton trousers and jeans",
+    "ru": "Женские хлопковые брюки и джинсы",
+    "uz": "Ayollar paxta shim va jinsilari"
+  },
+  "620530": {
+    "en": "Men's synthetic shirts",
+    "ru": "Мужские рубашки из химволокон",
+    "uz": "Erkaklar sintetik koʻylaklari"
+  },
+  "620711": {
+    "en": "Men's cotton underpants",
+    "ru": "Мужские хлопковые трусы",
+    "uz": "Erkaklar paxta ichki ishtonlari"
+  },
+  "620920": {
+    "en": "Baby clothes, cotton woven",
+    "ru": "Детская одежда из хлопковой ткани",
+    "uz": "Chaqaloq kiyimlari, paxta matodan"
+  },
+  "621149": {
+    "en": "Women's tracksuits and garments (other)",
+    "ru": "Женские спорткостюмы и одежда (прочие)",
+    "uz": "Ayollar sport kostyumlari (boshqa)"
+  },
+  "621430": {
+    "en": "Synthetic shawls and scarves",
+    "ru": "Синтетические шали и шарфы",
+    "uz": "Sintetik roʻmol va sharflar"
+  },
+  "630140": {
+    "en": "Synthetic blankets",
+    "ru": "Синтетические одеяла и пледы",
+    "uz": "Sintetik adyol va pledlar"
+  },
+  "630399": {
+    "en": "Curtains and blinds (other fabrics)",
+    "ru": "Шторы и жалюзи (прочие ткани)",
+    "uz": "Parda va jalyuzilar (boshqa matolar)"
+  },
+  "630900": {
+    "en": "Second-hand clothing",
+    "ru": "Одежда бывшая в употреблении",
+    "uz": "Ishlatilgan kiyim-kechak"
+  },
+  "640299": {
+    "en": "Rubber/plastic shoes (below ankle)",
+    "ru": "Обувь из резины/пластика (ниже лодыжки)",
+    "uz": "Rezina/plastik poyabzal (toʻpiqdan past)"
+  },
+  "640411": {
+    "en": "Sports shoes and trainers (textile upper)",
+    "ru": "Кроссовки и спортивная обувь (текстиль)",
+    "uz": "Krossovka va sport poyabzali (matoli)"
+  },
+  "640419": {
+    "en": "Textile-upper shoes, rubber sole",
+    "ru": "Текстильная обувь на резиновой подошве",
+    "uz": "Rezina tagli matoli poyabzal"
+  },
+  "640520": {
+    "en": "Textile-upper footwear (other)",
+    "ru": "Обувь с текстильным верхом (прочая)",
+    "uz": "Matoli poyabzal (boshqa)"
+  },
+  "680291": {
+    "en": "Worked marble and travertine",
+    "ru": "Обработанный мрамор и травертин",
+    "uz": "Ishlov berilgan marmar va travertin"
+  },
+  "680299": {
+    "en": "Worked natural stone (not marble/granite)",
+    "ru": "Обработанный природный камень",
+    "uz": "Ishlov berilgan tabiiy tosh"
+  },
+  "680520": {
+    "en": "Sandpaper (abrasive on paper)",
+    "ru": "Наждачная бумага",
+    "uz": "Jilvir qogʻoz"
+  },
+  "680530": {
+    "en": "Abrasive cloths and discs",
+    "ru": "Абразивные ткани и круги",
+    "uz": "Abraziv mato va disklar"
+  },
+  "680690": {
+    "en": "Mineral heat and sound insulation",
+    "ru": "Минеральная тепло- и звукоизоляция",
+    "uz": "Mineral issiqlik va tovush izolyatsiyasi"
+  },
+  "681182": {
+    "en": "Fibre-cement sheets and panels",
+    "ru": "Фиброцементные листы и панели",
+    "uz": "Fibrotsement listlar va panellar"
+  },
+  "681410": {
+    "en": "Mica sheets and plates",
+    "ru": "Слюдяные листы и пластины",
+    "uz": "Slyuda varaqlari va plastinalari"
+  },
+  "690410": {
+    "en": "Ceramic building bricks",
+    "ru": "Керамический строительный кирпич",
+    "uz": "Keramik qurilish gʻishti"
+  },
+  "690490": {
+    "en": "Ceramic flooring blocks and fillers",
+    "ru": "Керамические блоки для перекрытий",
+    "uz": "Keramik pol bloklari"
+  },
+  "690721": {
+    "en": "Porcelain stoneware tiles (≤0.5% absorption)",
+    "ru": "Керамогранит (водопоглощение ≤0,5%)",
+    "uz": "Keramogranit plitkalar"
+  },
+  "691410": {
+    "en": "Porcelain articles (other)",
+    "ru": "Фарфоровые изделия (прочие)",
+    "uz": "Chinni buyumlar (boshqa)"
+  },
+  "701341": {
+    "en": "Lead-crystal tableware",
+    "ru": "Посуда из хрусталя",
+    "uz": "Billur idishlar"
+  },
+  "701349": {
+    "en": "Glass tableware and kitchenware",
+    "ru": "Стеклянная столовая и кухонная посуда",
+    "uz": "Shisha oshxona va dasturxon idishlari"
+  },
+  "701890": {
+    "en": "Glass ornaments and figurines",
+    "ru": "Стеклянные статуэтки и украшения",
+    "uz": "Shisha haykalchalar va bezaklar"
+  },
+  "710812": {
+    "en": "Unwrought gold",
+    "ru": "Золото необработанное",
+    "uz": "Ishlov berilmagan oltin"
+  },
+  "711319": {
+    "en": "Gold and platinum jewellery",
+    "ru": "Ювелирные изделия из золота и платины",
+    "uz": "Oltin va platina zargarlik buyumlari"
+  },
+  "711790": {
+    "en": "Imitation jewellery (non-metal)",
+    "ru": "Бижутерия (не из металла)",
+    "uz": "Bijuteriya (metall emas)"
+  },
+  "720310": {
+    "en": "Direct-reduced iron (DRI)",
+    "ru": "Железо прямого восстановления",
+    "uz": "Toʻgʻridan-toʻgʻri qaytarilgan temir"
+  },
+  "720852": {
+    "en": "Hot-rolled steel plate, 4.75–10 mm",
+    "ru": "Горячекатаный лист, 4,75–10 мм",
+    "uz": "Issiq prokat list, 4,75–10 mm"
+  },
+  "721049": {
+    "en": "Galvanised steel sheet",
+    "ru": "Оцинкованный стальной лист",
+    "uz": "Rux bilan qoplangan poʻlat list"
+  },
+  "721070": {
+    "en": "Pre-painted (coated) steel sheet",
+    "ru": "Окрашенный стальной лист",
+    "uz": "Boʻyalgan poʻlat list"
+  },
+  "721420": {
+    "en": "Steel rebar (reinforcing bars)",
+    "ru": "Арматура стальная",
+    "uz": "Poʻlat armatura"
+  },
+  "721633": {
+    "en": "Steel H-beams (≥80 mm)",
+    "ru": "Стальные двутавры H (≥80 мм)",
+    "uz": "Poʻlat H-balkalar (≥80 mm)"
+  },
+  "722820": {
+    "en": "Silico-manganese steel bars",
+    "ru": "Прутки из кремнемарганцевой стали",
+    "uz": "Kremniy-marganets poʻlat chiviqlar"
+  },
+  "730300": {
+    "en": "Cast-iron pipes and tubes",
+    "ru": "Чугунные трубы",
+    "uz": "Choʻyan quvurlar"
+  },
+  "730419": {
+    "en": "Seamless oil and gas line pipe",
+    "ru": "Бесшовные трубы для нефте-/газопроводов",
+    "uz": "Choksiz neft-gaz quvurlari"
+  },
+  "730424": {
+    "en": "Stainless drilling casing and tubing",
+    "ru": "Обсадные и НКТ из нержавеющей стали",
+    "uz": "Zanglamas poʻlat burgʻi quvurlari"
+  },
+  "730429": {
+    "en": "Steel drilling casing and tubing (OCTG)",
+    "ru": "Обсадные трубы и НКТ стальные",
+    "uz": "Burgʻilash uchun poʻlat quvurlar"
+  },
+  "730431": {
+    "en": "Cold-drawn seamless steel tubes",
+    "ru": "Холоднотянутые бесшовные трубы",
+    "uz": "Sovuq choʻzilgan choksiz quvurlar"
+  },
+  "730441": {
+    "en": "Cold-drawn stainless steel tubes",
+    "ru": "Холоднотянутые трубы из нержавейки",
+    "uz": "Sovuq choʻzilgan zanglamas quvurlar"
+  },
+  "730511": {
+    "en": "Large-diameter welded line pipe (>406 mm)",
+    "ru": "Сварные трубы большого диаметра (>406 мм)",
+    "uz": "Katta diametrli payvand quvurlar (>406 mm)"
+  },
+  "730723": {
+    "en": "Stainless butt-welding pipe fittings",
+    "ru": "Фитинги из нержавейки под сварку",
+    "uz": "Payvandlanadigan zanglamas fitinglar"
+  },
+  "730890": {
+    "en": "Steel structures and parts",
+    "ru": "Металлоконструкции и их части",
+    "uz": "Poʻlat konstruksiyalar va qismlari"
+  },
+  "731519": {
+    "en": "Steel chain parts",
+    "ru": "Части стальных цепей",
+    "uz": "Poʻlat zanjir qismlari"
+  },
+  "731811": {
+    "en": "Steel coach screws",
+    "ru": "Стальные шурупы-глухари",
+    "uz": "Poʻlat yogʻoch burama mixlari"
+  },
+  "731824": {
+    "en": "Steel cotter pins",
+    "ru": "Стальные шплинты",
+    "uz": "Poʻlat shplintlar"
+  },
+  "732020": {
+    "en": "Steel coil springs",
+    "ru": "Стальные винтовые пружины",
+    "uz": "Poʻlat vintsimon prujinalar"
+  },
+  "732490": {
+    "en": "Steel sanitary ware (not sinks/baths)",
+    "ru": "Стальная сантехника (не мойки, ванны)",
+    "uz": "Poʻlat santexnika (rakovina, vannasiz)"
+  },
+  "740911": {
+    "en": "Refined copper strip, in coils",
+    "ru": "Лента из рафинированной меди",
+    "uz": "Tozalangan mis lenta, oʻramda"
+  },
+  "741220": {
+    "en": "Brass and copper-alloy pipe fittings",
+    "ru": "Латунные фитинги для труб",
+    "uz": "Latun quvur fitinglari"
+  },
+  "750720": {
+    "en": "Nickel pipe fittings",
+    "ru": "Никелевые фитинги для труб",
+    "uz": "Nikel quvur fitinglari"
+  },
+  "760110": {
+    "en": "Primary aluminium, unalloyed",
+    "ru": "Алюминий первичный нелегированный",
+    "uz": "Birlamchi alyuminiy, legirlanmagan"
+  },
+  "760310": {
+    "en": "Aluminium powder",
+    "ru": "Алюминиевый порошок",
+    "uz": "Alyuminiy kukuni"
+  },
+  "761610": {
+    "en": "Aluminium screws, bolts and rivets",
+    "ru": "Алюминиевые винты, болты, заклёпки",
+    "uz": "Alyuminiy vint, bolt va parchinlar"
+  },
+  "761699": {
+    "en": "Aluminium articles (other)",
+    "ru": "Изделия из алюминия (прочие)",
+    "uz": "Alyuminiy buyumlar (boshqa)"
+  },
+  "820420": {
+    "en": "Socket wrench sets",
+    "ru": "Торцевые головки и наборы",
+    "uz": "Torets kalit kallaklari"
+  },
+  "820559": {
+    "en": "Hand tools (other)",
+    "ru": "Ручные инструменты (прочие)",
+    "uz": "Qoʻl asboblari (boshqa)"
+  },
+  "820730": {
+    "en": "Press and stamping dies",
+    "ru": "Штампы для прессования и вырубки",
+    "uz": "Presslash va shtamplash asboblari"
+  },
+  "820790": {
+    "en": "Screwdriver bits and interchangeable tools",
+    "ru": "Биты и сменные инструменты",
+    "uz": "Bitalar va almashinuvchi asboblar"
+  },
+  "821210": {
+    "en": "Razors",
+    "ru": "Бритвы",
+    "uz": "Ustaralar"
+  },
+  "821220": {
+    "en": "Safety razor blades",
+    "ru": "Лезвия для безопасных бритв",
+    "uz": "Ustara tigʻlari"
+  },
+  "830210": {
+    "en": "Metal hinges",
+    "ru": "Металлические петли",
+    "uz": "Metall sharnirlar (petlyalar)"
+  },
+  "830241": {
+    "en": "Metal building fittings (door, window)",
+    "ru": "Металлическая фурнитура для зданий",
+    "uz": "Bino uchun metall furnitura"
+  },
+  "830242": {
+    "en": "Metal furniture fittings",
+    "ru": "Мебельная металлическая фурнитура",
+    "uz": "Mebel metall furniturasi"
+  },
+  "830990": {
+    "en": "Metal caps and lids",
+    "ru": "Металлические крышки и колпачки",
+    "uz": "Metall qopqoqlar"
+  },
+  "840290": {
+    "en": "Steam boiler parts",
+    "ru": "Части паровых котлов",
+    "uz": "Bugʻ qozonlari qismlari"
+  },
+  "840590": {
+    "en": "Gas generator parts",
+    "ru": "Части газогенераторов",
+    "uz": "Gaz generatorlari qismlari"
+  },
+  "840681": {
+    "en": "Steam turbines over 40 MW",
+    "ru": "Паровые турбины более 40 МВт",
+    "uz": "40 MVt dan ortiq bugʻ turbinalari"
+  },
+  "840690": {
+    "en": "Steam turbine parts",
+    "ru": "Части паровых турбин",
+    "uz": "Bugʻ turbinalari qismlari"
+  },
+  "840733": {
+    "en": "Vehicle petrol engines, 250–1000 cc",
+    "ru": "Бензиновые двигатели ТС, 250–1000 см³",
+    "uz": "Avto benzin dvigatellari, 250–1000 sm³"
+  },
+  "840890": {
+    "en": "Diesel engines (industrial)",
+    "ru": "Дизельные двигатели (промышленные)",
+    "uz": "Dizel dvigatellar (sanoat)"
+  },
+  "840991": {
+    "en": "Petrol engine parts",
+    "ru": "Части бензиновых двигателей",
+    "uz": "Benzin dvigateli qismlari"
+  },
+  "840999": {
+    "en": "Diesel engine parts",
+    "ru": "Части дизельных двигателей",
+    "uz": "Dizel dvigateli qismlari"
+  },
+  "841112": {
+    "en": "Turbojet engines (>25 kN)",
+    "ru": "Турбореактивные двигатели (>25 кН)",
+    "uz": "Turboreaktiv dvigatellar (>25 kN)"
+  },
+  "841182": {
+    "en": "Gas turbines over 5 MW",
+    "ru": "Газовые турбины более 5 МВт",
+    "uz": "5 MVt dan ortiq gaz turbinalari"
+  },
+  "841199": {
+    "en": "Gas turbine parts",
+    "ru": "Части газовых турбин",
+    "uz": "Gaz turbinalari qismlari"
+  },
+  "841229": {
+    "en": "Hydraulic motors (rotary)",
+    "ru": "Гидромоторы (вращательные)",
+    "uz": "Gidromotorlar (aylanma)"
+  },
+  "841280": {
+    "en": "Pneumatic motors and engines",
+    "ru": "Пневматические двигатели",
+    "uz": "Pnevmatik dvigatellar"
+  },
+  "841360": {
+    "en": "Rotary pumps for liquids (gear, vane)",
+    "ru": "Ротационные насосы для жидкостей",
+    "uz": "Suyuqlik uchun rotatsion nasoslar"
+  },
+  "841370": {
+    "en": "Centrifugal pumps for liquids",
+    "ru": "Центробежные насосы для жидкостей",
+    "uz": "Markazdan qochma suyuqlik nasoslari"
+  },
+  "841430": {
+    "en": "Refrigeration compressors",
+    "ru": "Компрессоры для холодильного оборудования",
+    "uz": "Sovutish kompressorlari"
+  },
+  "841459": {
+    "en": "Industrial fans",
+    "ru": "Промышленные вентиляторы",
+    "uz": "Sanoat ventilyatorlari"
+  },
+  "841480": {
+    "en": "Air and gas compressors",
+    "ru": "Воздушные и газовые компрессоры",
+    "uz": "Havo va gaz kompressorlari"
+  },
+  "841510": {
+    "en": "Wall and split air conditioners",
+    "ru": "Настенные и сплит-кондиционеры",
+    "uz": "Devoriy va split konditsionerlar"
+  },
+  "841590": {
+    "en": "Air conditioner parts",
+    "ru": "Части кондиционеров",
+    "uz": "Konditsioner qismlari"
+  },
+  "841620": {
+    "en": "Gas and pulverised-fuel burners",
+    "ru": "Горелки для газа и пылевидного топлива",
+    "uz": "Gaz va chang yoqilgʻi gorelkalari"
+  },
+  "841810": {
+    "en": "Fridge-freezers (two doors)",
+    "ru": "Холодильники с морозильником (2 двери)",
+    "uz": "Muzlatgichli sovutkichlar (2 eshik)"
+  },
+  "841821": {
+    "en": "Household refrigerators (compression)",
+    "ru": "Бытовые холодильники компрессионные",
+    "uz": "Maishiy sovutkichlar (kompressorli)"
+  },
+  "841899": {
+    "en": "Refrigeration equipment parts",
+    "ru": "Части холодильного оборудования",
+    "uz": "Sovutish uskunalari qismlari"
+  },
+  "841950": {
+    "en": "Industrial heat exchangers",
+    "ru": "Промышленные теплообменники",
+    "uz": "Sanoat issiqlik almashtirgichlari"
+  },
+  "841989": {
+    "en": "Industrial heating and cooling equipment",
+    "ru": "Промышленное тепловое оборудование",
+    "uz": "Sanoat issiqlik ishlov uskunalari"
+  },
+  "841990": {
+    "en": "Parts of heat-treatment equipment",
+    "ru": "Части теплового оборудования",
+    "uz": "Issiqlik ishlov uskunasi qismlari"
+  },
+  "842010": {
+    "en": "Calendering and rolling machines",
+    "ru": "Каландры и вальцовочные машины",
+    "uz": "Kalandr va valetsli mashinalar"
+  },
+  "842121": {
+    "en": "Water filters and purifiers",
+    "ru": "Фильтры и очистители воды",
+    "uz": "Suv filtrlari va tozalagichlar"
+  },
+  "842129": {
+    "en": "Liquid filtration machinery (other)",
+    "ru": "Фильтры для жидкостей (прочие)",
+    "uz": "Suyuqlik filtrlari (boshqa)"
+  },
+  "842131": {
+    "en": "Engine air intake filters",
+    "ru": "Воздушные фильтры двигателей",
+    "uz": "Dvigatel havo filtrlari"
+  },
+  "842139": {
+    "en": "Gas filters and purifiers (industrial)",
+    "ru": "Фильтры для газов (промышленные)",
+    "uz": "Gaz filtrlari (sanoat)"
+  },
+  "842199": {
+    "en": "Filter parts",
+    "ru": "Части фильтров",
+    "uz": "Filtr qismlari"
+  },
+  "842230": {
+    "en": "Bottling, filling and labelling machines",
+    "ru": "Машины розлива, укупорки, этикетировки",
+    "uz": "Quyish, berkitish, yorliqlash mashinalari"
+  },
+  "842420": {
+    "en": "Spray guns",
+    "ru": "Краскопульты и распылители",
+    "uz": "Purkagich toʻpponchalar"
+  },
+  "842710": {
+    "en": "Electric forklifts",
+    "ru": "Электрические погрузчики",
+    "uz": "Elektr yuklagichlar"
+  },
+  "842810": {
+    "en": "Lifts and elevators",
+    "ru": "Лифты и подъёмники",
+    "uz": "Liftlar va koʻtargichlar"
+  },
+  "842890": {
+    "en": "Loading and handling machinery (other)",
+    "ru": "Погрузочно-разгрузочные машины (прочие)",
+    "uz": "Yuklash-tushirish mashinalari (boshqa)"
+  },
+  "842952": {
+    "en": "Excavators, 360° slewing",
+    "ru": "Экскаваторы полноповоротные",
+    "uz": "Toʻliq aylanuvchi ekskavatorlar"
+  },
+  "843139": {
+    "en": "Parts of conveyors and hoists",
+    "ru": "Части конвейеров и подъёмников",
+    "uz": "Konveyer va koʻtargich qismlari"
+  },
+  "843149": {
+    "en": "Parts of earth-moving machinery",
+    "ru": "Части землеройной техники",
+    "uz": "Yer qazish texnikasi qismlari"
+  },
+  "843239": {
+    "en": "Seeders and planters",
+    "ru": "Сеялки и сажалки",
+    "uz": "Seyalka va koʻchat ekish mashinalari"
+  },
+  "843319": {
+    "en": "Lawn mowers (reel type)",
+    "ru": "Газонокосилки (барабанные)",
+    "uz": "Maysazor oʻroq mashinalari"
+  },
+  "843330": {
+    "en": "Haymaking machinery",
+    "ru": "Сеноуборочные машины",
+    "uz": "Pichan yigʻish mashinalari"
+  },
+  "843390": {
+    "en": "Harvester and thresher parts",
+    "ru": "Части уборочных машин и молотилок",
+    "uz": "Oʻrim-yigʻim mashinalari qismlari"
+  },
+  "843820": {
+    "en": "Confectionery and chocolate machinery",
+    "ru": "Оборудование для кондитерки и шоколада",
+    "uz": "Qandolat va shokolad uskunalari"
+  },
+  "843850": {
+    "en": "Meat and poultry processing machinery",
+    "ru": "Оборудование для переработки мяса",
+    "uz": "Goʻsht qayta ishlash uskunalari"
+  },
+  "843880": {
+    "en": "Food processing machinery (other)",
+    "ru": "Пищевое оборудование (прочее)",
+    "uz": "Oziq-ovqat uskunalari (boshqa)"
+  },
+  "844120": {
+    "en": "Bag and envelope making machines",
+    "ru": "Машины для производства пакетов",
+    "uz": "Paket va konvert ishlab chiqarish mashinalari"
+  },
+  "844520": {
+    "en": "Spinning machines",
+    "ru": "Прядильные машины",
+    "uz": "Yigiruv mashinalari"
+  },
+  "845011": {
+    "en": "Automatic washing machines (≤10 kg)",
+    "ru": "Стиральные машины-автоматы (до 10 кг)",
+    "uz": "Avtomat kir yuvish mashinalari (10 kg gacha)"
+  },
+  "845090": {
+    "en": "Washing machine parts",
+    "ru": "Части стиральных машин",
+    "uz": "Kir yuvish mashinasi qismlari"
+  },
+  "845190": {
+    "en": "Parts of textile finishing machines",
+    "ru": "Части машин для отделки тканей",
+    "uz": "Mato pardozlash mashinalari qismlari"
+  },
+  "845221": {
+    "en": "Industrial sewing machines, automatic",
+    "ru": "Промышленные швейные машины-автоматы",
+    "uz": "Sanoat avtomat tikuv mashinalari"
+  },
+  "845590": {
+    "en": "Rolling mill parts",
+    "ru": "Части прокатных станов",
+    "uz": "Prokat stanlari qismlari"
+  },
+  "846410": {
+    "en": "Stone and glass sawing machines",
+    "ru": "Пилы для камня и стекла",
+    "uz": "Tosh va shisha arralash stanoklari"
+  },
+  "846490": {
+    "en": "Stone and glass working machines (other)",
+    "ru": "Станки для камня и стекла (прочие)",
+    "uz": "Tosh va shisha stanoklari (boshqa)"
+  },
+  "846594": {
+    "en": "Woodworking bending and assembly machines",
+    "ru": "Деревообрабатывающие гибочные станки",
+    "uz": "Yogʻoch egish va yigʻish stanoklari"
+  },
+  "847130": {
+    "en": "Laptops and notebooks",
+    "ru": "Ноутбуки",
+    "uz": "Noutbuklar"
+  },
+  "847150": {
+    "en": "Computer system units (CPU units)",
+    "ru": "Системные блоки компьютеров",
+    "uz": "Kompyuter tizim bloklari"
+  },
+  "847170": {
+    "en": "Computer storage units (drives)",
+    "ru": "Накопители данных для ЭВМ",
+    "uz": "Kompyuter xotira qurilmalari"
+  },
+  "847180": {
+    "en": "Computer units: servers, controllers (other)",
+    "ru": "Блоки ЭВМ: серверы, контроллеры (прочие)",
+    "uz": "Kompyuter bloklari: server, kontroller"
+  },
+  "847290": {
+    "en": "Office machines (other)",
+    "ru": "Офисные машины (прочие)",
+    "uz": "Ofis mashinalari (boshqa)"
+  },
+  "847330": {
+    "en": "Computer parts and accessories",
+    "ru": "Части и принадлежности компьютеров",
+    "uz": "Kompyuter qismlari va aksessuarlari"
+  },
+  "847431": {
+    "en": "Concrete and mortar mixers",
+    "ru": "Бетоно- и растворосмесители",
+    "uz": "Beton va qorishma aralashtirgichlar"
+  },
+  "847480": {
+    "en": "Moulding machines for ceramics and cement",
+    "ru": "Формовочные машины для керамики, цемента",
+    "uz": "Keramika va sement qoliplash mashinalari"
+  },
+  "847490": {
+    "en": "Mineral crushing and sorting machine parts",
+    "ru": "Части дробильно-сортировочных машин",
+    "uz": "Maydalash-saralash mashinalari qismlari"
+  },
+  "847780": {
+    "en": "Plastic and rubber processing machinery",
+    "ru": "Оборудование для пластмасс и резины",
+    "uz": "Plastmassa va rezina uskunalari"
+  },
+  "847960": {
+    "en": "Evaporative air coolers",
+    "ru": "Испарительные охладители воздуха",
+    "uz": "Bugʻlatuvchi havo sovutgichlar"
+  },
+  "847981": {
+    "en": "Metal treatment and coil-winding machines",
+    "ru": "Машины для металла и намотки проволоки",
+    "uz": "Metall ishlov va sim oʻrash mashinalari"
+  },
+  "847989": {
+    "en": "Special-purpose machines n.e.c.",
+    "ru": "Машины специального назначения (прочие)",
+    "uz": "Maxsus vazifali mashinalar (boshqa)"
+  },
+  "847990": {
+    "en": "Parts of special-purpose machines",
+    "ru": "Части машин специального назначения",
+    "uz": "Maxsus mashinalar qismlari"
+  },
+  "848079": {
+    "en": "Moulds for rubber or plastics (other)",
+    "ru": "Пресс-формы для резины, пластмасс",
+    "uz": "Rezina va plastmassa qoliplari"
+  },
+  "848130": {
+    "en": "Check (non-return) valves",
+    "ru": "Обратные клапаны",
+    "uz": "Teskari klapanlar"
+  },
+  "848180": {
+    "en": "Taps, valves and stopcocks",
+    "ru": "Краны, вентили и задвижки",
+    "uz": "Kranlar, ventil va zadvijkalar"
+  },
+  "848190": {
+    "en": "Valve and tap parts",
+    "ru": "Части кранов и клапанов",
+    "uz": "Kran va klapan qismlari"
+  },
+  "848360": {
+    "en": "Clutches and shaft couplings",
+    "ru": "Муфты сцепления и соединительные",
+    "uz": "Mufta va val ulagichlari"
+  },
+  "848390": {
+    "en": "Gears, sprockets and transmission parts",
+    "ru": "Шестерни, звёздочки и части передач",
+    "uz": "Tishli gʻildirak va uzatma qismlari"
+  },
+  "848410": {
+    "en": "Metal-layered gaskets",
+    "ru": "Прокладки металлические комбинированные",
+    "uz": "Metall qatlamli prokladkalar"
+  },
+  "848490": {
+    "en": "Gasket sets",
+    "ru": "Наборы прокладок",
+    "uz": "Prokladka toʻplamlari"
+  },
+  "848690": {
+    "en": "Semiconductor equipment parts",
+    "ru": "Части оборудования для полупроводников",
+    "uz": "Yarimoʻtkazgich uskunalari qismlari"
+  },
+  "850134": {
+    "en": "DC motors and generators >375 kW",
+    "ru": "Двигатели и генераторы пост. тока >375 кВт",
+    "uz": "Doimiy tok dvigatellari >375 kVt"
+  },
+  "850220": {
+    "en": "Petrol generator sets",
+    "ru": "Бензиновые генераторные установки",
+    "uz": "Benzinli generator qurilmalari"
+  },
+  "850239": {
+    "en": "Generator sets (gas, other)",
+    "ru": "Генераторные установки (газовые и пр.)",
+    "uz": "Generator qurilmalari (gaz va b.)"
+  },
+  "850300": {
+    "en": "Electric motor and generator parts",
+    "ru": "Части электродвигателей и генераторов",
+    "uz": "Elektr dvigatel va generator qismlari"
+  },
+  "850440": {
+    "en": "Power converters and inverters (UPS)",
+    "ru": "Преобразователи и инверторы (ИБП)",
+    "uz": "Oʻzgartirgich va invertorlar (UPS)"
+  },
+  "850490": {
+    "en": "Transformer and converter parts",
+    "ru": "Части трансформаторов и преобразователей",
+    "uz": "Transformator va oʻzgartirgich qismlari"
+  },
+  "850590": {
+    "en": "Electromagnets and magnetic holders",
+    "ru": "Электромагниты и магнитные держатели",
+    "uz": "Elektromagnit va magnit ushlagichlar"
+  },
+  "850760": {
+    "en": "Lithium-ion batteries",
+    "ru": "Литий-ионные аккумуляторы",
+    "uz": "Litiy-ionli akkumulyatorlar"
+  },
+  "850811": {
+    "en": "Vacuum cleaners (≤1.5 kW, ≤20 L)",
+    "ru": "Пылесосы (до 1,5 кВт, до 20 л)",
+    "uz": "Changyutgichlar (1,5 kVt, 20 l gacha)"
+  },
+  "850819": {
+    "en": "Vacuum cleaners (other)",
+    "ru": "Пылесосы (прочие)",
+    "uz": "Changyutgichlar (boshqa)"
+  },
+  "850940": {
+    "en": "Food mixers, blenders and juicers",
+    "ru": "Миксеры, блендеры и соковыжималки",
+    "uz": "Mikser, blender va sharbat siqgichlar"
+  },
+  "850990": {
+    "en": "Domestic appliance parts (mixers etc.)",
+    "ru": "Части бытовых электроприборов",
+    "uz": "Maishiy elektr asboblar qismlari"
+  },
+  "851180": {
+    "en": "Engine ignition and starter equipment",
+    "ru": "Оборудование зажигания и пуска",
+    "uz": "Dvigatel oʻt oldirish va start uskunalari"
+  },
+  "851632": {
+    "en": "Hair straighteners and curlers",
+    "ru": "Выпрямители и щипцы для волос",
+    "uz": "Soch tekislagich va jingalaklagichlar"
+  },
+  "851640": {
+    "en": "Electric irons",
+    "ru": "Электрические утюги",
+    "uz": "Elektr dazmollar"
+  },
+  "851671": {
+    "en": "Coffee and tea makers",
+    "ru": "Кофеварки и чайные машины",
+    "uz": "Qahva va choy qaynatgichlar"
+  },
+  "851679": {
+    "en": "Electric kettles and household heaters (other)",
+    "ru": "Электрочайники и бытовые нагреватели",
+    "uz": "Elektr choynak va maishiy isitgichlar"
+  },
+  "851690": {
+    "en": "Parts of electric heaters and appliances",
+    "ru": "Части электронагревательных приборов",
+    "uz": "Elektr isitish asboblari qismlari"
+  },
+  "851712": {
+    "en": "Mobile phones",
+    "ru": "Мобильные телефоны",
+    "uz": "Mobil telefonlar"
+  },
+  "851713": {
+    "en": "Smartphones",
+    "ru": "Смартфоны",
+    "uz": "Smartfonlar"
+  },
+  "851762": {
+    "en": "Network equipment: routers, switches",
+    "ru": "Сетевое оборудование: роутеры, коммутаторы",
+    "uz": "Tarmoq uskunalari: router, kommutator"
+  },
+  "851769": {
+    "en": "Communication apparatus (other)",
+    "ru": "Аппаратура связи (прочая)",
+    "uz": "Aloqa apparaturasi (boshqa)"
+  },
+  "851770": {
+    "en": "Telephone and network equipment parts",
+    "ru": "Части телефонов и сетевого оборудования",
+    "uz": "Telefon va tarmoq uskunalari qismlari"
+  },
+  "851821": {
+    "en": "Loudspeakers in enclosures",
+    "ru": "Акустические колонки",
+    "uz": "Akustik kolonkalar"
+  },
+  "851829": {
+    "en": "Loudspeaker drivers (unmounted)",
+    "ru": "Динамики без корпуса",
+    "uz": "Korpussiz dinamiklar"
+  },
+  "852329": {
+    "en": "Magnetic media (tapes, disks)",
+    "ru": "Магнитные носители (ленты, диски)",
+    "uz": "Magnit tashuvchilar (lenta, disk)"
+  },
+  "852349": {
+    "en": "Recorded optical discs (CD, DVD)",
+    "ru": "Оптические диски с записью",
+    "uz": "Yozilgan optik disklar (CD, DVD)"
+  },
+  "852351": {
+    "en": "Flash drives and SSD storage",
+    "ru": "Флеш-накопители и SSD",
+    "uz": "Flesh-xotira va SSD"
+  },
+  "852580": {
+    "en": "TV, digital and video cameras",
+    "ru": "Теле-, цифровые и видеокамеры",
+    "uz": "Televizion, raqamli va videokameralar"
+  },
+  "852791": {
+    "en": "Radio receivers with recorder",
+    "ru": "Радиоприёмники с записью",
+    "uz": "Yozib oluvchi radiopriyomniklar"
+  },
+  "852871": {
+    "en": "TV receivers without screen (set-top boxes)",
+    "ru": "ТВ-приставки без экрана",
+    "uz": "Ekransiz TV pristavkalar"
+  },
+  "852872": {
+    "en": "Colour television sets",
+    "ru": "Цветные телевизоры",
+    "uz": "Rangli televizorlar"
+  },
+  "852990": {
+    "en": "TV and radio equipment parts",
+    "ru": "Части теле- и радиоаппаратуры",
+    "uz": "TV va radio uskunalari qismlari"
+  },
+  "853110": {
+    "en": "Burglar and fire alarms",
+    "ru": "Охранная и пожарная сигнализация",
+    "uz": "Qoʻriqlash va yongʻin signalizatsiyasi"
+  },
+  "853120": {
+    "en": "LED and LCD indicator panels",
+    "ru": "Светодиодные и ЖК-табло",
+    "uz": "LED va LCD indikator panellari"
+  },
+  "853190": {
+    "en": "Signalling apparatus parts",
+    "ru": "Части сигнальной аппаратуры",
+    "uz": "Signal apparaturasi qismlari"
+  },
+  "853222": {
+    "en": "Aluminium electrolytic capacitors",
+    "ru": "Алюминиевые электролитические конденсаторы",
+    "uz": "Alyuminiy elektrolit kondensatorlar"
+  },
+  "853225": {
+    "en": "Film and paper capacitors",
+    "ru": "Плёночные и бумажные конденсаторы",
+    "uz": "Plyonkali va qogʻoz kondensatorlar"
+  },
+  "853329": {
+    "en": "Power resistors (>20 W)",
+    "ru": "Мощные резисторы (>20 Вт)",
+    "uz": "Quvvatli rezistorlar (>20 Vt)"
+  },
+  "853400": {
+    "en": "Printed circuit boards",
+    "ru": "Печатные платы",
+    "uz": "Bosma platalar"
+  },
+  "853650": {
+    "en": "Electrical switches (≤1000 V)",
+    "ru": "Выключатели и переключатели (до 1000 В)",
+    "uz": "Elektr kalitlari (1000 V gacha)"
+  },
+  "853710": {
+    "en": "Electrical control panels, ≤1 kV",
+    "ru": "Щиты управления и распределения, до 1 кВ",
+    "uz": "Elektr boshqaruv shchitlari, 1 kV gacha"
+  },
+  "854110": {
+    "en": "Diodes (not LED)",
+    "ru": "Диоды (не светодиоды)",
+    "uz": "Diodlar (LED emas)"
+  },
+  "854130": {
+    "en": "Thyristors and triacs",
+    "ru": "Тиристоры и симисторы",
+    "uz": "Tiristor va simistorlar"
+  },
+  "854140": {
+    "en": "Solar cells and LEDs",
+    "ru": "Солнечные элементы и светодиоды",
+    "uz": "Quyosh elementlari va LEDlar"
+  },
+  "854231": {
+    "en": "Processors and controllers (chips)",
+    "ru": "Процессоры и контроллеры (микросхемы)",
+    "uz": "Protsessor va kontrollerlar (mikrosxema)"
+  },
+  "854239": {
+    "en": "Integrated circuits (other)",
+    "ru": "Интегральные схемы (прочие)",
+    "uz": "Integral sxemalar (boshqa)"
+  },
+  "854340": {
+    "en": "E-cigarettes and vaping devices",
+    "ru": "Электронные сигареты и вейпы",
+    "uz": "Elektron sigaret va veyplar"
+  },
+  "854370": {
+    "en": "Electrical machines and apparatus n.e.c.",
+    "ru": "Электрические машины и аппараты (прочие)",
+    "uz": "Elektr mashina va apparatlar (boshqa)"
+  },
+  "854411": {
+    "en": "Copper winding wire",
+    "ru": "Медный обмоточный провод",
+    "uz": "Mis chulgʻam simi"
+  },
+  "854420": {
+    "en": "Coaxial cable",
+    "ru": "Коаксиальный кабель",
+    "uz": "Koaksial kabel"
+  },
+  "854442": {
+    "en": "Electric cables with connectors (≤1 kV)",
+    "ru": "Кабели с разъёмами (до 1 кВ)",
+    "uz": "Ulagichli kabellar (1 kV gacha)"
+  },
+  "854460": {
+    "en": "High-voltage power cables (>1 kV)",
+    "ru": "Силовые кабели высокого напряжения (>1 кВ)",
+    "uz": "Yuqori kuchlanishli kabellar (>1 kV)"
+  },
+  "854519": {
+    "en": "Carbon electrodes (non-furnace)",
+    "ru": "Угольные электроды (не для печей)",
+    "uz": "Koʻmir elektrodlar (pechsiz)"
+  },
+  "854720": {
+    "en": "Plastic insulating fittings",
+    "ru": "Изоляционная арматура из пластмасс",
+    "uz": "Plastik izolyatsion armatura"
+  },
+  "860900": {
+    "en": "Shipping containers",
+    "ru": "Транспортные контейнеры",
+    "uz": "Transport konteynerlari"
+  },
+  "870120": {
+    "en": "Road tractors for semi-trailers",
+    "ru": "Седельные тягачи",
+    "uz": "Egarli tyagachlar"
+  },
+  "870121": {
+    "en": "Diesel road tractors for semi-trailers",
+    "ru": "Седельные тягачи дизельные",
+    "uz": "Dizel egarli tyagachlar"
+  },
+  "870130": {
+    "en": "Crawler (track-laying) tractors",
+    "ru": "Гусеничные тракторы",
+    "uz": "Zanjirli traktorlar"
+  },
+  "870193": {
+    "en": "Farm tractors, 37–75 kW",
+    "ru": "Тракторы 37–75 кВт",
+    "uz": "Traktorlar, 37–75 kVt"
+  },
+  "870322": {
+    "en": "Petrol cars, 1.0–1.5 L",
+    "ru": "Легковые бензиновые, 1,0–1,5 л",
+    "uz": "Yengil avto, benzin 1,0–1,5 l"
+  },
+  "870323": {
+    "en": "Petrol cars, 1.5–3 L",
+    "ru": "Легковые бензиновые, 1,5–3 л",
+    "uz": "Yengil avto, benzin 1,5–3 l"
+  },
+  "870324": {
+    "en": "Petrol cars, over 3 L",
+    "ru": "Легковые бензиновые, свыше 3 л",
+    "uz": "Yengil avto, benzin 3 l dan ortiq"
+  },
+  "870333": {
+    "en": "Diesel cars, over 2.5 L",
+    "ru": "Легковые дизельные, свыше 2,5 л",
+    "uz": "Yengil avto, dizel 2,5 l dan ortiq"
+  },
+  "870340": {
+    "en": "Hybrid cars (non plug-in)",
+    "ru": "Гибридные авто (без подзарядки)",
+    "uz": "Gibrid avtomobillar (quvvatlanmaydigan)"
+  },
+  "870360": {
+    "en": "Plug-in hybrid cars",
+    "ru": "Подключаемые гибриды",
+    "uz": "Plug-in gibrid avtomobillar"
+  },
+  "870380": {
+    "en": "Electric cars",
+    "ru": "Электромобили",
+    "uz": "Elektromobillar"
+  },
+  "870410": {
+    "en": "Off-highway dump trucks",
+    "ru": "Карьерные самосвалы",
+    "uz": "Karyer samosvallari"
+  },
+  "870421": {
+    "en": "Diesel trucks, up to 5 t",
+    "ru": "Грузовики дизельные, до 5 т",
+    "uz": "Dizel yuk mashinalari, 5 t gacha"
+  },
+  "870422": {
+    "en": "Diesel trucks, 5–20 t",
+    "ru": "Грузовики дизельные, 5–20 т",
+    "uz": "Dizel yuk mashinalari, 5–20 t"
+  },
+  "870423": {
+    "en": "Diesel trucks, over 20 t",
+    "ru": "Грузовики дизельные, свыше 20 т",
+    "uz": "Dizel yuk mashinalari, 20 t dan ortiq"
+  },
+  "870590": {
+    "en": "Special-purpose vehicles (cranes, sweepers)",
+    "ru": "Спецтехника (эвакуаторы, подметальные)",
+    "uz": "Maxsus avtomobillar (evakuator va b.)"
+  },
+  "870600": {
+    "en": "Vehicle chassis with engines",
+    "ru": "Шасси с двигателями",
+    "uz": "Dvigatelli shassilar"
+  },
+  "870790": {
+    "en": "Truck and bus bodies and cabs",
+    "ru": "Кузова и кабины грузовиков, автобусов",
+    "uz": "Yuk mashinasi va avtobus kuzovlari"
+  },
+  "870829": {
+    "en": "Car body parts (not seat belts)",
+    "ru": "Части кузова автомобилей",
+    "uz": "Avtomobil kuzovi qismlari"
+  },
+  "870830": {
+    "en": "Brakes and brake parts",
+    "ru": "Тормоза и их части",
+    "uz": "Tormozlar va qismlari"
+  },
+  "870840": {
+    "en": "Gearboxes and parts",
+    "ru": "Коробки передач и их части",
+    "uz": "Uzatmalar qutisi va qismlari"
+  },
+  "870850": {
+    "en": "Drive axles and differentials",
+    "ru": "Ведущие мосты и дифференциалы",
+    "uz": "Yetakchi koʻpriklar va differensiallar"
+  },
+  "870870": {
+    "en": "Road wheels and rims",
+    "ru": "Колёса и диски",
+    "uz": "Gʻildiraklar va disklar"
+  },
+  "870880": {
+    "en": "Suspension parts and shock absorbers",
+    "ru": "Подвеска и амортизаторы",
+    "uz": "Osma tizim va amortizatorlar"
+  },
+  "870893": {
+    "en": "Clutches and clutch parts (vehicle)",
+    "ru": "Сцепление и его части",
+    "uz": "Ilashish muftasi va qismlari"
+  },
+  "870899": {
+    "en": "Vehicle parts n.e.c. (radiators, exhausts)",
+    "ru": "Автозапчасти прочие (радиаторы, глушители)",
+    "uz": "Boshqa avto qismlari (radiator, glushitel)"
+  },
+  "871160": {
+    "en": "Electric motorcycles and scooters",
+    "ru": "Электромотоциклы и электроскутеры",
+    "uz": "Elektr mototsikl va skuterlar"
+  },
+  "871200": {
+    "en": "Bicycles (non-motorised)",
+    "ru": "Велосипеды",
+    "uz": "Velosipedlar"
+  },
+  "871390": {
+    "en": "Motorised wheelchairs",
+    "ru": "Моторизованные инвалидные коляски",
+    "uz": "Motorli nogironlar aravachalari"
+  },
+  "871639": {
+    "en": "Trailers and semi-trailers (not tankers)",
+    "ru": "Прицепы и полуприцепы (не цистерны)",
+    "uz": "Tirkama va yarim tirkamalar (sisternasiz)"
+  },
+  "871690": {
+    "en": "Trailer parts",
+    "ru": "Части прицепов",
+    "uz": "Tirkama qismlari"
+  },
+  "880240": {
+    "en": "Aircraft over 15 t",
+    "ru": "Самолёты массой более 15 т",
+    "uz": "15 t dan ogʻir samolyotlar"
+  },
+  "880730": {
+    "en": "Aircraft and helicopter parts",
+    "ru": "Части самолётов и вертолётов",
+    "uz": "Samolyot va vertolyot qismlari"
+  },
+  "900580": {
+    "en": "Monoculars and telescopes",
+    "ru": "Монокуляры и телескопы",
+    "uz": "Monokular va teleskoplar"
+  },
+  "901380": {
+    "en": "Optical devices: lasers, LCD (other)",
+    "ru": "Оптические приборы: лазеры, ЖК (прочие)",
+    "uz": "Optik qurilmalar: lazer, LCD (boshqa)"
+  },
+  "901390": {
+    "en": "Optical device parts",
+    "ru": "Части оптических приборов",
+    "uz": "Optik qurilmalar qismlari"
+  },
+  "901480": {
+    "en": "Marine navigation instruments",
+    "ru": "Навигационные приборы (не авиа)",
+    "uz": "Navigatsiya asboblari (aviatsiyasiz)"
+  },
+  "901600": {
+    "en": "Precision balances (≤5 cg)",
+    "ru": "Прецизионные весы (до 5 сг)",
+    "uz": "Aniq tarozilar (5 sg gacha)"
+  },
+  "901780": {
+    "en": "Measuring and drawing instruments",
+    "ru": "Измерительные и чертёжные инструменты",
+    "uz": "Oʻlchov va chizmachilik asboblari"
+  },
+  "901832": {
+    "en": "Medical needles and suture needles",
+    "ru": "Медицинские иглы и шовные иглы",
+    "uz": "Tibbiy ignalar va choklash ignalari"
+  },
+  "901890": {
+    "en": "Medical and surgical instruments (other)",
+    "ru": "Медицинские инструменты (прочие)",
+    "uz": "Tibbiy-jarrohlik asboblari (boshqa)"
+  },
+  "902000": {
+    "en": "Breathing apparatus and gas masks",
+    "ru": "Дыхательные аппараты и противогазы",
+    "uz": "Nafas apparatlari va protivogazlar"
+  },
+  "902219": {
+    "en": "Industrial X-ray equipment (non-medical)",
+    "ru": "Рентгеновское оборудование (не медицинское)",
+    "uz": "Rentgen uskunalari (tibbiyotsiz)"
+  },
+  "902590": {
+    "en": "Thermometer and hygrometer parts",
+    "ru": "Части термометров и гигрометров",
+    "uz": "Termometr va gigrometr qismlari"
+  },
+  "902781": {
+    "en": "Mass spectrometers and analysers",
+    "ru": "Масс-спектрометры и анализаторы",
+    "uz": "Mass-spektrometr va analizatorlar"
+  },
+  "902789": {
+    "en": "Laboratory analysis instruments (other)",
+    "ru": "Лабораторные анализаторы (прочие)",
+    "uz": "Laboratoriya tahlil asboblari (boshqa)"
+  },
+  "902830": {
+    "en": "Electricity meters",
+    "ru": "Электросчётчики",
+    "uz": "Elektr hisoblagichlar"
+  },
+  "902890": {
+    "en": "Meter parts (gas, water, power)",
+    "ru": "Части счётчиков (газ, вода, электричество)",
+    "uz": "Hisoblagich qismlari (gaz, suv, tok)"
+  },
+  "903180": {
+    "en": "Measuring and checking instruments (other)",
+    "ru": "Контрольно-измерительные приборы (прочие)",
+    "uz": "Oʻlchov-nazorat asboblari (boshqa)"
+  },
+  "903289": {
+    "en": "Automatic controllers and regulators",
+    "ru": "Автоматические регуляторы и контроллеры",
+    "uz": "Avtomatik rostlagich va kontrollerlar"
+  },
+  "920992": {
+    "en": "String instrument parts",
+    "ru": "Части струнных инструментов",
+    "uz": "Torli cholgʻu qismlari"
+  },
+  "940190": {
+    "en": "Seat parts",
+    "ru": "Части сидений",
+    "uz": "Oʻrindiq qismlari"
+  },
+  "940199": {
+    "en": "Seat parts for vehicle assembly",
+    "ru": "Части сидений для сборки авто",
+    "uz": "Avto yigʻish uchun oʻrindiq qismlari"
+  },
+  "940320": {
+    "en": "Metal furniture (not office)",
+    "ru": "Металлическая мебель (не офисная)",
+    "uz": "Metall mebel (ofisdan tashqari)"
+  },
+  "940350": {
+    "en": "Wooden bedroom furniture",
+    "ru": "Деревянная мебель для спальни",
+    "uz": "Yotoqxona uchun yogʻoch mebel"
+  },
+  "940360": {
+    "en": "Wooden furniture (living, dining)",
+    "ru": "Деревянная мебель (гостиная, столовая)",
+    "uz": "Yogʻoch mebel (mehmonxona, oshxona)"
+  },
+  "940390": {
+    "en": "Furniture parts",
+    "ru": "Части мебели",
+    "uz": "Mebel qismlari"
+  },
+  "940540": {
+    "en": "Electric lamps and light fittings (other)",
+    "ru": "Электрические светильники (прочие)",
+    "uz": "Elektr chiroq va yoritgichlar (boshqa)"
+  },
+  "940620": {
+    "en": "Steel modular building units",
+    "ru": "Модульные здания из стали",
+    "uz": "Poʻlat modulli binolar"
+  },
+  "950300": {
+    "en": "Toys, dolls, models and puzzles",
+    "ru": "Игрушки, куклы, модели и пазлы",
+    "uz": "Oʻyinchoq, qoʻgʻirchoq, model va boshqotirma"
+  },
+  "950450": {
+    "en": "Video game consoles",
+    "ru": "Игровые приставки",
+    "uz": "Video oʻyin konsollari"
+  },
+  "950490": {
+    "en": "Table, casino and arcade games",
+    "ru": "Настольные, казино и аркадные игры",
+    "uz": "Stol, kazino va arkada oʻyinlari"
+  },
+  "950669": {
+    "en": "Sports balls (non-inflatable)",
+    "ru": "Спортивные мячи (ненадувные)",
+    "uz": "Sport toʻplari (puflanmaydigan)"
+  },
+  "960330": {
+    "en": "Artists' and cosmetic brushes",
+    "ru": "Кисти художественные и косметические",
+    "uz": "Rassomlik va kosmetika moʻyqalamlari"
+  },
+  "960810": {
+    "en": "Ballpoint pens",
+    "ru": "Шариковые ручки",
+    "uz": "Sharikli ruchkalar"
+  },
+  "960830": {
+    "en": "Fountain and other pens",
+    "ru": "Перьевые и прочие ручки",
+    "uz": "Perolik va boshqa ruchkalar"
+  },
+  "961380": {
+    "en": "Lighters (other than pocket gas)",
+    "ru": "Зажигалки (прочие)",
+    "uz": "Zajigalkalar (boshqa)"
+  },
+  "961620": {
+    "en": "Cosmetic powder puffs and pads",
+    "ru": "Пуховки и спонжи для косметики",
+    "uz": "Kosmetika pufaklari va sponjlari"
+  },
+  "961700": {
+    "en": "Vacuum flasks (thermoses)",
+    "ru": "Термосы",
+    "uz": "Termoslar"
+  },
+  "961900": {
+    "en": "Diapers, sanitary pads and tampons",
+    "ru": "Подгузники, прокладки и тампоны",
+    "uz": "Taglik, gigiyenik prokladka va tamponlar"
+  },
+  "999999": {
+    "en": "Unspecified goods",
+    "ru": "Товары, не указанные по виду",
+    "uz": "Turi koʻrsatilmagan tovarlar"
+  },
+  "010221": {
+    "en": "Pure-bred breeding cattle, live",
+    "ru": "Племенной КРС, живой",
+    "uz": "Naslli zotdor qoramol, tirik"
+  },
+  "020110": {
+    "en": "Beef carcasses, fresh or chilled",
+    "ru": "Говяжьи туши, свежие или охлаждённые",
+    "uz": "Mol goʻshti tanalari, yangi yoki sovutilgan"
+  },
+  "060110": {
+    "en": "Flower bulbs and tubers, dormant",
+    "ru": "Луковицы и клубни цветов, в покое",
+    "uz": "Gul piyozchalari va tuganaklari"
+  },
+  "060290": {
+    "en": "Live plants and seedlings",
+    "ru": "Живые растения и саженцы",
+    "uz": "Tirik oʻsimliklar va koʻchatlar"
+  },
+  "060319": {
+    "en": "Fresh cut flowers (not roses or carnations)",
+    "ru": "Свежесрезанные цветы (не розы, гвоздики)",
+    "uz": "Yangi kesilgan gullar (atirgul, chinnigulsiz)"
+  },
+  "060390": {
+    "en": "Dried or dyed cut flowers",
+    "ru": "Сушёные или окрашенные срезанные цветы",
+    "uz": "Quritilgan yoki boʻyalgan kesma gullar"
+  },
+  "071320": {
+    "en": "Chickpeas, dried",
+    "ru": "Нут сушёный",
+    "uz": "Noʻxat, quritilgan"
+  },
+  "080390": {
+    "en": "Bananas, fresh or dried",
+    "ru": "Бананы, свежие или сушёные",
+    "uz": "Bananlar, yangi yoki quritilgan"
+  },
+  "080450": {
+    "en": "Mangoes, guavas and mangosteens",
+    "ru": "Манго, гуава и мангостин",
+    "uz": "Mango, guayava va mangostin"
+  },
+  "090220": {
+    "en": "Green tea in bulk (over 3 kg)",
+    "ru": "Зелёный чай в упаковках более 3 кг",
+    "uz": "Koʻk choy, 3 kg dan ortiq qadoqda"
+  },
+  "091011": {
+    "en": "Ginger, whole (not ground)",
+    "ru": "Имбирь, не дроблёный",
+    "uz": "Zanjabil, maydalanmagan"
+  }
+}

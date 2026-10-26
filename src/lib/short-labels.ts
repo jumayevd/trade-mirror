@@ -1,4 +1,5 @@
 import shortRaw from "@/data/hs6-short.json";
+import namesRaw from "@/data/hs6-names.json";
 import type { Lang } from "@/lib/locales";
 
 /**
@@ -55,13 +56,25 @@ const TRAILING: Record<Lang, RegExp> = {
 const FILLER = /^(n\.e\.c|other|not |consisting|whether|excluding|не |кроме|прочие|состоящ|boshqa|nomlanmagan|\d)/i;
 
 /**
- * The few words of an HS line that name it: a curated name where there is one,
- * else the heading before the ";", with the first short qualifier kept
- * ("Fruit, edible: bananas", "Furniture: wooden") so sibling lines under one
- * heading stay apart, cut back at a comma or a word — never mid-word, never on
- * "and" or "of", never with an ellipsis.
+ * Table names written from the official HS text for the 431 HS6 lines the
+ * ranking tables put on their first pages in any year (Product Analysis by
+ * positive discrepancy, Discrepancy & Risk by score and by gap): specific
+ * enough to tell siblings apart ("Diesel trucks, 5–20 t", "Antibiotic
+ * medicines, packaged"), in all three languages. The extract's own labels are
+ * often summaries too general to do that ("Machines and mechanical appliances").
+ */
+const NAMES = namesRaw as unknown as Record<string, Record<Lang, string>>;
+
+/**
+ * The few words of an HS line that name it: a written table name, else a
+ * curated tile name, else the heading before the ";", with as much of the first
+ * qualifier as fits ("Fruit, edible: bananas", "Furniture: wooden") so sibling
+ * lines under one heading stay apart, cut back at a comma or a word — never
+ * mid-word, never on "and" or "of", never with an ellipsis.
  */
 export function briefHsLabel(cmd: string, lang: Lang, officialText: string): string {
+  const named = NAMES[cmd];
+  if (named) return named[lang] ?? named.en;
   const entry = SHORT[cmd];
   if (entry && typeof entry === "object") return entry[lang] ?? entry.en;
   // the source cuts long lines with "…", often mid-word ("textile fi…"): drop the stub
