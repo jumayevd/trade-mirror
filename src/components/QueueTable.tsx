@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { BandBadge, EmptyState, RiskScore } from "@/components/ui";
 import MultiSelect from "@/components/MultiSelect";
-import LevelTabs, { LEVEL_LABEL_KEYS, LEVEL_TIP_KEYS, type HsLevel } from "@/components/LevelTabs";
+import LevelTabs, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/LevelTabs";
 import type { SearchOption } from "@/components/SearchSelect";
-import { fmtPct, fmtUSD, fmtUSDFull, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull } from "@/lib/format";
+import { GapCell, RankCell, ShareCell, productName } from "@/components/TableKit";
 import { useI18n } from "@/lib/i18n";
 import { hsFullLabel, yearsLabel, type Channel } from "@/lib/dataset";
 import type { LocaleKey } from "@/lib/locales";
@@ -23,14 +24,13 @@ import type { LocaleKey } from "@/lib/locales";
 
 export { LEVEL_LABEL_KEYS, type HsLevel };
 
-type SortKey = "risk" | "gap" | "gapPct" | "persistence" | "value" | "importReported";
+type SortKey = "risk" | "gap" | "gapPct" | "value" | "importReported";
 type SortDir = "desc" | "asc";
 
 const SORTS: { key: SortKey; labelKey: LocaleKey }[] = [
   { key: "risk", labelKey: "prof.th.score" },
   { key: "gap", labelKey: "prof.th.gap" },
   { key: "gapPct", labelKey: "prof.th.share" },
-  { key: "persistence", labelKey: "common.persistence" },
   { key: "value", labelKey: "prof.th.export" },
   { key: "importReported", labelKey: "prof.th.import" },
 ];
@@ -51,8 +51,6 @@ function sortChannels(rows: Channel[], sort: SortKey, dir: SortDir): Channel[] {
     risk: (a, b) => b.mtrs - a.mtrs || b.posT - a.posT,
     gap: (a, b) => b.posT - a.posT || b.mtrs - a.mtrs,
     gapPct: (a, b) => (gapPct(b) ?? -1) - (gapPct(a) ?? -1) || b.posT - a.posT,
-    persistence: (a, b) =>
-      b.persistence - a.persistence || b.posYears - a.posYears || b.posT - a.posT,
     value: (a, b) => b.pePosT - a.pePosT || b.posT - a.posT,
     importReported: (a, b) => b.uiPosT - a.uiPosT || b.posT - a.posT,
   };
@@ -72,7 +70,7 @@ export default function QueueTable({
   onLevelChange: (l: HsLevel) => void;
   years: number[];
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   // the score is computed on the period in view; the tooltips name that window
   const windowTip = ` ${t("risk.window.tip")
     .replace("{window}", yearsLabel(years))
@@ -130,10 +128,9 @@ export default function QueueTable({
     setPageRaw(0);
   };
 
-  const th = "px-3 py-1.5 text-left fs-12 font-medium text-faint whitespace-nowrap";
-  const thNum = th.replace("text-left", "text-center");
-  const td = "px-3 py-1.5 align-middle fs-13";
-  const tdNum = `${td} tabular text-center whitespace-nowrap`;
+  // bars scale to the rows on screen: sorted by score, one large pair would flatten the rest
+  const maxGap = pageRows.reduce((m, c) => Math.max(m, c.posT), 0);
+  const tdNum = "tabular text-right whitespace-nowrap fs-13";
   const pagerBtn = "rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
@@ -205,57 +202,48 @@ export default function QueueTable({
       {rows.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-[1180px] border-collapse">
-            <thead className="border-b border-[var(--color-border)]">
+        <div className="card overflow-hidden p-0">
+        <div className="overflow-x-auto">
+          <table className="cbu-table min-w-[880px]">
+            <thead>
               <tr>
-                <th className={th} title={t(LEVEL_TIP_KEYS[level])}>{t("prof.th.code")}</th>
-                <th className={th}>{t("common.product")}</th>
-                <th className={th}>{t("common.partner")}</th>
-                <th className={thNum} title={t("risk.tip.export")}>{t("prof.th.export")}</th>
-                <th className={thNum} title={t("risk.tip.import")}>{t("prof.th.import")}</th>
-                <th className={thNum} title={t("risk.tip.gap")}>{t("prof.th.gap")}</th>
-                <th className={thNum} title={t("prof.th.share.tip")}>{t("prof.th.share")}</th>
-                <th className={thNum} title={`${t("risk.tip.persistenceYears")}${windowTip}`}>{t("common.persistence")}</th>
-                <th className={thNum} title={`${t("risk.tip.riskValue")}${windowTip}`}>{t("prof.th.score")}</th>
-                <th className={th} title={`${t("risk.tip.band")}${windowTip}`}>{t("prof.th.band")}</th>
+                <th className="w-10 text-right">#</th>
+                <th className="text-left">{t("common.product")}</th>
+                <th className="text-left">{t("common.partner")}</th>
+                <th className="text-right" title={t("risk.tip.export")}>{t("prof.th.export")}</th>
+                <th className="text-right" title={t("risk.tip.import")}>{t("prof.th.import")}</th>
+                <th className="text-right" title={t("risk.tip.gap")}>{t("prof.th.gap")}</th>
+                <th className="text-right" title={t("prof.th.share.tip")}>{t("prof.th.share")}</th>
+                <th className="text-right" title={`${t("risk.tip.riskValue")}${windowTip}`}>{t("prof.th.score")}</th>
+                <th className="text-left" title={`${t("risk.tip.band")}${windowTip}`}>{t("prof.th.band")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
-              {pageRows.map((c) => {
-                const pct = gapPct(c);
-                return (
-                  <tr key={`${c.partnerIso}|${c.cmd}|${c.level}`} className="border-b border-[var(--color-border-soft)] last:border-0">
-                    <td className={`${td} tabular whitespace-nowrap font-medium`}>{c.cmd}</td>
-                    <td className={`${td} max-w-[280px]`}>
-                      {/* the column is narrow, so the cell abbreviates; hover carries
-                          the complete nomenclature line */}
-                      <span title={hsFullLabel(c.cmd)}>
-                        {c.cmdLabel.length > 44 ? `${c.cmdLabel.slice(0, 44)}…` : c.cmdLabel}
-                      </span>
-                    </td>
-                    <td className={`${td} whitespace-nowrap`}>
-                      <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="font-medium hover:underline">
-                        {c.partner}
-                      </Link>
-                    </td>
-                    <td className={tdNum} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
-                    <td className={tdNum} title={fmtUSDFull(c.uiPosT)}>{fmtUSD(c.uiPosT)}</td>
-                    <td className={`${tdNum} font-semibold`} style={{ color: COLORS.positive }} title={fmtUSDFull(c.posT)}>{fmtUSD(c.posT)}</td>
-                    <td className={tdNum}>{pct == null ? "—" : fmtPct(pct, 1)}</td>
-                    <td
-                      className={tdNum}
-                      title={`${t("risk.tip.persistenceCell")} ${c.posYears}/${c.comparableYears} · ${t("risk.read.longestStreak")} ${c.longestPosStreak}`}
-                    >
-                      {c.posYears}/{c.comparableYears} {t("risk.unit.yr")}
-                    </td>
-                    <td className={tdNum}><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
-                    <td className={td}><BandBadge band={c.band} /></td>
-                  </tr>
-                );
-              })}
+            <tbody>
+              {pageRows.map((c, i) => (
+                <tr key={`${c.partnerIso}|${c.cmd}|${c.level}`}>
+                  <td className="text-right"><RankCell n={start + i + 1} /></td>
+                  <td className="max-w-[280px] fs-13">
+                    {/* a few words that name the line; the code and the full nomenclature on hover */}
+                    <span className="block truncate font-medium" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
+                      {productName(c.cmd, lang, c.cmdLabel)}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap fs-13">
+                    <Link href={`/partners/${c.partnerIso.toLowerCase()}`} className="text-[var(--color-primary)] hover:underline">
+                      {c.partner}
+                    </Link>
+                  </td>
+                  <td className={`${tdNum} text-[var(--color-gold-ink)]`} title={fmtUSDFull(c.pePosT)}>{fmtUSD(c.pePosT)}</td>
+                  <td className={`${tdNum} text-muted`} title={fmtUSDFull(c.uiPosT)}>{fmtUSD(c.uiPosT)}</td>
+                  <td className="w-[120px]"><GapCell value={c.posT} max={maxGap} /></td>
+                  <td className="text-right"><ShareCell share={gapPct(c)} /></td>
+                  <td className="text-right"><RiskScore score={c.mtrs} band={c.band} scored={c.scored} /></td>
+                  <td><BandBadge band={c.band} /></td>
+                </tr>
+              ))}
             </tbody>
           </table>
+        </div>
         </div>
       )}
 

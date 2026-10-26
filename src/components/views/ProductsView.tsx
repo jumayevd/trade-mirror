@@ -1,22 +1,20 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import HeatGrid, { type HeatColumn, type HeatRow } from "@/components/charts/HeatGrid";
+import { useMemo, useState } from "react";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead, Segmented,
+  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
 } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
-  categoryLabel, comparableMonthsOfYear, hsLabel, isDerivedYear, isResidualChapter, yearsLabel, soleValue,
+  hsLabel, isResidualChapter, yearsLabel, soleValue,
   type Channel, type RiskBand,
 } from "@/lib/dataset";
-import { labelsFor } from "@/lib/labels";
-import { hs6ShortLabel } from "@/lib/short-labels";
+import { GapCell, RankCell, ShareCell, productName } from "@/components/TableKit";
 import { useI18n } from "@/lib/i18n";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, COLORS } from "@/lib/format";
+import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
 
 /**
  * Product Analysis — the trade in view, one row per HS code, at HS2, HS4 or
@@ -31,11 +29,6 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, monthRuns, COLORS } from "@/lib/for
  */
 
 const PAGE_SIZE = 20;
-/** Sectors listed in the sector × year matrix — few enough that each cell can print its figures. */
-const HEAT_TOP = 10;
-/** HS6 rows and partner columns in the heatmap; the rest fold into "other". */
-const HEAT_TOP_HS6 = 12;
-const HEAT_PARTNERS = 8;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -117,14 +110,14 @@ function SortableTh({
   const { t } = useI18n();
   const active = sort.key === k;
   return (
-    <th className={`px-3 py-1.5 font-medium whitespace-nowrap ${align === "right" ? "text-center" : "text-left"}`}>
+    <th className={align === "right" ? "text-right" : "text-left"}>
       <button
         onClick={() => onSort(k)}
-        className={`inline-flex items-center gap-1 ${active ? "" : "hover:text-foreground"}`}
+        className={`inline-flex items-center gap-1 ${active ? "" : "opacity-85 hover:opacity-100"}`}
         title={title ?? `${t("prod.sortBy")}: ${label}`}
       >
         {label}
-        <span className={active ? "" : "opacity-30"}>{active && !sort.desc ? "↑" : "↓"}</span>
+        <span className={active ? "text-[var(--color-gold)]" : "opacity-40"}>{active && !sort.desc ? "↑" : "↓"}</span>
       </button>
     </th>
   );
@@ -180,113 +173,6 @@ export default function ProductsView() {
   const { filter, patch } = useFilter();
   const data = useFilteredData();
   const { t, lang } = useI18n();
-
-  // ---- the heatmap: sectors or HS6 products, by year or by partner ----
-  // Read straight off the page's aggregate, so it follows the years, months,
-  // partner, HS and freight selections. A cell is the positive discrepancy of
-  // its row in its column (each channel-year's positive gap, summed). The top
-  // rows and columns, then every other one together — the unclassified residual
-  // included — so the grid adds up to the page's total whichever view is on.
-  const [heatRows, setHeatRows] = useState<"hs6" | "sector">("hs6");
-  const [heatCols, setHeatCols] = useState<"partner" | "year">("partner");
-  const heatPartial = useCallback((y: number) => isDerivedYear(y) && comparableMonthsOfYear(y).length < 12, []);
-  const heat = useMemo(() => labelsFor(lang, () => {
-    const byProduct = heatRows === "hs6";
-    const byYear = heatCols === "year";
-    const source = byProduct ? data.baseChannels6 : data.baseChannels;
-    const rowKey = (c: Channel) => (byProduct ? c.cmd : c.category);
-    const residual = (key: string) => (byProduct ? isResidualChapter(key.slice(0, 2)) : key === "residual");
-
-    // (row, column) -> amount; column = a year, or a partner
-    const cell = new Map<string, Map<string, number>>();
-    const rowInfo = new Map<string, { label: string; title?: string }>();
-    const partnerName = new Map<string, string>();
-    const add = (r: string, col: string, v: number) => {
-      let m = cell.get(r);
-      if (!m) { m = new Map(); cell.set(r, m); }
-      m.set(col, (m.get(col) ?? 0) + v);
-    };
-    for (const c of source) {
-      const r = rowKey(c);
-      if (!rowInfo.has(r)) {
-        rowInfo.set(r, byProduct
-          ? { label: hs6ShortLabel(c.cmd, lang, c.cmdLabel), title: `${c.cmd} · ${c.cmdLabel}` }
-          : { label: categoryLabel(c.category) });
-      }
-      partnerName.set(c.partnerIso, c.partner);
-      if (byYear) {
-        for (const yr of c.years) if (yr.posY > 0) add(r, String(yr.y), yr.posY);
-      } else if (c.posT > 0) {
-        add(r, c.partnerIso, c.posT);
-      }
-    }
-
-    // columns
-    const years = [...data.years].sort((x, y) => x - y);
-    let colKeys: string[];
-    let otherCols: Set<string> = new Set();
-    if (byYear) {
-      colKeys = years.map(String);
-    } else {
-      const byPartner = new Map<string, number>();
-      for (const m of cell.values()) for (const [p, v] of m) byPartner.set(p, (byPartner.get(p) ?? 0) + v);
-      const ranked = [...byPartner.entries()].filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
-      colKeys = ranked.slice(0, HEAT_PARTNERS).map(([p]) => p);
-      otherCols = new Set(ranked.slice(HEAT_PARTNERS).map(([p]) => p));
-      if (otherCols.size) colKeys.push("__other");
-    }
-    const valueAt = (m: Map<string, number> | undefined, col: string) => {
-      if (!m) return 0;
-      if (col !== "__other") return m.get(col) ?? 0;
-      let s = 0;
-      for (const [p, v] of m) if (otherCols.has(p)) s += v;
-      return s;
-    };
-
-    // rows
-    const all = [...cell.entries()]
-      .map(([key, m]) => ({ key, values: colKeys.map((col) => valueAt(m, col)) }))
-      .map((r) => ({ ...r, total: r.values.reduce((x, y) => x + y, 0) }))
-      .filter((r) => r.total > 0);
-    const top = all
-      .filter((r) => !residual(r.key))
-      .sort((x, y) => y.total - x.total)
-      .slice(0, byProduct ? HEAT_TOP_HS6 : HEAT_TOP);
-    const shown = new Set(top.map((r) => r.key));
-    const rows: HeatRow[] = top.map((r) => ({
-      key: r.key,
-      label: rowInfo.get(r.key)?.label ?? r.key,
-      title: rowInfo.get(r.key)?.title,
-      code: byProduct ? r.key : undefined,
-      values: r.values,
-    }));
-    const rest = all.filter((r) => !shown.has(r.key));
-    if (rest.length) {
-      rows.push({
-        key: "__other",
-        label: t(byProduct ? "heat.otherProducts" : "heat.other"),
-        muted: true,
-        values: colKeys.map((_, j) => rest.reduce((sum, r) => sum + r.values[j], 0)),
-      });
-    }
-
-    const columns: HeatColumn[] = colKeys.map((col) => {
-      if (byYear) {
-        const y = Number(col);
-        return {
-          key: col,
-          label: col,
-          sub: heatPartial(y) ? monthRuns(comparableMonthsOfYear(y), (n) => t(`month.${n}` as never)) : undefined,
-          partial: heatPartial(y),
-          note: heatPartial(y) ? t("heat.partialTip") : undefined,
-        };
-      }
-      return col === "__other"
-        ? { key: col, label: t("heat.otherPartners") }
-        : { key: col, label: partnerName.get(col) ?? col };
-    });
-    return { rows, columns, partial: byYear && years.some(heatPartial) };
-  }), [data, lang, t, heatRows, heatCols, heatPartial]);
 
   // ---- drill state (local; the shareable filter state stays in the URL via FilterBar) ----
   const [level, setLevel] = useState<HsLevel>(6);
@@ -373,6 +259,8 @@ export default function ProductsView() {
 
   const totalRows = sorted.length;
   const pageRows = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  // bars scale to the rows on screen, whichever column the table is sorted by
+  const maxGap = pageRows.reduce((m, r) => Math.max(m, r.posT), 0);
 
   // ---- frames: the scope in view, as the sum of its rows ----
   const node = useMemo(() => rows.reduce(
@@ -392,7 +280,7 @@ export default function ProductsView() {
     downloadCsv(`products_hs${level}_${period.replace(/[^0-9]+/g, "_")}.csv`, channelsToCsv(activeChannels, filter));
 
   const isEmpty = totalRows === 0;
-  const td = "tabular px-3 py-1.5 text-center whitespace-nowrap";
+  const td = "tabular text-right whitespace-nowrap fs-13";
 
   return (
     <div className="space-y-6">
@@ -433,52 +321,7 @@ export default function ProductsView() {
         </section>
       )}
 
-      {/* sectors × years: where the gap sits and how it moved */}
-      {!isEmpty && (
-        <section className="card p-4">
-          <SectionTitle
-            title={t(`prod.heat.title.${heatRows}.${heatCols}` as never)}
-            desc={t(heatCols === "year" ? "prod.heat.sub" : "prod.heat.subPartner")}
-          />
-          {/* what the grid crosses: rows, then columns */}
-          <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="flex items-center gap-2">
-              <span className="fs-12.5 font-medium text-faint">{t("heat.rows")}</span>
-              <Segmented value={heatRows} onChange={setHeatRows} ariaLabel={t("heat.rows")}
-                options={[{ key: "hs6", label: t("heat.byProduct") }, { key: "sector", label: t("heat.bySector") }]} />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="fs-12.5 font-medium text-faint">{t("heat.cols")}</span>
-              <Segmented value={heatCols} onChange={setHeatCols} ariaLabel={t("heat.cols")}
-                options={[{ key: "partner", label: t("heat.byPartner") }, { key: "year", label: t("heat.byYear") }]} />
-            </div>
-          </div>
-          {heat.rows.length === 0 ? (
-            <EmptyState />
-          ) : (
-            <HeatGrid
-              rows={heat.rows}
-              columns={heat.columns}
-              shareBasis={heatCols === "year" ? "column" : "row"}
-              words={{
-                amount: t("risk.mix.amount"),
-                share: t(heatCols === "year" ? "heat.shareOfYear" : heatRows === "hs6" ? "heat.shareOfProduct" : "risk.mix.shareOfSector"),
-                view: t("risk.mix.view"),
-                rowHead: t(heatRows === "hs6" ? "heat.product" : "heat.sector"),
-                all: t(heatRows === "hs6" ? "heat.allProducts" : "heat.allSectors"),
-                total: t("heat.total"), ofAll: t("heat.share"),
-                shareOf: t(heatCols === "year" ? "prod.heat.share" : heatRows === "hs6" ? "heat.ofProduct" : "heat.ofSector"),
-                aria: t(`prod.heat.title.${heatRows}.${heatCols}` as never),
-              }}
-            />
-          )}
-          {heat.partial && (
-            <p className="mt-2 fs-12 text-faint">* {t("prod.heat.partial")}</p>
-          )}
-        </section>
-      )}
-
-      {/* HS level toggle + breadcrumb — below the sector matrix, driving the table */}
+      {/* HS level toggle + breadcrumb, driving the table */}
       <section className="flex flex-wrap items-center gap-3">
         <LevelTabs
           level={level}
@@ -527,50 +370,59 @@ export default function ProductsView() {
             title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
           />
           <TableReveal>
-          <div className="card overflow-x-auto">
-            <table className="w-full min-w-[1040px] fs-13">
+          <div className="card overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="cbu-table min-w-[900px]">
               <thead>
-                <tr className="border-b border-[var(--color-border)] text-left fs-12 font-medium text-faint">
-                  <th className="px-3 py-1.5 font-medium">{t("prod.col.code")}</th>
-                  <th className="px-3 py-1.5 font-medium">{t("common.product")}</th>
+                <tr>
+                  <th className="w-10 text-right">#</th>
+                  <th className="text-left">{t("common.product")}</th>
                   <SortableTh label={t("prof.th.export")} k="pePosT" sort={sort} onSort={onSort} title={t("prod.tip.export")} />
                   <SortableTh label={t("prof.th.import")} k="uiPosT" sort={sort} onSort={onSort} title={t("prod.tip.import")} />
                   <SortableTh label={t("prof.th.gap")} k="posT" sort={sort} onSort={onSort} title={t("prod.tip.positive")} />
                   <SortableTh label={t("prof.th.share")} k="share" sort={sort} onSort={onSort} title={t("prof.th.share.tip")} />
                   <SortableTh label={t("prod.col.partners")} k="partners" sort={sort} onSort={onSort} title={t("prod.tip.partners")} />
                   <SortableTh label={t("prof.th.score")} k="mtrs" sort={sort} onSort={onSort} title={t("prod.tip.maxRisk")} />
-                  <th className="px-3 py-1.5 font-medium" title={t("prod.tip.maxRisk")}>{t("prof.th.band")}</th>
+                  <th className="text-left" title={t("prod.tip.maxRisk")}>{t("prof.th.band")}</th>
                 </tr>
               </thead>
-              <tbody className="zebra">
-                {pageRows.map((r) => (
-                  <tr key={r.cmd} className="border-b border-[var(--color-border-soft)] last:border-b-0">
-                    <td className="tabular px-3 py-1.5 font-medium">{r.cmd}</td>
-                    <td className="max-w-[320px] px-3 py-1.5">
-                      {level === 6 ? (
-                        <span>{r.label}</span>
-                      ) : (
-                        <button
-                          onClick={() => (level === 2 ? drillChapter(r.cmd) : drillHs4(r.cmd))}
-                          className="text-left font-medium hover:underline"
-                          title={fill(t(level === 2 ? "prod.tip.drillChapter" : "prod.tip.drillHs4"), { code: r.cmd })}
-                        >
-                          {r.label}
-                        </button>
-                      )}
-                      {r.residual && <ResidualFlag />}
+              <tbody>
+                {pageRows.map((r, i) => {
+                  // a few words that name the line; the code and the full text on hover
+                  const name = productName(r.cmd, lang, r.label);
+                  const full = `HS ${r.cmd} · ${r.label}`;
+                  return (
+                  <tr key={r.cmd}>
+                    <td className="text-right"><RankCell n={page * PAGE_SIZE + i + 1} /></td>
+                    <td className="max-w-[300px] fs-13">
+                      <span className="flex min-w-0 items-center">
+                        {level === 6 ? (
+                          <span className="truncate font-medium" title={full}>{name}</span>
+                        ) : (
+                          <button
+                            onClick={() => (level === 2 ? drillChapter(r.cmd) : drillHs4(r.cmd))}
+                            className="truncate text-left font-medium text-[var(--color-primary)] hover:underline"
+                            title={`${full}\n${fill(t(level === 2 ? "prod.tip.drillChapter" : "prod.tip.drillHs4"), { code: r.cmd })}`}
+                          >
+                            {name}
+                          </button>
+                        )}
+                        {r.residual && <ResidualFlag />}
+                      </span>
                     </td>
-                    <td className={`${td} text-muted`} title={fmtUSDFull(r.pePosT)}>{fmtUSD(r.pePosT)}</td>
+                    <td className={`${td} text-[var(--color-gold-ink)]`} title={fmtUSDFull(r.pePosT)}>{fmtUSD(r.pePosT)}</td>
                     <td className={`${td} text-muted`} title={fmtUSDFull(r.uiPosT)}>{fmtUSD(r.uiPosT)}</td>
-                    <td className={`${td} font-medium`} style={{ color: COLORS.positive }} title={fmtUSDFull(r.posT)}>{fmtUSD(r.posT)}</td>
-                    <td className={td}>{r.pePosT > 0 ? fmtPct(r.share, 1) : "—"}</td>
+                    <td className="w-[120px]"><GapCell value={r.posT} max={maxGap} /></td>
+                    <td className="text-right"><ShareCell share={r.pePosT > 0 ? r.share : null} /></td>
                     <td className={`${td} text-muted`}>{fmtNum(r.partners)}</td>
-                    <td className={td}><RiskScore score={r.mtrs} band={r.band} /></td>
-                    <td className="px-3 py-1.5"><BandBadge band={r.band} /></td>
+                    <td className="text-right"><RiskScore score={r.mtrs} band={r.band} /></td>
+                    <td><BandBadge band={r.band} /></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+          </div>
           </div>
           <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
           </TableReveal>
