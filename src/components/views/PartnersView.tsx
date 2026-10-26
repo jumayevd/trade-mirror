@@ -4,25 +4,23 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 import RiskMap from "@/components/charts/RiskMap";
-import { SectionTitle, QualityTag, TransitTag, EmptyState, InfoTip, PageHead } from "@/components/ui";
-import { GapCell, ShareCell, productName } from "@/components/TableKit";
+import { SectionTitle, TransitTag, EmptyState, InfoTip, PageHead, TableReveal } from "@/components/ui";
+import { GapCell, ShareCell } from "@/components/TableKit";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
-import { type PartnerAgg, DATA_WINDOW } from "@/lib/dataset";
+import type { PartnerAgg } from "@/lib/dataset";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
-import { fmtNum, fmtUSD, fmtUSDFull, fmtPct, COLORS } from "@/lib/format";
+import { fmtNum, fmtUSD, fmtUSDFull, fmtPct } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 
 /**
  * Country Analysis (spec §6.5) — geographic hero (click a country to open its
- * profile), ranked country table, per-year and per-country summary statistics,
- * and a compare mode (up to 4 partners side by side). Only the positive
+ * profile) and the ranked country table, opened on a click. Only the positive
  * discrepancy is screened: partner-reported exports uplifted by freight, minus
  * Uzbekistan-recorded imports, accumulated over the years where it is positive.
  */
 
 type SortKey = "export" | "import" | "positive" | "share" | "channels";
 
-const MAX_COMPARE = 4;
 const PAGE_SIZE = 10;
 
 
@@ -36,13 +34,6 @@ const PAGE_SIZE = 10;
  * comparable exports, as before, gave a rate no figure on the row explained.
  */
 const gapRate = (p: PartnerAgg) => (p.pePosT > 0 ? p.posT / p.pePosT : 0);
-
-/** Series-identity dot for column headers / labels — the text itself stays ink (rule 5). */
-function HeadDot({ color }: { color: string }) {
-  return (
-    <span aria-hidden className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style={{ background: color }} />
-  );
-}
 
 /** Locale keys for the column-sort tooltips — resolved through `t` at render time. */
 const SORT_TIP_KEYS: Record<SortKey, string> = {
@@ -81,31 +72,15 @@ const ROLLUP_HS6 = { rollupLevel: 6 } as const;
 
 export default function PartnersView() {
   const { filter } = useFilter();
-  const { lang, t } = useI18n();
+  const { t } = useI18n();
   const data = useFilteredData(ROLLUP_HS6);
   const [sort, setSort] = useState<SortKey>("positive");
-  const [sel, setSel] = useState<string[]>([]);
   const [pageSel, setPageSel] = useState<{ len: number; sort: SortKey; page: number } | null>(null);
 
-  /*
-   * Per-partner HS6 facts. The top product is the partner's HS6 line with the
-   * largest positive discrepancy — the column used to print an HS2 chapter under
-   * an "HS6" heading. "All HS6 products" counts every line both books reported
-   * in the period; the critical count and share are of those same lines.
-   */
-  const hs6Facts = useMemo(() => {
-    const m = new Map<string, { all: number; critical: number; top: { cmd: string; label: string; posT: number } | null }>();
-    const at = (iso: string) => {
-      let e = m.get(iso);
-      if (!e) { e = { all: 0, critical: 0, top: null }; m.set(iso, e); }
-      return e;
-    };
-    for (const c of data.baseChannels6) {
-      const e = at(c.partnerIso);
-      e.all++;
-      if (c.band === "critical") e.critical++;
-      if (c.posT > 0 && (!e.top || c.posT > e.top.posT)) e.top = { cmd: c.cmd, label: c.cmdLabel, posT: c.posT };
-    }
+  /* Per-partner count of HS6 products: every line both books reported in the period. */
+  const hs6Count = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of data.baseChannels6) m.set(c.partnerIso, (m.get(c.partnerIso) ?? 0) + 1);
     return m;
   }, [data.baseChannels6]);
 
@@ -118,10 +93,10 @@ export default function PartnersView() {
       import: (a, b) => b.uiPosT - a.uiPosT,
       positive: (a, b) => b.posT - a.posT,
       share: (a, b) => gapRate(b) - gapRate(a),
-      channels: (a, b) => (hs6Facts.get(b.iso3)?.all ?? 0) - (hs6Facts.get(a.iso3)?.all ?? 0) || b.posT - a.posT,
+      channels: (a, b) => (hs6Count.get(b.iso3) ?? 0) - (hs6Count.get(a.iso3) ?? 0) || b.posT - a.posT,
     };
     return [...data.partners].sort(by[sort]);
-  }, [data.partners, sort, hs6Facts]);
+  }, [data.partners, sort, hs6Count]);
 
 
   const totals = useMemo(() => data.partners.reduce(
@@ -138,17 +113,6 @@ export default function PartnersView() {
   /* ------------------------------------------------------------------ */
   const highTier = data.partners.filter((p) => p.tier === "High").length;
   const transitCount = data.partners.filter((p) => p.transit).length;
-
-  /* ------------------------------------------------------------------ */
-  /* Compare selection                                                   */
-  /* ------------------------------------------------------------------ */
-  const compare = sel
-    .map((iso) => data.partners.find((p) => p.iso3 === iso))
-    .filter((p): p is PartnerAgg => !!p);
-  const toggle = (iso: string) =>
-    setSel((s) =>
-      s.includes(iso) ? s.filter((x) => x !== iso) : s.length >= MAX_COMPARE ? s : [...s, iso],
-    );
 
   const exportCsv = () =>
     downloadCsv("country_analysis_hs6_channels.csv", channelsToCsv(data.channels6, filter));
@@ -180,37 +144,21 @@ export default function PartnersView() {
     ) : (
       <div className="card overflow-hidden p-0">
       <div className="overflow-x-auto">
-        <table className="cbu-table min-w-[900px]">
+        <table className="cbu-table min-w-[760px]">
           <thead>
             <tr>
-              <th className={th} title={`${t("ctry.rank.cmpTipPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpTipPost")}`}>
-                <span className="inline-flex items-center gap-1">{t("ctry.rank.cmp")} <InfoTip text={`${t("ctry.rank.cmpInfoPre")} ${MAX_COMPARE} ${t("ctry.rank.cmpInfoPost")}`} /></span>
-              </th>
               <th className={th}>{t("common.partner")}</th>
               <th className={thNum} title={t("ctry.col.export.tip")}>{sortBtn("export", t("ctry.col.export"))}</th>
               <th className={thNum} title={t("ctry.col.import.tip")}>{sortBtn("import", t("ctry.col.import"))}</th>
               <th className={thNum}>{sortBtn("positive", t("ctry.col.positive"))}</th>
               <th className={thNum}>{sortBtn("share", t("ctry.col.gapRate"))}</th>
               <th className={thNum}>{sortBtn("channels", t("ctry.col.channels"))}</th>
-              <th className={th} title={t("ctry.rank.topHs2Tip")}>{t("ctry.col.topHs2")}</th>
             </tr>
           </thead>
           <tbody>
             {pagedRows.map((p) => {
-              const top = hs6Facts.get(p.iso3)?.top ?? null;
-              const checked = sel.includes(p.iso3);
               return (
                 <tr key={p.iso3}>
-                  <td className={td}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={!checked && sel.length >= MAX_COMPARE}
-                      onChange={() => toggle(p.iso3)}
-                      aria-label={`${t("ctry.rank.compareAria")} ${p.name}`}
-                      className="h-3.5 w-3.5 accent-[var(--color-primary)] disabled:cursor-not-allowed"
-                    />
-                  </td>
                   <td className={`${td} whitespace-nowrap`}>
                     <Link href={`/partners/${p.iso3.toLowerCase()}`} className="font-medium text-[var(--color-primary)] hover:underline">
                       {p.name}
@@ -222,23 +170,13 @@ export default function PartnersView() {
                   <td className={`${tdNum} text-muted`} title={fmtUSDFull(p.uiPosT)}>{fmtUSD(p.uiPosT)}</td>
                   <td className="w-[130px]"><GapCell value={p.posT} max={maxGap} /></td>
                   <td className="text-right" title={t("ctry.gapRateTip")}><ShareCell share={p.pePosT > 0 ? gapRate(p) : null} /></td>
-                  <td className={`${tdNum} text-muted`} title={t("ctry.channelsTip")}>{fmtNum(hs6Facts.get(p.iso3)?.all ?? 0)}</td>
-                  <td className="max-w-[240px]">
-                    {top ? (
-                      <span className="block max-w-[190px] truncate" title={`HS ${top.cmd} · ${top.label} — ${fmtUSDFull(top.posT)} (${fmtPct(p.posT > 0 ? top.posT / p.posT : 0, 0)} ${t("ctry.rank.ofPartnerPositive")})`}>
-                        {productName(top.cmd, lang, top.label)}
-                      </span>
-                    ) : (
-                      <span className="text-faint" title={t("ctry.rank.belowNoiseTip")}>{t("ctry.rank.belowNoise")}</span>
-                    )}
-                  </td>
+                  <td className={`${tdNum} text-muted`} title={t("ctry.channelsTip")}>{fmtNum(hs6Count.get(p.iso3) ?? 0)}</td>
                 </tr>
               );
             })}
           </tbody>
           <tfoot>
             <tr>
-              <td className={td} />
               <td className={td} title={t("ctry.rank.totalsTip")}>
                 {t("ctry.rank.totalsRow")}
               </td>
@@ -248,7 +186,7 @@ export default function PartnersView() {
                 {fmtUSD(data.kpis.positive.central)}
               </td>
               <td className={tdNum}>{totals.pe > 0 ? fmtPct(data.kpis.positive.central / totals.pe, 0) : "—"}</td>
-              <td className={tdNum} colSpan={2} />
+              <td className={tdNum} />
             </tr>
           </tfoot>
         </table>
@@ -296,73 +234,14 @@ export default function PartnersView() {
         {data.partners.length === 0 ? <EmptyState /> : <RiskMap partners={data.partners} metric="total" />}
       </section>
 
-      {/* 4. compare panel (rendered as soon as anything is selected) */}
-      {compare.length > 0 && (
-        <section className="card p-4">
-          <SectionTitle
-            title={`${t("ctry.compare.title")} (${compare.length}/${MAX_COMPARE})`}
-            desc={t("ctry.compare.desc")}
-            right={
-              <span className="flex items-center gap-2">
-                <InfoTip text={`${t("ctry.compare.infoPre")} ${DATA_WINDOW.start}–${DATA_WINDOW.end} ${t("ctry.compare.infoPost")}`} />
-                <button
-                  onClick={() => setSel([])}
-                  className="rounded-md border border-[var(--color-border)] px-2 py-1 fs-13 text-muted hover:text-foreground"
-                >
-                  {t("ctry.compare.clear")} ✕
-                </button>
-              </span>
-            }
-          />
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {compare.map((p) => {
-              const f = hs6Facts.get(p.iso3) ?? { all: 0, critical: 0, top: null };
-              return (
-                <div key={p.iso3} className="rounded-lg border border-[var(--color-border-soft)] p-3">
-                  <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <Link href={`/partners/${p.iso3.toLowerCase()}`} className="min-w-0 flex-1 truncate text-sm font-semibold hover:underline">
-                      {p.name}
-                    </Link>
-                    <QualityTag tier={p.tier} />
-                    {p.transit && <TransitTag />}
-                  </div>
-                  <dl className="mt-2 space-y-1 fs-13">
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint"><HeadDot color={COLORS.positive} />{t("ctry.col.positive")}</dt>
-                      <dd className="tabular" title={fmtUSDFull(p.posT)}>{fmtUSD(p.posT)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.col.gapRate")}</dt>
-                      <dd className="tabular" title={t("ctry.gapRateTip")}>{fmtPct(gapRate(p), 0)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.compare.allHs6")}</dt>
-                      <dd className="tabular" title={t("ctry.compare.allHs6.tip")}>{fmtNum(f.all)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.compare.flaggedChannels")}</dt>
-                      <dd className="tabular">{fmtNum(f.critical)}</dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-faint">{t("ctry.compare.criticalShare")}</dt>
-                      <dd className="tabular" title={`${fmtNum(f.critical)} ÷ ${fmtNum(f.all)}`}>{f.all > 0 ? fmtPct(f.critical / f.all, 1) : "—"}</dd>
-                    </div>
-                  </dl>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* 5. country ranking */}
+      {/* 4. country ranking, opened on a click */}
       <section className="space-y-3">
         <SectionTitle
           title={t("ctry.rank.title")}
           desc={t("ctry.rank.desc")}
           right={<InfoTip text={t("ctry.rank.info")} />}
         />
-        {rankingTable}
+        <TableReveal>{rankingTable}</TableReveal>
       </section>
 
       </>

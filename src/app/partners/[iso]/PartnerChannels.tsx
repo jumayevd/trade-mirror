@@ -182,7 +182,7 @@ export default function PartnerChannels({
                     <td className="max-w-[20rem]">
                       {/* a few words that name the line; the code and the full text on hover */}
                       <Link href={`/channels/${iso.toLowerCase()}/${c.cmd}`}
-                        className="block truncate font-medium text-[var(--color-primary)] hover:underline" title={`HS ${c.cmd} · ${c.label}`}>
+                        className="line-clamp-2 font-medium leading-snug text-[var(--color-primary)] hover:underline" title={`HS ${c.cmd} · ${c.label}`}>
                         {productName(c.cmd, lang, c.label)}
                       </Link>
                     </td>

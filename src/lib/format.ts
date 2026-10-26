@@ -126,6 +126,16 @@ export const BAND_INK: Record<string, string> = {
   elevated: "var(--band-ink-elevated)", low: "var(--band-ink-low)",
 };
 
+/** The risk badges and score bars: an alert scale (red, orange, amber, green), apart from the navy band frames. */
+export const ALERT_COLORS: Record<string, string> = {
+  critical: "var(--alert-critical)", high: "var(--alert-high)",
+  elevated: "var(--alert-elevated)", low: "var(--alert-low)",
+};
+export const ALERT_INK: Record<string, string> = {
+  critical: "var(--alert-ink-critical)", high: "var(--alert-ink-high)",
+  elevated: "var(--alert-ink-elevated)", low: "var(--alert-ink-low)",
+};
+
 /** Ink for a label printed inside a band's fill. */
 export const BAND_ON: Record<string, string> = {
   critical: "var(--band-on-critical)", high: "var(--band-on-high)",
