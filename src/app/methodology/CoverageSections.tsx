@@ -132,7 +132,7 @@ export function TransitPartners() {
         <EmptyState text={t("qual.transit.empty")} />
       ) : (
         <div className="card max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="cbu-table min-w-[640px]">
             <thead>
               <tr className="border-b border-[var(--color-border)] text-left fs-12 text-faint">
                 <th className="px-3 py-2 font-medium">{t("common.partner")}</th>
@@ -142,7 +142,7 @@ export function TransitPartners() {
                 <th className="px-3 py-2 font-medium">{t("qual.transit.basis")}</th>
               </tr>
             </thead>
-            <tbody className="zebra">
+            <tbody>
               {hubs.map((p) => (
                 <tr key={p.iso3} className="border-b border-[var(--color-border-soft)] last:border-b-0">
                   <td className="px-3 py-2">
