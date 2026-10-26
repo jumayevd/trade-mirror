@@ -28,7 +28,7 @@ import { fmtUSD, fmtUSDFull, fmtPct, fmtNum, COLORS } from "@/lib/format";
  * Positive discrepancy.
  */
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 /** Minimal {placeholder} substitution so translated sentences keep their own word order. */
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -280,7 +280,7 @@ export default function ProductsView() {
     downloadCsv(`products_hs${level}_${period.replace(/[^0-9]+/g, "_")}.csv`, channelsToCsv(activeChannels, filter));
 
   const isEmpty = totalRows === 0;
-  const td = "tabular text-right whitespace-nowrap fs-13";
+  const td = "tabular text-right whitespace-nowrap";
 
   return (
     <div className="space-y-6">
@@ -359,7 +359,6 @@ export default function ProductsView() {
               </span>
             </>
           )}
-          {level !== 2 && !effChapter && !hs4 && <Pill>HS{level} · {t("prod.flatView")}</Pill>}
         </nav>
       </section>
 
@@ -393,7 +392,7 @@ export default function ProductsView() {
                   return (
                   <tr key={r.cmd}>
                     <td className="text-right"><RankCell n={page * PAGE_SIZE + i + 1} /></td>
-                    <td className="max-w-[300px] fs-13">
+                    <td className="max-w-[320px]">
                       <span className="flex min-w-0 items-center">
                         {level === 6 ? (
                           <span className="truncate font-medium" title={full}>{name}</span>

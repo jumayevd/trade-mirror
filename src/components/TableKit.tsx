@@ -16,9 +16,9 @@ import { briefHsLabel } from "@/lib/short-labels";
 export function GapCell({ value, max }: { value: number; max: number }) {
   const w = max > 0 ? Math.max(2, (value / max) * 100) : 0;
   return (
-    <span className="inline-flex w-full min-w-[84px] flex-col items-end gap-[3px]" title={fmtUSDFull(value)}>
-      <span className="tabular fs-13 font-semibold leading-none text-[var(--color-positive)]">{fmtUSD(value)}</span>
-      <span className="h-[4px] w-full overflow-hidden rounded-full bg-[var(--color-panel-2)]" aria-hidden>
+    <span className="inline-flex w-full min-w-[96px] flex-col items-end gap-[5px]" title={fmtUSDFull(value)}>
+      <span className="tabular fs-14.5 font-semibold leading-none text-[var(--color-positive)]">{fmtUSD(value)}</span>
+      <span className="h-[5px] w-full overflow-hidden rounded-full bg-[var(--color-panel-2)]" aria-hidden>
         <span className="block h-full rounded-full bg-[var(--color-positive)]" style={{ width: `${w}%` }} />
       </span>
     </span>
@@ -29,9 +29,9 @@ export function GapCell({ value, max }: { value: number; max: number }) {
 export function ShareCell({ share }: { share: number | null }) {
   if (share == null) return <span className="text-faint">—</span>;
   return (
-    <span className="inline-flex flex-col items-end gap-[3px]">
-      <span className="tabular fs-13 font-medium leading-none">{fmtPct(share, share < 0.1 ? 1 : 0)}</span>
-      <span className="h-[3px] w-10 overflow-hidden rounded-full bg-[var(--color-panel-2)]" aria-hidden>
+    <span className="inline-flex flex-col items-end gap-[5px]">
+      <span className="tabular fs-14 font-medium leading-none">{fmtPct(share, share < 0.1 ? 1 : 0)}</span>
+      <span className="h-[4px] w-12 overflow-hidden rounded-full bg-[var(--color-panel-2)]" aria-hidden>
         <span className="block h-full rounded-full bg-[var(--color-gold)]" style={{ width: `${Math.max(2, Math.min(1, share) * 100)}%` }} />
       </span>
     </span>
@@ -49,5 +49,5 @@ export function productName(cmd: string, lang: Lang, label: string): string {
 
 /** The row's place in the full ranking, not just on this page. */
 export function RankCell({ n }: { n: number }) {
-  return <span className="tabular fs-12 text-faint">{n}</span>;
+  return <span className="tabular fs-13 text-faint">{n}</span>;
 }
