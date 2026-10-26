@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import FilterBar from "@/components/FilterBar";
 import LevelTabs, { type HsLevel } from "@/components/LevelTabs";
 import {
-  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, TableReveal, PageHead,
+  Stat, SectionTitle, RiskScore, BandBadge, EmptyState, Pill, PageHead,
 } from "@/components/ui";
 import { useFilter, useFilteredData } from "@/lib/filter-context";
 import {
@@ -369,7 +369,6 @@ export default function ProductsView() {
           <SectionTitle
             title={level === 2 ? t("prod.table.hs2") : level === 4 ? t("prod.table.hs4") : t("prod.table.hs6")}
           />
-          <TableReveal>
           <div className="card overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="cbu-table min-w-[900px]">
@@ -425,7 +424,6 @@ export default function ProductsView() {
           </div>
           </div>
           <Pager page={page} total={totalRows} onPage={setPage} unit={childUnit} />
-          </TableReveal>
         </section>
       )}
       </>

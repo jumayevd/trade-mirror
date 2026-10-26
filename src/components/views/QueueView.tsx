@@ -6,7 +6,7 @@ import MultiSelect from "@/components/MultiSelect";
 import type { SearchOption } from "@/components/SearchSelect";
 import QueueTable, { LEVEL_LABEL_KEYS, type HsLevel } from "@/components/QueueTable";
 import YearSelect from "@/components/YearSelect";
-import { EmptyState, InfoTip, PageHead, SectionTitle, TableReveal } from "@/components/ui";
+import { EmptyState, InfoTip, PageHead, SectionTitle } from "@/components/ui";
 import { useI18n } from "@/lib/i18n";
 import { useMonthlyDetail } from "@/lib/use-monthly-detail";
 import { channelsToCsv, downloadCsv } from "@/lib/export";
@@ -238,9 +238,7 @@ export default function QueueView() {
           title={t("risk.ranked.title")}
           right={<InfoTip text={t("risk.ranked.info")} />}
         />
-        <TableReveal>
-          <QueueTable channels={channels} level={level} onLevelChange={setLevel} years={data.years} />
-        </TableReveal>
+        <QueueTable channels={channels} level={level} onLevelChange={setLevel} years={data.years} />
       </section>
       )}
     </div>
