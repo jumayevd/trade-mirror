@@ -338,8 +338,9 @@ main:has(> .page-fill) {
   border-bottom: 2px solid var(--color-gold);
 }
 .cbu-table thead th button { color: inherit; text-transform: inherit; letter-spacing: inherit; text-align: inherit; }
-.cbu-table tbody td { padding: 7px 12px; vertical-align: middle; border-bottom: 1px solid var(--color-border-soft); }
-.cbu-table tbody tr:last-child td { border-bottom: 0; }
+.cbu-table tbody td { padding: 7px 12px; vertical-align: middle; }
+/* a zebra you only just notice: every other row a breath of navy, no rules between */
+.cbu-table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-primary) 4.5%, transparent); }
 .cbu-table tbody tr:hover td { background: color-mix(in srgb, var(--color-gold) 7%, transparent); }
 
 /* quiet zebra */
