@@ -32,6 +32,15 @@
   --band-ink-low: #5b6578;
   /* the Critical frame on Discrepancy & Risk: the deepest navy, not gold */
   --band-card-critical: #0c2045;
+  /* the risk badges: an alert scale, red through orange and amber to green */
+  --alert-critical: #c62828;
+  --alert-ink-critical: #9f1d1d;
+  --alert-high: #e2700c;
+  --alert-ink-high: #a84d05;
+  --alert-elevated: #d19a09;
+  --alert-ink-elevated: #7d5b00;
+  --alert-low: #2e8540;
+  --alert-ink-low: #20652f;
   --band-on-critical: #2a1d00;
   --band-on-high: #ffffff;
   --band-on-elevated: #ffffff;
@@ -152,6 +161,14 @@ html[data-theme="dark"] {
   --band-ink-elevated: #8aa7d6;
   --band-ink-low: #9aa2b1;
   --band-card-critical: #c9dbfa;
+  --alert-critical: #f87171;
+  --alert-ink-critical: #fca5a5;
+  --alert-high: #fb923c;
+  --alert-ink-high: #fdba74;
+  --alert-elevated: #facc15;
+  --alert-ink-elevated: #fde68a;
+  --alert-low: #4ade80;
+  --alert-ink-low: #86efac;
   --band-on-critical: #2a1d00;
   --band-on-high: #0b1322;
   --band-on-elevated: #ffffff;
@@ -401,6 +418,14 @@ main:has(> .page-fill) {
     --band-ink-elevated: #3d5f94;
     --band-ink-low: #5b6578;
     --band-card-critical: #0c2045;
+    --alert-critical: #c62828;
+    --alert-ink-critical: #9f1d1d;
+    --alert-high: #e2700c;
+    --alert-ink-high: #a84d05;
+    --alert-elevated: #d19a09;
+    --alert-ink-elevated: #7d5b00;
+    --alert-low: #2e8540;
+    --alert-ink-low: #20652f;
     --band-on-critical: #2a1d00;
     --band-on-high: #ffffff;
     --band-on-elevated: #ffffff;
@@ -435,7 +460,9 @@ html[data-pretheme] main { visibility: hidden; }
   --band-keep: var(--band-critical) var(--band-high) var(--band-elevated) var(--band-low)
     var(--band-ink-critical) var(--band-ink-high) var(--band-ink-elevated) var(--band-ink-low)
     var(--band-on-critical) var(--band-on-high) var(--band-on-elevated) var(--band-on-low)
-    var(--band-card-critical);
+    var(--band-card-critical)
+    var(--alert-critical) var(--alert-high) var(--alert-elevated) var(--alert-low)
+    var(--alert-ink-critical) var(--alert-ink-high) var(--alert-ink-elevated) var(--alert-ink-low);
   --seq-keep: var(--seq-1) var(--seq-2) var(--seq-3) var(--seq-4) var(--seq-5) var(--seq-6)
     var(--seq-ink-1) var(--seq-ink-2) var(--seq-ink-3) var(--seq-ink-4) var(--seq-ink-5) var(--seq-ink-6);
 }

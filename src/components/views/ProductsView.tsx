@@ -398,14 +398,14 @@ export default function ProductsView() {
                   return (
                   <tr key={r.cmd}>
                     <td className="text-right"><RankCell n={page * PAGE_SIZE + i + 1} /></td>
-                    <td className="max-w-[320px]">
+                    <td className="min-w-[200px] max-w-[340px]">
                       <span className="flex min-w-0 items-center">
                         {level === 6 ? (
-                          <span className="truncate font-medium" title={full}>{name}</span>
+                          <span className="line-clamp-2 font-medium leading-snug" title={full}>{name}</span>
                         ) : (
                           <button
                             onClick={() => (level === 2 ? drillChapter(r.cmd) : drillHs4(r.cmd))}
-                            className="truncate text-left font-medium text-[var(--color-primary)] hover:underline"
+                            className="line-clamp-2 text-left font-medium leading-snug text-[var(--color-primary)] hover:underline"
                             title={`${full}\n${fill(t(level === 2 ? "prod.tip.drillChapter" : "prod.tip.drillHs4"), { code: r.cmd })}`}
                           >
                             {name}

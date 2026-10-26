@@ -217,9 +217,9 @@ export default function QueueTable({
               {pageRows.map((c, i) => (
                 <tr key={`${c.partnerIso}|${c.cmd}|${c.level}`}>
                   <td className="text-right"><RankCell n={start + i + 1} /></td>
-                  <td className="max-w-[300px]">
+                  <td className="min-w-[200px] max-w-[320px]">
                     {/* a few words that name the line; the code and the full nomenclature on hover */}
-                    <span className="block truncate font-medium" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
+                    <span className="line-clamp-2 font-medium leading-snug" title={`HS ${c.cmd} · ${hsFullLabel(c.cmd)}`}>
                       {productName(c.cmd, lang, c.cmdLabel)}
                     </span>
                   </td>

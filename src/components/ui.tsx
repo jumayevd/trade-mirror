@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BAND_COLORS, COLORS } from "@/lib/format";
+import { ALERT_COLORS, ALERT_INK, COLORS } from "@/lib/format";
 import type { RiskBand, Robustness, Tier } from "@/lib/dataset";
 import { useI18n } from "@/lib/i18n";
 
@@ -252,7 +252,7 @@ export function RiskScore({ score, band, scored = true }: { score: number; band:
     >
       <span className="tabular fs-13 font-semibold leading-none">{score.toFixed(0)}</span>
       <span className="h-[3px] w-8 overflow-hidden rounded-full bg-[var(--color-panel-2)]">
-        <span className="block h-full rounded-full" style={{ width: `${Math.max(2, Math.min(score, 100))}%`, background: BAND_COLORS[band] }} />
+        <span className="block h-full rounded-full" style={{ width: `${Math.max(2, Math.min(score, 100))}%`, background: ALERT_COLORS[band] }} />
       </span>
     </span>
   );
@@ -261,9 +261,19 @@ export function RiskScore({ score, band, scored = true }: { score: number; band:
 export function BandBadge({ band }: { band: RiskBand }) {
   const { t } = useI18n();
   return (
-    <DotChip dot={BAND_COLORS[band]} title={t(`band.desc.${band}` as never)}>
+    // a tinted pill in the band's alert colour: it should read as a warning level at a glance
+    <span
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 fs-12 font-semibold leading-4"
+      style={{
+        color: ALERT_INK[band],
+        background: `color-mix(in srgb, ${ALERT_COLORS[band]} 13%, transparent)`,
+        borderColor: `color-mix(in srgb, ${ALERT_COLORS[band]} 35%, transparent)`,
+      }}
+      title={t(`band.desc.${band}` as never)}
+    >
+      <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: ALERT_COLORS[band] }} />
       {t(`band.${band}` as never)}
-    </DotChip>
+    </span>
   );
 }
 
