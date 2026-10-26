@@ -73,15 +73,16 @@ export function PosDefCard() {
 }
 
 /**
- * The head of a trade page: title on the left, the definition card centred,
- * the page's own control (export, data window) on the right. Stacks on narrow
- * screens in the same order.
+ * The head of a trade page: title on the left, the definition card centred
+ * (on Product Analysis and Discrepancy & Risk, where the positive discrepancy
+ * is the subject), the page's own control (export, data window) on the right.
+ * Stacks on narrow screens in the same order.
  */
-export function PageHead({ title, right }: { title: React.ReactNode; right?: React.ReactNode }) {
+export function PageHead({ title, right, definition = false }: { title: React.ReactNode; right?: React.ReactNode; definition?: boolean }) {
   return (
     <section className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(12rem,auto)_minmax(0,1fr)_minmax(12rem,auto)] lg:items-center lg:gap-8">
       <div className="min-w-0">{title}</div>
-      <PosDefCard />
+      {definition ? <PosDefCard /> : <div aria-hidden className="hidden lg:block" />}
       <div className="flex lg:justify-end">{right}</div>
     </section>
   );

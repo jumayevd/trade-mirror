@@ -286,6 +286,7 @@ export default function ProductsView() {
     <div className="space-y-6">
       {/* header + export */}
       <PageHead
+        definition
         title={<h1 className="whitespace-nowrap text-xl font-semibold tracking-tight sm:text-2xl">{t("nav.products")}</h1>}
         right={
         <button
@@ -299,7 +300,16 @@ export default function ProductsView() {
         }
       />
 
-      <FilterBar />
+      <FilterBar
+        extra={
+          <LevelTabs
+            level={level}
+            onChange={setToggle}
+            label={t("prod.aria.hsLevel")}
+            tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
+          />
+        }
+      />
       {filter.years.length === 0 ? (
         <EmptyState text={t("common.noPeriod")} />
       ) : (
@@ -321,14 +331,9 @@ export default function ProductsView() {
         </section>
       )}
 
-      {/* HS level toggle + breadcrumb, driving the table */}
+      {/* breadcrumb of the drill, when there is one (the HS level is in the filter row) */}
+      {(effChapter || hs4) && (
       <section className="flex flex-wrap items-center gap-3">
-        <LevelTabs
-          level={level}
-          onChange={setToggle}
-          label={t("prod.aria.hsLevel")}
-          tips={{ 2: t("prod.level.hs2.tip"), 4: t("prod.level.hs4.tip"), 6: t("prod.level.hs6.tip") }}
-        />
         <nav className="flex flex-wrap items-center gap-1.5 fs-13" aria-label={t("prod.aria.breadcrumb")}>
           {(effChapter || hs4) && (
             <button
@@ -361,6 +366,7 @@ export default function ProductsView() {
           )}
         </nav>
       </section>
+      )}
 
       {/* ranked table — one layout for every level */}
       {!isEmpty && (
